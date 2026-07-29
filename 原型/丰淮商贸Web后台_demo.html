@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>丰淮商贸采购下单助手 · Web管理后台 Demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.6.3/dist/index.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; height:100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background:#f0f2f5; color:#303133; }
+  #app { height:100%; }
+  .app-layout { display:flex; flex-direction:column; height:100%; }
+  .app-header { height:60px; background:linear-gradient(90deg,#1e3a8a,#3b82f6); color:#fff; display:flex; align-items:center; padding:0 24px; box-shadow:0 2px 8px rgba(0,0,0,.15); z-index:10; }
+  .app-logo { font-size:18px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .app-logo .logo-icon { width:32px; height:32px; background:#fff; color:#1e3a8a; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:700; }
+  .app-header-right { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .role-switch { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.3); border-radius:4px; padding:4px 10px; color:#fff; font-size:13px; }
+  .user-info { display:flex; align-items:center; gap:8px; font-size:14px; }
+  .user-avatar { width:32px; height:32px; background:#fff; color:#1e3a8a; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:600; }
+  .app-body { flex:1; display:flex; overflow:hidden; }
+  .app-sidebar { width:220px; background:#001529; color:#aaa; overflow-y:auto; }
+  .menu-item { padding:14px 20px; cursor:pointer; display:flex; align-items:center; gap:10px; font-size:14px; transition:all .2s; border-left:3px solid transparent; }
+  .menu-item:hover { background:#00203a; color:#fff; }
+  .menu-item.active { background:#003a70; color:#fff; border-left-color:#3b82f6; }
+  .menu-item .icon { font-size:16px; width:18px; display:inline-block; text-align:center; }
+  .app-main { flex:1; overflow:auto; padding:20px; }
+  .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+  .stat-card { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .stat-card .label { font-size:13px; color:#909399; }
+  .stat-card .value { font-size:26px; font-weight:600; margin-top:8px; }
+  .stat-card .delta { font-size:12px; margin-top:6px; }
+  .stat-card .delta.up { color:#67c23a; }
+  .stat-card .delta.down { color:#f56c6c; }
+  .stat-card.primary .value { color:#3b82f6; }
+  .stat-card.success .value { color:#67c23a; }
+  .stat-card.warning .value { color:#e6a23c; }
+  .stat-card.danger .value { color:#f56c6c; }
+  .panel { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); margin-bottom:20px; }
+  .panel-title { font-size:16px; font-weight:600; margin:0 0 16px; display:flex; align-items:center; justify-content:space-between; }
+  .chart-row { display:grid; grid-template-columns:2fr 1fr; gap:16px; margin-bottom:20px; }
+  .chart-box { background:#fff; border-radius:8px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .chart-box h3 { font-size:14px; color:#606266; margin:0 0 12px; font-weight:500; }
+  .chart-canvas { height:300px; }
+  table.data-table { width:100%; border-collapse:collapse; font-size:13px; }
+  table.data-table th, table.data-table td { padding:10px 12px; text-align:left; border-bottom:1px solid #ebeef5; }
+  table.data-table th { background:#fafafa; color:#606266; font-weight:500; }
+  table.data-table tr:hover td { background:#f5f7fa; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:12px; line-height:18px; }
+  .tag-draft { background:#f4f4f5; color:#909399; }
+  .tag-submitted { background:#fdf6ec; color:#e6a23c; }
+  .tag-confirmed { background:#ecf5ff; color:#409eff; }
+  .tag-completed { background:#f0f9eb; color:#67c23a; }
+  .tag-cancelled { background:#fef0f0; color:#f56c6c; }
+  .tag-cash { background:#f0f9eb; color:#67c23a; }
+  .tag-credit { background:#fdf6ec; color:#e6a23c; }
+  .btn { display:inline-block; padding:6px 14px; border:1px solid #dcdfe6; border-radius:4px; cursor:pointer; font-size:13px; background:#fff; color:#606266; transition:all .2s; }
+  .btn:hover { color:#409eff; border-color:#c6e2ff; background:#ecf5ff; }
+  .btn-primary { background:#409eff; border-color:#409eff; color:#fff; }
+  .btn-primary:hover { background:#66b1ff; border-color:#66b1ff; color:#fff; }
+  .btn-success { background:#67c23a; border-color:#67c23a; color:#fff; }
+  .btn-success:hover { background:#85ce61; border-color:#85ce61; color:#fff; }
+  .btn-warning { background:#e6a23c; border-color:#e6a23c; color:#fff; }
+  .btn-warning:hover { background:#ebb563; border-color:#ebb563; color:#fff; }
+  .btn-danger { background:#f56c6c; border-color:#f56c6c; color:#fff; }
+  .btn-danger:hover { background:#f78989; border-color:#f78989; color:#fff; }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .btn-link { background:transparent; border:none; color:#409eff; padding:0 4px; cursor:pointer; font-size:13px; }
+  .btn-link:hover { color:#66b1ff; }
+  .filter-bar { display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+  .filter-bar input, .filter-bar select { padding:6px 10px; border:1px solid #dcdfe6; border-radius:4px; font-size:13px; outline:none; }
+  .filter-bar input:focus, .filter-bar select:focus { border-color:#409eff; }
+  .wh-tabs { display:flex; border-bottom:1px solid #ebeef5; margin-bottom:16px; }
+  .wh-tabs .tab { padding:10px 20px; cursor:pointer; font-size:14px; color:#606266; border-bottom:2px solid transparent; }
+  .wh-tabs .tab.active { color:#409eff; border-bottom-color:#409eff; font-weight:500; }
+  .wh-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+  .wh-card { background:#fff; border:1px solid #ebeef5; border-radius:8px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .wh-card.confirmed { border-left:3px solid #409eff; }
+  .wh-card.pending { border-left:3px solid #e6a23c; }
+  .wh-card .header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .wh-card .order-no { font-weight:600; font-size:14px; color:#303133; }
+  .wh-card .customer { font-size:14px; margin:4px 0; }
+  .wh-card .meta { font-size:12px; color:#909399; margin-bottom:8px; display:flex; gap:12px; }
+  .wh-card .items { font-size:12px; color:#606266; background:#f5f7fa; padding:8px; border-radius:4px; margin-bottom:8px; line-height:1.6; }
+  .wh-card .footer { display:flex; justify-content:space-between; align-items:center; }
+  .wh-card .amount { font-weight:600; color:#f56c6c; font-size:16px; }
+  .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:1000; }
+  .modal { background:#fff; border-radius:8px; max-width:900px; width:90%; max-height:85vh; overflow:auto; }
+  .modal-header { padding:16px 20px; border-bottom:1px solid #ebeef5; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .modal-body { padding:20px; }
+  .modal-footer { padding:12px 20px; border-top:1px solid #ebeef5; text-align:right; }
+  .form-row { display:flex; gap:16px; margin-bottom:14px; }
+  .form-item { flex:1; }
+  .form-item label { display:block; font-size:13px; color:#606266; margin-bottom:6px; }
+  .form-item input, .form-item select, .form-item textarea { width:100%; padding:8px 10px; border:1px solid #dcdfe6; border-radius:4px; font-size:13px; outline:none; }
+  .form-item input:focus, .form-item select:focus, .form-item textarea:focus { border-color:#409eff; }
+  .shipping-doc { background:#fff; padding:30px 40px; font-family:"SimSun","宋体",serif; }
+  .shipping-doc h2 { text-align:center; margin:0 0 20px; font-size:22px; }
+  .shipping-doc .info-row { display:flex; justify-content:space-between; margin:6px 0; font-size:14px; }
+  .shipping-doc table { width:100%; border-collapse:collapse; margin:12px 0; }
+  .shipping-doc table th, .shipping-doc table td { border:1px solid #333; padding:8px; font-size:13px; text-align:center; }
+  .shipping-doc table th { background:#f0f0f0; }
+  .shipping-doc .sign-row { display:flex; justify-content:space-between; margin-top:30px; font-size:14px; }
+  .shipping-doc .total-row { text-align:right; font-size:16px; font-weight:600; margin:10px 0; }
+  @media print {
+    body * { visibility:hidden; }
+    #printArea, #printArea * { visibility:visible; }
+    #printArea { position:absolute; left:0; top:0; width:100%; }
+    @page { size:241mm 140mm; margin:5mm; }
+    .no-print { display:none !important; }
+  }
+  .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.75); color:#fff; padding:10px 20px; border-radius:4px; z-index:2000; font-size:14px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  .pagination { display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:16px; font-size:13px; }
+  .pagination button { padding:4px 10px; cursor:pointer; border:1px solid #dcdfe6; background:#fff; border-radius:3px; }
+  .pagination button:disabled { color:#c0c4cc; cursor:not-allowed; }
+  .pagination button.active { background:#409eff; color:#fff; border-color:#409eff; }
+  .empty-state { text-align:center; padding:40px; color:#909399; }
+  .empty-state .icon { font-size:48px; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="app-layout">
+    <div class="app-header">
+      <div class="app-logo">
+        <div class="logo-icon">丰</div>
+        <span>丰淮商贸 · 管理后台</span>
+      </div>
+      <div class="app-header-right">
+        <select class="role-switch" v-model="currentRole" @change="switchRole">
+          <option value="admin">👤 管理员视角</option>
+          <option value="warehouse">📦 库管视角</option>
+          <option value="orderer">📝 下单员视角</option>
+        </select>
+        <div class="user-info">
+          <div class="user-avatar">{{ currentUserName.charAt(0) }}</div>
+          <span>{{ currentUserName }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="app-body">
+      <div class="app-sidebar">
+        <div v-for="m in visibleMenus" :key="m.key"
+             class="menu-item" :class="{active: activeMenu===m.key}"
+             @click="activeMenu=m.key">
+          <span class="icon">{{ m.icon }}</span>
+          <span>{{ m.label }}</span>
+        </div>
+      </div>
+      <div class="app-main">
+        <div v-if="activeMenu==='dashboard'">
+          <div class="stat-row">
+            <div class="stat-card primary">
+              <div class="label">今日订单数</div>
+              <div class="value">{{ todayOrders.length }}</div>
+              <div class="delta up">↑ 较昨日 +{{ Math.max(0, todayOrders.length - yesterdayOrders.length) }}</div>
+            </div>
+            <div class="stat-card success">
+              <div class="label">今日销售金额</div>
+              <div class="value">¥{{ todayAmount.toFixed(2) }}</div>
+              <div class="delta up">↑ 较昨日 +¥{{ Math.max(0, todayAmount - yesterdayAmount).toFixed(2) }}</div>
+            </div>
+            <div class="stat-card warning">
+              <div class="label">待确认订单</div>
+              <div class="value">{{ pendingOrders.length }}</div>
+              <div class="delta">库管待办</div>
+            </div>
+            <div class="stat-card danger">
+              <div class="label">本月累计金额</div>
+              <div class="value">¥{{ monthAmount.toFixed(2) }}</div>
+              <div class="delta">{{ monthOrders.length }} 笔订单</div>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div class="chart-box">
+              <h3>近7天订单趋势</h3>
+              <div ref="trendChart" class="chart-canvas"></div>
+            </div>
+            <div class="chart-box">
+              <h3>区域分布</h3>
+              <div ref="regionChart" class="chart-canvas"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-title">
+              <span>最近订单</span>
+              <button class="btn btn-sm" @click="activeMenu='orders'">查看全部 →</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>订单号</th><th>客户</th><th>区域</th><th>下单员</th><th>金额</th><th>状态</th><th>时间</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="o in recentOrders" :key="o.id">
+                  <td>{{ o.orderNo }}</td>
+                  <td>{{ o.customer }}</td>
+                  <td>{{ o.region }}</td>
+                  <td>{{ o.created_by_name }}</td>
+                  <td>¥{{ o.amount.toFixed(2) }}</td>
+                  <td><span class="tag" :class="'tag-'+o.status">{{ statusLabel(o.status) }}</span></td>
+                  <td>{{ formatTime(o.time) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-if="activeMenu==='orders'">
+          <div class="panel">
+            <div class="filter-bar">
+              <input type="date" v-model="filter.dateFrom" />
+              <span>至</span>
+              <input type="date" v-model="filter.dateTo" />
+              <select v-model="filter.region">
+                <option value="">全部区域</option>
+                <option v-for="r in allRegions" :key="r" :value="r">{{ r }}</option>
+              </select>
+              <select v-model="filter.status">
+                <option value="">全部状态</option>
+                <option value="submitted">待确认</option>
+                <option value="confirmed">已确认</option>
+                <option value="completed">已完成</option>
+                <option value="cancelled">已取消</option>
+              </select>
+              <select v-model="filter.creator">
+                <option value="">全部下单员</option>
+                <option v-for="c in allCreators" :key="c">{{ c }}</option>
+              </select>
+              <input type="text" v-model="filter.keyword" placeholder="搜索订单号/客户" style="flex:1;min-width:200px;" />
+              <button class="btn btn-primary btn-sm" @click="showNewOrderModal=true">+ 新建订单</button>
+              <button class="btn btn-sm" @click="resetFilter">重置</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>订单号</th><th>客户</th><th>区域</th><th>下单员</th>
+                  <th>商品数</th><th>金额</th><th>收款</th><th>状态</th>
+                  <th>下单时间</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="o in pagedOrders" :key="o.id">
+                  <td>{{ o.orderNo }}</td>
+                  <td>{{ o.customer }}</td>
+                  <td>{{ o.region }}</td>
+                  <td>{{ o.created_by_name }}</td>
+                  <td>{{ o.items.length }}</td>
+                  <td>¥{{ o.amount.toFixed(2) }}</td>
+                  <td><span class="tag" :class="o.payment==='cash'?'tag-cash':'tag-credit'">{{ o.payment==='cash'?'现结':'赊账' }}</span></td>
+                  <td><span class="tag" :class="'tag-'+o.status">{{ statusLabel(o.status) }}</span></td>
+                  <td>{{ formatTime(o.time) }}</td>
+                  <td>
+                    <button class="btn-link" @click="viewOrder(o)">详情</button>
+                    <button class="btn-link" v-if="canEditOrder(o)" @click="editOrder(o)">编辑</button>
+                    <button class="btn-link" @click="gotoPrintOrder(o)">打印</button>
+                    <button class="btn-link" style="color:#f56c6c" v-if="canDeleteOrder(o)" @click="deleteOrder(o)">删除</button>
+                  </td>
+                </tr>
+                <tr v-if="filteredOrders.length===0">
+                  <td colspan="10">
+                    <div class="empty-state">
+                      <div class="icon">📋</div>
+                      <div>暂无符合条件的订单</div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pagination">
+              <span>共 {{ filteredOrders.length }} 条</span>
+              <button :disabled="page===1" @click="page--">上一页</button>
+              <button v-for="p in totalPages" :key="p" :class="{active:page===p}" @click="page=p">{{ p }}</button>
+              <button :disabled="page===totalPages" @click="page++">下一页</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeMenu==='warehouse'">
+          <div class="panel">
+            <div class="panel-title">
+              <span>📦 库管工作台</span>
+              <div>
+                <button class="btn btn-success btn-sm" @click="confirmAllPending" v-if="currentRole!=='orderer'">✓ 一键确认全部</button>
+                <button class="btn btn-warning btn-sm" @click="simulateAutoConfirm" v-if="currentRole!=='orderer'" style="margin-left:8px;">⏰ 模拟16:00自动通过</button>
+              </div>
+            </div>
+            <div class="wh-tabs">
+              <div class="tab" :class="{active:whTab==='pending'}" @click="whTab='pending'">
+                待确认 ({{ pendingOrders.length }})
+              </div>
+              <div class="tab" :class="{active:whTab==='confirmed'}" @click="whTab='confirmed'">
+                已确认 ({{ confirmedTodayOrders.length }})
+              </div>
+            </div>
+            <div v-if="currentRole==='orderer'" style="background:#fef0f0;border:1px solid #f56c6c;color:#f56c6c;padding:10px 16px;border-radius:4px;margin-bottom:16px;">
+              ⚠️ 下单员无库管权限，仅可查看订单列表，不能执行确认操作
+            </div>
+            <div class="wh-grid">
+              <div v-for="o in (whTab==='pending'?pendingOrders:confirmedTodayOrders)" :key="o.id"
+                   class="wh-card" :class="o.status">
+                <div class="header">
+                  <span class="order-no">{{ o.orderNo }}</span>
+                  <span class="tag" :class="'tag-'+o.status">
+                    {{ o.status==='submitted'?'待确认':(o.auto_confirmed?'已确认(自动)':'已确认') }}
+                  </span>
+                </div>
+                <div class="customer">{{ o.customer }}</div>
+                <div class="meta">
+                  <span>📍 {{ o.region }}</span>
+                  <span>🕐 {{ formatTime(o.time) }}</span>
+                  <span>📝 {{ o.created_by_name }}</span>
+                </div>
+                <div class="items" v-html="formatItems(o.items)"></div>
+                <div class="footer">
+                  <span class="amount">¥{{ o.amount.toFixed(2) }}</span>
+                  <div>
+                    <button v-if="o.status==='submitted' && currentRole!=='orderer'"
+                            class="btn btn-success btn-sm" @click="confirmOrder(o)">✓ 确认</button>
+                    <button v-if="o.status==='confirmed'" class="btn btn-sm" @click="viewOrder(o)">查看</button>
+                  </div>
+                </div>
+              </div>
+              <div v-if="(whTab==='pending'?pendingOrders:confirmedTodayOrders).length===0" class="empty-state">
+                <div class="icon">✅</div>
+                <div>{{ whTab==='pending'?'暂无待确认订单':'暂无已确认订单' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeMenu==='products'">
+          <div class="panel">
+            <div class="filter-bar">
+              <input type="text" v-model="productFilter.keyword" placeholder="搜索料号/名称" style="flex:1;min-width:240px;" />
+              <select v-model="productFilter.status">
+                <option value="">全部状态</option>
+                <option value="active">在售</option>
+                <option value="disabled">已停用</option>
+              </select>
+              <button class="btn btn-primary btn-sm" @click="openProductModal()" v-if="currentRole!=='warehouse'">+ 新增商品</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>料号</th><th>商品名称</th><th>规格</th><th>单位</th><th>计价</th><th>件价</th><th>零价</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="p in pagedProducts" :key="p.material_code">
+                  <td>{{ p.material_code }}</td>
+                  <td>{{ p.name }}</td>
+                  <td>{{ p.spec }}</td>
+                  <td>{{ p.unit }}</td>
+                  <td>{{ p.pricing_mode==='piece'?'纯件':(p.pricing_mode==='unit'?'纯个':'件+零') }}</td>
+                  <td>¥{{ p.price_piece }}</td>
+                  <td>{{ p.price_zero!==null?'¥'+p.price_zero:'—' }}</td>
+                  <td><span class="tag" :class="p.status==='active'?'tag-confirmed':'tag-draft'">{{ p.status==='active'?'在售':'停用' }}</span></td>
+                  <td>
+                    <button class="btn-link" @click="openProductModal(p)" v-if="currentRole!=='warehouse'">编辑</button>
+                    <button class="btn-link" @click="toggleProductStatus(p)" v-if="currentRole!=='warehouse'">{{ p.status==='active'?'停用':'启用' }}</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="pagination">
+              <span>共 {{ filteredProducts.length }} 条</span>
+              <button :disabled="productPage===1" @click="productPage--">上一页</button>
+              <button v-for="p in productTotalPages" :key="p" :class="{active:productPage===p}" @click="productPage=p">{{ p }}</button>
+              <button :disabled="productPage===productTotalPages" @click="productPage++">下一页</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeMenu==='customers'">
+          <div class="panel">
+            <div class="filter-bar">
+              <input type="text" v-model="customerFilter.keyword" placeholder="搜索客户名/电话" style="flex:1;min-width:240px;" />
+              <select v-model="customerFilter.region">
+                <option value="">全部区域</option>
+                <option v-for="r in allRegions" :key="r" :value="r">{{ r }}</option>
+              </select>
+              <button class="btn btn-primary btn-sm" @click="openCustomerModal()" v-if="currentRole!=='warehouse'">+ 新增客户</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>客户名称</th><th>区域</th><th>电话</th><th>联系人</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="c in filteredCustomers" :key="c.name">
+                  <td>{{ c.name }}</td>
+                  <td>{{ c.region }}</td>
+                  <td>{{ c.phone }}</td>
+                  <td>{{ c.contact || '—' }}</td>
+                  <td>
+                    <button class="btn-link" @click="openCustomerModal(c)" v-if="currentRole!=='warehouse'">编辑</button>
+                    <button class="btn-link" style="color:#f56c6c" @click="deleteCustomer(c)" v-if="currentRole!=='warehouse'">删除</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-if="activeMenu==='reports'">
+          <div class="panel">
+            <div class="panel-title">
+              <span>📊 报表中心</span>
+              <button class="btn btn-success btn-sm" @click="exportReport">📥 导出Excel</button>
+            </div>
+            <div class="wh-tabs">
+              <div class="tab" :class="{active:reportTab==='product'}" @click="reportTab='product'">商品汇总表</div>
+              <div class="tab" :class="{active:reportTab==='customer'}" @click="reportTab='customer'">客户汇总表（外县台账式）</div>
+            </div>
+            <div class="filter-bar">
+              <select v-model="reportFilter.preset" @change="applyReportPreset">
+                <option value="today">今天</option>
+                <option value="month">本月</option>
+                <option value="custom">自定义</option>
+              </select>
+              <input type="date" v-model="reportFilter.dateFrom" />
+              <span>至</span>
+              <input type="date" v-model="reportFilter.dateTo" />
+              <select v-model="reportFilter.region">
+                <option value="">全部区域</option>
+                <option v-for="r in allRegions" :key="r" :value="r">{{ r }}</option>
+              </select>
+            </div>
+            <div v-if="reportTab==='product'">
+              <table class="data-table">
+                <thead>
+                  <tr><th>料号</th><th>商品名称</th><th>规格</th><th>单位</th><th>件数合计</th><th>零数合计</th><th>金额合计</th><th>订单数</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="r in productReport" :key="r.material_code">
+                    <td>{{ r.material_code }}</td>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.spec }}</td>
+                    <td>{{ r.unit }}</td>
+                    <td>{{ r.pieceQty }}</td>
+                    <td>{{ r.zeroQty }}</td>
+                    <td>¥{{ r.amount.toFixed(2) }}</td>
+                    <td>{{ r.orderCount }}</td>
+                  </tr>
+                  <tr v-if="productReport.length===0">
+                    <td colspan="8"><div class="empty-state"><div class="icon">📈</div><div>所选时间范围内暂无数据</div></div></td>
+                  </tr>
+                </tbody>
+                <tfoot v-if="productReport.length>0">
+                  <tr style="background:#f5f7fa;font-weight:600;">
+                    <td colspan="6">合计</td>
+                    <td>¥{{ productReport.reduce((s,r)=>s+r.amount,0).toFixed(2) }}</td>
+                    <td>{{ productReport.reduce((s,r)=>s+r.orderCount,0) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <div v-if="reportTab==='customer'">
+              <div style="background:#fdf6ec;border-left:4px solid #e6a23c;padding:10px 16px;margin-bottom:12px;font-size:13px;color:#e6a23c;">
+                ℹ️ 客户汇总表格式参照「2025收款台账起始12.xlsx」外县表单，可直接复制粘贴到台账Excel中
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr><th>编号</th><th>时间</th><th>区域</th><th>客户</th><th>商品</th><th>单位</th><th>数量</th><th>单价</th><th>金额</th><th>备注</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(r,idx) in customerReport" :key="idx">
+                    <td>{{ idx+1 }}</td>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.region }}</td>
+                    <td>{{ r.customer }}</td>
+                    <td>{{ r.product }}</td>
+                    <td>{{ r.unit }}</td>
+                    <td>{{ r.qty }}</td>
+                    <td>¥{{ r.unitPrice.toFixed(2) }}</td>
+                    <td>¥{{ r.amount.toFixed(2) }}</td>
+                    <td>{{ r.remark || '' }}</td>
+                  </tr>
+                  <tr v-if="customerReport.length===0">
+                    <td colspan="10"><div class="empty-state"><div class="icon">📋</div><div>所选时间范围内暂无数据</div></div></td>
+                  </tr>
+                </tbody>
+                <tfoot v-if="customerReport.length>0">
+                  <tr style="background:#f5f7fa;font-weight:600;">
+                    <td colspan="8">合计</td>
+                    <td>¥{{ customerReport.reduce((s,r)=>s+r.amount,0).toFixed(2) }}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeMenu==='print'">
+          <div class="panel">
+            <div class="panel-title">
+              <span>🖨️ 送货单打印中心</span>
+              <div>
+                <select v-model="printOrderId" style="padding:6px 10px;border:1px solid #dcdfe6;border-radius:4px;">
+                  <option value="">请选择订单</option>
+                  <option v-for="o in allOrders" :key="o.id" :value="o.id">{{ o.orderNo }} - {{ o.customer }} - ¥{{ o.amount.toFixed(2) }}</option>
+                </select>
+                <button class="btn btn-primary btn-sm" @click="doPrint" style="margin-left:8px;" :disabled="!printOrderId">🖨️ 打印</button>
+              </div>
+            </div>
+            <div style="background:#f0f9eb;border-left:4px solid #67c23a;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#67c23a;">
+              ℹ️ 适配241mm宽针式打印纸，含价格，给客户签收用
+            </div>
+            <div v-if="printOrder" id="printArea">
+              <div class="shipping-doc">
+                <h2>丰淮商贸 · 送货单</h2>
+                <div class="info-row">
+                  <span>订单号：{{ printOrder.orderNo }}</span>
+                  <span>日期：{{ formatTime(printOrder.time) }}</span>
+                </div>
+                <div class="info-row">
+                  <span>客户：{{ printOrder.customer }}</span>
+                  <span>区域：{{ printOrder.region }}</span>
+                </div>
+                <div class="info-row">
+                  <span>电话：{{ printOrder.phone }}</span>
+                  <span>收款方式：{{ printOrder.payment==='cash'?'现结':'赊账' }}</span>
+                </div>
+                <table>
+                  <thead>
+                    <tr><th style="width:50px">序号</th><th>商品名称</th><th>单位</th><th>数量</th><th>单价</th><th>金额</th><th>备注</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(it,idx) in printOrder.items" :key="idx">
+                      <td>{{ idx+1 }}</td>
+                      <td>{{ it.name }}</td>
+                      <td>{{ getUnitByMode(it,'piece') }}</td>
+                      <td>{{ it.piece_qty || 0 }}</td>
+                      <td>¥{{ (it.price_piece||0).toFixed(2) }}</td>
+                      <td>¥{{ calcItemAmount(it).toFixed(2) }}</td>
+                      <td>{{ it.remark || '' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="total-row">合计：¥{{ printOrder.amount.toFixed(2) }}</div>
+                <div class="sign-row">
+                  <span>送货员签字：__________</span>
+                  <span>客户签字：__________</span>
+                  <span>日期：__________</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="empty-state">
+              <div class="icon">🖨️</div>
+              <div>请选择一个订单进行打印预览</div>
+            </div>
+          </div>
+        </div>
+        <div v-if="activeMenu==='users' && currentRole==='admin'">
+          <div class="panel">
+            <div class="panel-title">
+              <span>👥 用户管理</span>
+              <button class="btn btn-primary btn-sm" @click="openUserModal()">+ 新增用户</button>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr><th>用户名</th><th>姓名</th><th>角色</th><th>状态</th><th>创建时间</th><th>操作</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="u in users" :key="u.username">
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.name }}</td>
+                  <td><span class="tag" :class="'tag-'+u.role">{{ roleLabel(u.role) }}</span></td>
+                  <td><span class="tag" :class="u.status==='active'?'tag-confirmed':'tag-draft'">{{ u.status==='active'?'启用':'禁用' }}</span></td>
+                  <td>{{ u.created_at }}</td>
+                  <td>
+                    <button class="btn-link" @click="openUserModal(u)">编辑</button>
+                    <button class="btn-link" @click="resetUserPassword(u)">重置密码</button>
+                    <button class="btn-link" style="color:#f56c6c" @click="toggleUserStatus(u)">{{ u.status==='active'?'禁用':'启用' }}</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div v-if="activeMenu==='settings' && currentRole==='admin'">
+          <div class="panel">
+            <div class="panel-title">⚙️ 系统设置</div>
+            <div class="form-row">
+              <div class="form-item">
+                <label>公司名称</label>
+                <input type="text" v-model="settings.companyName" />
+              </div>
+              <div class="form-item">
+                <label>16:00自动确认</label>
+                <select v-model="settings.autoConfirm"><option value="on">开启</option><option value="off">关闭</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-item">
+                <label>订单号前缀</label>
+                <input type="text" v-model="settings.orderPrefix" />
+              </div>
+              <div class="form-item">
+                <label>打印纸宽度(mm)</label>
+                <input type="number" v-model="settings.paperWidth" />
+              </div>
+            </div>
+            <button class="btn btn-primary" @click="saveSettings">保存设置</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="viewingOrder" @click.self="viewingOrder=null">
+    <div class="modal">
+      <div class="modal-header">
+        <span>订单详情 · {{ viewingOrder.orderNo }}</span>
+        <button class="btn-link" @click="viewingOrder=null">✕ 关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-item"><label>客户</label><div>{{ viewingOrder.customer }}</div></div>
+          <div class="form-item"><label>区域</label><div>{{ viewingOrder.region }}</div></div>
+          <div class="form-item"><label>电话</label><div>{{ viewingOrder.phone }}</div></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>下单员</label><div>{{ viewingOrder.created_by_name }}</div></div>
+          <div class="form-item"><label>下单时间</label><div>{{ formatTime(viewingOrder.time) }}</div></div>
+          <div class="form-item"><label>状态</label><div><span class="tag" :class="'tag-'+viewingOrder.status">{{ statusLabel(viewingOrder.status) }}</span></div></div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>序号</th><th>商品</th><th>单位</th><th>件数</th><th>零数</th><th>单价</th><th>金额</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr v-for="(it,idx) in viewingOrder.items" :key="idx">
+              <td>{{ idx+1 }}</td>
+              <td>{{ it.name }}</td>
+              <td>{{ it.unit }}</td>
+              <td>{{ it.piece_qty || 0 }}</td>
+              <td>{{ it.zero_qty || 0 }}</td>
+              <td>¥{{ (it.price_piece||0).toFixed(2) }}</td>
+              <td>¥{{ calcItemAmount(it).toFixed(2) }}</td>
+              <td>{{ it.remark || '' }}</td>
+            </tr>
+          </tbody>
+          <tfoot><tr style="background:#f5f7fa;font-weight:600;"><td colspan="6">合计</td><td>¥{{ viewingOrder.amount.toFixed(2) }}</td><td></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="viewingOrder=null">关闭</button>
+        <button class="btn btn-primary" @click="gotoPrintOrder(viewingOrder);viewingOrder=null">🖨️ 打印送货单</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="showNewOrderModal" @click.self="closeOrderModal">
+    <div class="modal">
+      <div class="modal-header">
+        <span>{{ editingOrder?'编辑订单':'新建订单' }}</span>
+        <button class="btn-link" @click="closeOrderModal">✕ 关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-item">
+            <label>客户名称 *</label>
+            <select v-model="orderForm.customer">
+              <option value="">请选择</option>
+              <option v-for="c in customers" :key="c.name" :value="c.name">{{ c.name }} ({{ c.region }})</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>收款方式</label>
+            <select v-model="orderForm.payment">
+              <option value="cash">现结</option>
+              <option value="credit">赊账</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid #ebeef5;padding-top:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <strong>商品明细</strong>
+            <button class="btn btn-sm" @click="addOrderItem">+ 添加商品</button>
+          </div>
+          <table class="data-table" v-if="orderForm.items.length>0">
+            <thead><tr><th>商品</th><th>件数</th><th>零数</th><th>单价</th><th>金额</th><th>备注</th><th></th></tr></thead>
+            <tbody>
+              <tr v-for="(it,idx) in orderForm.items" :key="idx">
+                <td>
+                  <select v-model="it.material_code" @change="syncProduct(idx)" style="width:180px;">
+                    <option value="">请选择</option>
+                    <option v-for="p in products" :key="p.material_code" :value="p.material_code">{{ p.name }}</option>
+                  </select>
+                </td>
+                <td><input type="number" v-model.number="it.piece_qty" style="width:60px;" /></td>
+                <td><input type="number" v-model.number="it.zero_qty" style="width:60px;" /></td>
+                <td>¥{{ (it.price_piece||0).toFixed(2) }}</td>
+                <td>¥{{ calcItemAmount(it).toFixed(2) }}</td>
+                <td><input type="text" v-model="it.remark" style="width:100px;" /></td>
+                <td><button class="btn-link" style="color:#f56c6c" @click="orderForm.items.splice(idx,1)">删除</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state"><div class="icon">🛒</div><div>请添加商品</div></div>
+          <div style="text-align:right;margin-top:10px;font-weight:600;">合计：¥{{ orderFormAmount.toFixed(2) }}</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="closeOrderModal">取消</button>
+        <button class="btn btn-primary" @click="saveOrder">{{ editingOrder?'保存修改':'提交订单' }}</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="showProductModal" @click.self="showProductModal=false">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">
+        <span>{{ editingProduct?'编辑商品':'新增商品' }}</span>
+        <button class="btn-link" @click="showProductModal=false">✕ 关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-item"><label>料号 *</label><input type="text" v-model="productForm.material_code" /></div>
+          <div class="form-item"><label>商品名称 *</label><input type="text" v-model="productForm.name" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>规格</label><input type="text" v-model="productForm.spec" /></div>
+          <div class="form-item"><label>单位</label><input type="text" v-model="productForm.unit" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>计价模式</label>
+            <select v-model="productForm.pricing_mode">
+              <option value="case">件+零</option>
+              <option value="piece">纯件</option>
+              <option value="unit">纯个</option>
+            </select>
+          </div>
+          <div class="form-item"><label>每件零数</label><input type="number" v-model.number="productForm.unit_piece_qty" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>件价</label><input type="number" v-model.number="productForm.price_piece" /></div>
+          <div class="form-item"><label>零价</label><input type="number" v-model.number="productForm.price_zero" /></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showProductModal=false">取消</button>
+        <button class="btn btn-primary" @click="saveProduct">保存</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="showCustomerModal" @click.self="showCustomerModal=false">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">
+        <span>{{ editingCustomer?'编辑客户':'新增客户' }}</span>
+        <button class="btn-link" @click="showCustomerModal=false">✕ 关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-item"><label>客户名称 *</label><input type="text" v-model="customerForm.name" /></div>
+          <div class="form-item"><label>区域</label><input type="text" v-model="customerForm.region" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>电话</label><input type="text" v-model="customerForm.phone" /></div>
+          <div class="form-item"><label>联系人</label><input type="text" v-model="customerForm.contact" /></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showCustomerModal=false">取消</button>
+        <button class="btn btn-primary" @click="saveCustomer">保存</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="showUserModal" @click.self="showUserModal=false">
+    <div class="modal" style="max-width:600px;">
+      <div class="modal-header">
+        <span>{{ editingUser?'编辑用户':'新增用户' }}</span>
+        <button class="btn-link" @click="showUserModal=false">✕ 关闭</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-item"><label>用户名 *</label><input type="text" v-model="userForm.username" :disabled="editingUser" /></div>
+          <div class="form-item"><label>姓名 *</label><input type="text" v-model="userForm.name" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-item"><label>角色</label>
+            <select v-model="userForm.role">
+              <option value="admin">管理员</option>
+              <option value="warehouse">库管</option>
+              <option value="orderer">下单员</option>
+            </select>
+          </div>
+          <div class="form-item"><label>状态</label>
+            <select v-model="userForm.status">
+              <option value="active">启用</option>
+              <option value="disabled">禁用</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" @click="showUserModal=false">取消</button>
+        <button class="btn btn-primary" @click="saveUser">保存</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" :class="{show:toast.show}">{{ toast.msg }}</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+const SEED_PRODUCTS = [
+  {material_code:'1', name:"海藻碘", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:45, price_zero:0.75, unit:'包/件', status:'active'},
+  {material_code:'2', name:"淮盐400g", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:36, price_zero:0.72, unit:'包/件', status:'active'},
+  {material_code:'3', name:"淮盐500g", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:70, price_zero:1.75, unit:'包/件', status:'active'},
+  {material_code:'4', name:"吾宠湾粥", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:45, price_zero:1.125, unit:'杯/件', status:'active'},
+  {material_code:'5', name:"老酸奶", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:45, price_zero:1.5, unit:'杯/件', status:'active'},
+  {material_code:'6', name:"西安小包包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件', status:'active'},
+  {material_code:'14', name:"永和豆浆", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:72, price_zero:1.2, unit:'袋/件', status:'active'},
+  {material_code:'23', name:"小笼包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件', status:'active'},
+  {material_code:'45', name:"手抓饼", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:85, price_zero:0.85, unit:'张/件', status:'active'},
+  {material_code:'46', name:"葱油饼", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:130, price_zero:10.833333, unit:'包/件', status:'active'},
+  {material_code:'93', name:"调货商品A", spec:'调货', pricing_mode:'unit', unit_piece_qty:1, price_piece:null, price_zero:5, unit:'个', status:'active'},
+  {material_code:'122', name:"龙须面", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:60, price_zero:3, unit:'包/件', status:'active'},
+  {material_code:'127', name:"饺子皮", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:45, price_zero:1.5, unit:'包/件', status:'active'},
+  {material_code:'147', name:"馄饨皮", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:48, price_zero:1.2, unit:'包/件', status:'active'},
+];
+const SEED_CUSTOMERS = [
+  {name:'万友超市', region:'白河县', phone:'13800138001', contact:'王老板'},
+  {name:'二幼千层破酥包', region:'旬阳市', phone:'13800138002', contact:'李师傅'},
+  {name:'老街口包子铺', region:'白河县', phone:'13800138004', contact:'刘老板'},
+  {name:'家惠购物广场', region:'汉滨区', phone:'13800138005', contact:'赵经理'},
+  {name:'金州超市', region:'汉滨区', phone:'13800138006', contact:'陈经理'},
+  {name:'万达百货', region:'白河县', phone:'13800138007', contact:'孙主管'},
+  {name:'鑫盛小吃', region:'汉阴县', phone:'13800138010', contact:'张老板'},
+  {name:'美味佳餐厅', region:'石泉县', phone:'13800138011', contact:'陈店长'},
+  {name:'龙华购物', region:'紫阳县', phone:'13800138012', contact:'吴经理'},
+  {name:'东方超市', region:'岚皋县', phone:'13800138013', contact:'郑主管'},
+];
+const SEED_USERS = [
+  {username:'admin', name:'管理员', role:'admin', status:'active', created_at:'2026-07-01'},
+  {username:'warehouse', name:'李库管', role:'warehouse', status:'active', created_at:'2026-07-01'},
+  {username:'zhang', name:'张经理', role:'orderer', status:'active', created_at:'2026-07-05'},
+  {username:'liu', name:'刘业务', role:'orderer', status:'active', created_at:'2026-07-05'},
+];
+const STORAGE_KEY = 'fh_web_admin_demo_v1';
+function genSeedOrders(){
+  const now = new Date();
+  const products = SEED_PRODUCTS;
+  const p = (mc) => products.find(x => x.material_code === mc);
+  const mkItem = (mc, piece_qty, zero_qty) => {
+    const prod = p(mc);
+    return {...prod, piece_qty, zero_qty, remark:''};
+  };
+  const mkOrder = (customer, items, hoursAgo, status, creator, payment, auto) => {
+    const time = new Date(now.getTime() - hoursAgo*3600000).toISOString();
+    const datePart = time.slice(0,10).replace(/-/g,'');
+    return {
+      id: 'ord_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+      orderNo: 'FH-' + datePart + '-' + String(Math.floor(Math.random()*9000)+1000),
+      customer, region: SEED_CUSTOMERS.find(c=>c.name===customer)?.region || '汉滨区',
+      phone: SEED_CUSTOMERS.find(c=>c.name===customer)?.phone || '13800000000',
+      contact: SEED_CUSTOMERS.find(c=>c.name===customer)?.contact || '',
+      items, time, payment, status, created_by_name: creator,
+      auto_confirmed: !!auto,
+      amount: items.reduce((s,it)=>s+(it.piece_qty||0)*(it.price_piece||0)+(it.zero_qty||0)*(it.price_zero||0),0)
+    };
+  };
+  return [
+    mkOrder('万友超市',[mkItem('1',2,10),mkItem('23',3,25)],0,'submitted','张经理','cash'),
+    mkOrder('家惠购物广场',[mkItem('45',5,0),mkItem('46',1,15),mkItem('122',2,5)],1,'submitted','张经理','credit'),
+    mkOrder('金州超市',[mkItem('1',5,0),mkItem('4',2,10),mkItem('93',0,30)],4,'confirmed','张经理','cash'),
+    mkOrder('万达百货',[mkItem('23',1,50),mkItem('45',3,0)],5,'confirmed','张经理','credit',true),
+    mkOrder('老街口包子铺',[mkItem('4',4,8),mkItem('93',0,15)],2,'submitted','刘业务','cash'),
+    mkOrder('二幼千层破酥包',[mkItem('5',1,30),mkItem('6',2,80)],3,'confirmed','刘业务','credit'),
+    mkOrder('鑫盛小吃',[mkItem('14',3,10),mkItem('5',2,15)],1.5,'confirmed','刘业务','cash'),
+    mkOrder('美味佳餐厅',[mkItem('14',3,10),mkItem('5',2,15),mkItem('2',1,45)],2.5,'submitted','刘业务','credit'),
+    mkOrder('龙华购物',[mkItem('46',2,8),mkItem('45',3,12)],3.5,'confirmed','管理员','cash'),
+    mkOrder('东方超市',[mkItem('4',1,20),mkItem('5',2,10),mkItem('14',3,0)],4.5,'confirmed','管理员','credit',true),
+    mkOrder('万友超市',[mkItem('2',3,15),mkItem('3',2,8)],24,'confirmed','张经理','cash'),
+    mkOrder('金州超市',[mkItem('5',2,30),mkItem('14',1,6)],25,'completed','张经理','credit'),
+    mkOrder('老街口包子铺',[mkItem('23',5,20),mkItem('6',3,10)],26,'confirmed','刘业务','cash'),
+    mkOrder('美味佳餐厅',[mkItem('14',2,8),mkItem('5',1,5),mkItem('4',4,20)],27,'completed','刘业务','credit'),
+    mkOrder('龙华购物',[mkItem('45',3,15),mkItem('46',2,0)],28,'confirmed','管理员','cash'),
+    mkOrder('家惠购物广场',[mkItem('1',2,8),mkItem('2',1,4),mkItem('3',3,12)],48,'completed','张经理','credit'),
+    mkOrder('万达百货',[mkItem('14',1,6),mkItem('5',2,15)],49,'completed','张经理','cash'),
+    mkOrder('二幼千层破酥包',[mkItem('23',4,20),mkItem('45',2,10),mkItem('46',3,0)],50,'completed','刘业务','credit'),
+    mkOrder('鑫盛小吃',[mkItem('4',2,10),mkItem('14',1,5)],51,'completed','刘业务','cash'),
+    mkOrder('东方超市',[mkItem('46',1,0),mkItem('45',2,8)],168,'completed','管理员','credit'),
+    mkOrder('东方超市',[mkItem('14',1,6),mkItem('23',2,10),mkItem('4',1,0)],192,'completed','管理员','cash'),
+  ];
+}
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const data = {
+    products: JSON.parse(JSON.stringify(SEED_PRODUCTS)),
+    customers: JSON.parse(JSON.stringify(SEED_CUSTOMERS)),
+    users: JSON.parse(JSON.stringify(SEED_USERS)),
+    orders: genSeedOrders(),
+    settings: { companyName:'丰淮商贸', autoConfirm:'on', orderPrefix:'FH', paperWidth:241 }
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  return data;
+}
+const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+createApp({
+  setup(){
+    const persisted = loadData();
+    const products = ref(persisted.products);
+    const customers = ref(persisted.customers);
+    const users = ref(persisted.users);
+    const orders = ref(persisted.orders);
+    const settings = reactive(persisted.settings);
+    const currentRole = ref('admin');
+    const activeMenu = ref('dashboard');
+    const ROLE_PROFILES = {
+      admin: { name:'管理员' },
+      warehouse: { name:'李库管' },
+      orderer: { name:'张经理' }
+    };
+    const currentUserName = computed(()=> ROLE_PROFILES[currentRole.value].name);
+    const menus = [
+      {key:'dashboard', label:'仪表盘', icon:'📊', roles:['admin','warehouse','orderer']},
+      {key:'orders', label:'订单管理', icon:'📋', roles:['admin','warehouse','orderer']},
+      {key:'warehouse', label:'库管工作台', icon:'📦', roles:['admin','warehouse']},
+      {key:'products', label:'商品管理', icon:'🛒', roles:['admin','orderer']},
+      {key:'customers', label:'客户管理', icon:'👥', roles:['admin','orderer']},
+      {key:'reports', label:'报表中心', icon:'📈', roles:['admin','warehouse','orderer']},
+      {key:'print', label:'打印中心', icon:'🖨️', roles:['admin','orderer']},
+      {key:'users', label:'用户管理', icon:'🔐', roles:['admin']},
+      {key:'settings', label:'系统设置', icon:'⚙️', roles:['admin']},
+    ];
+    const visibleMenus = computed(()=> menus.filter(m=> m.roles.includes(currentRole.value)));
+    function switchRole(){
+      if(!visibleMenus.value.find(m=>m.key===activeMenu.value)){
+        activeMenu.value = 'dashboard';
+      }
+      if(currentRole.value === 'orderer' && activeMenu.value === 'dashboard'){
+        activeMenu.value = 'orders';
+      }
+      showToast('已切换至：' + ROLE_PROFILES[currentRole.value].name + ' 视角');
+    }
+    function fmtTime(iso){
+      const d = new Date(iso);
+      const pad = n => String(n).padStart(2,'0');
+      return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+    }
+    function formatTime(iso){ return fmtTime(iso); }
+    function statusLabel(s){
+      return {draft:'草稿',submitted:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'}[s] || s;
+    }
+    function roleLabel(r){ return {admin:'管理员',warehouse:'库管',orderer:'下单员'}[r]; }
+    function getUnitByMode(item, mode){
+      const u = item.unit || '';
+      const parts = u.split('/');
+      if(mode === 'piece' || mode === 'case') return parts[1] || '件';
+      return parts[0] || '个';
+    }
+    function calcItemAmount(it){
+      const pq = it.piece_qty||0, zq = it.zero_qty||0;
+      const pp = it.price_piece||0, pz = it.price_zero||0;
+      if(it.pricing_mode==='piece') return pq*pp;
+      if(it.pricing_mode==='unit') return zq*pz;
+      return pq*pp + zq*pz;
+    }
+    function formatItems(items){
+      return items.map(it=>{
+        const pq = it.piece_qty||0, zq = it.zero_qty||0;
+        if(pq>0 && zq>0) return `${it.name}×${pq}件+${zq}${(it.unit||'个').split('/')[0]}`;
+        if(pq>0) return `${it.name}×${pq}件`;
+        if(zq>0) return `${it.name}×${zq}${(it.unit||'个').split('/')[0]}`;
+        return `${it.name}×0`;
+      }).join('，');
+    }
+    function sameDay(iso, d){
+      const dd = new Date(iso);
+      return dd.toDateString() === d.toDateString();
+    }
+    const todayOrders = computed(()=> orders.value.filter(o=> sameDay(o.time, new Date())));
+    const yesterdayOrders = computed(()=> orders.value.filter(o=> sameDay(o.time, new Date(Date.now()-86400000))));
+    const todayAmount = computed(()=> todayOrders.value.reduce((s,o)=>s+o.amount,0));
+    const yesterdayAmount = computed(()=> yesterdayOrders.value.reduce((s,o)=>s+o.amount,0));
+    const pendingOrders = computed(()=> orders.value.filter(o=> o.status==='submitted' && sameDay(o.time, new Date())));
+    const confirmedTodayOrders = computed(()=> orders.value.filter(o=> o.status==='confirmed' && sameDay(o.time, new Date())));
+    const monthOrders = computed(()=>{
+      const now = new Date();
+      return orders.value.filter(o=>{
+        const d = new Date(o.time);
+        return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+      });
+    });
+    const monthAmount = computed(()=> monthOrders.value.reduce((s,o)=>s+o.amount,0));
+    const recentOrders = computed(()=> [...orders.value].sort((a,b)=>new Date(b.time)-new Date(a.time)).slice(0,5));
+    const trendChart = ref(null);
+    const regionChart = ref(null);
+    let trendInst = null, regionInst = null;
+    function renderCharts(){
+      nextTick(()=>{
+        if(trendChart.value){
+          if(trendInst) trendInst.dispose();
+          trendInst = echarts.init(trendChart.value);
+          const days = [];
+          for(let i=6;i>=0;i--){
+            const d = new Date(Date.now()-i*86400000);
+            days.push({
+              label: (d.getMonth()+1)+'/'+d.getDate(),
+              orders: orders.value.filter(o=> sameDay(o.time, d)).length,
+              amount: orders.value.filter(o=> sameDay(o.time, d)).reduce((s,o)=>s+o.amount,0)
+            });
+          }
+          trendInst.setOption({
+            tooltip: { trigger:'axis' },
+            legend: { data:['订单数','金额'] },
+            xAxis: { type:'category', data: days.map(d=>d.label) },
+            yAxis: [
+              { type:'value', name:'订单数' },
+              { type:'value', name:'金额(元)', position:'right' }
+            ],
+            series: [
+              { name:'订单数', type:'bar', data: days.map(d=>d.orders), itemStyle:{color:'#409eff'} },
+              { name:'金额', type:'line', yAxisIndex:1, data: days.map(d=>d.amount.toFixed(2)), smooth:true, itemStyle:{color:'#67c23a'} }
+            ]
+          });
+        }
+        if(regionChart.value){
+          if(regionInst) regionInst.dispose();
+          regionInst = echarts.init(regionChart.value);
+          const regionMap = {};
+          todayOrders.value.forEach(o=>{ regionMap[o.region] = (regionMap[o.region]||0) + 1; });
+          regionInst.setOption({
+            tooltip: {},
+            series: [{
+              type:'pie',
+              radius:['40%','70%'],
+              data: Object.entries(regionMap).map(([name,value])=>({name, value}))
+            }]
+          });
+        }
+      });
+    }
+    watch(activeMenu, (v)=>{ if(v==='dashboard') renderCharts(); });
+    watch(currentRole, ()=>{ if(activeMenu.value==='dashboard') renderCharts(); });
+    onMounted(()=>{ renderCharts(); });
+    const filter = reactive({ dateFrom:'', dateTo:'', region:'', status:'', creator:'', keyword:'' });
+    function resetFilter(){ Object.assign(filter,{dateFrom:'',dateTo:'',region:'',status:'',creator:'',keyword:''}); }
+    const allRegions = computed(()=>{
+      const s = new Set(); customers.value.forEach(c=>s.add(c.region)); orders.value.forEach(o=>s.add(o.region));
+      return Array.from(s);
+    });
+    const allCreators = computed(()=>{
+      const s = new Set(); orders.value.forEach(o=>s.add(o.created_by_name)); return Array.from(s);
+    });
+    function getVisibleOrders(){
+      if(currentRole.value === 'orderer'){
+        return orders.value.filter(o=> o.created_by_name === currentUserName.value);
+      }
+      return orders.value;
+    }
+    const filteredOrders = computed(()=>{
+      let list = getVisibleOrders();
+      if(filter.dateFrom){ list = list.filter(o=> o.time >= filter.dateFrom+'T00:00:00'); }
+      if(filter.dateTo){ list = list.filter(o=> o.time <= filter.dateTo+'T23:59:59'); }
+      if(filter.region){ list = list.filter(o=> o.region === filter.region); }
+      if(filter.status){ list = list.filter(o=> o.status === filter.status); }
+      if(filter.creator){ list = list.filter(o=> o.created_by_name === filter.creator); }
+      if(filter.keyword){
+        const kw = filter.keyword.toLowerCase();
+        list = list.filter(o=> o.orderNo.toLowerCase().includes(kw) || o.customer.toLowerCase().includes(kw));
+      }
+      return list.sort((a,b)=> new Date(b.time)-new Date(a.time));
+    });
+    const page = ref(1);
+    const pageSize = 10;
+    const totalPages = computed(()=> Math.max(1, Math.ceil(filteredOrders.value.length / pageSize)));
+    const pagedOrders = computed(()=>{
+      const start = (page.value-1)*pageSize;
+      return filteredOrders.value.slice(start, start+pageSize);
+    });
+    watch(filteredOrders, ()=>{ page.value = 1; });
+    function canEditOrder(o){
+      if(currentRole.value === 'warehouse') return false;
+      if(currentRole.value === 'admin') return true;
+      return o.created_by_name === currentUserName.value && !['completed','cancelled'].includes(o.status);
+    }
+    function canDeleteOrder(o){
+      if(currentRole.value === 'warehouse') return false;
+      if(currentRole.value === 'admin') return true;
+      return o.created_by_name === currentUserName.value && !['completed'].includes(o.status);
+    }
+    const viewingOrder = ref(null);
+    function viewOrder(o){ viewingOrder.value = o; }
+    const showNewOrderModal = ref(false);
+    const editingOrder = ref(null);
+    const orderForm = reactive({ customer:'', payment:'cash', items:[] });
+    const orderFormAmount = computed(()=> orderForm.items.reduce((s,it)=>s+calcItemAmount(it),0));
+    function addOrderItem(){
+      orderForm.items.push({ material_code:'', name:'', piece_qty:0, zero_qty:0, price_piece:0, price_zero:0, pricing_mode:'case', unit:'', remark:'' });
+    }
+    function syncProduct(idx){
+      const it = orderForm.items[idx];
+      const p = products.value.find(x=>x.material_code===it.material_code);
+      if(p){ Object.assign(it, { name:p.name, price_piece:p.price_piece, price_zero:p.price_zero, pricing_mode:p.pricing_mode, unit:p.unit, spec:p.spec }); }
+    }
+    function editOrder(o){
+      editingOrder.value = o;
+      orderForm.customer = o.customer;
+      orderForm.payment = o.payment;
+      orderForm.items = o.items.map(it=>({...it}));
+      showNewOrderModal.value = true;
+    }
+    function closeOrderModal(){
+      showNewOrderModal.value = false;
+      editingOrder.value = null;
+      orderForm.customer = '';
+      orderForm.payment = 'cash';
+      orderForm.items = [];
+    }
+    function saveOrder(){
+      if(!orderForm.customer){ showToast('请选择客户'); return; }
+      if(orderForm.items.length===0){ showToast('请添加商品'); return; }
+      const cust = customers.value.find(c=>c.name===orderForm.customer);
+      const items = orderForm.items.filter(it=>it.material_code).map(it=>{
+        const p = products.value.find(x=>x.material_code===it.material_code);
+        return {...p, piece_qty:Number(it.piece_qty)||0, zero_qty:Number(it.zero_qty)||0, remark:it.remark||''};
+      });
+      const amount = items.reduce((s,it)=>s+calcItemAmount(it),0);
+      if(editingOrder.value){
+        const idx = orders.value.findIndex(o=>o.id===editingOrder.value.id);
+        if(idx>=0){
+          orders.value[idx] = {
+            ...orders.value[idx],
+            customer: orderForm.customer,
+            region: cust?.region || orders.value[idx].region,
+            phone: cust?.phone || orders.value[idx].phone,
+            contact: cust?.contact || '',
+            items, amount,
+            payment: orderForm.payment,
+            status: 'submitted',
+            warehouse_confirmed: false,
+            confirmed_by: null,
+            confirmed_at: null,
+            auto_confirmed: false
+          };
+          showToast('订单已修改，状态回退至待确认');
+        }
+      } else {
+        const now = new Date();
+        const datePart = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+        const seq = String(orders.value.filter(o=>o.orderNo.includes(datePart)).length+1).padStart(4,'0');
+        const newOrder = {
+          id: 'ord_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+          orderNo: 'FH-'+datePart+'-'+seq,
+          customer: orderForm.customer,
+          region: cust?.region || '',
+          phone: cust?.phone || '',
+          contact: cust?.contact || '',
+          items, amount,
+          payment: orderForm.payment,
+          status: 'submitted',
+          created_by_name: currentUserName.value,
+          time: now.toISOString(),
+          auto_confirmed: false
+        };
+        orders.value.push(newOrder);
+        showToast('订单已提交：'+newOrder.orderNo);
+      }
+      persist();
+      closeOrderModal();
+    }
+    function deleteOrder(o){
+      if(!confirm('确认删除订单 '+o.orderNo+' ?')) return;
+      const idx = orders.value.findIndex(x=>x.id===o.id);
+      if(idx>=0){ orders.value.splice(idx,1); persist(); showToast('订单已删除'); }
+    }
+    const whTab = ref('pending');
+    function confirmOrder(o){
+      if(currentRole.value === 'orderer'){ showToast('无权限：仅库管/管理员可操作'); return; }
+      o.status = 'confirmed';
+      o.warehouse_confirmed = true;
+      o.confirmed_by = currentUserName.value;
+      o.confirmed_at = new Date().toISOString();
+      o.auto_confirmed = false;
+      persist();
+      showToast('已确认：'+o.orderNo);
+    }
+    function confirmAllPending(){
+      if(currentRole.value === 'orderer'){ showToast('无权限'); return; }
+      const list = pendingOrders.value;
+      if(list.length===0){ showToast('暂无待确认订单'); return; }
+      list.forEach(o=>{
+        o.status = 'confirmed';
+        o.warehouse_confirmed = true;
+        o.confirmed_by = currentUserName.value;
+        o.confirmed_at = new Date().toISOString();
+        o.auto_confirmed = false;
+      });
+      persist();
+      showToast('已批量确认 '+list.length+' 笔');
+    }
+    function simulateAutoConfirm(){
+      if(currentRole.value === 'orderer'){ showToast('无权限'); return; }
+      const list = pendingOrders.value;
+      if(list.length===0){ showToast('暂无待确认订单'); return; }
+      list.forEach(o=>{
+        o.status = 'confirmed';
+        o.warehouse_confirmed = true;
+        o.confirmed_by = 'system_auto';
+        o.confirmed_at = new Date().toISOString();
+        o.auto_confirmed = true;
+      });
+      persist();
+      showToast('16:00 自动通过 '+list.length+' 笔');
+    }
+    const productFilter = reactive({ keyword:'', status:'' });
+    const filteredProducts = computed(()=>{
+      let list = products.value;
+      if(productFilter.keyword){
+        const kw = productFilter.keyword.toLowerCase();
+        list = list.filter(p=> p.material_code.includes(kw) || p.name.toLowerCase().includes(kw));
+      }
+      if(productFilter.status){ list = list.filter(p=> p.status === productFilter.status); }
+      return list;
+    });
+    const productPage = ref(1);
+    const productPageSize = 10;
+    const productTotalPages = computed(()=> Math.max(1, Math.ceil(filteredProducts.value.length / productPageSize)));
+    const pagedProducts = computed(()=>{
+      const s = (productPage.value-1)*productPageSize;
+      return filteredProducts.value.slice(s, s+productPageSize);
+    });
+    const showProductModal = ref(false);
+    const editingProduct = ref(null);
+    const productForm = reactive({});
+    function openProductModal(p){
+      if(p){ editingProduct.value = p; Object.assign(productForm, JSON.parse(JSON.stringify(p))); }
+      else { editingProduct.value = null; Object.assign(productForm, { material_code:'', name:'', spec:'', unit:'', pricing_mode:'case', unit_piece_qty:1, price_piece:0, price_zero:0, status:'active' }); }
+      showProductModal.value = true;
+    }
+    function saveProduct(){
+      if(!productForm.material_code || !productForm.name){ showToast('料号和名称必填'); return; }
+      if(editingProduct.value){
+        const idx = products.value.findIndex(x=>x.material_code===editingProduct.value.material_code);
+        if(idx>=0) products.value[idx] = {...productForm};
+      } else {
+        products.value.push({...productForm});
+      }
+      persist();
+      showProductModal.value = false;
+      showToast('商品已保存');
+    }
+    function toggleProductStatus(p){
+      p.status = p.status==='active'?'disabled':'active';
+      persist();
+      showToast(p.status==='active'?'已启用':'已停用');
+    }
+    const customerFilter = reactive({ keyword:'', region:'' });
+    const filteredCustomers = computed(()=>{
+      let list = customers.value;
+      if(customerFilter.region) list = list.filter(c=>c.region===customerFilter.region);
+      if(customerFilter.keyword){
+        const kw = customerFilter.keyword.toLowerCase();
+        list = list.filter(c=> c.name.toLowerCase().includes(kw) || c.phone.includes(kw));
+      }
+      return list;
+    });
+    const showCustomerModal = ref(false);
+    const editingCustomer = ref(null);
+    const customerForm = reactive({});
+    function openCustomerModal(c){
+      if(c){ editingCustomer.value = c; Object.assign(customerForm, JSON.parse(JSON.stringify(c))); }
+      else { editingCustomer.value = null; Object.assign(customerForm, { name:'', region:'', phone:'', contact:'' }); }
+      showCustomerModal.value = true;
+    }
+    function saveCustomer(){
+      if(!customerForm.name){ showToast('客户名称必填'); return; }
+      if(editingCustomer.value){
+        const idx = customers.value.findIndex(x=>x.name===editingCustomer.value.name);
+        if(idx>=0) customers.value[idx] = {...customerForm};
+      } else {
+        customers.value.push({...customerForm});
+      }
+      persist();
+      showCustomerModal.value = false;
+      showToast('客户已保存');
+    }
+    function deleteCustomer(c){
+      if(!confirm('确认删除客户 '+c.name+' ?')) return;
+      const idx = customers.value.findIndex(x=>x.name===c.name);
+      if(idx>=0){ customers.value.splice(idx,1); persist(); showToast('已删除'); }
+    }
+    const reportTab = ref('product');
+    const reportFilter = reactive({ preset:'today', dateFrom:'', dateTo:'', region:'' });
+    function todayStr(){
+      const d = new Date();
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+    function monthStr(){
+      const d = new Date();
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    }
+    function applyReportPreset(){
+      if(reportFilter.preset==='today'){
+        reportFilter.dateFrom = todayStr();
+        reportFilter.dateTo = todayStr();
+      } else if(reportFilter.preset==='month'){
+        const m = monthStr();
+        reportFilter.dateFrom = m+'-01';
+        const d = new Date();
+        const lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+        reportFilter.dateTo = m+'-'+String(lastDay).padStart(2,'0');
+      }
+    }
+    applyReportPreset();
+    const reportOrders = computed(()=>{
+      let list = orders.value;
+      if(reportFilter.dateFrom) list = list.filter(o=> o.time >= reportFilter.dateFrom+'T00:00:00');
+      if(reportFilter.dateTo) list = list.filter(o=> o.time <= reportFilter.dateTo+'T23:59:59');
+      if(reportFilter.region) list = list.filter(o=> o.region === reportFilter.region);
+      return list;
+    });
+    const productReport = computed(()=>{
+      const map = {};
+      reportOrders.value.forEach(o=>{
+        o.items.forEach(it=>{
+          const key = it.material_code;
+          if(!map[key]) map[key] = { material_code:it.material_code, name:it.name, spec:it.spec, unit:it.unit, pieceQty:0, zeroQty:0, amount:0, orderCount:0 };
+          map[key].pieceQty += it.piece_qty||0;
+          map[key].zeroQty += it.zero_qty||0;
+          map[key].amount += calcItemAmount(it);
+          map[key].orderCount += 1;
+        });
+      });
+      return Object.values(map).sort((a,b)=> b.amount - a.amount);
+    });
+    const customerReport = computed(()=>{
+      const rows = [];
+      reportOrders.value.forEach(o=>{
+        const date = o.time.slice(0,10);
+        o.items.forEach(it=>{
+          if(it.piece_qty > 0){
+            rows.push({ date, region:o.region, customer:o.customer, product:it.name, unit:getUnitByMode(it,'piece'), qty:it.piece_qty, unitPrice:it.price_piece||0, amount:(it.piece_qty||0)*(it.price_piece||0), remark:it.remark });
+          }
+          if(it.zero_qty > 0){
+            rows.push({ date, region:o.region, customer:o.customer, product:it.name, unit:getUnitByMode(it,'zero'), qty:it.zero_qty, unitPrice:it.price_zero||0, amount:(it.zero_qty||0)*(it.price_zero||0), remark:it.remark });
+          }
+        });
+      });
+      return rows;
+    });
+    function exportReport(){
+      showToast('已导出 Excel（演示版未生成实际文件）');
+    }
+    const allOrders = computed(()=> orders.value.slice().sort((a,b)=>new Date(b.time)-new Date(a.time)));
+    const printOrderId = ref('');
+    const printOrder = computed(()=> orders.value.find(o=>o.id===printOrderId.value));
+    function gotoPrintOrder(o){ printOrderId.value = o.id; activeMenu.value='print'; nextTick(()=> window.print()); }
+    function doPrint(){ if(!printOrderId.value){ showToast('请选择订单'); return; } window.print(); }
+    const showUserModal = ref(false);
+    const editingUser = ref(null);
+    const userForm = reactive({});
+    function openUserModal(u){
+      if(u){ editingUser.value = u; Object.assign(userForm, JSON.parse(JSON.stringify(u))); }
+      else { editingUser.value = null; Object.assign(userForm, { username:'', name:'', role:'orderer', status:'active' }); }
+      showUserModal.value = true;
+    }
+    function saveUser(){
+      if(!userForm.username || !userForm.name){ showToast('用户名和姓名必填'); return; }
+      if(editingUser.value){
+        const idx = users.value.findIndex(x=>x.username===editingUser.value.username);
+        if(idx>=0) users.value[idx] = {...users.value[idx], ...userForm};
+      } else {
+        if(users.value.find(x=>x.username===userForm.username)){ showToast('用户名已存在'); return; }
+        users.value.push({...userForm, created_at: todayStr()});
+      }
+      persist();
+      showUserModal.value = false;
+      showToast('用户已保存');
+    }
+    function resetUserPassword(u){ if(confirm('确认重置 '+u.name+' 的密码为 Abc@1234 ?')) showToast('密码已重置：Abc@1234'); }
+    function toggleUserStatus(u){ u.status = u.status==='active'?'disabled':'active'; persist(); showToast(u.status==='active'?'已启用':'已禁用'); }
+    function saveSettings(){ persist(); showToast('设置已保存'); }
+    function persist(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        products: products.value,
+        customers: customers.value,
+        users: users.value,
+        orders: orders.value,
+        settings: settings
+      }));
+    }
+    const toast = reactive({ show:false, msg:'' });
+    let toastTimer = null;
+    function showToast(msg){
+      toast.msg = msg;
+      toast.show = true;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(()=> toast.show=false, 1800);
+    }
+    return {
+      currentRole, currentUserName, activeMenu, visibleMenus,
+      products, customers, users, orders, settings,
+      todayOrders, yesterdayOrders, todayAmount, yesterdayAmount,
+      pendingOrders, confirmedTodayOrders, monthOrders, monthAmount,
+      recentOrders, trendChart, regionChart,
+      filter, resetFilter, allRegions, allCreators,
+      filteredOrders, page, totalPages, pagedOrders,
+      canEditOrder, canDeleteOrder,
+      viewingOrder, viewOrder,
+      showNewOrderModal, editingOrder, orderForm, orderFormAmount,
+      addOrderItem, syncProduct, editOrder, closeOrderModal, saveOrder, deleteOrder,
+      whTab, confirmOrder, confirmAllPending, simulateAutoConfirm,
+      productFilter, filteredProducts, productPage, productTotalPages, pagedProducts,
+      showProductModal, editingProduct, productForm,
+      openProductModal, saveProduct, toggleProductStatus,
+      customerFilter, filteredCustomers,
+      showCustomerModal, editingCustomer, customerForm,
+      openCustomerModal, saveCustomer, deleteCustomer,
+      reportTab, reportFilter, applyReportPreset,
+      productReport, customerReport, exportReport,
+      allOrders, printOrderId, printOrder, doPrint, gotoPrintOrder,
+      showUserModal, editingUser, userForm,
+      openUserModal, saveUser, resetUserPassword, toggleUserStatus,
+      saveSettings,
+      formatTime, statusLabel, roleLabel, getUnitByMode, calcItemAmount, formatItems,
+      switchRole, showToast, toast
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
