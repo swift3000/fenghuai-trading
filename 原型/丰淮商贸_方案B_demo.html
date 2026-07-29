@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>丰淮商贸 · 方案B演示（小程序 + 极简Web后台）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; margin:0; padding:0; }
+  html, body { height:100%; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background:#f0f2f5; color:#303133; }
+  #app { height:100%; }
+  .top-bar { height:50px; background:#1e3a8a; color:#fff; display:flex; align-items:center; padding:0 20px; gap:16px; }
+  .top-bar .title { font-weight:600; font-size:15px; }
+  .top-bar .switch { display:flex; background:rgba(255,255,255,.15); border-radius:4px; overflow:hidden; }
+  .top-bar .switch button { background:transparent; border:0; color:#fff; padding:8px 18px; cursor:pointer; font-size:13px; }
+  .top-bar .switch button.active { background:#3b82f6; }
+  .top-bar .role-sel { margin-left:auto; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .top-bar select { background:rgba(255,255,255,.15); color:#fff; border:1px solid rgba(255,255,255,.3); padding:4px 8px; border-radius:4px; }
+  .top-bar select option { color:#303133; }
+  .top-bar .reset-btn { background:#f56c6c; color:#fff; border:0; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; }
+  .stage { height:calc(100% - 50px); display:flex; justify-content:center; align-items:flex-start; padding:20px; overflow:auto; }
+  .hidden { display:none !important; }
+  .phone-frame { width:390px; height:780px; background:#000; border-radius:36px; padding:10px; box-shadow:0 10px 40px rgba(0,0,0,.25); position:relative; }
+  .phone-screen { width:100%; height:100%; background:#f5f7fa; border-radius:28px; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .phone-notch { position:absolute; top:14px; left:50%; transform:translateX(-50%); width:120px; height:24px; background:#000; border-radius:14px; z-index:100; }
+  .phone-status { height:36px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-size:12px; color:#303133; background:#f5f7fa; }
+  .phone-content { flex:1; overflow-y:auto; position:relative; }
+  .phone-tabbar { height:56px; background:#fff; border-top:1px solid #ebeef5; display:flex; }
+  .phone-tabbar .tab { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:11px; color:#909399; cursor:pointer; }
+  .phone-tabbar .tab.active { color:#3b82f6; }
+  .phone-tabbar .tab .icon { font-size:20px; }
+  .mp-page { padding:14px; display:none; }
+  .mp-page.active { display:block; }
+  .mp-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .mp-header h2 { font-size:18px; }
+  .mp-card { background:#fff; border-radius:10px; padding:14px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+  .mp-btn { display:block; width:100%; padding:12px; background:#3b82f6; color:#fff; border:0; border-radius:8px; font-size:14px; cursor:pointer; margin-top:8px; }
+  .mp-btn.green { background:#67c23a; }
+  .mp-btn.outline { background:#fff; color:#3b82f6; border:1px solid #3b82f6; }
+  .mp-btn.gray { background:#909399; }
+  .mp-input { width:100%; padding:10px; border:1px solid #dcdfe6; border-radius:6px; font-size:14px; }
+  .mp-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+  .mp-stat { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .mp-stat .item { background:#fff; border-radius:8px; padding:14px; text-align:center; }
+  .mp-stat .item .num { font-size:22px; font-weight:600; color:#3b82f6; }
+  .mp-stat .item .lbl { font-size:12px; color:#909399; margin-top:4px; }
+  .mp-list-item { background:#fff; border-radius:8px; padding:12px; margin-bottom:8px; }
+  .mp-list-item .t { display:flex; justify-content:space-between; align-items:center; }
+  .mp-list-item .name { font-weight:600; font-size:14px; }
+  .mp-list-item .sub { font-size:12px; color:#909399; margin-top:4px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; }
+  .tag-submitted { background:#fdf6ec; color:#e6a23c; }
+  .tag-confirmed { background:#ecf5ff; color:#409eff; }
+  .tag-completed { background:#f0f9eb; color:#67c23a; }
+  .tag-cancelled { background:#fef0f0; color:#f56c6c; }
+  .tag-cash { background:#f0f9eb; color:#67c23a; }
+  .tag-credit { background:#fdf6ec; color:#e6a23c; }
+  .cart-item { background:#fff; border-radius:8px; padding:10px; margin-bottom:8px; }
+  .cart-item .row1 { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .cart-item .row1 .pname { font-size:13px; font-weight:600; flex:1; }
+  .cart-item .qty-row { display:flex; gap:6px; align-items:center; }
+  .cart-item .qty-row label { font-size:11px; color:#909399; width:30px; }
+  .cart-item .qty-row input { width:50px; padding:4px; border:1px solid #dcdfe6; border-radius:4px; text-align:center; }
+  .cart-item .amt { color:#f56c6c; font-weight:600; font-size:13px; }
+  .cart-item .del { color:#f56c6c; cursor:pointer; font-size:12px; }
+  .bt-modal { position:absolute; inset:0; background:rgba(0,0,0,.5); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .bt-box { background:#fff; border-radius:12px; padding:20px; width:100%; max-height:80%; overflow:auto; }
+  .bt-box h3 { margin-bottom:12px; text-align:center; }
+  .bt-device { padding:10px; border:1px solid #ebeef5; border-radius:6px; margin-bottom:8px; cursor:pointer; }
+  .bt-device:hover { background:#f5f7fa; }
+  .bt-device.connected { border-color:#67c23a; background:#f0f9eb; }
+  .pc-frame { width:100%; max-width:1280px; background:#fff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.1); overflow:hidden; display:flex; flex-direction:column; height:calc(100vh - 90px); }
+  .pc-header { height:50px; background:#1e3a8a; color:#fff; display:flex; align-items:center; padding:0 20px; }
+  .pc-header .title { font-weight:600; }
+  .pc-header .role-info { margin-left:auto; font-size:13px; }
+  .pc-body { flex:1; display:flex; overflow:hidden; }
+  .pc-sidebar { width:200px; background:#001529; color:#aaa; }
+  .pc-sidebar .menu { padding:14px 18px; cursor:pointer; display:flex; gap:10px; align-items:center; font-size:13px; border-left:3px solid transparent; }
+  .pc-sidebar .menu:hover { background:#00203a; color:#fff; }
+  .pc-sidebar .menu.active { background:#003a70; color:#fff; border-left-color:#3b82f6; }
+  .pc-main { flex:1; overflow:auto; padding:20px; background:#f0f2f5; }
+  .pc-panel { background:#fff; border-radius:6px; padding:18px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  .pc-panel h3 { font-size:15px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; }
+  .pc-filter { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+  .pc-filter input, .pc-filter select { padding:6px 10px; border:1px solid #dcdfe6; border-radius:4px; font-size:13px; }
+  .pc-btn { padding:6px 14px; border:1px solid #dcdfe6; border-radius:4px; background:#fff; color:#606266; cursor:pointer; font-size:13px; }
+  .pc-btn.primary { background:#3b82f6; color:#fff; border-color:#3b82f6; }
+  .pc-btn.success { background:#67c23a; color:#fff; border-color:#67c23a; }
+  .pc-btn.warning { background:#e6a23c; color:#fff; border-color:#e6a23c; }
+  .pc-btn.danger { background:#f56c6c; color:#fff; border-color:#f56c6c; }
+  .pc-btn.sm { padding:4px 10px; font-size:12px; }
+  .pc-link { background:transparent; border:0; color:#3b82f6; cursor:pointer; padding:0 4px; font-size:13px; }
+  table.pc-table { width:100%; border-collapse:collapse; font-size:13px; }
+  table.pc-table th, table.pc-table td { padding:9px 10px; text-align:left; border-bottom:1px solid #ebeef5; }
+  table.pc-table th { background:#fafafa; color:#606266; font-weight:500; }
+  table.pc-table tr:hover td { background:#f5f7fa; }
+  .wh-tabs { display:flex; border-bottom:1px solid #ebeef5; margin-bottom:14px; }
+  .wh-tabs .tab { padding:8px 18px; cursor:pointer; font-size:13px; color:#606266; border-bottom:2px solid transparent; }
+  .wh-tabs .tab.active { color:#3b82f6; border-bottom-color:#3b82f6; font-weight:500; }
+  .wh-card { border:1px solid #ebeef5; border-radius:6px; padding:12px; margin-bottom:8px; }
+  .wh-card.pending { border-left:3px solid #e6a23c; }
+  .wh-card.confirmed { border-left:3px solid #409eff; }
+  .wh-card .top { display:flex; justify-content:space-between; margin-bottom:6px; }
+  .wh-card .no { font-weight:600; font-size:13px; }
+  .wh-card .meta { font-size:12px; color:#909399; margin-bottom:6px; display:flex; gap:12px; }
+  .wh-card .items { font-size:12px; background:#f5f7fa; padding:6px 8px; border-radius:4px; margin-bottom:6px; color:#606266; }
+  .wh-card .foot { display:flex; justify-content:space-between; align-items:center; }
+  .wh-card .amt { color:#f56c6c; font-weight:600; }
+  .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:500; }
+  .modal { background:#fff; border-radius:8px; width:90%; max-width:800px; max-height:85vh; overflow:auto; }
+  .modal-h { padding:14px 18px; border-bottom:1px solid #ebeef5; font-weight:600; display:flex; justify-content:space-between; align-items:center; }
+  .modal-b { padding:18px; }
+  .modal-f { padding:12px 18px; border-top:1px solid #ebeef5; text-align:right; }
+  .ship-doc { background:#fff; padding:24px 32px; font-family:"SimSun","宋体",serif; }
+  .ship-doc h2 { text-align:center; margin-bottom:14px; }
+  .ship-doc .info { display:flex; justify-content:space-between; margin:4px 0; font-size:13px; }
+  .ship-doc table { width:100%; border-collapse:collapse; margin:10px 0; }
+  .ship-doc table th, .ship-doc table td { border:1px solid #333; padding:6px; font-size:12px; text-align:center; }
+  .ship-doc table th { background:#f0f0f0; }
+  .ship-doc .total { text-align:right; font-weight:600; margin:8px 0; font-size:14px; }
+  .ship-doc .sign { display:flex; justify-content:space-between; margin-top:24px; font-size:13px; }
+  @media print {
+    body * { visibility:hidden; }
+    #printArea, #printArea * { visibility:visible; }
+    #printArea { position:absolute; left:0; top:0; width:100%; }
+    @page { size:241mm 140mm; margin:5mm; }
+    .no-print { display:none !important; }
+  }
+  .toast { position:fixed; top:60px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.75); color:#fff; padding:8px 18px; border-radius:4px; z-index:9999; font-size:13px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.show { opacity:1; }
+  .empty { text-align:center; padding:30px; color:#909399; font-size:13px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top-bar">
+    <span class="title">丰淮商贸 · 方案B演示</span>
+    <div class="switch">
+      <button :class="{active:device==='mp'}" @click="device='mp'">📱 小程序端</button>
+      <button :class="{active:device==='pc'}" @click="device='pc'">💻 Web后台端</button>
+    </div>
+    <div class="role-sel">
+      <span>当前视角：</span>
+      <select v-model="currentRole">
+        <option value="orderer">📝 下单员（张经理）</option>
+        <option value="warehouse">📦 库管（李库管）</option>
+        <option value="admin">👤 管理员</option>
+      </select>
+      <button class="reset-btn" @click="resetData">重置数据</button>
+    </div>
+  </div>
+  <div class="stage">
+    <div class="phone-frame" v-show="device==='mp'">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="phone-status">
+          <span>{{ mpTime }}</span>
+          <span>📶 5G 🔋 100%</span>
+        </div>
+        <div class="phone-content">
+          <div class="mp-page" :class="{active:mpPage==='home'}">
+            <div class="mp-header"><h2>👋 {{ roleName }}，你好</h2></div>
+            <div class="mp-card">
+              <div class="mp-stat">
+                <div class="item"><div class="num">{{ mpTodayOrders }}</div><div class="lbl">今日订单</div></div>
+                <div class="item"><div class="num">¥{{ mpTodayAmount.toFixed(0) }}</div><div class="lbl">今日金额</div></div>
+              </div>
+            </div>
+            <div class="mp-card" v-if="currentRole==='orderer'">
+              <h3 style="font-size:14px;margin-bottom:10px;">⚡ 快捷操作</h3>
+              <button class="mp-btn" @click="goNewOrder">＋ 新建订单</button>
+              <button class="mp-btn outline" style="margin-top:8px;" @click="mpPage='orders'">📋 查看我的订单</button>
+              <button class="mp-btn gray" style="margin-top:8px;" @click="openBluetooth">🖨️ 蓝牙打印</button>
+            </div>
+            <div class="mp-card" v-if="currentRole==='warehouse'">
+              <h3 style="font-size:14px;margin-bottom:10px;">📦 库管待办</h3>
+              <div class="mp-row"><span>待确认订单</span><strong style="color:#e6a23c">{{ pendingOrders.length }} 笔</strong></div>
+              <button class="mp-btn" @click="device='pc';pcPage='confirm'">前往Web后台确认 →</button>
+            </div>
+            <div class="mp-card" v-if="currentRole==='admin'">
+              <h3 style="font-size:14px;margin-bottom:10px;">📊 数据概览</h3>
+              <div class="mp-row"><span>本月订单</span><strong>{{ monthOrders.length }} 笔</strong></div>
+              <div class="mp-row"><span>本月金额</span><strong style="color:#f56c6c">¥{{ monthAmount.toFixed(2) }}</strong></div>
+              <button class="mp-btn" @click="device='pc'">前往Web后台 →</button>
+            </div>
+            <div class="mp-card">
+              <h3 style="font-size:14px;margin-bottom:8px;">📢 系统公告</h3>
+              <div style="font-size:13px;color:#606266;line-height:1.6;">下午16:00未确认订单将自动通过；送货单请用Web后台打印（适配241mm针式打印机）。</div>
+            </div>
+          </div>
+          <div class="mp-page" :class="{active:mpPage==='newOrder'}">
+            <div class="mp-header">
+              <button class="pc-link" style="font-size:14px;" @click="mpPage='home'">← 返回</button>
+              <h2>{{ editingOrderNo ? '编辑订单' : '新建订单' }}</h2>
+              <span></span>
+            </div>
+            <div class="mp-card">
+              <label style="font-size:13px;color:#606266;display:block;margin-bottom:6px;">客户 *</label>
+              <select class="mp-input" v-model="orderForm.customer" @change="onCustomerChange">
+                <option value="">请选择客户</option>
+                <option v-for="c in customers" :key="c.name" :value="c.name">{{ c.name }} ({{ c.region }})</option>
+              </select>
+              <div v-if="orderForm.region" style="font-size:12px;color:#909399;margin-top:6px;">区域：{{ orderForm.region }} · 电话：{{ orderForm.phone }}</div>
+              <label style="font-size:13px;color:#606266;display:block;margin:10px 0 6px;">收款方式</label>
+              <select class="mp-input" v-model="orderForm.payment">
+                <option value="cash">现结</option>
+                <option value="credit">赊账</option>
+              </select>
+            </div>
+            <div class="mp-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:14px;">🛒 商品明细</h3>
+                <button class="pc-btn primary sm" @click="openProductPicker">+ 添加商品</button>
+              </div>
+              <div v-if="orderForm.items.length===0" class="empty">请添加商品</div>
+              <div v-for="(it,idx) in orderForm.items" :key="idx" class="cart-item">
+                <div class="row1"><span class="pname">{{ it.name }}</span><span class="amt">¥{{ calcItem(it).toFixed(2) }}</span></div>
+                <div class="qty-row">
+                  <label>件数</label>
+                  <input type="number" v-model.number="it.piece_qty" min="0" />
+                  <label v-if="it.pricing_mode!=='piece'">零数</label>
+                  <input v-if="it.pricing_mode!=='piece'" type="number" v-model.number="it.zero_qty" min="0" />
+                  <span style="flex:1;text-align:right;color:#909399;font-size:11px;">件¥{{ it.price_piece }} + 零¥{{ it.price_zero||0 }}</span>
+                  <span class="del" @click="orderForm.items.splice(idx,1)">删除</span>
+                </div>
+                <input type="text" v-model="it.remark" placeholder="备注" style="width:100%;padding:4px 6px;margin-top:6px;border:1px solid #ebeef5;border-radius:4px;font-size:12px;" />
+              </div>
+              <div style="text-align:right;margin-top:10px;font-weight:600;color:#f56c6c;">合计：¥{{ orderFormTotal.toFixed(2) }}</div>
+              <button class="mp-btn" @click="submitOrder">{{ editingOrderNo ? '保存修改' : '提交订单' }}</button>
+            </div>
+          </div>
+          <div class="mp-page" :class="{active:mpPage==='orders'}">
+            <div class="mp-header">
+              <button class="pc-link" style="font-size:14px;" @click="mpPage='home'">← 返回</button>
+              <h2>我的订单</h2><span></span>
+            </div>
+            <div class="mp-card" v-if="myOrders.length===0"><div class="empty">暂无订单</div></div>
+            <div v-for="o in myOrders" :key="o.id" class="mp-list-item" @click="viewOrder(o)">
+              <div class="t">
+                <span class="name">{{ o.customer }}</span>
+                <span class="tag" :class="'tag-'+o.status">{{ statusLabel(o.status) }}</span>
+              </div>
+              <div class="sub">{{ o.orderNo }} · {{ fmtTime(o.time) }}</div>
+              <div class="sub">¥{{ o.amount.toFixed(2) }} · {{ o.items.length }}种商品 · <span class="tag" :class="o.payment==='cash'?'tag-cash':'tag-credit'">{{ o.payment==='cash'?'现结':'赊账' }}</span></div>
+            </div>
+          </div>
+          <div class="mp-page" :class="{active:mpPage==='detail'}">
+            <div class="mp-header">
+              <button class="pc-link" style="font-size:14px;" @click="mpPage='orders'">← 返回</button>
+              <h2>订单详情</h2><span></span>
+            </div>
+            <div v-if="viewingOrder" class="mp-card">
+              <div class="mp-row"><span>订单号</span><strong>{{ viewingOrder.orderNo }}</strong></div>
+              <div class="mp-row"><span>客户</span><strong>{{ viewingOrder.customer }}</strong></div>
+              <div class="mp-row"><span>区域</span><strong>{{ viewingOrder.region }}</strong></div>
+              <div class="mp-row"><span>下单员</span><strong>{{ viewingOrder.created_by_name }}</strong></div>
+              <div class="mp-row"><span>时间</span><strong>{{ fmtTime(viewingOrder.time) }}</strong></div>
+              <div class="mp-row"><span>状态</span><span class="tag" :class="'tag-'+viewingOrder.status">{{ statusLabel(viewingOrder.status) }}</span></div>
+              <div class="mp-row"><span>收款</span><span class="tag" :class="viewingOrder.payment==='cash'?'tag-cash':'tag-credit'">{{ viewingOrder.payment==='cash'?'现结':'赊账' }}</span></div>
+            </div>
+            <div v-if="viewingOrder" class="mp-card">
+              <h3 style="font-size:14px;margin-bottom:10px;">商品明细</h3>
+              <div v-for="(it,idx) in viewingOrder.items" :key="idx" class="cart-item" style="margin-bottom:6px;">
+                <div class="row1"><span class="pname">{{ idx+1 }}. {{ it.name }}</span><span class="amt">¥{{ calcItem(it).toFixed(2) }}</span></div>
+                <div style="font-size:11px;color:#909399;">件数 {{ it.piece_qty||0 }} · 零数 {{ it.zero_qty||0 }} · 件价¥{{ it.price_piece||0 }} · 零价¥{{ it.price_zero||0 }}</div>
+              </div>
+              <div style="text-align:right;font-weight:600;color:#f56c6c;margin-top:8px;">合计：¥{{ viewingOrder.amount.toFixed(2) }}</div>
+            </div>
+            <div v-if="viewingOrder && currentRole==='orderer'" class="mp-card">
+              <button class="mp-btn outline" @click="editOrder(viewingOrder)">✏️ 修改订单</button>
+              <button class="mp-btn green" style="margin-top:8px;" @click="openBluetoothForOrder(viewingOrder)">🖨️ 蓝牙打印小票</button>
+              <button class="mp-btn gray" style="margin-top:8px;" @click="device='pc';pcPage='print'">💻 前往Web打印送货单</button>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="tab" :class="{active:mpPage==='home'}" @click="mpPage='home'"><span class="icon">🏠</span><span>首页</span></div>
+          <div class="tab" :class="{active:mpPage==='orders'}" @click="mpPage='orders'" v-if="currentRole==='orderer'"><span class="icon">📋</span><span>订单</span></div>
+          <div class="tab" :class="{active:mpPage==='newOrder'}" @click="goNewOrder" v-if="currentRole==='orderer'"><span class="icon">➕</span><span>录单</span></div>
+          <div class="tab" @click="openBluetooth"><span class="icon">🖨️</span><span>打印</span></div>
+          <div class="tab" @click="device='pc'"><span class="icon">💻</span><span>后台</span></div>
+        </div>
+        <div class="bt-modal" v-if="btShow">
+          <div class="bt-box">
+            <h3>🖨️ 蓝牙打印</h3>
+            <div v-if="!btConnected">
+              <p style="font-size:13px;color:#606266;margin-bottom:10px;">请选择蓝牙打印机：</p>
+              <div v-for="d in btDevices" :key="d.id" class="bt-device" @click="connectBt(d)">
+                <div style="display:flex;justify-content:space-between;"><strong style="font-size:13px;">{{ d.name }}</strong><span style="font-size:11px;color:#909399;">信号 {{ d.rssi }}</span></div>
+                <div style="font-size:11px;color:#909399;">{{ d.id }}</div>
+              </div>
+              <button class="mp-btn outline" style="margin-top:10px;" @click="btShow=false">取消</button>
+            </div>
+            <div v-else>
+              <p style="text-align:center;color:#67c23a;margin-bottom:10px;">✓ 已连接：{{ btConnected.name }}</p>
+              <div v-if="btPrintOrder" style="background:#fff;border:1px dashed #dcdfe6;padding:10px;margin-bottom:10px;font-size:11px;font-family:monospace;">
+                <div style="text-align:center;font-weight:bold;">丰淮商贸送货单</div>
+                <div>订单：{{ btPrintOrder.orderNo }}</div>
+                <div>客户：{{ btPrintOrder.customer }}</div>
+                <div>金额：¥{{ btPrintOrder.amount.toFixed(2) }}</div>
+                <div>时间：{{ fmtTime(btPrintOrder.time) }}</div>
+                <hr style="border:0;border-top:1px dashed #ccc;margin:4px 0;">
+                <div v-for="(it,idx) in btPrintOrder.items" :key="idx">{{ it.name }} × {{ it.piece_qty||0 }}件 + {{ it.zero_qty||0 }}{{ (it.unit||'个').split('/')[0] }} = ¥{{ calcItem(it).toFixed(2) }}</div>
+                <hr style="border:0;border-top:1px dashed #ccc;margin:4px 0;">
+                <div style="text-align:right;">合计：¥{{ btPrintOrder.amount.toFixed(2) }}</div>
+              </div>
+              <button class="mp-btn green" @click="doBtPrint">🖨️ 开始打印</button>
+              <button class="mp-btn outline" style="margin-top:6px;" @click="btDisconnect">断开连接</button>
+            </div>
+          </div>
+        </div>
+        <div class="bt-modal" v-if="productPickerShow">
+          <div class="bt-box">
+            <h3>选择商品</h3>
+            <input type="text" v-model="productKw" placeholder="搜索料号/名称" class="mp-input" style="margin-bottom:10px;" />
+            <div style="max-height:300px;overflow:auto;">
+              <div v-for="p in filteredPickerProducts" :key="p.material_code" class="bt-device" @click="addProductToCart(p)">
+                <div style="display:flex;justify-content:space-between;"><strong style="font-size:13px;">{{ p.name }}</strong><span style="font-size:11px;color:#909399;">料号 {{ p.material_code }}</span></div>
+                <div style="font-size:11px;color:#909399;">{{ p.spec }} · 件¥{{ p.price_piece }} + 零¥{{ p.price_zero||0 }}</div>
+              </div>
+            </div>
+            <button class="mp-btn outline" style="margin-top:10px;" @click="productPickerShow=false">关闭</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pc-frame" v-show="device==='pc'">
+      <div class="pc-header">
+        <span class="title">丰淮商贸 · Web后台（极简版）</span>
+        <span class="role-info">当前：{{ roleName }} · {{ roleDesc }}</span>
+      </div>
+      <div class="pc-body">
+        <div class="pc-sidebar">
+          <div class="menu" :class="{active:pcPage==='confirm'}" @click="pcPage='confirm'" v-if="currentRole==='warehouse'||currentRole==='admin'">📦 订单确认</div>
+          <div class="menu" :class="{active:pcPage==='export'}" @click="pcPage='export'">📥 导出中心</div>
+          <div class="menu" :class="{active:pcPage==='print'}" @click="pcPage='print'">🖨️ 打印送货单</div>
+          <div class="menu" @click="device='mp'">📱 返回小程序</div>
+        </div>
+        <div class="pc-main">
+          <div v-if="pcPage==='confirm'">
+            <div class="pc-panel">
+              <h3>
+                <span>📦 库管工作台 — 订单确认</span>
+                <div>
+                  <button class="pc-btn success sm" @click="confirmAllPending" v-if="currentRole!=='orderer'">✓ 一键确认全部</button>
+                  <button class="pc-btn warning sm" @click="simulateAutoConfirm" v-if="currentRole!=='orderer'" style="margin-left:6px;">⏰ 模拟16:00自动通过</button>
+                </div>
+              </h3>
+              <div class="wh-tabs">
+                <div class="tab" :class="{active:whTab==='pending'}" @click="whTab='pending'">待确认 ({{ pendingOrders.length }})</div>
+                <div class="tab" :class="{active:whTab==='confirmed'}" @click="whTab='confirmed'">今日已确认 ({{ confirmedTodayOrders.length }})</div>
+              </div>
+              <div v-if="currentRole==='orderer'" style="background:#fef0f0;color:#f56c6c;padding:8px 12px;border-radius:4px;margin-bottom:10px;font-size:13px;">⚠️ 下单员无库管权限，仅可查看</div>
+              <div v-for="o in (whTab==='pending'?pendingOrders:confirmedTodayOrders)" :key="o.id" class="wh-card" :class="o.status">
+                <div class="top">
+                  <span class="no">{{ o.orderNo }}</span>
+                  <span class="tag" :class="'tag-'+o.status">{{ statusLabel(o.status) }}{{ o.auto_confirmed?' (自动)':'' }}</span>
+                </div>
+                <div class="meta">
+                  <span>📍 {{ o.region }}</span>
+                  <span>🏪 {{ o.customer }}</span>
+                  <span>📝 {{ o.created_by_name }}</span>
+                  <span>🕐 {{ fmtTime(o.time) }}</span>
+                </div>
+                <div class="items">{{ o.items.map(it=>`${it.name}×${it.piece_qty||0}件+${it.zero_qty||0}${(it.unit||'个').split('/')[0]}`).join('，') }}</div>
+                <div class="foot">
+                  <span class="amt">¥{{ o.amount.toFixed(2) }}</span>
+                  <div>
+                    <button v-if="o.status==='submitted' && currentRole!=='orderer'" class="pc-btn success sm" @click="confirmOrder(o)">✓ 确认</button>
+                    <button class="pc-btn sm" style="margin-left:6px;" @click="viewOrder(o);pcPage='print'">打印</button>
+                  </div>
+                </div>
+              </div>
+              <div v-if="(whTab==='pending'?pendingOrders:confirmedTodayOrders).length===0" class="empty">暂无{{ whTab==='pending'?'待确认':'已确认' }}订单</div>
+            </div>
+          </div>
+          <div v-if="pcPage==='export'">
+            <div class="pc-panel">
+              <h3>📥 导出中心</h3>
+              <div class="wh-tabs">
+                <div class="tab" :class="{active:exportTab==='warehouse'}" @click="exportTab='warehouse'">库单（不含价）</div>
+                <div class="tab" :class="{active:exportTab==='product'}" @click="exportTab='product'">商品汇总表</div>
+                <div class="tab" :class="{active:exportTab==='customer'}" @click="exportTab='customer'">客户汇总（台账式）</div>
+              </div>
+              <div class="pc-filter">
+                <select v-model="exportFilter.preset" @change="applyExportPreset">
+                  <option value="today">今天</option>
+                  <option value="month">本月</option>
+                  <option value="custom">自定义</option>
+                </select>
+                <input type="date" v-model="exportFilter.dateFrom" />
+                <span>至</span>
+                <input type="date" v-model="exportFilter.dateTo" />
+                <select v-model="exportFilter.region">
+                  <option value="">全部区域</option>
+                  <option v-for="r in allRegions" :key="r" :value="r">{{ r }}</option>
+                </select>
+                <button class="pc-btn success sm" @click="doExport">📥 导出 Excel</button>
+              </div>
+              <div v-if="exportTab==='warehouse'">
+                <div style="background:#fdf6ec;border-left:4px solid #e6a23c;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#e6a23c;">库单不含价格，按客户分组，件数/零数分行输出</div>
+                <table class="pc-table">
+                  <thead><tr><th>编号</th><th>时间</th><th>区域</th><th>客户</th><th>商品</th><th>单位</th><th>数量</th><th>备注</th></tr></thead>
+                  <tbody>
+                    <tr v-for="(r,idx) in warehouseExportData" :key="idx"><td>{{ idx+1 }}</td><td>{{ r.date }}</td><td>{{ r.region }}</td><td>{{ r.customer }}</td><td>{{ r.product }}</td><td>{{ r.unit }}</td><td>{{ r.qty }}</td><td>{{ r.remark }}</td></tr>
+                    <tr v-if="warehouseExportData.length===0"><td colspan="8"><div class="empty">暂无数据</div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div v-if="exportTab==='product'">
+                <table class="pc-table">
+                  <thead><tr><th>料号</th><th>商品名称</th><th>规格</th><th>件数合计</th><th>零数合计</th><th>金额合计</th><th>订单数</th></tr></thead>
+                  <tbody>
+                    <tr v-for="r in productExportData" :key="r.material_code"><td>{{ r.material_code }}</td><td>{{ r.name }}</td><td>{{ r.spec }}</td><td>{{ r.pieceQty }}</td><td>{{ r.zeroQty }}</td><td>¥{{ r.amount.toFixed(2) }}</td><td>{{ r.orderCount }}</td></tr>
+                    <tr v-if="productExportData.length===0"><td colspan="7"><div class="empty">暂无数据</div></td></tr>
+                  </tbody>
+                  <tfoot v-if="productExportData.length>0"><tr style="background:#f5f7fa;font-weight:600;"><td colspan="5">合计</td><td>¥{{ productExportData.reduce((s,r)=>s+r.amount,0).toFixed(2) }}</td><td>{{ productExportData.reduce((s,r)=>s+r.orderCount,0) }}</td></tr></tfoot>
+                </table>
+              </div>
+              <div v-if="exportTab==='customer'">
+                <div style="background:#fdf6ec;border-left:4px solid #e6a23c;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#e6a23c;">格式参照「2025收款台账起始12.xlsx」外县表单，可直接复制粘贴到台账Excel</div>
+                <table class="pc-table">
+                  <thead><tr><th>编号</th><th>时间</th><th>区域</th><th>客户</th><th>商品</th><th>单位</th><th>数量</th><th>单价</th><th>金额</th><th>备注</th></tr></thead>
+                  <tbody>
+                    <tr v-for="(r,idx) in customerExportData" :key="idx"><td>{{ idx+1 }}</td><td>{{ r.date }}</td><td>{{ r.region }}</td><td>{{ r.customer }}</td><td>{{ r.product }}</td><td>{{ r.unit }}</td><td>{{ r.qty }}</td><td>¥{{ r.unitPrice.toFixed(2) }}</td><td>¥{{ r.amount.toFixed(2) }}</td><td>{{ r.remark }}</td></tr>
+                    <tr v-if="customerExportData.length===0"><td colspan="10"><div class="empty">暂无数据</div></td></tr>
+                  </tbody>
+                  <tfoot v-if="customerExportData.length>0"><tr style="background:#f5f7fa;font-weight:600;"><td colspan="8">合计</td><td>¥{{ customerExportData.reduce((s,r)=>s+r.amount,0).toFixed(2) }}</td><td></td></tr></tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div v-if="pcPage==='print'">
+            <div class="pc-panel">
+              <h3>
+                <span>🖨️ 送货单打印</span>
+                <div>
+                  <select v-model="printOrderId" style="padding:6px 8px;border:1px solid #dcdfe6;border-radius:4px;">
+                    <option value="">选择订单</option>
+                    <option v-for="o in printableOrders" :key="o.id" :value="o.id">{{ o.orderNo }} - {{ o.customer }} - ¥{{ o.amount.toFixed(2) }}</option>
+                  </select>
+                  <button class="pc-btn primary sm" @click="doPrint" :disabled="!printOrderId" style="margin-left:6px;">🖨️ 打印</button>
+                </div>
+              </h3>
+              <div style="background:#f0f9eb;border-left:4px solid #67c23a;padding:8px 12px;margin-bottom:14px;font-size:12px;color:#67c23a;">适配241mm针式打印纸，含价格，给客户签收</div>
+              <div v-if="printOrder" id="printArea">
+                <div class="ship-doc">
+                  <h2>丰淮商贸 · 送货单</h2>
+                  <div class="info"><span>订单号：{{ printOrder.orderNo }}</span><span>日期：{{ fmtTime(printOrder.time) }}</span></div>
+                  <div class="info"><span>客户：{{ printOrder.customer }}</span><span>区域：{{ printOrder.region }}</span></div>
+                  <div class="info"><span>电话：{{ printOrder.phone }}</span><span>收款：{{ printOrder.payment==='cash'?'现结':'赊账' }}</span></div>
+                  <table>
+                    <thead><tr><th style="width:40px">序号</th><th>商品</th><th>单位</th><th>数量</th><th>单价</th><th>金额</th><th>备注</th></tr></thead>
+                    <tbody>
+                      <tr v-for="(it,idx) in printOrder.items" :key="idx">
+                        <td>{{ idx+1 }}</td><td>{{ it.name }}</td><td>{{ (it.unit||'').split('/')[1] || '件' }}</td>
+                        <td>{{ it.piece_qty||0 }}</td><td>¥{{ (it.price_piece||0).toFixed(2) }}</td>
+                        <td>¥{{ calcItem(it).toFixed(2) }}</td><td>{{ it.remark||'' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="total">合计：¥{{ printOrder.amount.toFixed(2) }}</div>
+                  <div class="sign"><span>送货员：__________</span><span>客户签字：__________</span><span>日期：__________</span></div>
+                </div>
+              </div>
+              <div v-else class="empty">请选择订单进行打印预览</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-mask" v-if="pcViewingOrder" @click.self="pcViewingOrder=null">
+    <div class="modal">
+      <div class="modal-h"><span>订单详情 · {{ pcViewingOrder.orderNo }}</span><button class="pc-link" @click="pcViewingOrder=null">✕</button></div>
+      <div class="modal-b">
+        <div style="display:flex;gap:20px;margin-bottom:14px;flex-wrap:wrap;">
+          <div><strong>客户：</strong>{{ pcViewingOrder.customer }}</div>
+          <div><strong>区域：</strong>{{ pcViewingOrder.region }}</div>
+          <div><strong>下单员：</strong>{{ pcViewingOrder.created_by_name }}</div>
+          <div><strong>时间：</strong>{{ fmtTime(pcViewingOrder.time) }}</div>
+          <div><strong>状态：</strong><span class="tag" :class="'tag-'+pcViewingOrder.status">{{ statusLabel(pcViewingOrder.status) }}</span></div>
+        </div>
+        <table class="pc-table">
+          <thead><tr><th>序号</th><th>商品</th><th>件数</th><th>零数</th><th>件价</th><th>零价</th><th>金额</th></tr></thead>
+          <tbody>
+            <tr v-for="(it,idx) in pcViewingOrder.items" :key="idx">
+              <td>{{ idx+1 }}</td><td>{{ it.name }}</td><td>{{ it.piece_qty||0 }}</td><td>{{ it.zero_qty||0 }}</td>
+              <td>¥{{ (it.price_piece||0).toFixed(2) }}</td><td>¥{{ (it.price_zero||0).toFixed(2) }}</td>
+              <td>¥{{ calcItem(it).toFixed(2) }}</td>
+            </tr>
+          </tbody>
+          <tfoot><tr style="background:#f5f7fa;font-weight:600;"><td colspan="6">合计</td><td>¥{{ pcViewingOrder.amount.toFixed(2) }}</td></tr></tfoot>
+        </table>
+      </div>
+      <div class="modal-f">
+        <button class="pc-btn" @click="pcViewingOrder=null">关闭</button>
+        <button class="pc-btn primary" @click="printOrderId=pcViewingOrder.id;pcViewingOrder=null;pcPage='print'">🖨️ 打印送货单</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" :class="{show:toast.show}">{{ toast.msg }}</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.prod.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const STORAGE_KEY = 'fh_plan_b_demo_v1';
+const SEED_PRODUCTS = [
+  {material_code:'1', name:"海藻碘", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:45, price_zero:0.75, unit:'包/件'},
+  {material_code:'2', name:"淮盐400g", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:36, price_zero:0.72, unit:'包/件'},
+  {material_code:'3', name:"淮盐500g", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:70, price_zero:1.75, unit:'包/件'},
+  {material_code:'4', name:"吾宠湾粥", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:45, price_zero:1.125, unit:'杯/件'},
+  {material_code:'5', name:"老酸奶", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:45, price_zero:1.5, unit:'杯/件'},
+  {material_code:'6', name:"西安小包包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件'},
+  {material_code:'14', name:"永和豆浆", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:72, price_zero:1.2, unit:'袋/件'},
+  {material_code:'23', name:"小笼包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件'},
+  {material_code:'45', name:"手抓饼", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:85, price_zero:0.85, unit:'张/件'},
+  {material_code:'46', name:"葱油饼", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:130, price_zero:10.83, unit:'包/件'},
+  {material_code:'93', name:"调货商品A", spec:'调货', pricing_mode:'unit', unit_piece_qty:1, price_piece:0, price_zero:5, unit:'个/件'},
+  {material_code:'122', name:"龙须面", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:60, price_zero:3, unit:'包/件'},
+  {material_code:'127', name:"饺子皮", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:45, price_zero:1.5, unit:'包/件'},
+  {material_code:'147', name:"馄饨皮", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:48, price_zero:1.2, unit:'包/件'},
+];
+const SEED_CUSTOMERS = [
+  {name:'万友超市', region:'白河县', phone:'13800138001', contact:'王老板'},
+  {name:'二幼千层破酥包', region:'旬阳市', phone:'13800138002', contact:'李师傅'},
+  {name:'老街口包子铺', region:'白河县', phone:'13800138004', contact:'刘老板'},
+  {name:'家惠购物广场', region:'汉滨区', phone:'13800138005', contact:'赵经理'},
+  {name:'金州超市', region:'汉滨区', phone:'13800138006', contact:'陈经理'},
+  {name:'万达百货', region:'白河县', phone:'13800138007', contact:'孙主管'},
+  {name:'鑫盛小吃', region:'汉阴县', phone:'13800138010', contact:'张老板'},
+  {name:'美味佳餐厅', region:'石泉县', phone:'13800138011', contact:'陈店长'},
+  {name:'龙华购物', region:'紫阳县', phone:'13800138012', contact:'吴经理'},
+  {name:'东方超市', region:'岚皋县', phone:'13800138013', contact:'郑主管'},
+];
+const ROLE_NAMES = { admin:'管理员', warehouse:'李库管', orderer:'张经理' };
+const ROLE_DESCS = { admin:'全部权限', warehouse:'确认订单+导出', orderer:'下单+打印' };
+function genSeedOrders(){
+  const now = new Date();
+  const p = mc => SEED_PRODUCTS.find(x=>x.material_code===mc);
+  const mkItem = (mc, pq, zq) => ({...p(mc), piece_qty:pq, zero_qty:zq, remark:''});
+  const mk = (cust, items, hoursAgo, status, creator, payment, auto) => {
+    const time = new Date(now.getTime()-hoursAgo*3600000).toISOString();
+    const datePart = time.slice(0,10).replace(/-/g,'');
+    const c = SEED_CUSTOMERS.find(x=>x.name===cust);
+    return {
+      id: 'ord_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+      orderNo: 'FH-'+datePart+'-'+String(Math.floor(Math.random()*9000)+1000),
+      customer: cust, region: c?.region||'汉滨区', phone: c?.phone||'', contact: c?.contact||'',
+      items, time, payment, status, created_by_name: creator, auto_confirmed: !!auto,
+      amount: items.reduce((s,it)=>s+(it.piece_qty||0)*(it.price_piece||0)+(it.zero_qty||0)*(it.price_zero||0),0)
+    };
+  };
+  return [
+    mk('万友超市',[mkItem('1',2,10),mkItem('23',3,25)],0,'submitted','张经理','cash'),
+    mk('家惠购物广场',[mkItem('45',5,0),mkItem('46',1,15),mkItem('122',2,5)],1,'submitted','张经理','credit'),
+    mk('金州超市',[mkItem('1',5,0),mkItem('4',2,10),mkItem('93',0,30)],4,'confirmed','张经理','cash'),
+    mk('万达百货',[mkItem('23',1,50),mkItem('45',3,0)],5,'confirmed','张经理','credit',true),
+    mk('老街口包子铺',[mkItem('4',4,8),mkItem('93',0,15)],2,'submitted','刘业务','cash'),
+    mk('二幼千层破酥包',[mkItem('5',1,30),mkItem('6',2,80)],3,'confirmed','刘业务','credit'),
+    mk('鑫盛小吃',[mkItem('14',3,10),mkItem('5',2,15)],1.5,'confirmed','刘业务','cash'),
+    mk('美味佳餐厅',[mkItem('14',3,10),mkItem('5',2,15),mkItem('2',1,45)],2.5,'submitted','刘业务','credit'),
+    mk('龙华购物',[mkItem('46',2,8),mkItem('45',3,12)],3.5,'confirmed','管理员','cash'),
+    mk('东方超市',[mkItem('4',1,20),mkItem('5',2,10),mkItem('14',3,0)],4.5,'confirmed','管理员','credit',true),
+    mk('万友超市',[mkItem('2',3,15),mkItem('3',2,8)],24,'confirmed','张经理','cash'),
+    mk('金州超市',[mkItem('5',2,30),mkItem('14',1,6)],25,'completed','张经理','credit'),
+    mk('老街口包子铺',[mkItem('23',5,20),mkItem('6',3,10)],26,'confirmed','刘业务','cash'),
+    mk('美味佳餐厅',[mkItem('14',2,8),mkItem('5',1,5),mkItem('4',4,20)],27,'completed','刘业务','credit'),
+    mk('龙华购物',[mkItem('45',3,15),mkItem('46',2,0)],28,'confirmed','管理员','cash'),
+    mk('家惠购物广场',[mkItem('1',2,8),mkItem('2',1,4),mkItem('3',3,12)],48,'completed','张经理','credit'),
+    mk('万达百货',[mkItem('14',1,6),mkItem('5',2,15)],49,'completed','张经理','cash'),
+    mk('二幼千层破酥包',[mkItem('23',4,20),mkItem('45',2,10),mkItem('46',3,0)],50,'completed','刘业务','credit'),
+    mk('鑫盛小吃',[mkItem('4',2,10),mkItem('14',1,5)],51,'completed','刘业务','cash'),
+    mk('东方超市',[mkItem('46',1,0),mkItem('45',2,8)],168,'completed','管理员','credit'),
+    mk('东方超市',[mkItem('14',1,6),mkItem('23',2,10),mkItem('4',1,0)],192,'completed','管理员','cash'),
+  ];
+}
+function loadData(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { products:JSON.parse(JSON.stringify(SEED_PRODUCTS)), customers:JSON.parse(JSON.stringify(SEED_CUSTOMERS)), orders: genSeedOrders() };
+}
+const { createApp, ref, reactive, computed } = Vue;
+createApp({
+  setup(){
+    const persisted = loadData();
+    const products = ref(persisted.products);
+    const customers = ref(persisted.customers);
+    const orders = ref(persisted.orders);
+    const device = ref('mp');
+    const currentRole = ref('orderer');
+    const roleName = computed(()=> ROLE_NAMES[currentRole.value]);
+    const roleDesc = computed(()=> ROLE_DESCS[currentRole.value]);
+    const mpPage = ref('home');
+    const mpTime = computed(()=> { const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); });
+    const pcPage = ref('confirm');
+    const whTab = ref('pending');
+    const exportTab = ref('warehouse');
+    const pcViewingOrder = ref(null);
+    function fmtTime(iso){ const d=new Date(iso); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+    function statusLabel(s){ return {submitted:'待确认',confirmed:'已确认',completed:'已完成',cancelled:'已取消'}[s]||s; }
+    function calcItem(it){
+      const pq=it.piece_qty||0, zq=it.zero_qty||0, pp=it.price_piece||0, pz=it.price_zero||0;
+      if(it.pricing_mode==='piece') return pq*pp;
+      if(it.pricing_mode==='unit') return zq*pz;
+      return pq*pp+zq*pz;
+    }
+    function sameDay(iso, d){ return new Date(iso).toDateString() === d.toDateString(); }
+    function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    function monthStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+    function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({products:products.value, customers:customers.value, orders:orders.value})); }
+    const toast = reactive({show:false, msg:''});
+    let toastTimer = null;
+    function showToast(msg){ toast.msg=msg; toast.show=true; clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.show=false,1800); }
+    const mpTodayOrders = computed(()=> orders.value.filter(o=> sameDay(o.time,new Date()) && o.created_by_name===ROLE_NAMES[currentRole.value]).length);
+    const mpTodayAmount = computed(()=> orders.value.filter(o=> sameDay(o.time,new Date()) && o.created_by_name===ROLE_NAMES[currentRole.value]).reduce((s,o)=>s+o.amount,0));
+    const monthOrders = computed(()=>{ const n=new Date(); return orders.value.filter(o=>{const d=new Date(o.time);return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth();}); });
+    const monthAmount = computed(()=> monthOrders.value.reduce((s,o)=>s+o.amount,0));
+    const pendingOrders = computed(()=> orders.value.filter(o=> o.status==='submitted' && sameDay(o.time,new Date())));
+    const confirmedTodayOrders = computed(()=> orders.value.filter(o=> o.status==='confirmed' && sameDay(o.time,new Date())));
+    const myOrders = computed(()=>{
+      if(currentRole.value==='orderer') return orders.value.filter(o=> o.created_by_name===ROLE_NAMES[currentRole.value]).sort((a,b)=>new Date(b.time)-new Date(a.time));
+      return orders.value.slice().sort((a,b)=>new Date(b.time)-new Date(a.time));
+    });
+    const orderForm = reactive({ customer:'', region:'', phone:'', contact:'', payment:'cash', items:[] });
+    const editingOrderNo = ref(null);
+    const orderFormTotal = computed(()=> orderForm.items.reduce((s,it)=>s+calcItem(it),0));
+    function goNewOrder(){ orderForm.customer=''; orderForm.region=''; orderForm.phone=''; orderForm.contact=''; orderForm.payment='cash'; orderForm.items=[]; editingOrderNo.value=null; mpPage.value='newOrder'; }
+    function onCustomerChange(){ const c=customers.value.find(x=>x.name===orderForm.customer); if(c){ orderForm.region=c.region; orderForm.phone=c.phone; orderForm.contact=c.contact; } }
+    const productPickerShow = ref(false);
+    const productKw = ref('');
+    const filteredPickerProducts = computed(()=>{
+      if(!productKw.value) return products.value;
+      const kw = productKw.value.toLowerCase();
+      return products.value.filter(p=> p.material_code.includes(kw)||p.name.toLowerCase().includes(kw));
+    });
+    function openProductPicker(){ productPickerShow.value=true; productKw.value=''; }
+    function addProductToCart(p){ orderForm.items.push({...p, piece_qty:0, zero_qty:0, remark:''}); productPickerShow.value=false; }
+    function submitOrder(){
+      if(!orderForm.customer){ showToast('请选择客户'); return; }
+      if(orderForm.items.length===0){ showToast('请添加商品'); return; }
+      const items = orderForm.items.map(it=>({...it, piece_qty:Number(it.piece_qty)||0, zero_qty:Number(it.zero_qty)||0}));
+      const amount = items.reduce((s,it)=>s+calcItem(it),0);
+      if(editingOrderNo.value){
+        const idx = orders.value.findIndex(o=>o.orderNo===editingOrderNo.value);
+        if(idx>=0){
+          orders.value[idx] = {...orders.value[idx], customer:orderForm.customer, region:orderForm.region, phone:orderForm.phone, contact:orderForm.contact, items, amount, payment:orderForm.payment, status:'submitted', warehouse_confirmed:false, auto_confirmed:false, confirmed_by:null, confirmed_at:null};
+          showToast('订单已修改，回退待确认');
+        }
+      } else {
+        const now = new Date();
+        const dp = now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+        const seq = String(orders.value.filter(o=>o.orderNo.includes(dp)).length+1).padStart(4,'0');
+        orders.value.push({
+          id:'ord_'+Date.now()+'_'+Math.random().toString(36).substr(2,5),
+          orderNo:'FH-'+dp+'-'+seq,
+          customer:orderForm.customer, region:orderForm.region, phone:orderForm.phone, contact:orderForm.contact,
+          items, amount, payment:orderForm.payment, status:'submitted',
+          created_by_name: ROLE_NAMES[currentRole.value], time:now.toISOString(), auto_confirmed:false
+        });
+        showToast('订单已提交');
+      }
+      persist();
+      mpPage.value='orders';
+    }
+    const viewingOrder = ref(null);
+    function viewOrder(o){ viewingOrder.value=o; mpPage.value='detail'; }
+    function editOrder(o){ orderForm.customer=o.customer; orderForm.region=o.region; orderForm.phone=o.phone; orderForm.contact=o.contact; orderForm.payment=o.payment; orderForm.items=o.items.map(it=>({...it})); editingOrderNo.value=o.orderNo; mpPage.value='newOrder'; }
+    const btShow = ref(false);
+    const btConnected = ref(null);
+    const btPrintOrder = ref(null);
+    const btDevices = ref([
+      {id:'DC:0D:30:00:11:22', name:'芯烨XP-58IIH (热敏58mm)', rssi:'-45dBm'},
+      {id:'DC:0D:30:00:33:44', name:'佳博GP-3120TU (热敏80mm)', rssi:'-62dBm'},
+      {id:'00:11:22:33:44:55', name:'汉印HM-A300 (便携热敏)', rssi:'-71dBm'},
+    ]);
+    function openBluetooth(){ btShow.value=true; btConnected.value=null; btPrintOrder.value=null; }
+    function openBluetoothForOrder(o){ btShow.value=true; btConnected.value=null; btPrintOrder.value=o; }
+    function connectBt(d){ btConnected.value=d; showToast('已连接：'+d.name); }
+    function btDisconnect(){ btConnected.value=null; btShow.value=false; }
+    function doBtPrint(){ showToast('🖨️ 已发送打印指令（'+btConnected.value.name+'）'); setTimeout(()=>{ btShow.value=false; }, 800); }
+    function confirmOrder(o){
+      if(currentRole.value==='orderer'){ showToast('无权限'); return; }
+      o.status='confirmed'; o.warehouse_confirmed=true; o.confirmed_by=ROLE_NAMES[currentRole.value]; o.confirmed_at=new Date().toISOString(); o.auto_confirmed=false;
+      persist(); showToast('已确认：'+o.orderNo);
+    }
+    function confirmAllPending(){
+      if(currentRole.value==='orderer'){ showToast('无权限'); return; }
+      const list = pendingOrders.value;
+      if(list.length===0){ showToast('暂无待确认'); return; }
+      list.forEach(o=>{ o.status='confirmed'; o.warehouse_confirmed=true; o.confirmed_by=ROLE_NAMES[currentRole.value]; o.confirmed_at=new Date().toISOString(); o.auto_confirmed=false; });
+      persist(); showToast('已批量确认 '+list.length+' 笔');
+    }
+    function simulateAutoConfirm(){
+      if(currentRole.value==='orderer'){ showToast('无权限'); return; }
+      const list = pendingOrders.value;
+      if(list.length===0){ showToast('暂无待确认'); return; }
+      list.forEach(o=>{ o.status='confirmed'; o.warehouse_confirmed=true; o.confirmed_by='system_auto'; o.confirmed_at=new Date().toISOString(); o.auto_confirmed=true; });
+      persist(); showToast('16:00 自动通过 '+list.length+' 笔');
+    }
+    const exportFilter = reactive({ preset:'today', dateFrom:'', dateTo:'', region:'' });
+    function applyExportPreset(){
+      if(exportFilter.preset==='today'){ exportFilter.dateFrom=todayStr(); exportFilter.dateTo=todayStr(); }
+      else if(exportFilter.preset==='month'){ const m=monthStr(); exportFilter.dateFrom=m+'-01'; const d=new Date(); const last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); exportFilter.dateTo=m+'-'+String(last).padStart(2,'0'); }
+    }
+    applyExportPreset();
+    const allRegions = computed(()=>{ const s=new Set(); customers.value.forEach(c=>s.add(c.region)); return Array.from(s); });
+    const exportOrders = computed(()=>{
+      let list = orders.value;
+      if(exportFilter.dateFrom) list = list.filter(o=> o.time>=exportFilter.dateFrom+'T00:00:00');
+      if(exportFilter.dateTo) list = list.filter(o=> o.time<=exportFilter.dateTo+'T23:59:59');
+      if(exportFilter.region) list = list.filter(o=> o.region===exportFilter.region);
+      return list;
+    });
+    const warehouseExportData = computed(()=>{
+      const rows=[];
+      exportOrders.value.forEach(o=>{
+        const date=o.time.slice(0,10);
+        o.items.forEach(it=>{
+          if(it.piece_qty>0) rows.push({date, region:o.region, customer:o.customer, product:it.name, unit:(it.unit||'').split('/')[1]||'件', qty:it.piece_qty, remark:it.remark||''});
+          if(it.zero_qty>0) rows.push({date, region:o.region, customer:o.customer, product:it.name, unit:(it.unit||'').split('/')[0]||'个', qty:it.zero_qty, remark:it.remark||''});
+        });
+      });
+      return rows;
+    });
+    const productExportData = computed(()=>{
+      const map={};
+      exportOrders.value.forEach(o=>o.items.forEach(it=>{
+        const k=it.material_code;
+        if(!map[k]) map[k]={material_code:it.material_code,name:it.name,spec:it.spec,pieceQty:0,zeroQty:0,amount:0,orderCount:0};
+        map[k].pieceQty+=it.piece_qty||0; map[k].zeroQty+=it.zero_qty||0; map[k].amount+=calcItem(it); map[k].orderCount+=1;
+      }));
+      return Object.values(map).sort((a,b)=>b.amount-a.amount);
+    });
+    const customerExportData = computed(()=>{
+      const rows=[];
+      exportOrders.value.forEach(o=>{
+        const date=o.time.slice(0,10);
+        o.items.forEach(it=>{
+          if(it.piece_qty>0) rows.push({date,region:o.region,customer:o.customer,product:it.name,unit:(it.unit||'').split('/')[1]||'件',qty:it.piece_qty,unitPrice:it.price_piece||0,amount:(it.piece_qty||0)*(it.price_piece||0),remark:it.remark||''});
+          if(it.zero_qty>0) rows.push({date,region:o.region,customer:o.customer,product:it.name,unit:(it.unit||'').split('/')[0]||'个',qty:it.zero_qty,unitPrice:it.price_zero||0,amount:(it.zero_qty||0)*(it.price_zero||0),remark:it.remark||''});
+        });
+      });
+      return rows;
+    });
+    function doExport(){
+      let data, sheetName, filename;
+      if(exportTab==='warehouse'){
+        data = warehouseExportData.value.map((r,i)=>({编号:i+1,时间:r.date,区域:r.region,客户:r.customer,商品:r.product,单位:r.unit,数量:r.qty,备注:r.remark}));
+        sheetName='库单'; filename=`库单_${exportFilter.dateFrom}_${exportFilter.dateTo}.xlsx`;
+      } else if(exportTab==='product'){
+        data = productExportData.value.map(r=>({料号:r.material_code,商品名称:r.name,规格:r.spec,件数合计:r.pieceQty,零数合计:r.zeroQty,金额合计:r.amount.toFixed(2),订单数:r.orderCount}));
+        sheetName='商品汇总'; filename=`商品汇总_${exportFilter.dateFrom}_${exportFilter.dateTo}.xlsx`;
+      } else {
+        data = customerExportData.value.map((r,i)=>({编号:i+1,时间:r.date,区域:r.region,客户:r.customer,商品:r.product,单位:r.unit,数量:r.qty,单价:r.unitPrice.toFixed(2),金额:r.amount.toFixed(2),备注:r.remark}));
+        sheetName='客户汇总'; filename=`客户汇总_${exportFilter.dateFrom}_${exportFilter.dateTo}.xlsx`;
+      }
+      if(data.length===0){ showToast('暂无数据可导出'); return; }
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      XLSX.writeFile(wb, filename);
+      showToast('已导出 '+filename);
+    }
+    const printableOrders = computed(()=> orders.value.slice().sort((a,b)=>new Date(b.time)-new Date(a.time)));
+    const printOrderId = ref('');
+    const printOrder = computed(()=> orders.value.find(o=>o.id===printOrderId.value));
+    function doPrint(){ if(!printOrderId.value){ showToast('请选择订单'); return; } window.print(); }
+    function resetData(){
+      if(!confirm('确定重置演示数据？')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      const fresh = loadData();
+      products.value = fresh.products;
+      customers.value = fresh.customers;
+      orders.value = fresh.orders;
+      showToast('数据已重置');
+    }
+    return {
+      device, currentRole, roleName, roleDesc, resetData,
+      products, customers, orders,
+      mpPage, mpTime, mpTodayOrders, mpTodayAmount, monthOrders, monthAmount,
+      pendingOrders, confirmedTodayOrders, myOrders,
+      orderForm, editingOrderNo, orderFormTotal, goNewOrder, onCustomerChange,
+      productPickerShow, productKw, filteredPickerProducts, openProductPicker, addProductToCart,
+      submitOrder, viewingOrder, viewOrder, editOrder,
+      btShow, btConnected, btPrintOrder, btDevices, openBluetooth, openBluetoothForOrder, connectBt, btDisconnect, doBtPrint,
+      pcPage, whTab, exportTab, pcViewingOrder,
+      confirmOrder, confirmAllPending, simulateAutoConfirm,
+      exportFilter, applyExportPreset, allRegions,
+      warehouseExportData, productExportData, customerExportData, doExport,
+      printableOrders, printOrderId, printOrder, doPrint,
+      fmtTime, statusLabel, calcItem, toast
+    };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
