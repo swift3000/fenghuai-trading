@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+._*
+__MACOSX/
+.env
+dist/
+unpackage/
+miniprogram_npm/
+*.xlsx
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.txt
+!_DEFAULT_*.txt
