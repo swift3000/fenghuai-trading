@@ -4,9 +4,9 @@
 > **编写日期**：2026-07-30  
 > **状态**：已定稿  
 > **目标读者**：前端工程师、后端工程师、测试工程师  
-> **对应版本**：v1.0（极简闭环版，3周交付，5,000元）
+> **对应版本**：v1.0（极简闭环版，3周交付，技术服务费5,000元）
 > **工期**：3周  
-> **预算**：5,000元
+> **预算**：5,000元（技术服务费，不含小程序注册/认证/云资源等甲方承担的第三方费用）
 
 ---
 
@@ -248,55 +248,229 @@
 - ~~account_inheritance_logs~~：直接在 users 表标记 inherited_from，不记独立日志
 - ~~operation_logs~~：极简版不做操作审计日志
 - ~~system_configs~~：合并到 `system-config` 云函数内默认配置，独立集合无必要
+- ~~announcements~~：极简版不做系统公告
+- ~~backups~~：云开发自带每日备份，无需自建备份表
+
+### 4.2 集合详细设计
+
+#### 4.2.1 `regions` — 客户区域
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `name` | String | ✅ | — | 区域名称（如"汉滨区"） |
+| `sort` | Number | ✅ | `0` | 排序值 |
+| `status` | String | ✅ | `"active"` | active / inactive |
+| `created_at` | Date | ✅ | `new Date()` | 创建时间 |
+| `updated_at` | Date | ✅ | `new Date()` | 更新时间 |
+
+**预置 11 个**：白河县、汉滨区、旬阳市、汉阴县、岚皋县、平利县、石泉县、紫阳县、宁陕县、镇坪县、外县。仅可停用不可删除。
+
+#### 4.2.2 `products` — 商品信息
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `sku_code` | String | ✅ | — | SKU 编码，唯一；93开头为调货商品 |
+| `name` | String | ✅ | — | 商品名称 |
+| `category` | String | ❌ | `""` | 分类（字符串枚举，如"蔬菜""肉类"，不建独立集合） |
+| `unit` | String | ✅ | — | 计量单位，如"斤""箱""个" |
+| `pricing_mode` | String | ✅ | `"case"` | case / piece / unit |
+| `spec` | String | ✅ | — | 规格，如"1×24" |
+| `unit_piece_qty` | Number | ✅ | `1` | 每件零数 |
+| `price_piece` | Number | ❌ | `null` | 件价 |
+| `price_zero` | Number | ❌ | `null` | 零价 |
+| `pinyin` | String | ❌ | `""` | 拼音首字母 |
+| `status` | String | ✅ | `"active"` | active / disabled |
+| `sort` | Number | ❌ | `0` | 排序值 |
+| `created_by` | String | ❌ | `null` | 创建人ID |
+| `created_at` | Date | ✅ | `new Date()` | 创建时间 |
+| `updated_at` | Date | ✅ | `new Date()` | 更新时间 |
+
+**索引**：
+- `{ sku_code: 1 }` 唯一索引
+- `{ category: 1, status: 1, sort: 1 }` 分类浏览
+- `{ name: "text" }` 名称搜索
+- `{ pinyin: 1 }` 拼音搜索
+
+#### 4.2.3 `customers` — 客户信息
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `name` | String | ✅ | — | 客户名称 |
+| `alias` | String | ❌ | `""` | 别名/简称 |
+| `contact` | String | ❌ | `""` | 联系人 |
+| `phone` | String | ❌ | `""` | 联系电话 |
+| `address` | String | ❌ | `""` | 收货地址 |
+| `region_id` | String | ✅ | — | 所属区域 ID |
+| `region_name` | String | ✅ | — | 区域名称（冗余） |
+| `total_orders` | Number | ✅ | `0` | 累计订单数 |
+| `total_amount` | Number | ✅ | `0` | 累计金额 |
+| `last_order_at` | Date | ❌ | `null` | 最近下单时间 |
+| `status` | String | ✅ | `"active"` | active / disabled |
+| `created_by` | String | ❌ | `null` | 创建人ID |
+| `created_at` | Date | ✅ | `new Date()` | 创建时间 |
+| `updated_at` | Date | ✅ | `new Date()` | 更新时间 |
+
+**索引**：`{ name: "text" }`、`{ region_id: 1, status: 1 }`、`{ last_order_at: -1 }`
+
+#### 4.2.4 `users` — 系统用户
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `wx_openid` | String | ❌ | `null` | 微信 OpenID，唯一 |
+| `username` | String | ❌ | `""` | Web 后台登录用户名 |
+| `password_hash` | String | ❌ | `""` | 密码哈希（bcrypt） |
+| `name` | String | ✅ | — | 真实姓名 |
+| `phone` | String | ❌ | `""` | 手机号 |
+| `role` | String | ✅ | `"orderer"` | admin / orderer / warehouse |
+| `is_inherited` | Boolean | ✅ | `false` | 是否继承账号 |
+| `inherited_from` | String | ❌ | `null` | 继承自哪个用户ID |
+| `status` | String | ✅ | `"active"` | active / disabled |
+| `last_login_at` | Date | ❌ | `null` | 最后登录 |
+| `created_at` | Date | ✅ | `new Date()` | 创建时间 |
+| `updated_at` | Date | ✅ | `new Date()` | 更新时间 |
+
+**索引**：`{ wx_openid: 1 }` 唯一（部分索引）、`{ username: 1 }` 唯一（部分索引）
+
+#### 4.2.5 `orders` — 订单主表
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `order_no` | String | ✅ | — | FH-YYYYMMDD-NNNN |
+| `customer_id` | String | ✅ | — | 客户ID |
+| `customer_name` | String | ✅ | — | 客户名称（冗余） |
+| `customer_region` | String | ✅ | — | 客户区域（冗余） |
+| `total_amount` | Number | ✅ | `0` | 总金额（4位小数存储，2位显示） |
+| `item_count` | Number | ✅ | `0` | 商品种类数 |
+| `total_qty` | Number | ✅ | `0` | 总数量 |
+| `status` | String | ✅ | `"draft"` | draft / submitted / confirmed / completed / cancelled |
+| `payment_method` | String | ✅ | `"cash"` | cash / credit |
+| `is_printed` | Boolean | ✅ | `false` | 是否已打印 |
+| `printed_at` | Date | ❌ | `null` | 打印时间 |
+| `remark` | String | ❌ | `""` | 整单备注 |
+| `items_snapshot` | Array | ✅ | — | 订单商品快照 |
+| `network_time` | Date | ✅ | `new Date()` | 订单时间（网络） |
+| `created_by` | String | ✅ | — | 创建人 user_id |
+| `created_by_name` | String | ❌ | `""` | 创建人姓名（冗余） |
+| `created_at` | Date | ✅ | `new Date()` | 创建时间 |
+| `updated_at` | Date | ✅ | `new Date()` | 更新时间 |
+| `submitted_at` | Date | ❌ | `null` | 提交时间 |
+| `completed_at` | Date | ❌ | `null` | 完成时间 |
+| `cancelled_at` | Date | ❌ | `null` | 取消时间 |
+| `cancelled_reason` | String | ❌ | `""` | 取消原因 |
+
+**状态机**：
+```
+draft → submitted → confirmed → completed
+  ↓         ↓            ↓
+  └──── cancelled ────────┘
+```
+
+**索引**：`{ order_no: -1 }` 唯一、`{ status: 1, created_at: -1 }`、`{ customer_id: 1, created_at: -1 }`、`{ created_by: 1, created_at: -1 }`、`{ network_time: -1 }`、`{ customer_region: 1, network_time: -1 }`
+
+#### 4.2.6 `order_items` — 订单明细
+
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `_id` | String | 自动 | — | 云开发自动生成 |
+| `order_id` | String | ✅ | — | 所属订单 ID |
+| `product_id` | String | ✅ | — | 商品 ID |
+| `product_sku` | String | ✅ | — | SKU（快照） |
+| `product_name` | String | ✅ | — | 名称（快照） |
+| `product_spec` | String | ✅ | — | 规格（快照） |
+| `pricing_mode` | String | ✅ | — | 计件模式（快照） |
+| `unit_piece_qty` | Number | ✅ | — | 每件零数（快照） |
+| `piece_qty` | Number | ✅ | `0` | 件数 |
+| `zero_qty` | Number | ✅ | `0` | 零数 |
+| `unit_price_piece` | Number | ✅ | — | 件价（快照，可改价） |
+| `unit_price_zero` | Number | ✅ | — | 零价（快照，可改价） |
+| `is_price_modified` | Boolean | ✅ | `false` | 是否改价 |
+| `original_price_piece` | Number | ❌ | `null` | 原始件价（改价前，替代独立 price_changes 表） |
+| `original_price_zero` | Number | ❌ | `null` | 原始零价（改价前） |
+| `amount` | Number | ✅ | — | 小计金额 |
+| `remark` | String | ❌ | `""` | 单项备注 |
+| `snapshot_at` | Date | ✅ | `new Date()` | 快照时间 |
+
+**索引**：`{ order_id: 1 }`、`{ product_id: 1 }`
+
+### 4.3 订单快照结构
+
+随 `orders.items_snapshot` 一并写入，保证原子性：
+
+```jsonc
+{
+  "items_snapshot": [
+    {
+      "product_id": "abc123",
+      "sku": "VEG-001",
+      "name": "有机西红柿",
+      "spec": "1×24",
+      "pricing_mode": "case",
+      "unit_piece_qty": 24,
+      "piece_qty": 1,
+      "zero_qty": 5,
+      "unit_price_piece": 120.00,
+      "unit_price_zero": 5.00,
+      "amount": 145.00,
+      "snapshot_at": "2026-07-30T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+### 4.4 账号继承（极简实现）
+
+员工离职时管理员操作：
+1. `user-write` 云函数接收 `{ from_user_id, to_user_id }`
+2. 批量更新 `orders.created_by`、`customers.created_by`、`products.created_by` 字段
+3. 设置原用户 `status=disabled`、`is_inherited=true`、`inherited_from` 空
+4. 新用户 `is_inherited=true`、`inherited_from=from_user_id`
 
 ---
 
-## 5. 接口契约规范
+## 5. 接口设计
 
-### 5.1 通用返回格式
+### 5.1 云函数总览（仅 8 个）
 
-```json
+| 云函数名 | 入参 event 字段 | 返回 data | 权限 |
+|----------|----------------|-----------|------|
+| **auth-login** | `{ code }`（wx.login code） | `{ token, user }` | 公开 |
+| **data-query** | `{ type, filter, page, page_size, sort }`<br>`type` ∈ products/customers/regions/orders/order_items/users | `{ list, pagination }` 或单条详情 | 登录用户按角色过滤 |
+| **product-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin/orderer |
+| **customer-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin/orderer |
+| **order-write** | `{ action, id?, data }`<br>`action`: create/update-status/copy/modify-price/mark-printed | `{ order_id, order_no }` | 按 action 校验角色 |
+| **region-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin |
+| **user-write** | `{ action: 'create'/'update'/'disable'/'inherit', data, id?, from_id?, to_id? }` | `{ _id }` | admin |
+| **system-config** | `{ action: 'get'/'set', key?, value? }` | `{ config }` | admin |
+
+### 5.2 统一响应格式
+
+```jsonc
 {
-  "code": 0,
-  "message": "success",
-  "data": {},
-  "timestamp": 1722172800000
+  "code": 0,          // 0成功；非0错误码
+  "message": "ok",
+  "data": { ... },
+  "timestamp": 1785340800000
 }
 ```
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| code | Number | 0=成功，非0=失败（见错误码表） |
-| message | String | 提示信息（前端直接展示） |
-| data | Any | 业务数据，对象/数组/Null |
-| timestamp | Number | 服务器时间戳（毫秒） |
+### 5.3 错误码规范（极简版）
 
-### 5.2 错误码表（极简8个）
-
-| 编号 | code | 说明 |
-|------|------|------|
+| 范围 | 错误码 | 说明 |
+|------|--------|------|
 | 0 | 0 | 成功 |
-| 1xxxx | 1001 | 参数错误 |
-| | 1002 | 未登录 / Token无效 |
-| | 2001 | 无权限 |
-| | 2002 | 数据不存在 |
+| 1xxxx | 1001 | 参数校验失败 |
+| | 1002 | 资源不存在 |
+| | 1003 | 资源已存在 |
+| 2xxxx | 2001 | 未登录 |
+| | 2002 | 无权限 |
 | | 2003 | 账户已禁用 |
 | 3xxxx | 3002 | 订单状态不允许此操作 |
 | 5xxxx | 5001 | 服务器内部错误 |
-
-### 5.3 分页结构
-
-```json
-{
-  "list": [],
-  "pagination": {
-    "page": 1,
-    "page_size": 20,
-    "total": 100,
-    "total_pages": 5
-  }
-}
-```
 
 ### 5.4 data-query 通用查询规范
 
@@ -495,7 +669,9 @@ async function exportOrders(filter) {
 
 ---
 
-## 7.3 成本明细（总预算 5,000 元）
+## 7.3 成本明细（技术服务费 5,000 元）
+
+> **说明**：以下为开发方收取的技术服务费，即开发与交付总费用 5,000 元。**不含小程序注册、微信认证、云开发资源、域名等甲方自行承担的第三方费用**。
 
 | 序号 | 费用项 | 金额（元） | 说明 |
 |------|--------|-----------|------|
@@ -505,9 +681,19 @@ async function exportOrders(filter) {
 | 4 | 数据库建模 + 预置数据 | 300 | 6 个集合 + 索引 + 11 个 regions + admin 初始账号 |
 | 5 | 蓝牙打印 ESC/POS 指令适配 | 400 | 三款机型适配、二维码/条形码、小票模板 |
 | 6 | 部署 + 联调 + 测试 | 300 | 上传云函数/小程序/静态页；全流程冒烟测试 |
-| **合计** | | **5,000** | 工期 3 周（21 自然日） |
+| **合计** | | **5,000** | 工期 3 周（21 自然日），**技术服务费包干** |
 
-**云开发使用成本（按年预估，不含在 5000 元内）**：
+**甲方自行承担费用（不含在技术服务费内）**：
+
+| 项目 | 费用 | 说明 |
+|------|------|------|
+| 微信小程序注册 | 300元/年 | 微信公众平台注册费 |
+| 微信认证 | 300元/年 | 企业主体认证，每年续费 |
+| 云开发资源 | 约240~300元/年 | 微信云开发基础包 |
+| 域名（如需） | 约100元/年 | Web后台访问域名 |
+| **合计/年** | **约940~1,000元/年** | 由甲方承担 |
+
+**云开发使用成本（按年预估）**：
 - 云函数调用：日均 < 1000 次，约 **0 元 / 月**（免费额度覆盖）
 - 数据库读写：日均 < 5000 次，约 **0 元 / 月**（免费额度覆盖）
 - 静态托管流量：日均 < 1GB，约 **0 元 / 月**
