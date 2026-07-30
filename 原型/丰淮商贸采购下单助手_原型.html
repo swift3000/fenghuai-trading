@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>丰淮商贸采购下单助手</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --green:#07C160;--green-dark:#06AD56;--orange:#FF6B35;--orange-dark:#E55A2B;
+  --bg:#F5F6F8;--card:#FFFFFF;--text:#191919;--text-2:#888888;--text-3:#BBBBBB;
+  --border:#EFEFEF;--shadow:0 2rpx 16rpx rgba(0,0,0,0.04);
+  --radius:16px;--radius-sm:12px;
+  --safe-bottom:env(safe-area-inset-bottom)
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:#E5E5E5;color:var(--text);font-size:28rpx}
+body{display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px 0}
+#phone{width:375px;height:100vh;max-height:812px;background:var(--bg);position:relative;overflow:hidden;border-radius:40px;box-shadow:0 20px 60px rgba(0,0,0,0.15);display:flex;flex-direction:column}
+#status-bar{height:44px;background:transparent;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;color:#000;flex-shrink:0}
+#status-bar .right{display:flex;gap:6px;align-items:center}
+.signal{width:16px;height:10px;background:linear-gradient(to top,#000 75%,#ccc 75%);border-radius:2px}
+.wifi{font-size:12px}
+.battery{width:22px;height:11px;border:1px solid #000;border-radius:3px;position:relative}
+.battery::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:4px;background:#000;border-radius:0 1px 1px 0}
+.battery::before{content:"";position:absolute;left:1px;top:1px;width:14px;height:7px;background:#000;border-radius:1px}
+#nav-bar{height:44px;display:flex;align-items:center;justify-content:center;position:relative;background:transparent;flex-shrink:0}
+#nav-bar .back{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#000;cursor:pointer;border-radius:50%}
+#nav-bar .back:active{background:rgba(0,0,0,0.05)}
+#nav-bar .title{font-size:17px;font-weight:600;color:#000}
+#page-container{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;position:relative}
+#page-container::-webkit-scrollbar{display:none}
+#tab-bar{height:50px;background:#fff;border-top:1px solid var(--border);display:flex;flex-shrink:0;padding-bottom:var(--safe-bottom)}
+#tab-bar .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text-2);font-size:10px;cursor:pointer;transition:color .2s}
+#tab-bar .tab.active{color:var(--green)}
+#tab-bar .tab .icon{font-size:22px;line-height:1}
+#tab-bar .tab:active{transform:scale(0.92)}
+.page{display:none;min-height:100%;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.slide-in{animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.fade-in{animation:fadeIn .3s ease}
+.fade-in-center{animation:fadeInCenter .25s ease}
+@keyframes fadeInCenter{from{opacity:0}to{opacity:1}}
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin:12px;box-shadow:var(--shadow)}
+.card-sm{background:var(--card);border-radius:var(--radius-sm);padding:12px;margin:12px;box-shadow:var(--shadow)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius-sm);font-weight:500;cursor:pointer;transition:all .15s;font-size:14px;border:none;outline:none}
+.btn-primary{background:var(--green);color:#fff;padding:12px 24px;width:100%;font-size:16px;border-radius:24px}
+.btn-primary:active{background:var(--green-dark);transform:scale(0.98)}
+.btn-orange{background:var(--orange);color:#fff;padding:12px 24px;width:100%;font-size:16px;border-radius:24px}
+.btn-orange:active{background:var(--orange-dark)}
+.btn-ghost{background:#fff;color:var(--green);border:1px solid var(--green);padding:10px 20px}
+.btn-block{width:100%;padding:12px;font-size:15px}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+.input,.select{width:100%;height:44px;border:1px solid var(--border);border-radius:10px;padding:0 14px;font-size:14px;background:#fff;outline:none;transition:border-color .2s}
+.input:focus{border-color:var(--green)}
+.input-sm{height:36px;font-size:13px}
+.label{font-size:13px;color:var(--text-2);margin-bottom:6px;display:block}
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}.gap-8{gap:8px}.gap-12{gap:12px}
+.flex-col{flex-direction:column}.flex-1{flex:1}
+.text-muted{color:var(--text-2);font-size:12px}
+.text-green{color:var(--green)}.text-orange{color:var(--orange)}
+.text-lg{font-size:18px;font-weight:600}
+.text-xl{font-size:24px;font-weight:700}
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}
+.p-12{padding:12px}.p-16{padding:16px}
+.hairline{height:1px;background:var(--border);margin:8px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500}
+.badge-green{background:rgba(7,193,96,0.1);color:var(--green)}
+.badge-orange{background:rgba(255,107,53,0.1);color:var(--orange)}
+.badge-gray{background:#F0F0F0;color:var(--text-2)}
+.tag{display:inline-flex;align-items:center;padding:2px 6px;background:#F5F6F8;border-radius:4px;font-size:10px;color:var(--text-2)}
+
+/* Login */
+#login{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;background:linear-gradient(180deg,#fff 0%,#F0FFF6 100%);padding:40px 32px}
+#login .logo{width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,var(--green),#06AD56);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin-bottom:20px;box-shadow:0 12px 32px rgba(7,193,96,0.3)}
+#login .brand{font-size:28px;font-weight:700;margin-bottom:8px}
+#login .slogan{font-size:14px;color:var(--text-2);margin-bottom:60px}
+#login .btn-primary{max-width:300px}
+#login .wechat-icon{display:inline-block;width:20px;height:20px;background:#fff;border-radius:50%;position:relative}
+#login .footer{position:absolute;bottom:32px;font-size:12px;color:var(--text-3)}
+
+/* Home */
+.privacy-banner{display:flex;align-items:center;gap:6px;background:#FFF8E1;border-bottom:1px solid #FFE082;padding:8px 12px;font-size:11px;color:#8D6E26}
+.privacy-banner .privacy-icon{font-size:13px}
+.privacy-banner .privacy-text{flex:1;line-height:1.4}
+.privacy-banner .privacy-link{color:var(--green);font-weight:500;white-space:nowrap;cursor:pointer}
+.privacy-banner .privacy-close{color:#8D6E26;cursor:pointer;padding:2px 4px;font-size:14px;line-height:1}
+.home-hero{background:linear-gradient(180deg,var(--green) 0%,#06AD56 100%);padding:16px 16px 60px;color:#fff}
+.home-hero .user-row{display:flex;align-items:center;gap:12px}
+.home-hero .avatar{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600}
+.home-hero .greeting{font-size:18px;font-weight:600}
+.home-hero .date{font-size:12px;opacity:0.85}
+.announce-bar{display:flex;align-items:center;gap:8px;background:#fff;margin:-44px 12px 12px;position:relative;z-index:2;border-radius:var(--radius);padding:10px 14px;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+.announce-bar .announce-icon{font-size:14px}
+.announce-bar .announce-content{flex:1;min-width:0}
+.announce-bar .announce-text{font-size:12px;color:var(--text);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.announce-bar .announce-dots{display:flex;gap:4px;margin-top:4px}
+.announce-bar .announce-dot{width:4px;height:4px;border-radius:50%;background:var(--text-3);transition:all .2s}
+.announce-bar .announce-dot.active{background:var(--green);width:12px;border-radius:2px}
+.home-stats{display:flex;gap:12px;margin:0 12px 0;position:relative;z-index:1}
+.home-stats .stat{flex:1;background:#fff;border-radius:var(--radius);padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.06);text-align:center}
+.home-stats .num{font-size:24px;font-weight:700;color:var(--green)}
+.home-stats .lbl{font-size:12px;color:var(--text-2);margin-top:4px}
+.home-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:#fff;margin:12px;border-radius:var(--radius);padding:16px 0;box-shadow:var(--shadow)}
+.home-actions .action{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;padding:8px 4px;border-radius:8px;transition:background .15s}
+.home-actions .action:active{background:#F5F6F8}
+.home-actions .action .icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
+.home-actions .action .icon.c1{background:linear-gradient(135deg,#07C160,#06AD56)}
+.home-actions .action .icon.c2{background:linear-gradient(135deg,#FF6B35,#E55A2B)}
+.home-actions .action .icon.c3{background:linear-gradient(135deg,#1989FA,#0F7AE0)}
+.home-actions .action .icon.c4{background:linear-gradient(135deg,#722ED1,#5B1FB0)}
+.home-actions .action .lbl{font-size:12px;color:var(--text)}
+.order-list-item{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer}
+.order-list-item:last-child{border-bottom:none}
+.order-list-item .left .customer{font-size:15px;font-weight:600}
+.order-list-item .left .sub{font-size:12px;color:var(--text-2);margin-top:4px}
+.order-list-item .right{text-align:right}
+.order-list-item .right .amt{font-size:16px;font-weight:600;color:var(--green)}
+.order-list-item .right .time{font-size:11px;color:var(--text-3);margin-top:4px}
+.section-title{font-size:15px;font-weight:600;margin:16px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+.section-title .more{font-size:12px;color:var(--text-2);font-weight:400;cursor:pointer}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text-3)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:0.3}
+.empty-state .text{font-size:14px}
+
+/* New Order */
+.customer-bar{background:#fff;margin:12px;border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);cursor:pointer}
+.customer-bar:active{background:#FAFAFA}
+.customer-bar .info{flex:1}
+.customer-bar .name{font-size:16px;font-weight:600}
+.customer-bar .region{font-size:12px;color:var(--text-2);margin-top:2px}
+.customer-bar .arrow{color:var(--text-3);font-size:18px}
+.customer-bar .placeholder{color:var(--text-2);font-size:14px}
+.payment-bar{background:#fff;margin:12px;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.payment-bar .payment-label{font-size:13px;color:var(--text-2);white-space:nowrap}
+.payment-bar .payment-options{display:flex;gap:8px;flex:1}
+.payment-bar .payment-opt{flex:1;text-align:center;padding:8px 0;border-radius:10px;background:#F5F6F8;font-size:13px;color:var(--text-2);cursor:pointer;transition:all .2s;border:1px solid transparent}
+.payment-bar .payment-opt.active{background:rgba(7,193,96,0.1);color:var(--green);border-color:var(--green);font-weight:500}
+.payment-bar .payment-opt:active{transform:scale(0.97)}
+.product-row{background:#fff;margin:12px;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.product-row .product-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.product-row .pname{font-size:14px;font-weight:600}
+.product-row .pspec{font-size:12px;color:var(--text-2);margin-top:2px}
+.product-row .del{color:var(--text-3);font-size:18px;cursor:pointer;padding:4px}
+.product-row .del:active{color:var(--orange)}
+.product-row .inputs{display:flex;gap:10px;align-items:center}
+.product-row .input-group{flex:1}
+.product-row .input-group .lbl{font-size:11px;color:var(--text-3);margin-bottom:4px}
+.product-row .input-group .val{display:flex;align-items:center;gap:4px}
+.product-row .input-group .val .num{font-size:14px;font-weight:600;min-width:24px;text-align:center}
+.product-row .input-group .val button{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:16px;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.product-row .input-group .val button:active{background:#F5F6F8}
+.product-row .input-group .val .num-input{width:36px;height:28px;border:1px solid var(--border);border-radius:8px;text-align:center;font-size:14px;outline:none}
+.product-row .input-group .val .num-input:focus{border-color:var(--green)}
+.product-row .row-total{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.product-row .row-total .lbl{font-size:12px;color:var(--text-2)}
+.product-row .row-total .amt{font-size:16px;font-weight:700;color:var(--green)}
+.add-product-btn{margin:12px;padding:14px;border:2px dashed var(--border);border-radius:var(--radius);background:#fff;color:var(--text-2);font-size:14px;cursor:pointer;text-align:center;transition:all .2s}
+.add-product-btn:active{border-color:var(--green);color:var(--green);background:#F0FFF6}
+.order-footer{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;z-index:10}
+.order-footer .total{flex:1}
+.order-footer .total .lbl{font-size:12px;color:var(--text-2)}
+.order-footer .total .amt{font-size:22px;font-weight:700;color:var(--orange)}
+.order-footer .save-btn{background:var(--orange);color:#fff;padding:12px 28px;border-radius:24px;font-size:15px;font-weight:600;border:none;cursor:pointer}
+.order-footer .save-btn:active{background:var(--orange-dark)}
+
+/* Order List */
+.filter-tabs{display:flex;gap:8px;padding:12px;background:#fff;position:sticky;top:0;z-index:5}
+.filter-tabs .tab{padding:6px 14px;border-radius:16px;background:#F5F6F8;font-size:13px;color:var(--text-2);cursor:pointer;transition:all .2s}
+.filter-tabs .tab.active{background:var(--green);color:#fff}
+.search-bar{padding:0 12px 12px;background:#fff}
+.search-bar input{width:100%;height:36px;border-radius:18px;background:#F5F6F8;border:none;padding:0 16px;font-size:13px;outline:none}
+.order-card{background:#fff;margin:12px;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);cursor:pointer;transition:transform .15s}
+.order-card:active{transform:scale(0.98)}
+.order-card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.order-card .customer{font-size:15px;font-weight:600}
+.order-card .status{font-size:11px;padding:2px 8px;border-radius:10px}
+.order-card .status.done{background:rgba(7,193,96,0.1);color:var(--green)}
+.order-card .status.pending{background:rgba(255,107,53,0.1);color:var(--orange)}
+.order-card .info{display:flex;gap:16px;font-size:12px;color:var(--text-2);margin-bottom:8px}
+.order-card .bottom{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border)}
+.order-card .amount{font-size:18px;font-weight:700;color:var(--orange)}
+.order-card .order-no{font-size:11px;color:var(--text-3);font-family:monospace}
+
+/* Order Detail */
+.detail-header{background:var(--green);padding:20px 16px;color:#fff;text-align:center}
+.detail-header .order-no{font-size:12px;opacity:0.9;font-family:monospace}
+.detail-header .amount{font-size:28px;font-weight:700;margin:8px 0}
+.detail-header .status{display:inline-block;padding:4px 12px;background:rgba(255,255,255,0.2);border-radius:12px;font-size:12px}
+.detail-section{background:#fff;margin:12px;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.detail-section .sec-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.detail-section .sec-title::before{content:"";width:3px;height:14px;background:var(--green);border-radius:2px}
+.detail-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px}
+.detail-row .lbl{color:var(--text-2)}
+.detail-row .val{color:var(--text);font-weight:500}
+.detail-table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+.detail-table th{background:#F5F6F8;padding:8px;text-align:left;font-weight:500;color:var(--text-2);font-size:12px}
+.detail-table td{padding:8px;border-bottom:1px solid var(--border)}
+.detail-table tfoot td{font-weight:600;background:#FAFAFA}
+.detail-actions{display:flex;gap:10px;margin:12px}
+.detail-actions button{flex:1;padding:12px;border-radius:12px;font-size:13px;border:none;cursor:pointer;font-weight:500}
+.detail-actions .btn-print{background:var(--green);color:#fff}
+.detail-actions .btn-export{background:var(--orange);color:#fff}
+.detail-actions .btn-copy{background:#fff;color:var(--text);border:1px solid var(--border)}
+
+/* Report */
+.report-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border)}
+.report-tabs .tab{flex:1;padding:12px;text-align:center;font-size:14px;color:var(--text-2);cursor:pointer;position:relative}
+.report-tabs .tab.active{color:var(--green);font-weight:600}
+.report-tabs .tab.active::after{content:"";position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:24px;height:3px;background:var(--green);border-radius:2px}
+.report-summary{display:flex;gap:12px;padding:12px}
+.report-summary .sum-card{flex:1;background:#fff;border-radius:var(--radius);padding:14px;text-align:center;box-shadow:var(--shadow)}
+.report-summary .sum-card .num{font-size:22px;font-weight:700}
+.report-summary .sum-card .num.green{color:var(--green)}
+.report-summary .sum-card .num.orange{color:var(--orange)}
+.report-summary .sum-card .lbl{font-size:12px;color:var(--text-2);margin-top:4px}
+.report-table{background:#fff;margin:12px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.report-table table{width:100%;border-collapse:collapse;font-size:13px}
+.report-table th{background:#F5F6F8;padding:10px 8px;text-align:left;font-weight:500;color:var(--text-2);font-size:12px;white-space:nowrap}
+.report-table td{padding:10px 8px;border-bottom:1px solid var(--border);white-space:nowrap}
+.report-table tr:last-child td{border-bottom:none}
+.report-table tr:hover td{background:#FAFAFA}
+.report-actions{padding:12px}
+
+/* Shipping */
+.shipping-header{background:#fff;margin:12px;padding:16px;border-radius:var(--radius);box-shadow:var(--shadow);text-align:center}
+.shipping-header .title{font-size:20px;font-weight:700;margin-bottom:4px}
+.shipping-header .sub{font-size:12px;color:var(--text-2)}
+.shipping-info{background:#fff;margin:12px;padding:16px;border-radius:var(--radius);box-shadow:var(--shadow)}
+.shipping-info .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px}
+.shipping-info .info-grid .item{display:flex;gap:4px}
+.shipping-info .info-grid .lbl{color:var(--text-2);white-space:nowrap}
+.shipping-table-wrap{background:#fff;margin:12px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.shipping-table-wrap table{width:100%;border-collapse:collapse;font-size:13px}
+.shipping-table-wrap th{background:#F5F6F8;padding:10px 8px;text-align:center;font-weight:500;color:var(--text-2);font-size:12px}
+.shipping-table-wrap td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:center}
+.shipping-table-wrap tfoot td{font-weight:600;background:#FAFAFA}
+.sign-area{display:flex;justify-content:space-between;margin-top:24px;padding:0 12px}
+.sign-area .sign-box{width:45%;text-align:center}
+.sign-area .sign-box .line{border-bottom:1px solid var(--text-3);margin-top:30px}
+.sign-area .sign-box .lbl{font-size:12px;color:var(--text-2);margin-top:4px}
+
+/* Modals */
+.modal-mask{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:100;display:none;animation:fadeInCenter .2s ease}
+.modal-mask.show{display:block}
+.modal{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;max-height:80%;display:flex;flex-direction:column;z-index:101;animation:slideUp .3s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.modal-header .title{font-size:16px;font-weight:600}
+.modal-header .close{width:28px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-2);cursor:pointer;font-size:20px;border-radius:50%}
+.modal-header .close:active{background:#F5F6F8}
+.modal-search{padding:12px 16px;flex-shrink:0}
+.modal-search input{width:100%;height:36px;border-radius:18px;background:#F5F6F8;border:none;padding:0 16px;font-size:13px;outline:none}
+.modal-body{flex:1;overflow-y:auto}
+.modal-body::-webkit-scrollbar{display:none}
+.modal-footer{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.modal-group-title{font-size:12px;color:var(--text-2);padding:8px 16px;background:#F5F6F8}
+.modal-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.modal-item:active{background:#F5F6F8}
+.modal-item .info .name{font-size:15px;font-weight:500}
+.modal-item .info .sub{font-size:12px;color:var(--text-2);margin-top:2px}
+.modal-item .right{font-size:11px;color:var(--text-2)}
+.modal-item .check{color:var(--green);font-size:18px}
+.customer-group{margin-bottom:8px}
+.customer-group-title{font-size:12px;color:var(--text-2);padding:8px 16px;background:#F5F6F8;font-weight:500}
+.customer-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border)}
+.customer-item:active{background:#F5F6F8}
+.customer-item .name{font-size:15px;font-weight:500}
+.customer-item .phone{font-size:12px;color:var(--text-2);margin-top:2px}
+.customer-item .check{color:var(--green);font-size:18px}
+
+/* Toast */
+.toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:200;display:none;animation:fadeInCenter .2s ease}
+.toast.show{display:block}
+
+/* Profile */
+.profile-header{background:linear-gradient(135deg,var(--green),#06AD56);padding:30px 16px;color:#fff;text-align:center}
+.profile-header .avatar{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:600;margin:0 auto 12px}
+.profile-header .name{font-size:20px;font-weight:600}
+.profile-menu{background:#fff;margin:12px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.profile-menu .menu-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.profile-menu .menu-item:last-child{border-bottom:none}
+.profile-menu .menu-item:active{background:#FAFAFA}
+.profile-menu .menu-item .left{display:flex;align-items:center;gap:12px}
+.profile-menu .menu-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff}
+.profile-menu .menu-item .icon.m1{background:var(--green)}
+.profile-menu .menu-item .icon.m2{background:var(--orange)}
+.profile-menu .menu-item .icon.m3{background:#1989FA}
+.profile-menu .menu-item .icon.m4{background:#722ED1}
+.profile-menu .menu-item .lbl{font-size:14px}
+.profile-menu .menu-item .arrow{color:var(--text-3);font-size:16px}
+
+/* Scrollbar for desktop */
+#phone::-webkit-scrollbar{width:0}
+
+/* Print */
+@media print{
+  body{background:#fff}
+  #phone{width:100%;max-height:none;border-radius:none;box-shadow:none}
+  #status-bar,#nav-bar,#tab-bar{display:none}
+}
+/* Warehouse */
+.wh-tabs{display:flex;background:#fff;border-radius:12px;margin:12px;overflow:hidden;box-shadow:var(--shadow)}
+.wh-tabs .tab{flex:1;padding:12px;text-align:center;font-size:14px;color:var(--text-2);cursor:pointer;transition:all .2s;position:relative}
+.wh-tabs .tab.active{color:var(--green);font-weight:600}
+.wh-tabs .tab.active::after{content:"";position:absolute;bottom:0;left:20%;right:20%;height:3px;background:var(--green);border-radius:2px}
+.wh-tabs .badge{display:inline-block;min-width:20px;height:20px;line-height:20px;padding:0 6px;border-radius:10px;background:var(--orange);color:#fff;font-size:11px;margin-left:4px}
+.wh-tabs .badge.blue{background:#409EFF}
+.wh-toolbar{display:flex;gap:10px;padding:0 12px}
+.wh-toolbar button{flex:1;padding:10px;border-radius:10px;font-size:13px;font-weight:500;cursor:pointer;border:none}
+.wh-toolbar .btn-confirm-all{background:var(--green);color:#fff}
+.wh-toolbar .btn-auto{background:#E6A23C;color:#fff}
+.wh-toolbar button:active{transform:scale(0.97)}
+.wh-list{padding:0 12px}
+.wh-order-item{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid #E6A23C;transition:all .3s}
+.wh-order-item.confirmed{border-left-color:#409EFF;background:#ECF5FF}
+.wh-order-item .wh-order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.wh-order-item .wh-order-no{font-size:12px;color:var(--text-2)}
+.wh-order-item .wh-order-status{font-size:11px;padding:2px 8px;border-radius:10px}
+.wh-order-item .status-pending{background:#FDF6EC;color:#E6A23C}
+.wh-order-item .status-confirmed{background:#ECF5FF;color:#409EFF}
+.wh-order-item .wh-customer{font-size:15px;font-weight:600;margin-bottom:4px}
+.wh-order-item .wh-meta{font-size:12px;color:var(--text-2);display:flex;gap:12px;margin-bottom:8px}
+.wh-order-item .wh-items{font-size:12px;color:var(--text-2);margin-bottom:8px;max-height:40px;overflow:hidden}
+.wh-order-item .wh-footer{display:flex;justify-content:space-between;align-items:center}
+.wh-order-item .wh-amount{font-weight:600;color:var(--orange)}
+.wh-order-item .btn-confirm{background:#409EFF;color:#fff;padding:6px 16px;border-radius:16px;font-size:12px;border:none;cursor:pointer}
+.wh-order-item .btn-confirm:active{background:#337ECC}
+.wh-order-item .confirmed-tag{color:#409EFF;font-size:12px;font-weight:500}
+.wh-export{padding:12px}
+.wh-export .btn{width:100%}
+.status-draft{color:#909399}
+.status-submitted{color:#E6A23C}
+.status-confirmed{color:#409EFF}
+.status-completed{color:#008000}
+.status-cancelled{color:#F56C6C}
+.order-color-submitted{background-color:#E6A23C}
+.order-color-confirmed{background-color:#409EFF}
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="status-bar">
+    <span id="clock">9:41</span>
+    <div class="right"><span class="signal"></span><span class="wifi">5G</span><span class="battery"></span></div>
+  </div>
+  <div id="nav-bar" style="display:none"><div class="back" id="navBack">‹</div><div class="title" id="navTitle">首页</div></div>
+  <div id="page-container">
+
+    <!-- Login Page -->
+    <div class="page active" id="page-login">
+      <div id="login">
+        <div class="logo">丰淮</div>
+        <div class="brand">丰淮商贸</div>
+        <div class="slogan">让采购更简单</div>
+        <div class="role-select" style="margin:20px 0;display:flex;gap:10px">
+          <div class="role-item active" data-role="orderer" onclick="selectRole('orderer')" style="flex:1;padding:12px;border:2px solid var(--green);border-radius:12px;text-align:center;cursor:pointer;background:#f0faf5">
+            <div style="font-size:26px">📝</div>
+            <div style="font-weight:600;margin-top:4px;font-size:13px">下单员</div>
+            <div style="font-size:11px;color:#888;margin-top:2px">张经理</div>
+          </div>
+          <div class="role-item" data-role="warehouse" onclick="selectRole('warehouse')" style="flex:1;padding:12px;border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer">
+            <div style="font-size:26px">📦</div>
+            <div style="font-weight:600;margin-top:4px;font-size:13px">库管</div>
+            <div style="font-size:11px;color:#888;margin-top:2px">李库管</div>
+          </div>
+          <div class="role-item" data-role="admin" onclick="selectRole('admin')" style="flex:1;padding:12px;border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer">
+            <div style="font-size:26px">👑</div>
+            <div style="font-weight:600;margin-top:4px;font-size:13px">管理员</div>
+            <div style="font-size:11px;color:#888;margin-top:2px">王老板</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="doLogin()" style="margin-top:8px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.5-3.59-4.496-6.367-9.596-6.367zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/></svg>
+          微信一键登录
+        </button>
+        <div class="footer">登录即代表同意《服务协议》和《隐私政策》</div>
+      </div>
+    </div>
+
+    <!-- Home Page -->
+    <div class="page" id="page-home">
+      <div class="privacy-banner" id="privacyBanner">
+        <span class="privacy-icon">🔒</span>
+        <span class="privacy-text">本应用遵循《隐私政策》，仅收集必要信息用于业务处理</span>
+        <span class="privacy-link" onclick="showToast('已打开隐私政策（原型演示）')">查看 ›</span>
+        <span class="privacy-close" onclick="dismissPrivacy()">✕</span>
+      </div>
+      <div class="home-hero">
+        <div class="user-row">
+          <div class="avatar" id="userAvatar">丰</div>
+          <div>
+            <div class="greeting">你好，张经理 👋</div>
+            <div class="date" id="todayDate"></div>
+          </div>
+          <div id="roleBadge" style="margin-left:auto;padding:4px 10px;border-radius:12px;font-size:12px;background:rgba(255,255,255,0.25);color:#fff">下单员</div>
+        </div>
+      </div>
+      <div class="announce-bar" id="homeAnnouncement">
+        <span class="announce-icon">📢</span>
+        <div class="announce-content">
+          <div class="announce-text"></div>
+          <div class="announce-dots"></div>
+        </div>
+      </div>
+      <div class="home-stats">
+        <div class="stat"><div class="num" id="statOrders">0</div><div class="lbl">今日订单</div></div>
+        <div class="stat"><div class="num" id="statAmount">¥0</div><div class="lbl">今日金额</div></div>
+      </div>
+      <div class="home-actions">
+        <div class="action" onclick="state.currentOrderId=null; navigateTo('newOrder')"><div class="icon c1">📝</div><div class="lbl">新建订单</div></div>
+        <div class="action" onclick="navigateTo('products')"><div class="icon c2">📦</div><div class="lbl">商品管理</div></div>
+        <div class="action" onclick="navigateTo('customers')"><div class="icon c3">🏪</div><div class="lbl">客户管理</div></div>
+        <div class="action" onclick="exportReport()"><div class="icon c4">📊</div><div class="lbl">报表导出</div></div>
+      </div>
+      <div class="section-title">今日订单<span class="more" onclick="navigateTo('orders')">查看全部 ›</span></div>
+      <div class="card" id="homeOrderList" style="padding:4px 16px"></div>
+    </div>
+
+    <!-- New Order Page -->
+    <div class="page" id="page-newOrder">
+      <div class="customer-bar" onclick="openCustomerModal()">
+        <div class="info">
+          <div class="name" id="selectedCustomerName">请选择客户</div>
+          <div class="region" id="selectedCustomerRegion">点击选择客户信息</div>
+        </div>
+        <div class="arrow">›</div>
+      </div>
+      <div class="payment-bar">
+        <div class="payment-label">收款方式</div>
+        <div class="payment-options">
+          <div class="payment-opt active" data-pay="cash" onclick="selectPayment('cash')">💰 现结</div>
+          <div class="payment-opt" data-pay="credit" onclick="selectPayment('credit')">📅 赊账</div>
+        </div>
+      </div>
+      <div id="productList"></div>
+      <div class="add-product-btn" onclick="openProductModal()">+ 添加商品</div>
+      <div style="height:80px"></div>
+      <div class="order-footer">
+        <div class="total"><div class="lbl">合计</div><div class="amt" id="orderTotal">¥0.00</div></div>
+        <button class="save-btn" onclick="saveOrder()">保存订单</button>
+      </div>
+    </div>
+
+    <!-- Product List Page -->
+    <div class="page" id="page-products">
+      <div class="modal-search" style="background:#fff;margin:12px;border-radius:var(--radius);box-shadow:var(--shadow)">
+        <input type="text" id="productSearchInput" placeholder="搜索商品名称/商品料号/拼音首字母" oninput="renderProductList()">
+      </div>
+      <div id="productManageList"></div>
+    </div>
+
+    <!-- Customer List Page -->
+    <div class="page" id="page-customers">
+      <div class="modal-search" style="background:#fff;margin:12px;border-radius:var(--radius);box-shadow:var(--shadow)">
+        <input type="text" id="customerSearchInput" placeholder="搜索客户名称/简称/联系人/区域" oninput="renderCustomerList()">
+      </div>
+      <div id="customerManageList"></div>
+    </div>
+
+    <!-- Orders Page -->
+    <div class="page" id="page-orders">
+      <div class="filter-tabs">
+        <div class="tab active" data-filter="today" onclick="filterOrders('today')">今日</div>
+        <div class="tab" data-filter="week" onclick="filterOrders('week')">本周</div>
+        <div class="tab" data-filter="month" onclick="filterOrders('month')">本月</div>
+        <div class="tab" data-filter="all" onclick="filterOrders('all')">全部</div>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="orderSearchInput" placeholder="搜索订单号/客户名称" oninput="renderOrderList()">
+      </div>
+      <div id="orderList"></div>
+    </div>
+
+    <!-- Order Detail Page -->
+    <div class="page" id="page-orderDetail">
+      <div class="detail-header">
+        <div class="order-no" id="detailOrderNo"></div>
+        <div class="amount" id="detailAmount"></div>
+        <div class="status" id="detailStatus">已完成</div>
+      </div>
+      <div class="detail-section">
+        <div class="sec-title">客户信息</div>
+        <div class="detail-row"><span class="lbl">客户名称</span><span class="val" id="detailCustomer"></span></div>
+        <div class="detail-row"><span class="lbl">所在区域</span><span class="val" id="detailRegion"></span></div>
+        <div class="detail-row"><span class="lbl">联系人</span><span class="val" id="detailContact"></span></div>
+        <div class="detail-row"><span class="lbl">联系电话</span><span class="val" id="detailPhone"></span></div>
+        <div class="detail-row"><span class="lbl">下单员</span><span class="val" id="detailCreator"></span></div>
+      </div>
+      <div class="detail-section">
+        <div class="sec-title">商品明细</div>
+        <table class="detail-table" id="detailTable">
+          <thead><tr><th>序号</th><th>商品</th><th>单位</th><th>数量</th><th>单价</th><th>金额</th><th>备注</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td colspan="5" style="text-align:right">合计</td><td id="detailTotal"></td><td></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="detail-section">
+        <div class="sec-title">订单信息</div>
+        <div class="detail-row"><span class="lbl">下单时间</span><span class="val" id="detailTime"></span></div>
+        <div class="detail-row"><span class="lbl">收款方式</span><span class="val" id="detailPayment"></span></div>
+      </div>
+      <div class="detail-actions">
+        <button class="btn-print" onclick="goToShipping()">🖨️ 打印送货单</button>
+        <button class="btn-edit" onclick="editOrder()">✏️ 编辑订单</button>
+        <button class="btn-export" onclick="exportSingleOrder()">📥 导出Excel</button>
+        <button class="btn-copy" onclick="copyOrder()">📋 复制订单</button>
+        <button class="btn-delete" onclick="deleteOrder()" style="background:#fff;color:var(--red);border:1px solid var(--red)">🗑️ 删除订单</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Warehouse Page (库管工作台) -->
+    <div class="page" id="page-warehouse">
+      <div class="wh-tabs">
+        <div class="tab active" data-wtab="pending" onclick="switchWhTab('pending')">
+          待确认 <span class="badge" id="pendingCount">0</span>
+        </div>
+        <div class="tab" data-wtab="confirmed" onclick="switchWhTab('confirmed')">
+          已确认 <span class="badge blue" id="confirmedCount">0</span>
+        </div>
+      </div>
+      <div class="wh-toolbar" id="whToolbar">
+        <button class="btn-confirm-all" onclick="confirmAllPending()">✅ 全部确认</button>
+        <button class="btn-auto" onclick="simulateAutoConfirm()">⏰ 模拟16:00通过</button>
+      </div>
+      <div class="wh-list" id="whList"></div>
+      <div class="wh-export">
+        <button class="btn btn-orange" onclick="exportWarehouseOut()">📦 导出库单(不含价格)</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Reports Page -->
+    <div class="page" id="page-reports">
+      <div class="report-tabs">
+        <div class="tab active" data-rtab="product" onclick="switchReportTab('product')">商品汇总</div>
+        <div class="tab" data-rtab="customer" onclick="switchReportTab('customer')">客户汇总</div>
+      </div>
+      <div class="report-filter" style="background:#f5f7fa;padding:10px;margin:10px;border-radius:8px;font-size:13px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn btn-sm" id="rptModeDay" style="flex:1;padding:6px" onclick="setReportMode('day')">日</button>
+          <button class="btn btn-sm" id="rptModeMonth" style="flex:1;padding:6px" onclick="setReportMode('month')">月</button>
+          <button class="btn btn-sm" id="rptModeCustom" style="flex:1;padding:6px" onclick="setReportMode('custom')">自定义</button>
+        </div>
+        <div id="rptDayPicker" style="display:none">
+          <label style="color:#666">选择日期：</label>
+          <input type="date" id="rptDate" style="width:60%;padding:4px;border:1px solid #ddd;border-radius:6px" onchange="initReports()">
+        </div>
+        <div id="rptMonthPicker" style="display:none">
+          <label style="color:#666">选择月份：</label>
+          <input type="month" id="rptMonth" style="width:60%;padding:4px;border:1px solid #ddd;border-radius:6px" onchange="initReports()">
+        </div>
+        <div id="rptCustomPicker" style="display:none">
+          <label style="color:#666">起：</label>
+          <input type="date" id="rptStart" style="width:55%;padding:4px;border:1px solid #ddd;border-radius:6px" onchange="initReports()">
+          <label style="color:#666;margin-left:6px">止：</label>
+          <input type="date" id="rptEnd" style="width:55%;padding:4px;border:1px solid #ddd;border-radius:6px;margin-top:4px" onchange="initReports()">
+        </div>
+        <div style="margin-top:8px">
+          <label style="color:#666">区域：</label>
+          <select id="rptRegion" style="width:60%;padding:4px;border:1px solid #ddd;border-radius:6px" onchange="initReports()">
+            <option value="">全部</option>
+          </select>
+        </div>
+      </div>
+      <div class="report-summary">
+        <div class="sum-card"><div class="num green" id="reportTotalOrders">0</div><div class="lbl">订单总数</div></div>
+        <div class="sum-card"><div class="num orange" id="reportTotalAmount">¥0</div><div class="lbl">总金额</div></div>
+      </div>
+      <div class="report-table" id="reportProductTable"></div>
+      <div class="report-table" id="reportCustomerTable" style="display:none"></div>
+      <div class="report-actions">
+        <button class="btn btn-primary btn-block" onclick="exportReport()">📥 导出报表Excel</button>
+        <button class="btn btn-orange btn-block" style="margin-top:10px" onclick="exportDailySummary()">📋 客户汇总表(外县台账式)</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Shipping Page -->
+    <div class="page" id="page-shipping">
+      <div class="shipping-header">
+        <div class="title">丰淮商贸送货单</div>
+        <div class="sub" id="shippingOrderNo"></div>
+      </div>
+      <div class="shipping-info">
+        <div class="info-grid">
+          <div class="item"><span class="lbl">客户名称：</span><span id="shippingCustomer"></span></div>
+          <div class="item"><span class="lbl">区域：</span><span id="shippingRegion"></span></div>
+          <div class="item"><span class="lbl">电话：</span><span id="shippingPhone"></span></div>
+          <div class="item"><span class="lbl">日期：</span><span id="shippingDate"></span></div>
+          <div class="item"><span class="lbl">收款方式：</span><span id="shippingPayment"></span></div>
+        </div>
+      </div>
+      <div class="shipping-table-wrap">
+        <table id="shippingTable">
+          <thead><tr><th>序号</th><th>商品名称</th><th>单价</th><th>数量</th><th>金额</th><th>备注</th></tr></thead>
+          <tbody></tbody>
+          <tfoot><tr><td colspan="4" style="text-align:right">合计</td><td id="shippingTotal"></td><td></td></tr></tfoot>
+        </table>
+      </div>
+      <div class="sign-area">
+        <div class="sign-box"><div class="line"></div><div class="lbl">客户签字</div></div>
+        <div class="sign-box"><div class="line"></div><div class="lbl">送货人签字</div></div>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px">
+        <button class="btn btn-primary" style="flex:1" onclick="window.print()">🖨️ 打印</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="exportSingleOrder()">📥 导出Excel</button>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Profile Page -->
+    <div class="page" id="page-profile">
+      <div class="profile-header">
+        <div class="avatar" id="profileAvatar">丰</div>
+        <div class="name" id="profileName">张经理</div>
+        <div style="font-size:12px;opacity:0.9;margin-top:4px" id="profileRole">丰淮商贸 · 采购部</div>
+      </div>
+      <div class="profile-menu">
+        <div class="menu-item" onclick="switchTab('products')"><div class="left"><div class="icon m1">📦</div><span class="lbl">商品管理</span></div><span class="arrow">›</span></div>
+        <div class="menu-item" onclick="switchTab('customers')"><div class="left"><div class="icon m2">🏪</div><span class="lbl">客户管理</span></div><span class="arrow">›</span></div>
+        <div class="menu-item" onclick="switchTab('reports')"><div class="left"><div class="icon m3">📊</div><span class="lbl">报表统计</span></div><span class="arrow">›</span></div>
+        <div class="menu-item" onclick="resetDemoData()"><div class="left"><div class="icon m4">♻️</div><span class="lbl">重置演示数据</span></div><span class="arrow">›</span></div>
+      </div>
+      <div class="profile-menu">
+        <div class="menu-item" onclick="logout()"><div class="left"><div class="icon" style="background:#FF3B30">🚪</div><span class="lbl" style="color:#FF3B30">退出登录</span></div><span class="arrow">›</span></div>
+      </div>
+      <div style="text-align:center;padding:20px;font-size:12px;color:var(--text-3)">丰淮商贸 v0.1.0</div>
+    </div>
+
+  </div>
+
+  <!-- Tab Bar -->
+  <div id="tab-bar">
+    <div class="tab active" data-tab="home" onclick="switchTab('home')"><div class="icon">🏠</div><div class="lbl">首页</div></div>
+    <div class="tab" data-tab="orders" onclick="switchTab('orders')"><div class="icon">📋</div><div class="lbl">订单</div></div>
+    <div class="tab" id="tab-warehouse" data-tab="warehouse" onclick="switchTab('warehouse')"><div class="icon">📦</div><div class="lbl">库管</div></div>
+    <div class="tab" data-tab="reports" onclick="switchTab('reports')"><div class="icon">📊</div><div class="lbl">报表</div></div>
+    <div class="tab" data-tab="profile" onclick="switchTab('profile')"><div class="icon">👤</div><div class="lbl">我的</div></div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-mask" id="productModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title">选择商品</div>
+      <div class="close" onclick="closeModal('productModal')">✕</div>
+    </div>
+    <div class="modal-search"><input type="text" id="productModalSearch" placeholder="搜索商品名称/商品料号/拼音首字母" oninput="renderProductModalList()"></div>
+    <div class="modal-body" id="productModalList"></div>
+  </div>
+</div>
+
+<!-- Customer Modal -->
+<div class="modal-mask" id="customerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title">选择客户</div>
+      <div class="close" onclick="closeModal('customerModal')">✕</div>
+    </div>
+    <div class="modal-search"><input type="text" id="customerModalSearch" placeholder="搜索客户名称/简称/联系人/区域" oninput="renderCustomerModalList()"></div>
+    <div class="modal-body" id="customerModalList"></div>
+  </div>
+</div>
+
+<!-- Edit Price Modal -->
+<div class="modal-mask" id="priceModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title">修改商品价格</div>
+      <div class="close" onclick="closeModal('priceModal')">✕</div>
+    </div>
+    <div class="modal-body" id="priceModalBody"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ DATA LAYER ============
+const STORAGE_KEY = 'fh_order_data';
+const STATE_KEY = 'fh_order_state';
+/* ==== DEFAULT_PRODUCTS 严格按 Excel「总表」料号1-180：名称/规格/单位/售价 完全一致 ==== */
+const DEFAULT_PRODUCTS = [
+  {material_code:'1', name:"海藻碘", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:45, price_zero:0.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'2', name:"淮盐400g", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:36, price_zero:0.72, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'3', name:"淮盐500g", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:70, price_zero:1.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'4', name:"吾宠湾粥", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:45, price_zero:1.125, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'5', name:"老酸奶", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:45, price_zero:1.5, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'6', name:"西安小包包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'7', name:"鲜爽果汁", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:38, price_zero:1.266667, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'8', name:"400克晶纯盐", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:25, price_zero:0.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'9', name:"45微粮粥", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:45, price_zero:1.125, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'10', name:"50秒三秒粥", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:50, price_zero:1.25, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'11', name:"有情郎米酒", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:33, price_zero:1.1, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'12', name:"有情郎奶茶", spec:'1×24', pricing_mode:'case', unit_piece_qty:24, price_piece:48, price_zero:2, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'13', name:"有情郎豆奶、绿豆沙", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:38, price_zero:1.266667, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'14', name:"永和豆浆", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:72, price_zero:1.2, unit:'袋/件', pinyin:'', is_adjustable:false},
+  {material_code:'15', name:"欣朵朵布丁", spec:'1×24', pricing_mode:'case', unit_piece_qty:24, price_piece:30, price_zero:1.25, unit:'袋/件', pinyin:'', is_adjustable:false},
+  {material_code:'16', name:"久念麻球", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:80, price_zero:20, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'17', name:"乡道糖糕", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:70, price_zero:17.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'18', name:"怀念菜角", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:85, price_zero:14.166667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'19', name:"爆珠果奶", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:55, price_zero:1.833333, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'20', name:"酥饼（纸箱装）", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:55, price_zero:1.1, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'21', name:"100个小蒸饺", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:30, price_zero:0.3, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'22', name:"玉米粑粑", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:90, price_zero:22.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'23', name:"小笼包子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:41, price_zero:0.41, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'24', name:"心思源蒸饺", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:110, price_zero:11, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'25', name:"食自在蒸饺", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:85, price_zero:8.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'26', name:"曹氏箱水饺", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:80, price_zero:20, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'27', name:"鲜沫豆浆", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:48, price_zero:1.2, unit:'袋/件', pinyin:'', is_adjustable:false},
+  {material_code:'28', name:"早餐伴侣", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:36, price_zero:1.2, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'29', name:"糯玉米", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:85, price_zero:2.125, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'30', name:"心思源70克烧麦", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:140, price_zero:14, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'31', name:"彭幺妹4包发糕", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:96, price_zero:24, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'32', name:"今巴4包发糕", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:80, price_zero:20, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'33', name:"良邦卡通包", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:115, price_zero:28.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'34', name:"今巴方糕", spec:'1×15', pricing_mode:'case', unit_piece_qty:15, price_piece:110, price_zero:7.333333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'35', name:"良邦组合装卡包", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:75, price_zero:7.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'36', name:"125潼关饼", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:125, price_zero:20.833333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'37', name:"今巴窝窝头", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:96, price_zero:9.6, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'38', name:"苹果包+果蔬包", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:70, price_zero:7, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'39', name:"烧麦彭幺妹5包", spec:'1×5', pricing_mode:'case', unit_piece_qty:5, price_piece:115, price_zero:23, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'40', name:"六合鸡胸肉", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:100, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'41', name:"130老潼关", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:130, price_zero:21.666667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'42', name:"150潼关饼", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:120, price_zero:20, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'43', name:"食自在大锅贴", spec:'1×8', pricing_mode:'case', unit_piece_qty:8, price_piece:90, price_zero:11.25, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'44', name:"鸡全架", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:50, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'45', name:"手抓饼", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:85, price_zero:0.85, unit:'张/件', pinyin:'', is_adjustable:false},
+  {material_code:'46', name:"葱油饼", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:130, price_zero:10.833333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'47', name:"热狗玉米紫薯酸奶", spec:'1×16', pricing_mode:'case', unit_piece_qty:16, price_piece:110, price_zero:6.875, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'48', name:"心思源50克烧麦", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:100, price_zero:10, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'49', name:"千味烧麦", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:120, price_zero:12, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'50', name:"粉色抽纸", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:75, price_zero:0.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'51', name:"汉纯纸", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:70, price_zero:0.7, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'52', name:"80克大包子", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:95, price_zero:9.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'53', name:"夫宇麦穗肠", spec:'1×8', pricing_mode:'case', unit_piece_qty:8, price_piece:120, price_zero:15, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'54', name:"峰仔樱花糕", spec:'1×15', pricing_mode:'case', unit_piece_qty:15, price_piece:103, price_zero:6.866667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'55', name:"85抽纸", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:80, price_zero:0.8, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'56', name:"黄金小酥饼", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:35, price_zero:1.166667, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'57', name:"笑脸牛肉馅饼", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:110, price_zero:18.333333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'58', name:"金刚鸡排", spec:'1×5', pricing_mode:'case', unit_piece_qty:5, price_piece:150, price_zero:30, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'59', name:"大件筷子", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:190, price_zero:31.666667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'60', name:"5.0熊猫筷子840", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:32, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'61', name:"75黄色120包抽纸", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:70, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'62', name:"5.5熊猫筷子900", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:40, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'65', name:"西安手工大包子", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:174, price_zero:29, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'66', name:"360彩杯", spec:'1×2000', pricing_mode:'case', unit_piece_qty:2000, price_piece:120, price_zero:0.06, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'67', name:"400彩杯", spec:'1×2000', pricing_mode:'case', unit_piece_qty:2000, price_piece:125, price_zero:0.0625, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'68', name:"450彩杯", spec:'1×2000', pricing_mode:'case', unit_piece_qty:2000, price_piece:135, price_zero:0.0675, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'70', name:"大彩碗", spec:'1×600', pricing_mode:'case', unit_piece_qty:600, price_piece:80, price_zero:0.133333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'71', name:"一号纸碗", spec:'1×450', pricing_mode:'case', unit_piece_qty:450, price_piece:45, price_zero:0.1, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'72', name:"小件抽纸", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:43, price_zero:43, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'73', name:"新品绿抽", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:68, price_zero:0.68, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'74', name:"鸡柳", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:130, price_zero:13, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'75', name:"清源口杯", spec:'1×28', pricing_mode:'case', unit_piece_qty:28, price_piece:65, price_zero:2.321429, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'76', name:"稀饭杯（三元）", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:75, price_zero:3.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'77', name:"兢农玉米", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:95, price_zero:2.375, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'78', name:"A-3餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:40, price_zero:0.133333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'79', name:"大稀饭吸管", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:45, price_zero:0.9, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'80', name:"豆浆吸管", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:75, price_zero:2.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'81', name:"封口膜", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:40, price_zero:40, unit:'卷', pinyin:'', is_adjustable:false},
+  {material_code:'82', name:"12A豆浆杯", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:190, price_zero:4.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'84', name:"大白勺子", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:65, price_zero:3.25, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'85', name:"透明勺子103", spec:'1×1', pricing_mode:'piece', unit_piece_qty:1, price_piece:50, price_zero:null, unit:'件', pinyin:'', is_adjustable:false},
+  {material_code:'86', name:"一次性手套", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:40, price_zero:2, unit:'包', pinyin:'', is_adjustable:false},
+  {material_code:'87', name:"清洁球", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:5, price_zero:0.5, unit:'包', pinyin:'', is_adjustable:false},
+  {material_code:'88', name:"洗洁精25KG", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:50, price_zero:50, unit:'桶', pinyin:'', is_adjustable:false},
+  {material_code:'89', name:"空桶、洗洁精 50斤", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:10, price_zero:10, unit:'个', pinyin:'', is_adjustable:false},
+  {material_code:'93', name:"调货", spec:'1×1', pricing_mode:'unit', unit_piece_qty:1, price_piece:null, price_zero:0, unit:'批/件', pinyin:'', is_adjustable:true},
+  {material_code:'100', name:"P4餐盒", spec:'1×1000', pricing_mode:'case', unit_piece_qty:1000, price_piece:90, price_zero:0.09, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'101', name:"300圆餐盒", spec:'1×450', pricing_mode:'case', unit_piece_qty:450, price_piece:70, price_zero:0.155556, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'102', name:"450圆餐盒", spec:'1×450', pricing_mode:'case', unit_piece_qty:450, price_piece:75, price_zero:0.166667, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'103', name:"500圆餐盒", spec:'1×450', pricing_mode:'case', unit_piece_qty:450, price_piece:80, price_zero:0.177778, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'104', name:"625圆餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:70, price_zero:0.233333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'105', name:"分体四格", spec:'1×150', pricing_mode:'case', unit_piece_qty:150, price_piece:100, price_zero:0.666667, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'106', name:"750圆餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:70, price_zero:0.233333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'107', name:"800圆餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:75, price_zero:0.25, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'108', name:"1000圆餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:70, price_zero:0.233333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'109', name:"1250圆餐盒", spec:'1×200', pricing_mode:'case', unit_piece_qty:200, price_piece:70, price_zero:0.35, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'110', name:"1500圆餐盒", spec:'1×200', pricing_mode:'case', unit_piece_qty:200, price_piece:80, price_zero:0.4, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'111', name:"1750圆餐盒", spec:'1×200', pricing_mode:'case', unit_piece_qty:200, price_piece:90, price_zero:0.45, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'112', name:"3000盆", spec:'1×90', pricing_mode:'case', unit_piece_qty:90, price_piece:90, price_zero:1, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'113', name:"3500盆", spec:'1×90', pricing_mode:'case', unit_piece_qty:90, price_piece:90, price_zero:1, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'114', name:"4000盆", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:110, price_zero:1.833333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'115', name:"4800盆", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:110, price_zero:1.833333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'116', name:"500方餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:65, price_zero:0.216667, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'117', name:"650方餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:70, price_zero:0.233333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'118', name:"750方餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:70, price_zero:0.233333, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'119', name:"1000方餐盒", spec:'1×300', pricing_mode:'case', unit_piece_qty:300, price_piece:75, price_zero:0.25, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'120', name:"鸡腿堡+鸡肉卷", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:145, price_zero:2.416667, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'121', name:"纸杯", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:125, price_zero:125, unit:'杯/件', pinyin:'', is_adjustable:false},
+  {material_code:'122', name:"明途包子", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:180, price_zero:30, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'123', name:"安蜀手撕馒头", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:63, price_zero:6.3, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'124', name:"汉堡胚", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:80, price_zero:80, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'125', name:"手工烙饼", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:130, price_zero:21.666667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'126', name:"木鱼（双色糕）", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:80, price_zero:4, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'127', name:"秦迈馄饨", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:112, price_zero:5.6, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'128', name:"紫薯+南瓜开花馒头", spec:'1×15', pricing_mode:'case', unit_piece_qty:15, price_piece:95, price_zero:6.333333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'129', name:"金丝藤椒鸡排", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:140, price_zero:14, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'130', name:"雍运肉夹馍", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:85, price_zero:14.166667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'131', name:"木鱼红糖发糕", spec:'1×16', pricing_mode:'case', unit_piece_qty:16, price_piece:70, price_zero:4.375, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'132', name:"牛舌饼-小馋童", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:100, price_zero:16.666667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'133', name:"安井50克烧麦", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:85, price_zero:21.25, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'134', name:"110潼关饼", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:110, price_zero:18.333333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'135', name:"鸡蛋灌饼", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:90, price_zero:22.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'136', name:"小馋童金丝卷", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:105, price_zero:8.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'137', name:"千味寻小笼包", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:170, price_zero:28.333333, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'138', name:"保鲜膜", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:200, price_zero:200, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'139', name:"思念水饺(韭菜鸡蛋)", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:90, price_zero:22.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'140', name:"38克烤肠", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:200, price_zero:20, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'141', name:"绿秦20斤卤肉", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:370, price_zero:18.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'142', name:"汉堡肉", spec:'1×15', pricing_mode:'case', unit_piece_qty:15, price_piece:165, price_zero:11, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'143', name:"白吉馍", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:110, price_zero:9.166667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'144', name:"邦杰-手工水饺", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:110, price_zero:27.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'145', name:"心思源玉米饼", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:110, price_zero:11, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'146', name:"马蹄酥", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:75, price_zero:3.75, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'147', name:"手工烧饼", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:60, price_zero:1.2, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'148', name:"鸡胗", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:180, price_zero:18, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'149', name:"冻鸭", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:120, price_zero:120, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'150', name:"久念100g油条", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:100, price_zero:10, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'151', name:"70克火山石烤肉肠", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:320, price_zero:32, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'152', name:"久念80g油条", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:85, price_zero:8.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'153', name:"雍运照烧馅饼", spec:'1×12', pricing_mode:'case', unit_piece_qty:12, price_piece:170, price_zero:14.166667, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'154', name:"鸡翅根", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:150, price_zero:37.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'155', name:"金牧1315鸡腿", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:145, price_zero:145, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'156', name:"70克烤肉肠", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:280, price_zero:28, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'157', name:"良邦-哪吒包", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:80, price_zero:8, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'158', name:"立白洗洁精", spec:'1×6', pricing_mode:'case', unit_piece_qty:6, price_piece:90, price_zero:15, unit:'桶/件', pinyin:'', is_adjustable:false},
+  {material_code:'159', name:"标点牛肉花卷", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:100, price_zero:10, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'160', name:"20白袋子", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:200, price_zero:200, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'161', name:"24白袋子", spec:'1×100', pricing_mode:'case', unit_piece_qty:100, price_piece:300, price_zero:3, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'162', name:"30白袋子", spec:'1×1', pricing_mode:'case', unit_piece_qty:1, price_piece:210, price_zero:210, unit:'个/件', pinyin:'', is_adjustable:false},
+  {material_code:'163', name:"博大1518琵琶腿", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:120, price_zero:6, unit:'斤/件', pinyin:'', is_adjustable:false},
+  {material_code:'164', name:"龙利鱼", spec:'1×4', pricing_mode:'case', unit_piece_qty:4, price_piece:200, price_zero:50, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'165', name:"思念小云吞", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:90, price_zero:4.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'166', name:"安井锅包肉", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:145, price_zero:14.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'167', name:"安井茄盒", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:120, price_zero:12, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'168', name:"易太蚝油肉片", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:150, price_zero:15, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'169', name:"青豆", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:85, price_zero:8.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'170', name:"甜玉米粒", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:90, price_zero:9, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'171', name:"安井耦盒", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:110, price_zero:11, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'172', name:"安井千叶豆腐", spec:'1×30', pricing_mode:'case', unit_piece_qty:30, price_piece:135, price_zero:4.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'173', name:"安井小酥肉", spec:'1×8', pricing_mode:'case', unit_piece_qty:8, price_piece:165, price_zero:20.625, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'174', name:"安井香酥带鱼", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:180, price_zero:18, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'175', name:"安井干炸里脊", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:145, price_zero:14.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'176', name:"双椒油黄鸡", spec:'1×20', pricing_mode:'case', unit_piece_qty:20, price_piece:190, price_zero:9.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'177', name:"学子膳-小炒肉丝", spec:'1×10', pricing_mode:'case', unit_piece_qty:10, price_piece:145, price_zero:14.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'178', name:"易太黑椒牛柳", spec:'1×25', pricing_mode:'case', unit_piece_qty:25, price_piece:330, price_zero:13.2, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'179', name:"辣子鸡", spec:'1×8', pricing_mode:'case', unit_piece_qty:8, price_piece:140, price_zero:17.5, unit:'包/件', pinyin:'', is_adjustable:false},
+  {material_code:'180', name:"易太蚝油牛柳", spec:'1×25', pricing_mode:'case', unit_piece_qty:25, price_piece:340, price_zero:13.6, unit:'包/件', pinyin:'', is_adjustable:false},
+];
+
+
+const DEFAULT_CUSTOMERS = [
+  {name:'0088', alias:'0088', region:'付家河', phone:'13900000001', contact:''},
+  {name:'1066', alias:'1066', region:'石泉', phone:'13900000002', contact:''},
+  {name:'万友', alias:'万友', region:'汉阴', phone:'13900000003', contact:''},
+  {name:'万友超市', alias:'万友超市', region:'汉阴', phone:'13900000004', contact:''},
+  {name:'三餐小馆', alias:'三餐小馆', region:'岚皋', phone:'13900000005', contact:''},
+  {name:'东一路刀削面', alias:'东一路刀', region:'平利', phone:'13900000006', contact:''},
+  {name:'东一路惠家', alias:'东一路惠', region:'岚皋', phone:'13900000007', contact:''},
+  {name:'东一路惠家超市', alias:'东一路惠', region:'岚皋', phone:'13900000008', contact:''},
+  {name:'东一路汉城精品', alias:'东一路汉', region:'平利', phone:'13900000009', contact:''},
+  {name:'东东早点', alias:'东东早点', region:'付家河', phone:'13900000010', contact:''},
+  {name:'东大门包子', alias:'东大门包', region:'恒口', phone:'13900000011', contact:''},
+  {name:'东新街5号', alias:'东新街5', region:'汉阴', phone:'13900000012', contact:''},
+  {name:'东门早点', alias:'东门早点', region:'岚皋', phone:'13900000013', contact:''},
+  {name:'中医院对面', alias:'中医院对', region:'紫阳', phone:'13900000014', contact:''},
+  {name:'中驰车库', alias:'中驰车库', region:'旬阳', phone:'13900000015', contact:''},
+  {name:'二中桥头摆摊', alias:'二中桥头', region:'吕河', phone:'13900000016', contact:''},
+  {name:'二宝肉夹馍', alias:'二宝肉夹', region:'旬阳', phone:'13900000017', contact:''},
+  {name:'二幼千层破酥包', alias:'二幼千层', region:'旬阳', phone:'13900000018', contact:''},
+  {name:'云南米线', alias:'云南米线', region:'旬阳', phone:'13900000019', contact:''},
+  {name:'五馅包', alias:'五馅包', region:'石泉', phone:'13900000020', contact:''},
+  {name:'亮亮餐馆', alias:'亮亮餐馆', region:'双乳', phone:'13900000021', contact:''},
+  {name:'仁和国际沙县小吃', alias:'仁和国际', region:'紫阳', phone:'13900000022', contact:''},
+  {name:'仁和张秋红', alias:'仁和张秋', region:'紫阳', phone:'13900000023', contact:''},
+  {name:'仁和沙县小吃', alias:'仁和沙县', region:'紫阳', phone:'13900000024', contact:''},
+  {name:'代苗苗', alias:'代苗苗', region:'大同', phone:'13900000025', contact:''},
+  {name:'优购忧品', alias:'优购忧品', region:'岚皋', phone:'13900000026', contact:''},
+  {name:'优速快递', alias:'优速快递', region:'石泉', phone:'13900000027', contact:''},
+  {name:'倪成林', alias:'倪成林', region:'大河', phone:'13900000028', contact:''},
+  {name:'党家坝上海汤包', alias:'党家坝上', region:'旬阳', phone:'13900000029', contact:''},
+  {name:'党家坝民威', alias:'党家坝民', region:'旬阳', phone:'13900000030', contact:''},
+  {name:'党家坝芭比包子', alias:'党家坝芭', region:'旬阳', phone:'13900000031', contact:''},
+  {name:'党家坝酸辣粉', alias:'党家坝酸', region:'旬阳', phone:'13900000032', contact:''},
+  {name:'关中凉皮', alias:'关中凉皮', region:'平利', phone:'13900000033', contact:''},
+  {name:'关口街包子店', alias:'关口街包', region:'宁陕', phone:'13900000034', contact:''},
+  {name:'农贸市场', alias:'农贸市场', region:'五里', phone:'13900000035', contact:''},
+  {name:'刀削面', alias:'刀削面', region:'大同', phone:'13900000036', contact:''},
+  {name:'刘家热面皮', alias:'刘家热面', region:'大同', phone:'13900000037', contact:''},
+  {name:'刘家营四岭', alias:'刘家营四', region:'五里', phone:'13900000038', contact:''},
+  {name:'刘师早点', alias:'刘师早点', region:'紫阳', phone:'13900000039', contact:''},
+  {name:'初中门口', alias:'初中门口', region:'大同', phone:'13900000040', contact:''},
+  {name:'功夫煎饼', alias:'功夫煎饼', region:'旬阳', phone:'13900000041', contact:''},
+  {name:'包子店', alias:'包子店', region:'八仙', phone:'13900000042', contact:''},
+  {name:'包子铺', alias:'包子铺', region:'浦溪', phone:'13900000043', contact:''},
+  {name:'包汁百味', alias:'包汁百味', region:'恒口', phone:'13900000044', contact:''},
+  {name:'千层破酥包', alias:'千层破酥', region:'旬阳', phone:'13900000045', contact:''},
+  {name:'千里香馄饨', alias:'千里香馄', region:'旬阳', phone:'13900000046', contact:''},
+  {name:'南台路48号', alias:'南台路4', region:'白河', phone:'13900000047', contact:''},
+  {name:'南大街', alias:'南大街', region:'大同', phone:'13900000048', contact:''},
+  {name:'南大街包子', alias:'南大街包', region:'大同', phone:'13900000049', contact:''},
+  {name:'卢珍', alias:'卢珍', region:'大同', phone:'13900000050', contact:''},
+  {name:'卷菜饼', alias:'卷菜饼', region:'旬阳', phone:'13900000051', contact:''},
+  {name:'友林商行', alias:'友林商行', region:'岚皋', phone:'13900000052', contact:''},
+  {name:'双丰安康蒸面', alias:'双丰安康', region:'白河', phone:'13900000053', contact:''},
+  {name:'双丰小罗餐馆', alias:'双丰小罗', region:'白河', phone:'13900000054', contact:''},
+  {name:'取货', alias:'取货', region:'五次路口', phone:'13900000055', contact:''},
+  {name:'口口香面皮', alias:'口口香面', region:'旬阳', phone:'13900000056', contact:''},
+  {name:'古桥小吃', alias:'古桥小吃', region:'恒口', phone:'13900000057', contact:''},
+  {name:'司机', alias:'司机', region:'镇坪', phone:'13900000058', contact:''},
+  {name:'周云', alias:'周云', region:'孟石岭', phone:'13900000059', contact:''},
+  {name:'周景琴', alias:'周景琴', region:'紫阳', phone:'13900000060', contact:''},
+  {name:'周玉', alias:'周玉', region:'孟石岭', phone:'13900000061', contact:''},
+  {name:'周记蒸面', alias:'周记蒸面', region:'广佛', phone:'13900000062', contact:''},
+  {name:'味之亦', alias:'味之亦', region:'石泉', phone:'13900000063', contact:''},
+  {name:'唐光群', alias:'唐光群', region:'毛坝', phone:'13900000064', contact:''},
+  {name:'商业局家属院', alias:'商业局家', region:'平利', phone:'13900000065', contact:''},
+  {name:'商贸小区大门口', alias:'商贸小区', region:'旬阳', phone:'13900000066', contact:''},
+  {name:'商贸街', alias:'商贸街', region:'恒口', phone:'13900000067', contact:''},
+  {name:'啤酒烤肉', alias:'啤酒烤肉', region:'红椿', phone:'13900000068', contact:''},
+  {name:'喜盈门', alias:'喜盈门', region:'平利', phone:'13900000069', contact:''},
+  {name:'喜迎门', alias:'喜迎门', region:'平利', phone:'13900000070', contact:''},
+  {name:'土家酱香饼', alias:'土家酱香', region:'平利', phone:'13900000071', contact:''},
+  {name:'城固面皮', alias:'城固面皮', region:'浦溪', phone:'13900000072', contact:''},
+  {name:'培根煎饼果子', alias:'培根煎饼', region:'岚皋', phone:'13900000073', contact:''},
+  {name:'壮味小食', alias:'壮味小食', region:'紫阳', phone:'13900000074', contact:''},
+  {name:'多多肠粉', alias:'多多肠粉', region:'浦溪', phone:'13900000075', contact:''},
+  {name:'夜明珠一楼', alias:'夜明珠一', region:'旬阳', phone:'13900000076', contact:''},
+  {name:'大案板', alias:'大案板', region:'旬阳', phone:'13900000077', contact:''},
+  {name:'天津包子', alias:'天津包子', region:'五次路口', phone:'13900000078', contact:''},
+  {name:'好香缘', alias:'好香缘', region:'五里', phone:'13900000079', contact:''},
+  {name:'姐妹餐馆', alias:'姐妹餐馆', region:'恒口', phone:'13900000080', contact:''},
+  {name:'姜久山', alias:'姜久山', region:'紫阳', phone:'13900000081', contact:''},
+  {name:'安康蒸面', alias:'安康蒸面', region:'汉阴', phone:'13900000082', contact:''},
+  {name:'宋卿快餐', alias:'宋卿快餐', region:'岚皋', phone:'13900000083', contact:''},
+  {name:'客户', alias:'客户', region:'宁陕', phone:'13900000084', contact:''},
+  {name:'家之味', alias:'家之味', region:'蒿坪', phone:'13900000085', contact:''},
+  {name:'富香小吃', alias:'富香小吃', region:'白河', phone:'13900000086', contact:''},
+  {name:'对象画的饼', alias:'对象画的', region:'紫阳', phone:'13900000087', contact:''},
+  {name:'对面包子店', alias:'对面包子', region:'茅坪', phone:'13900000088', contact:''},
+  {name:'对面芭比包子', alias:'对面芭比', region:'旬阳', phone:'13900000089', contact:''},
+  {name:'小会餐馆', alias:'小会餐馆', region:'大河', phone:'13900000090', contact:''},
+  {name:'小余餐馆', alias:'小余餐馆', region:'红椿', phone:'13900000091', contact:''},
+  {name:'小区邢家炒货', alias:'小区邢家', region:'旬阳', phone:'13900000092', contact:''},
+  {name:'小学对面包子店', alias:'小学对面', region:'茅坪', phone:'13900000093', contact:''},
+  {name:'小左', alias:'小左', region:'洞河', phone:'13900000094', contact:''},
+  {name:'小惠餐馆', alias:'小惠餐馆', region:'大河', phone:'13900000095', contact:''},
+  {name:'小笼包', alias:'小笼包', region:'梅子铺', phone:'13900000096', contact:''},
+  {name:'小罗餐馆', alias:'小罗餐馆', region:'双丰', phone:'13900000097', contact:''},
+  {name:'小艳小吃', alias:'小艳小吃', region:'岚皋', phone:'13900000098', contact:''},
+  {name:'小英餐馆', alias:'小英餐馆', region:'蒿坪', phone:'13900000099', contact:''},
+  {name:'小蒋', alias:'小蒋', region:'汉阴', phone:'13900000100', contact:''},
+  {name:'川香老砂锅', alias:'川香老砂', region:'白河', phone:'13900000101', contact:''},
+  {name:'巧媳妇', alias:'巧媳妇', region:'五里', phone:'13900000102', contact:''},
+  {name:'幼儿园对面', alias:'幼儿园对', region:'汉阴', phone:'13900000103', contact:''},
+  {name:'广场烤肉', alias:'广场烤肉', region:'红椿', phone:'13900000104', contact:''},
+  {name:'广式肠粉', alias:'广式肠粉', region:'紫阳', phone:'13900000105', contact:''},
+  {name:'广源便利店', alias:'广源便利', region:'平利', phone:'13900000106', contact:''},
+  {name:'庞维风', alias:'庞维风', region:'界岭', phone:'13900000107', contact:''},
+  {name:'康师傅餐馆', alias:'康师傅餐', region:'平利', phone:'13900000108', contact:''},
+  {name:'建设路', alias:'建设路', region:'岚皋', phone:'13900000109', contact:''},
+  {name:'建设路班车站', alias:'建设路班', region:'岚皋', phone:'13900000110', contact:''},
+  {name:'张书平', alias:'张书平', region:'岚皋', phone:'13900000111', contact:''},
+  {name:'张书荣', alias:'张书荣', region:'岚皋', phone:'13900000112', contact:''},
+  {name:'张家蒸面', alias:'张家蒸面', region:'岚皋', phone:'13900000113', contact:''},
+  {name:'张秋红', alias:'张秋红', region:'紫阳', phone:'13900000114', contact:''},
+  {name:'张记', alias:'张记', region:'紫阳', phone:'13900000115', contact:''},
+  {name:'张记面皮', alias:'张记面皮', region:'恒口', phone:'13900000116', contact:''},
+  {name:'彩票站', alias:'彩票站', region:'宁陕', phone:'13900000117', contact:''},
+  {name:'彭会', alias:'彭会', region:'白河', phone:'13900000118', contact:''},
+  {name:'徐家小吃', alias:'徐家小吃', region:'白河', phone:'13900000119', contact:''},
+  {name:'恒紫桥头', alias:'恒紫桥头', region:'恒口', phone:'13900000120', contact:''},
+  {name:'惠家时代店', alias:'惠家时代', region:'岚皋', phone:'13900000121', contact:''},
+  {name:'惠家超市时代', alias:'惠家超市', region:'岚皋', phone:'13900000122', contact:''},
+  {name:'手工馒头', alias:'手工馒头', region:'石泉', phone:'13900000123', contact:''},
+  {name:'手抓饼', alias:'手抓饼', region:'平利', phone:'13900000124', contact:''},
+  {name:'擀面皮', alias:'擀面皮', region:'五里', phone:'13900000125', contact:''},
+  {name:'文杰便利店', alias:'文杰便利', region:'紫阳', phone:'13900000126', contact:''},
+  {name:'方世彩', alias:'方世彩', region:'洄水', phone:'13900000127', contact:''},
+  {name:'早点', alias:'早点', region:'付家河', phone:'13900000128', contact:''},
+  {name:'早点见面', alias:'早点见面', region:'岚皋', phone:'13900000129', contact:''},
+  {name:'旬中芭比包子', alias:'旬中芭比', region:'旬阳', phone:'13900000130', contact:''},
+  {name:'明早见', alias:'明早见', region:'紫阳', phone:'13900000131', contact:''},
+  {name:'春枫石磨坊', alias:'春枫石磨', region:'浦溪', phone:'13900000132', contact:''},
+  {name:'晓香汤粉', alias:'晓香汤粉', region:'汉阴', phone:'13900000133', contact:''},
+  {name:'曹兴燕', alias:'曹兴燕', region:'东木', phone:'13900000134', contact:''},
+  {name:'月河王家米线店', alias:'月河王家', region:'汉阴', phone:'13900000135', contact:''},
+  {name:'服务区', alias:'服务区', region:'白河', phone:'13900000136', contact:''},
+  {name:'朱记馄饨', alias:'朱记馄饨', region:'旬阳', phone:'13900000137', contact:''},
+  {name:'杂粮小吃', alias:'杂粮小吃', region:'石泉', phone:'13900000138', contact:''},
+  {name:'李军', alias:'李军', region:'白河', phone:'13900000139', contact:''},
+  {name:'李大叔', alias:'李大叔', region:'茅坪', phone:'13900000140', contact:''},
+  {name:'李大叔重庆小面', alias:'李大叔重', region:'茅坪', phone:'13900000141', contact:''},
+  {name:'李苗绘', alias:'李苗绘', region:'五里', phone:'13900000142', contact:''},
+  {name:'杨杨', alias:'杨杨', region:'汉王', phone:'13900000143', contact:''},
+  {name:'杨记', alias:'杨记', region:'平利', phone:'13900000144', contact:''},
+  {name:'杭州小笼包', alias:'杭州小笼', region:'白河', phone:'13900000145', contact:''},
+  {name:'林一轩', alias:'林一轩', region:'蒿坪', phone:'13900000146', contact:''},
+  {name:'柯宝蒸面', alias:'柯宝蒸面', region:'白河', phone:'13900000147', contact:''},
+  {name:'样品', alias:'样品', region:'市区', phone:'13900000148', contact:''},
+  {name:'桥头包子', alias:'桥头包子', region:'大河', phone:'13900000149', contact:''},
+  {name:'桥底包子铺', alias:'桥底包子', region:'五里', phone:'13900000150', contact:''},
+  {name:'椿枫石磨坊', alias:'椿枫石磨', region:'浦溪', phone:'13900000151', contact:''},
+  {name:'毛兴英', alias:'毛兴英', region:'紫阳', phone:'13900000152', contact:''},
+  {name:'毛发新', alias:'毛发新', region:'洞河', phone:'13900000153', contact:''},
+  {name:'毛家小吃', alias:'毛家小吃', region:'高滩', phone:'13900000154', contact:''},
+  {name:'民主', alias:'民主', region:'五里', phone:'13900000155', contact:''},
+  {name:'民威自强', alias:'民威自强', region:'旬阳', phone:'13900000156', contact:''},
+  {name:'永乐餐馆', alias:'永乐餐馆', region:'平利', phone:'13900000157', contact:''},
+  {name:'汉中热米皮', alias:'汉中热米', region:'浦溪', phone:'13900000158', contact:''},
+  {name:'汉中面皮', alias:'汉中面皮', region:'大河', phone:'13900000159', contact:''},
+  {name:'汉城精品', alias:'汉城精品', region:'平利', phone:'13900000160', contact:''},
+  {name:'汉城超市', alias:'汉城超市', region:'平利', phone:'13900000161', contact:''},
+  {name:'汪义翠', alias:'汪义翠', region:'毛坝', phone:'13900000162', contact:''},
+  {name:'汪记早点', alias:'汪记早点', region:'岚皋', phone:'13900000163', contact:''},
+  {name:'沈桂平', alias:'沈桂平', region:'汉阴', phone:'13900000164', contact:''},
+  {name:'沙县小吃', alias:'沙县小吃', region:'五里', phone:'13900000165', contact:''},
+  {name:'河街小吃屋', alias:'河街小吃', region:'岚皋', phone:'13900000166', contact:''},
+  {name:'油酥火烧', alias:'油酥火烧', region:'旬阳', phone:'13900000167', contact:''},
+  {name:'洪', alias:'洪', region:'紫阳', phone:'13900000168', contact:''},
+  {name:'派派小吃', alias:'派派小吃', region:'恒口', phone:'13900000169', contact:''},
+  {name:'海星早点', alias:'海星早点', region:'岚皋', phone:'13900000170', contact:''},
+  {name:'清晨味道', alias:'清晨味道', region:'毛坝', phone:'13900000171', contact:''},
+  {name:'溢河路口', alias:'溢河路口', region:'大同', phone:'13900000172', contact:''},
+  {name:'满鑫隆', alias:'满鑫隆', region:'五次路口', phone:'13900000173', contact:''},
+  {name:'潼关肉夹馍', alias:'潼关肉夹', region:'旬阳', phone:'13900000174', contact:''},
+  {name:'灌灌鸡', alias:'灌灌鸡', region:'紫阳', phone:'13900000175', contact:''},
+  {name:'火车站', alias:'火车站', region:'恒口', phone:'13900000176', contact:''},
+  {name:'炸油条', alias:'炸油条', region:'宁陕', phone:'13900000177', contact:''},
+  {name:'炸麻球客户', alias:'炸麻球客', region:'镇坪', phone:'13900000178', contact:''},
+  {name:'炸麻花', alias:'炸麻花', region:'旬阳', phone:'13900000179', contact:''},
+  {name:'烤鸭', alias:'烤鸭', region:'紫阳', phone:'13900000180', contact:''},
+  {name:'热坊鲜卤', alias:'热坊鲜卤', region:'广佛', phone:'13900000181', contact:''},
+  {name:'煎饼果子', alias:'煎饼果子', region:'岚皋', phone:'13900000182', contact:''},
+  {name:'煮米线', alias:'煮米线', region:'旬阳', phone:'13900000183', contact:''},
+  {name:'燕姐小吃', alias:'燕姐小吃', region:'紫阳', phone:'13900000184', contact:''},
+  {name:'牛肉面', alias:'牛肉面', region:'平利', phone:'13900000185', contact:''},
+  {name:'牛肉饼', alias:'牛肉饼', region:'紫阳', phone:'13900000186', contact:''},
+  {name:'特色小吃', alias:'特色小吃', region:'紫阳', phone:'13900000187', contact:''},
+  {name:'状味小吃', alias:'状味小吃', region:'紫阳', phone:'13900000188', contact:''},
+  {name:'猫子蒸面', alias:'猫子蒸面', region:'五里', phone:'13900000189', contact:''},
+  {name:'王书林', alias:'王书林', region:'恒口', phone:'13900000190', contact:''},
+  {name:'王婷', alias:'王婷', region:'恒口', phone:'13900000191', contact:''},
+  {name:'王家米线', alias:'王家米线', region:'汉阴', phone:'13900000192', contact:''},
+  {name:'王家蒸面', alias:'王家蒸面', region:'旬阳', phone:'13900000193', contact:''},
+  {name:'王杰便利店', alias:'王杰便利', region:'紫阳', phone:'13900000194', contact:''},
+  {name:'王燕', alias:'王燕', region:'汉阴', phone:'13900000195', contact:''},
+  {name:'王见根', alias:'王见根', region:'汉阴', phone:'13900000196', contact:''},
+  {name:'王闪', alias:'王闪', region:'毛坝', phone:'13900000197', contact:''},
+  {name:'瑞祥家园', alias:'瑞祥家园', region:'旬阳', phone:'13900000198', contact:''},
+  {name:'盼盼小吃', alias:'盼盼小吃', region:'紫阳', phone:'13900000199', contact:''},
+  {name:'石磨坊', alias:'石磨坊', region:'汉阴', phone:'13900000200', contact:''},
+  {name:'石磨豆浆', alias:'石磨豆浆', region:'五里', phone:'13900000201', contact:''},
+  {name:'石记', alias:'石记', region:'涧池', phone:'13900000202', contact:''},
+  {name:'禄林餐馆', alias:'禄林餐馆', region:'紫阳', phone:'13900000203', contact:''},
+  {name:'福万家超市', alias:'福万家超', region:'旬阳', phone:'13900000204', contact:''},
+  {name:'禾程早点', alias:'禾程早点', region:'平利', phone:'13900000205', contact:''},
+  {name:'秋珍', alias:'秋珍', region:'瓦庙', phone:'13900000206', contact:''},
+  {name:'秦傅家', alias:'秦傅家', region:'恒口', phone:'13900000207', contact:''},
+  {name:'窗帘后巷', alias:'窗帘后巷', region:'恒口', phone:'13900000208', contact:''},
+  {name:'篜味包子', alias:'篜味包子', region:'恒口', phone:'13900000209', contact:''},
+  {name:'籽莲餐馆', alias:'籽莲餐馆', region:'旬阳', phone:'13900000210', contact:''},
+  {name:'紫邑新城里脊夹馍', alias:'紫邑新城', region:'紫阳', phone:'13900000211', contact:''},
+  {name:'红梅快餐', alias:'红梅快餐', region:'白河', phone:'13900000212', contact:''},
+  {name:'红红蒸面', alias:'红红蒸面', region:'恒口', phone:'13900000213', contact:''},
+  {name:'绿源天鲜', alias:'绿源天鲜', region:'镇坪', phone:'13900000214', contact:''},
+  {name:'绿源电动车', alias:'绿源电动', region:'岚皋', phone:'13900000215', contact:''},
+  {name:'罐罐鸡', alias:'罐罐鸡', region:'紫阳', phone:'13900000216', contact:''},
+  {name:'网红桥', alias:'网红桥', region:'岚皋', phone:'13900000217', contact:''},
+  {name:'罗秀军', alias:'罗秀军', region:'紫阳', phone:'13900000218', contact:''},
+  {name:'美乐基', alias:'美乐基', region:'瓦庙', phone:'13900000219', contact:''},
+  {name:'美天包子', alias:'美天包子', region:'恒口', phone:'13900000220', contact:''},
+  {name:'翁家蒸面', alias:'翁家蒸面', region:'五里', phone:'13900000221', contact:''},
+  {name:'老台门', alias:'老台门', region:'平利', phone:'13900000222', contact:''},
+  {name:'老城两掺面', alias:'老城两掺', region:'旬阳', phone:'13900000223', contact:''},
+  {name:'老城西油条', alias:'老城西油', region:'岚皋', phone:'13900000224', contact:''},
+  {name:'老城鲜味多', alias:'老城鲜味', region:'旬阳', phone:'13900000225', contact:''},
+  {name:'老潼关', alias:'老潼关', region:'岚皋', phone:'13900000226', contact:''},
+  {name:'老碗面', alias:'老碗面', region:'吕河', phone:'13900000227', contact:''},
+  {name:'胡仁城', alias:'胡仁城', region:'岚皋', phone:'13900000228', contact:''},
+  {name:'胡仁成', alias:'胡仁成', region:'岚皋', phone:'13900000229', contact:''},
+  {name:'胡记面皮', alias:'胡记面皮', region:'大河', phone:'13900000230', contact:''},
+  {name:'胡辣汤', alias:'胡辣汤', region:'旬阳', phone:'13900000231', contact:''},
+  {name:'腊汁肉夹馍', alias:'腊汁肉夹', region:'镇坪', phone:'13900000232', contact:''},
+  {name:'良记美食', alias:'良记美食', region:'平利', phone:'13900000233', contact:''},
+  {name:'芳芳小吃', alias:'芳芳小吃', region:'紫阳', phone:'13900000234', contact:''},
+  {name:'茅坪', alias:'茅坪', region:'白河', phone:'13900000235', contact:''},
+  {name:'草庵客户', alias:'草庵客户', region:'恒口', phone:'13900000236', contact:''},
+  {name:'药妇沟', alias:'药妇沟', region:'平利', phone:'13900000237', contact:''},
+  {name:'莲念小吃', alias:'莲念小吃', region:'旬阳', phone:'13900000238', contact:''},
+  {name:'菜市场牛肉面', alias:'菜市场牛', region:'平利', phone:'13900000239', contact:''},
+  {name:'菜市场馒头', alias:'菜市场馒', region:'岚皋', phone:'13900000240', contact:''},
+  {name:'蒸味包子', alias:'蒸味包子', region:'恒口', phone:'13900000241', contact:''},
+  {name:'蒸旺包子', alias:'蒸旺包子', region:'汉阴', phone:'13900000242', contact:''},
+  {name:'虹桥市场', alias:'虹桥市场', region:'汉阴', phone:'13900000243', contact:''},
+  {name:'裤带面', alias:'裤带面', region:'大同', phone:'13900000244', contact:''},
+  {name:'西大桥商贸小区', alias:'西大桥商', region:'平利', phone:'13900000245', contact:''},
+  {name:'西营包子店', alias:'西营包子', region:'白河', phone:'13900000246', contact:''},
+  {name:'西营彭会', alias:'西营彭会', region:'白河', phone:'13900000247', contact:''},
+  {name:'财富小吃', alias:'财富小吃', region:'旬阳', phone:'13900000248', contact:''},
+  {name:'赵家小吃', alias:'赵家小吃', region:'恒口', phone:'13900000249', contact:''},
+  {name:'还想吃汤包', alias:'还想吃汤', region:'五里', phone:'13900000250', contact:''},
+  {name:'连念小吃', alias:'连念小吃', region:'旬阳', phone:'13900000251', contact:''},
+  {name:'邓先菊', alias:'邓先菊', region:'汉王', phone:'13900000252', contact:''},
+  {name:'酱香饼', alias:'酱香饼', region:'平利', phone:'13900000253', contact:''},
+  {name:'酸辣粉', alias:'酸辣粉', region:'旬阳', phone:'13900000254', contact:''},
+  {name:'里脊夹馍', alias:'里脊夹馍', region:'紫阳', phone:'13900000255', contact:''},
+  {name:'重庆包子', alias:'重庆包子', region:'平利', phone:'13900000256', contact:''},
+  {name:'重庆抄手', alias:'重庆抄手', region:'五里', phone:'13900000257', contact:''},
+  {name:'金江龙庭', alias:'金江龙庭', region:'石泉', phone:'13900000258', contact:''},
+  {name:'金海', alias:'金海', region:'汉阴', phone:'13900000259', contact:''},
+  {name:'金海岸利家超市', alias:'金海岸利', region:'汉阴', phone:'13900000260', contact:''},
+  {name:'金麦面馆', alias:'金麦面馆', region:'恒口', phone:'13900000261', contact:''},
+  {name:'铁蛋刀削面', alias:'铁蛋刀削', region:'吕河', phone:'13900000262', contact:''},
+  {name:'阿莲小吃', alias:'阿莲小吃', region:'汉阴', phone:'13900000263', contact:''},
+  {name:'陈丰', alias:'陈丰', region:'五次路口', phone:'13900000264', contact:''},
+  {name:'陈显坊', alias:'陈显坊', region:'高桥', phone:'13900000265', contact:''},
+  {name:'陈燕', alias:'陈燕', region:'岚皋', phone:'13900000266', contact:''},
+  {name:'陈琳', alias:'陈琳', region:'紫阳', phone:'13900000267', contact:''},
+  {name:'陈记肉夹馍', alias:'陈记肉夹', region:'涧池', phone:'13900000268', contact:''},
+  {name:'面皮店', alias:'面皮店', region:'蜀河', phone:'13900000269', contact:''},
+  {name:'香酥牛肉饼', alias:'香酥牛肉', region:'紫阳', phone:'13900000270', contact:''},
+  {name:'高小梅', alias:'高小梅', region:'恒口', phone:'13900000271', contact:''},
+  {name:'高速路口', alias:'高速路口', region:'恒口', phone:'13900000272', contact:''},
+  {name:'鲁家台上海汤包', alias:'鲁家台上', region:'旬阳', phone:'13900000273', contact:''},
+  {name:'鲁家台功夫煎饼', alias:'鲁家台功', region:'旬阳', phone:'13900000274', contact:''},
+  {name:'鲁家台千层破酥包', alias:'鲁家台千', region:'旬阳', phone:'13900000275', contact:''},
+  {name:'鲁家台财富小吃', alias:'鲁家台财', region:'旬阳', phone:'13900000276', contact:''},
+  {name:'鲜味多', alias:'鲜味多', region:'旬阳', phone:'13900000277', contact:''},
+  {name:'黄焖鸡', alias:'黄焖鸡', region:'吕河', phone:'13900000278', contact:''},
+  {name:'黄焖鸡1店', alias:'黄焖鸡1', region:'吕河', phone:'13900000279', contact:''},
+  {name:'黄焖鸡2店', alias:'黄焖鸡2', region:'吕河', phone:'13900000280', contact:''},
+  {name:'龙哥', alias:'龙哥', region:'恒口', phone:'13900000281', contact:''},
+  {name:'龚记早点', alias:'龚记早点', region:'紫阳', phone:'13900000282', contact:''},
+];
+
+
+const DEFAULT_ANNOUNCEMENTS = [
+  '欢迎使用丰淮商贸采购下单助手',
+  '已录入全部客户（282家）及全部商品（料号1-180）',
+  '商品单位严格按照表单：包/件、杯/件、个/件、件、批/件',
+  '送货单按商品分行显示，单价×数量=金额',
+  '调货商品（料号93）支持下单员自行填写价格',
+  '每个商品可填写备注，下单员自行输入'
+];
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const data = {
+    products: DEFAULT_PRODUCTS,
+    customers: DEFAULT_CUSTOMERS,
+    announcements: DEFAULT_ANNOUNCEMENTS,
+    orders: []
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  return data;
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function resetDemoData(){
+  if(!confirm('确定重置演示数据？将清空所有订单并加载全部商品（料号1-180）和全部客户（282家），区域配置也会重置。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  data = {
+    products: DEFAULT_PRODUCTS,
+    customers: DEFAULT_CUSTOMERS,
+    announcements: DEFAULT_ANNOUNCEMENTS,
+    orders: []
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  seedSampleOrders();
+  // Re-init pages
+  if(typeof renderProductList === 'function') renderProductList();
+  if(typeof renderCustomerList === 'function') renderCustomerList();
+  if(typeof initHome === 'function') initHome();
+  if(typeof initOrders === 'function') initOrders();
+  showToast('已重置：282家客户 + 167条商品已加载');
+  // Reload products reference
+  data = loadData();
+  try{ navigateTo('home'); }catch(e){}
+}
+
+let data = loadData();
+let state = {
+  currentCustomer: null,
+  currentItems: [],
+  currentOrderId: null,
+  currentPayment: 'cash',
+  orderFilter: 'today',
+  reportTab: 'product'
+};
+
+// ============ UTILITIES ============
+function $(id){ return document.getElementById(id); }
+function fmtMoney(n){ return '¥' + Number(n || 0).toFixed(2); }
+function getUnitByMode(item, mode){
+  const u = item.unit || '';
+  const parts = u.split('/');
+  if(mode === 'piece' || mode === 'case') return parts[1] || '件';
+  return parts[0] || '个';
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function nowStr(){
+  const d = new Date();
+  return todayStr() + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+function generateOrderNo(){
+  const d = new Date();
+  const datePart = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  const seq = String(data.orders.filter(o => o.orderNo && o.orderNo.includes(datePart)).length + 1).padStart(4,'0');
+  return 'FH-' + datePart + '-' + seq;
+}
+function showToast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1500);
+}
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+
+// ============ WAREHOUSE ============
+let whTab = 'pending';
+
+function switchWhTab(tab){
+  whTab = tab;
+  document.querySelectorAll('.wh-tabs .tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.wtab === tab);
+  });
+  renderWhList();
+}
+
+function renderWhList(){
+  const today = new Date().toDateString();
+  // 库管看全部订单（所有下单员的），管理员也看全部
+  const orders = data.orders.filter(o => {
+    const oDate = new Date(o.time).toDateString();
+    return oDate === today;
+  });
+  
+  const pending = orders.filter(o => o.status === 'submitted');
+  const confirmed = orders.filter(o => o.status === 'confirmed');
+  
+  $('pendingCount').textContent = pending.length;
+  $('confirmedCount').textContent = confirmed.length;
+  
+  const list = whTab === 'pending' ? pending : confirmed;
+  const listEl = $('whList');
+  
+  if(list.length === 0){
+    listEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-2)">${whTab === 'pending' ? '暂无待确认订单' : '暂无已确认订单'}</div>`;
+    return;
+  }
+  
+  listEl.innerHTML = list.map(o => {
+    const items = o.items.map(it => {
+      const pq = it.piece_qty || 0;
+      const zq = it.zero_qty || 0;
+      if(pq > 0 && zq > 0) return `${it.name}×${pq}件+${zq}${it.zero_unit||'个'}`;
+      if(pq > 0) return `${it.name}×${pq}件`;
+      if(zq > 0) return `${it.name}×${zq}${it.zero_unit||'个'}`;
+      return `${it.name}×0`;
+    }).join(', ');
+    const statusLabel = whTab === 'pending' ? '<span class="wh-order-status status-pending">待确认</span>' : '<span class="wh-order-status status-confirmed">已确认</span>';
+    const confirmBtn = whTab === 'pending' 
+      ? `<button class="btn-confirm" onclick="confirmOrder('${o.id}')">✅ 确认</button>`
+      : `<span class="confirmed-tag">✓ 已确认</span>`;
+    const autoTag = o.auto_confirmed ? ' <span style="font-size:10px;color:#E6A23C">(自动)</span>' : '';
+    
+    return `
+      <div class="wh-order-item ${o.status === 'confirmed' ? 'confirmed' : ''}">
+        <div class="wh-order-header">
+          <span class="wh-order-no">${o.orderNo}</span>
+          ${statusLabel}${autoTag}
+        </div>
+        <div class="wh-customer">${o.customer}</div>
+        <div class="wh-meta">
+          <span>📍 ${o.region}</span>
+          <span>🕐 ${formatTime(o.time)}</span>
+        </div>
+        <div class="wh-items">${items}</div>
+        <div class="wh-footer">
+          <span class="wh-amount">¥${Number(o.amount).toFixed(2)}</span>
+          ${confirmBtn}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatTime(isoStr){
+  const d = new Date(isoStr);
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function confirmOrder(orderId){
+  const role = data.currentRole || 'orderer';
+  if(role === 'orderer'){ showToast('无权限：仅库管/管理员可操作'); return; }
+  const order = data.orders.find(o => o.id === orderId);
+  if(order){
+    order.status = 'confirmed';
+    order.warehouse_confirmed = true;
+    order.confirmed_by = 'warehouse_user';
+    order.confirmed_at = new Date().toISOString();
+    order.auto_confirmed = false;
+    showToast('确认成功 ✓');
+    renderWhList();
+  }
+}
+
+function confirmAllPending(){
+  const role = data.currentRole || 'orderer';
+  if(role === 'orderer'){ showToast('无权限：仅库管/管理员可操作'); return; }
+  const today = new Date().toDateString();
+  const pending = data.orders.filter(o => {
+    return new Date(o.time).toDateString() === today && o.status === 'submitted';
+  });
+  if(pending.length === 0){
+    showToast('暂无待确认订单');
+    return;
+  }
+  pending.forEach(o => {
+    o.status = 'confirmed';
+    o.warehouse_confirmed = true;
+    o.confirmed_by = 'warehouse_user';
+    o.confirmed_at = new Date().toISOString();
+    o.auto_confirmed = false;
+  });
+  showToast(`已确认 ${pending.length} 笔订单 ✓`);
+  renderWhList();
+}
+
+function simulateAutoConfirm(){
+  const role = data.currentRole || 'orderer';
+  if(role === 'orderer'){ showToast('无权限：仅库管/管理员可操作'); return; }
+  const today = new Date().toDateString();
+  const pending = data.orders.filter(o => {
+    return new Date(o.time).toDateString() === today && o.status === 'submitted';
+  });
+  if(pending.length === 0){
+    showToast('暂无待确认订单');
+    return;
+  }
+  pending.forEach(o => {
+    o.status = 'confirmed';
+    o.warehouse_confirmed = true;
+    o.confirmed_by = 'system_auto';
+    o.confirmed_at = new Date().toISOString();
+    o.auto_confirmed = true;
+  });
+  showToast(`16:00自动通过 ${pending.length} 笔`);
+  renderWhList();
+}
+
+function exportWarehouseOut(){
+  const today = new Date().toISOString().split('T')[0];
+  // 库管导出全部已确认，下单员/管理员导出自己可见的已确认
+  const orders = getVisibleOrders().filter(o => {
+    return new Date(o.time).toDateString() === new Date().toDateString() && o.status === 'confirmed';
+  });
+  
+  if(orders.length === 0){
+    showToast('今日暂无已确认订单');
+    return;
+  }
+  
+  const rows = [];
+  let no = 1;
+  let currentCustomer = '';
+  
+  orders.forEach(o => {
+    if(o.customer !== currentCustomer){
+      currentCustomer = o.customer;
+      rows.push([no++, '', '', o.customer, '', '', '', '']);
+    }
+    o.items.forEach(it => {
+      const pieceQty = it.piece_qty || 0;
+      const zeroQty = it.zero_qty || 0;
+      if(pieceQty > 0){
+        rows.push(['', formatTime(o.time), o.region, '', it.name, '件', pieceQty, it.remark || '']);
+      }
+      if(zeroQty > 0){
+        const zeroUnit = it.zero_unit || '个';
+        rows.push(['', formatTime(o.time), o.region, '', it.name, zeroUnit, zeroQty, it.remark || '']);
+      }
+    });
+  });
+  
+  // Build CSV (simplified - header only for demo)
+  const header = ['编号', '时间', '区域', '客户', '商品', '单位', '数量', '备注'];
+  const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type: 'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `出库单_${today}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('出库单已导出');
+}
+
+// ============ CLOCK ============
+function updateClock(){
+  const d = new Date();
+  $('clock').textContent = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+setInterval(updateClock, 10000);
+updateClock();
+
+// ============ NAVIGATION ============
+const STACK = ['login'];
+const TAB_PAGES = ['home','orders','warehouse','reports','profile'];
+const TAB_BAR_MAP = {home:true, orders:true, warehouse:true, reports:true, profile:true};
+
+function navigateTo(page, params){
+  // Close modals
+  ['productModal','customerModal'].forEach(m => closeModal(m));
+  // Hide tabbar for sub-pages
+  const tabBar = $('tab-bar');
+  const navBar = $('nav-bar');
+  const navTitle = $('navTitle');
+  const navBack = $('navBack');
+
+  if(TAB_BAR_MAP[page]){
+    tabBar.style.display = 'flex';
+    navBar.style.display = 'none';
+    STACK.length = 0;
+    STACK.push(page);
+    switchTab(page, true);
+  } else {
+    tabBar.style.display = 'none';
+    navBar.style.display = 'flex';
+    STACK.push(page);
+    const titles = {newOrder:'新建订单', orderDetail:'订单详情', shipping:'送货单预览', products:'商品管理', customers:'客户管理'};
+    let title = titles[page] || '';
+    if(page === 'newOrder' && state.currentOrderId) title = '编辑订单';
+    navTitle.textContent = title;
+    navBack.onclick = () => navigateBack();
+  }
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = $('page-' + page);
+  if(target){
+    target.classList.add('active');
+    target.classList.remove('fade-in');
+    void target.offsetWidth;
+    target.classList.add('fade-in');
+  }
+
+  // Page-specific init
+  if(page === 'home') initHome();
+  if(page === 'newOrder') initNewOrder();
+  if(page === 'orders') renderOrderList();
+  if(page === 'products') renderProductList();
+  if(page === 'customers') renderCustomerList();
+  if(page === 'reports') initReports();
+  if(page === 'orderDetail') initOrderDetail(params);
+  if(page === 'shipping') initShipping(params);
+}
+
+function navigateBack(){
+  if(STACK.length > 1){
+    STACK.pop();
+    const prev = STACK[STACK.length - 1];
+    if(TAB_BAR_MAP[prev]){
+      $('tab-bar').style.display = 'flex';
+      $('nav-bar').style.display = 'none';
+      switchTab(prev, true);
+    } else {
+      $('tab-bar').style.display = 'none';
+      $('nav-bar').style.display = 'flex';
+      $('navTitle').textContent = {newOrder:'新建订单',orderDetail:'订单详情',shipping:'送货单预览',products:'商品管理',customers:'客户管理'}[prev] || '';
+      // 从编辑模式返回时清编辑态
+      if(prev !== 'newOrder') state.currentOrderId = null;
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const t = $('page-' + prev);
+      if(t){ t.classList.add('active'); t.classList.remove('fade-in'); void t.offsetWidth; t.classList.add('fade-in'); }
+      if(prev === 'orderDetail' && currentDetailOrder) initOrderDetail(currentDetailOrder.id);
+      if(prev === 'shipping' && currentShippingOrder) initShipping(currentShippingOrder.id);
+      if(prev === 'newOrder') initNewOrder();
+    }
+  }
+}
+
+function switchTab(tab, silent){
+  document.querySelectorAll('#tab-bar .tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('#tab-bar .tab[data-tab="'+tab+'"]').classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = $('page-' + tab);
+  if(target) target.classList.add('active');
+  if(!silent){
+    STACK.length = 0;
+    STACK.push(tab);
+  }
+  if(tab === 'home') initHome();
+  if(tab === 'orders') renderOrderList();
+  if(tab === 'warehouse') renderWhList();
+  if(tab === 'reports') initReports();
+}
+
+// ============ LOGIN ============
+const ROLE_PROFILES = {
+  orderer:   { name: '张经理', roleLabel: '下单员', color: '#67C23A' },
+  warehouse: { name: '李库管', roleLabel: '库管',   color: '#409EFF' },
+  admin:     { name: '王老板', roleLabel: '管理员', color: '#F56C6C' }
+};
+
+function doLogin(){
+  // Initialize with sample orders if empty
+  if(data.orders.length === 0){
+    seedSampleOrders();
+  }
+  const role = data.currentRole || 'orderer';
+  data.currentRole = role;
+  data.currentUserName = ROLE_PROFILES[role].name;
+  saveData();
+  // 更新顶部用户信息
+  updateUserInfo();
+  // 权限控制：下单员隐藏库管Tab
+  const whTab = $('tab-warehouse');
+  if(whTab) whTab.style.display = (role === 'orderer') ? 'none' : '';
+  // 库管进库管工作台，管理员和下单员进首页
+  if(role === 'warehouse'){
+    navigateTo('warehouse');
+  } else {
+    navigateTo('home');
+  }
+}
+
+function selectRole(role){
+  data.currentRole = role;
+  document.querySelectorAll('.role-item').forEach(el => {
+    if(el.dataset.role === role){
+      el.classList.add('active');
+      el.style.borderColor = 'var(--green)';
+      el.style.background = '#f0faf5';
+    } else {
+      el.classList.remove('active');
+      el.style.borderColor = 'var(--border)';
+      el.style.background = '';
+    }
+  });
+}
+
+// 更新顶部用户信息显示
+function updateUserInfo(){
+  const role = data.currentRole || 'orderer';
+  const profile = ROLE_PROFILES[role] || ROLE_PROFILES.orderer;
+  const greetingEl = document.querySelector('.home-hero .greeting');
+  if(greetingEl) greetingEl.textContent = `你好，${profile.name} ${getRoleEmoji(role)}`;
+  const avatarEl = $('userAvatar');
+  if(avatarEl) avatarEl.textContent = profile.name.charAt(0);
+  const roleBadge = $('roleBadge');
+  if(roleBadge) roleBadge.textContent = getRoleEmoji(role) + ' ' + profile.roleLabel;
+  // 同步"我的"页面
+  const pName = $('profileName');
+  if(pName) pName.textContent = profile.name;
+  const pAvatar = $('profileAvatar');
+  if(pAvatar) pAvatar.textContent = profile.name.charAt(0);
+  const pRole = $('profileRole');
+  if(pRole) pRole.textContent = `丰淮商贸 · ${profile.roleLabel}`;
+}
+
+function getRoleEmoji(role){
+  return role === 'admin' ? '👑' : (role === 'warehouse' ? '📦' : '📝');
+}
+
+// 退出登录
+function logout(){
+  if(!confirm('确定退出登录吗？')) return;
+  data.currentRole = null;
+  data.currentUserName = null;
+  saveData();
+  STACK.length = 0;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $('page-login').classList.add('active');
+}
+
+// 获取当前角色可见的订单（数据隔离核心）
+function getVisibleOrders(){
+  const role = data.currentRole || 'orderer';
+  const userName = data.currentUserName || ROLE_PROFILES[role].name;
+  if(role === 'admin' || role === 'warehouse'){
+    // 管理员和库管看全部
+    return data.orders.slice();
+  }
+  // 下单员只看自己创建的订单
+  return data.orders.filter(o => (o.created_by_name || '张经理') === userName);
+}
+
+function seedSampleOrders(){
+  const now = new Date();
+  const p = (mc) => data.products.find(x => x.material_code === mc);
+  const mkItem = (mc, piece_qty, zero_qty) => {
+    const prod = p(mc);
+    return {...prod, piece_qty, zero_qty, remark:''};
+  };
+  const samples = [
+    // === 今天的订单 ===
+    // 张经理的订单
+    {customer:'万友超市',region:'白河县',phone:'13800138001',contact:'王老板',items:[mkItem('1',2,10),mkItem('23',3,25)],time: now.toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'submitted', created_by_name:'张经理'},
+    {customer:'家惠购物广场',region:'汉滨区',phone:'13800138005',contact:'赵经理',items:[mkItem('45',5,0),mkItem('46',1,15),mkItem('122',2,5)],time: new Date(now.getTime()-3600000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'submitted', created_by_name:'张经理'},
+    {customer:'金州超市',region:'汉滨区',phone:'13800138006',contact:'陈经理',items:[mkItem('1',5,0),mkItem('4',2,10),mkItem('93',0,30)],time: new Date(now.getTime()-14400000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'张经理'},
+    {customer:'万达百货',region:'白河县',phone:'13800138007',contact:'孙主管',items:[mkItem('23',1,50),mkItem('45',3,0)],time: new Date(now.getTime()-18000000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'confirmed', created_by_name:'张经理', auto_confirmed:true},
+    {customer:'老街口包子铺',region:'白河县',phone:'13800138004',contact:'刘老板',items:[mkItem('4',4,8),mkItem('93',0,15)],time: new Date(now.getTime()-7200000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'submitted', created_by_name:'刘业务'},
+    {customer:'二幼千层破酥包',region:'旬阳市',phone:'13800138002',contact:'李师傅',items:[mkItem('10',3,20),mkItem('127',2,5),mkItem('147',3,0)],time: new Date(now.getTime()-10800000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'confirmed', created_by_name:'刘业务'},
+    // 今天更多订单（刘业务）
+    {customer:'鑫盛小吃',region:'汉阴县',phone:'13800138010',contact:'张老板',items:[mkItem('5',1,30),mkItem('6',2,80)],time: new Date(now.getTime()-5400000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'刘业务'},
+    {customer:'美味佳餐厅',region:'石泉县',phone:'13800138011',contact:'陈店长',items:[mkItem('14',3,10),mkItem('7',2,15),mkItem('8',1,45)],time: new Date(now.getTime()-9000000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'submitted', created_by_name:'刘业务'},
+    // 今天管理员的订单
+    {customer:'龙华购物',region:'紫阳县',phone:'13800138012',contact:'吴经理',items:[mkItem('16',2,8),mkItem('17',3,12)],time: new Date(now.getTime()-12600000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'管理员'},
+    {customer:'东方超市',region:'岚皋县',phone:'13800138013',contact:'郑主管',items:[mkItem('18',1,20),mkItem('19',2,10),mkItem('20',3,0)],time: new Date(now.getTime()-16200000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'confirmed', created_by_name:'管理员', auto_confirmed:true},
+    
+    // === 昨天的订单 ===
+    {customer:'万友超市',region:'白河县',phone:'13800138001',contact:'王老板',items:[mkItem('2',3,15),mkItem('3',2,8)],time: new Date(now.getTime()-86400000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'张经理'},
+    {customer:'金州超市',region:'汉滨区',phone:'13800138006',contact:'陈经理',items:[mkItem('21',2,30),mkItem('22',1,6)],time: new Date(now.getTime()-90000000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'completed', created_by_name:'张经理'},
+    {customer:'老街口包子铺',region:'白河县',phone:'13800138004',contact:'刘老板',items:[mkItem('23',5,20),mkItem('24',3,10)],time: new Date(now.getTime()-88200000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'刘业务'},
+    {customer:'美味佳餐厅',region:'石泉县',phone:'13800138011',contact:'陈店长',items:[mkItem('25',2,8),mkItem('26',1,5),mkItem('27',4,20)],time: new Date(now.getTime()-93600000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'completed', created_by_name:'刘业务'},
+    {customer:'龙华购物',region:'紫阳县',phone:'13800138012',contact:'吴经理',items:[mkItem('28',3,15),mkItem('29',2,0)],time: new Date(now.getTime()-95400000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'confirmed', created_by_name:'管理员'},
+    
+    // === 前天的订单 ===
+    {customer:'家惠购物广场',region:'汉滨区',phone:'13800138005',contact:'赵经理',items:[mkItem('30',2,8),mkItem('31',1,4),mkItem('32',3,12)],time: new Date(now.getTime()-172800000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'completed', created_by_name:'张经理'},
+    {customer:'万达百货',region:'白河县',phone:'13800138007',contact:'孙主管',items:[mkItem('33',1,6),mkItem('34',2,15)],time: new Date(now.getTime()-176400000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'completed', created_by_name:'张经理'},
+    {customer:'二幼千层破酥包',region:'旬阳市',phone:'13800138002',contact:'李师傅',items:[mkItem('35',4,20),mkItem('36',2,10),mkItem('37',3,0)],time: new Date(now.getTime()-174600000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'completed', created_by_name:'刘业务'},
+    {customer:'鑫盛小吃',region:'汉阴县',phone:'13800138010',contact:'张老板',items:[mkItem('38',2,10),mkItem('39',1,5)],time: new Date(now.getTime()-178200000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'completed', created_by_name:'刘业务'},
+    
+    // === 更早的订单（上周） ===
+    {customer:'东方超市',region:'岚皋县',phone:'13800138013',contact:'郑主管',items:[mkItem('40',1,0),mkItem('41',2,8)],time: new Date(now.getTime()-604800000).toISOString(), orderNo: generateOrderNo(), payment:'credit', status:'completed', created_by_name:'管理员'},
+    {customer:'东方超市',region:'岚皋县',phone:'13800138013',contact:'郑主管',items:[mkItem('42',1,6),mkItem('43',2,10),mkItem('44',1,0)],time: new Date(now.getTime()-691200000).toISOString(), orderNo: generateOrderNo(), payment:'cash', status:'completed', created_by_name:'管理员'},
+  ];
+  samples.forEach(o => {
+    o.id = 'ord_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    o.amount = calcOrderAmount(o.items);
+    if(o.status === 'confirmed' || o.status === 'completed'){
+      o.warehouse_confirmed = true;
+      o.confirmed_by = o.auto_confirmed ? 'system_auto' : '李库管';
+      o.confirmed_at = new Date(new Date(o.time).getTime() + 3600000).toISOString();
+    }
+    data.orders.push(o);
+  });
+  saveData();
+}
+
+function calcOrderAmount(items){
+  return items.reduce((sum, it) => {
+    const pieceQty = it.piece_qty || 0;
+    const zeroQty = it.zero_qty || 0;
+    const pricePiece = it.price_piece || 0;
+    const priceZero = it.price_zero || 0;
+    let rowTotal = 0;
+    if(it.pricing_mode === 'case'){
+      rowTotal = pieceQty * pricePiece + zeroQty * priceZero;
+    } else if(it.pricing_mode === 'piece'){
+      rowTotal = pieceQty * pricePiece;
+    } else if(it.pricing_mode === 'unit'){
+      rowTotal = zeroQty * priceZero;
+    } else {
+      rowTotal = pieceQty * pricePiece + zeroQty * priceZero;
+    }
+    return sum + rowTotal;
+  }, 0);
+}
+
+function calcItemAmount(it){
+  const pieceQty = it.piece_qty || 0;
+  const zeroQty = it.zero_qty || 0;
+  const pricePiece = it.price_piece || 0;
+  const priceZero = it.price_zero || 0;
+  if(it.pricing_mode === 'piece') return pieceQty * pricePiece;
+  if(it.pricing_mode === 'unit') return zeroQty * priceZero;
+  return pieceQty * pricePiece + zeroQty * priceZero;
+}
+
+function formatQty(it){
+  const pieceQty = it.piece_qty || 0;
+  const zeroQty = it.zero_qty || 0;
+  if(it.pricing_mode === 'piece') return pieceQty + '件';
+  if(it.pricing_mode === 'unit') return zeroQty + it.unit;
+  return pieceQty + '件';
+}
+
+function pricingModeLabel(mode){
+  return mode === 'piece' ? '件' : (mode === 'unit' ? '单件' : '件');
+}
+
+// ============ HOME ============
+function initHome(){
+  const today = todayStr();
+  $('todayDate').textContent = today;
+
+  // Privacy banner visibility
+  const privacyEl = $('privacyBanner');
+  if(privacyEl) privacyEl.style.display = isPrivacyAcked() ? 'none' : 'flex';
+
+  const todayOrders = getVisibleOrders().filter(o => o.time && o.time.startsWith(today));
+  const todayAmount = todayOrders.reduce((s,o) => s + o.amount, 0);
+  $('statOrders').textContent = todayOrders.length;
+  $('statAmount').textContent = fmtMoney(todayAmount);
+
+  // Announcement carousel
+  renderAnnouncements();
+
+  // Recent orders (last 5) - 按角色过滤
+  const recent = [...getVisibleOrders()].sort((a,b)=> new Date(b.time)-new Date(a.time)).slice(0,5);
+  const list = $('homeOrderList');
+  if(recent.length === 0){
+    list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="text">暂无订单</div></div>';
+    return;
+  }
+  list.innerHTML = recent.map(o => {
+    const d = new Date(o.time);
+    const timeStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    const payTag = o.payment === 'credit' ? '<span class="badge badge-orange">赊账</span>' : '<span class="badge badge-green">现结</span>';
+    return `<div class="order-list-item" onclick="navigateTo('orderDetail','${o.id}')">
+      <div class="left"><div class="customer">${o.customer} ${payTag}</div><div class="sub">${o.items.length}种商品 · ${timeStr}</div></div>
+      <div class="right"><div class="amt">${fmtMoney(o.amount)}</div><div class="time">${o.orderNo}</div></div>
+    </div>`;
+  }).join('');
+}
+
+let announcementIndex = 0;
+let announcementTimer = null;
+function renderAnnouncements(){
+  const el = $('homeAnnouncement');
+  if(!el) return;
+  const list = (data.announcements && data.announcements.length) ? data.announcements : DEFAULT_ANNOUNCEMENTS;
+  if(list.length === 0){ el.style.display = 'none'; return; }
+  el.style.display = '';
+  const dotsEl = el.querySelector('.announce-dots');
+  dotsEl.innerHTML = list.map((_,i) => `<span class="announce-dot${i===0?' active':''}"></span>`).join('');
+  const showIdx = () => {
+    announcementIndex = announcementIndex % list.length;
+    el.querySelector('.announce-text').textContent = list[announcementIndex];
+    el.querySelectorAll('.announce-dot').forEach((d,i) => d.classList.toggle('active', i === announcementIndex));
+  };
+  showIdx();
+  if(announcementTimer) clearInterval(announcementTimer);
+  announcementTimer = setInterval(() => { announcementIndex = (announcementIndex + 1) % list.length; showIdx(); }, 3500);
+}
+
+function dismissPrivacy(){
+  const el = $('privacyBanner');
+  if(el) el.style.display = 'none';
+  try{ localStorage.setItem('fh_privacy_ack', '1'); }catch(e){}
+}
+function isPrivacyAcked(){
+  try{ return localStorage.getItem('fh_privacy_ack') === '1'; }catch(e){ return false; }
+}
+
+// ============ NEW ORDER ============
+function initNewOrder(){
+  // 编辑模式：已有currentOrderId时不重置数据
+  if(state.currentOrderId){
+    if(state.currentCustomer){
+      $('selectedCustomerName').textContent = state.currentCustomer.name;
+      $('selectedCustomerRegion').textContent = state.currentCustomer.region;
+    }
+    selectPayment(state.currentPayment || 'cash');
+    renderProductRows();
+    updateOrderTotal();
+    return;
+  }
+  // 新建模式：重置
+  state.currentCustomer = null;
+  state.currentItems = [];
+  state.currentPayment = 'cash';
+  $('selectedCustomerName').textContent = '请选择客户';
+  $('selectedCustomerRegion').textContent = '点击选择客户信息';
+  selectPayment('cash');
+  renderProductRows();
+  updateOrderTotal();
+}
+
+function selectPayment(pay){
+  state.currentPayment = pay;
+  document.querySelectorAll('.payment-opt').forEach(el => el.classList.toggle('active', el.dataset.pay === pay));
+}
+
+function renderProductRows(){
+  const list = $('productList');
+  if(state.currentItems.length === 0){
+    list.innerHTML = '';
+    return;
+  }
+  list.innerHTML = state.currentItems.map((item, idx) => {
+    const rowTotal = calcItemAmount(item);
+    const mode = item.pricing_mode || 'case';
+    const modeTag = `<span class="tag">${pricingModeLabel(mode)}</span>`;
+    const isEditable = item.is_adjustable === true;
+    let priceInfo = '';
+    if(mode === 'case'){
+      if(isEditable){
+        priceInfo = `¥<input type="number" step="0.01" class="num-input" style="width:60px;height:20px;font-size:12px" value="${item.price_piece||0}" onchange="setPrice(${idx},'price_piece',this.value)">/件 · ¥<input type="number" step="0.01" class="num-input" style="width:60px;height:20px;font-size:12px" value="${item.price_zero||0}" onchange="setPrice(${idx},'price_zero',this.value)">/${item.unit}`;
+      } else {
+        priceInfo = `¥${item.price_piece}/件 · ¥${item.price_zero}/${item.unit}`;
+      }
+    } else if(mode === 'piece'){
+      if(isEditable){
+        priceInfo = `¥<input type="number" step="0.01" class="num-input" style="width:60px;height:20px;font-size:12px" value="${item.price_piece||0}" onchange="setPrice(${idx},'price_piece',this.value)">/件`;
+      } else {
+        priceInfo = `¥${item.price_piece}/件`;
+      }
+    } else {
+      if(isEditable){
+        priceInfo = `¥<input type="number" step="0.01" class="num-input" style="width:60px;height:20px;font-size:12px" value="${item.price_zero||0}" onchange="setPrice(${idx},'price_zero',this.value)">/${item.unit}`;
+      } else {
+        priceInfo = `¥${item.price_zero}/${item.unit}`;
+      }
+    }
+    let inputsHtml = '';
+    if(mode === 'case'){
+      inputsHtml = `
+        <div class="input-group" style="flex:1">
+          <div class="lbl">件数</div>
+          <div class="val">
+            <button onclick="adjustQty(${idx},'piece_qty',-1)">−</button>
+            <input class="num-input" type="number" min="0" value="${item.piece_qty||0}" onchange="setQty(${idx},'piece_qty',this.value)">
+            <button onclick="adjustQty(${idx},'piece_qty',1)">+</button>
+          </div>
+        </div>
+        <div class="input-group" style="flex:1">
+          <div class="lbl">零数(${item.unit})</div>
+          <div class="val">
+            <button onclick="adjustQty(${idx},'zero_qty',-1)">−</button>
+            <input class="num-input" type="number" min="0" value="${item.zero_qty||0}" onchange="setQty(${idx},'zero_qty',this.value)">
+            <button onclick="adjustQty(${idx},'zero_qty',1)">+</button>
+          </div>
+        </div>`;
+    } else if(mode === 'piece'){
+      inputsHtml = `
+        <div class="input-group" style="flex:1">
+          <div class="lbl">件数</div>
+          <div class="val">
+            <button onclick="adjustQty(${idx},'piece_qty',-1)">−</button>
+            <input class="num-input" type="number" min="0" value="${item.piece_qty||0}" onchange="setQty(${idx},'piece_qty',this.value)">
+            <button onclick="adjustQty(${idx},'piece_qty',1)">+</button>
+          </div>
+        </div>`;
+    } else {
+      inputsHtml = `
+        <div class="input-group" style="flex:1">
+          <div class="lbl">数量(${item.unit})</div>
+          <div class="val">
+            <button onclick="adjustQty(${idx},'zero_qty',-1)">−</button>
+            <input class="num-input" type="number" min="0" value="${item.zero_qty||0}" onchange="setQty(${idx},'zero_qty',this.value)">
+            <button onclick="adjustQty(${idx},'zero_qty',1)">+</button>
+          </div>
+        </div>`;
+    }
+    const remarkValue = item.remark || '';
+    return `<div class="product-row">
+      <div class="product-info">
+        <div><div class="pname">${item.name}${isEditable ? '<span class="badge badge-orange">可调价</span>' : ''}</div><div class="pspec">商品料号: ${item.material_code} · ${item.spec} · ${priceInfo}</div></div>
+        <div class="del" onclick="removeItem(${idx})">🗑️</div>
+      </div>
+      <div class="inputs">${inputsHtml}</div>
+      <div class="remark-row" style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <span class="label" style="margin-bottom:0;white-space:nowrap">备注:</span>
+        <input type="text" class="input-sm" style="flex:1;height:32px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px" placeholder="下单员备注..." value="${remarkValue}" onchange="setRemark(${idx},this.value)">
+      </div>
+      <div class="row-total"><span class="lbl">小计</span><span class="amt">${fmtMoney(rowTotal)}</span></div>
+    </div>`;
+  }).join('');
+  updateOrderTotal();
+}
+
+function setPrice(idx, field, val){
+  state.currentItems[idx][field] = parseFloat(val) || 0;
+  renderProductRows();
+}
+function setRemark(idx, val){
+  state.currentItems[idx]['remark'] = val;
+}
+
+function adjustQty(idx, field, delta){
+  state.currentItems[idx][field] = Math.max(0, (state.currentItems[idx][field] || 0) + delta);
+  renderProductRows();
+}
+function setQty(idx, field, val){
+  state.currentItems[idx][field] = Math.max(0, parseInt(val) || 0);
+  renderProductRows();
+}
+function removeItem(idx){
+  state.currentItems.splice(idx, 1);
+  renderProductRows();
+  showToast('已删除商品');
+}
+function updateOrderTotal(){
+  const total = calcOrderAmount(state.currentItems);
+  $('orderTotal').textContent = fmtMoney(total);
+}
+function saveOrder(){
+  if(!state.currentCustomer){ showToast('请先选择客户'); return; }
+  if(state.currentItems.length === 0){ showToast('请添加商品'); return; }
+  const role = data.currentRole || 'orderer';
+  const userName = data.currentUserName || ROLE_PROFILES[role].name;
+
+  // 编辑模式：更新已有订单
+  if(state.currentOrderId){
+    const idx = data.orders.findIndex(o => o.id === state.currentOrderId);
+    if(idx !== -1){
+      const o = data.orders[idx];
+      o.customer = state.currentCustomer.name;
+      o.region = state.currentCustomer.region;
+      o.phone = state.currentCustomer.phone;
+      o.contact = state.currentCustomer.contact || '';
+      o.items = state.currentItems;
+      o.amount = calcOrderAmount(state.currentItems);
+      o.payment = state.currentPayment || 'cash';
+      saveData();
+      showToast('订单已修改');
+      const editId = state.currentOrderId;
+      state.currentOrderId = null;
+      state.currentCustomer = null;
+      state.currentItems = [];
+      STACK.length = 0;
+      STACK.push('orders');
+      switchTab('orders', true);
+      setTimeout(() => navigateTo('orderDetail', editId), 300);
+      return;
+    }
+  }
+
+  // 新建模式
+  const order = {
+    id: 'ord_' + Date.now() + '_' + Math.random().toString(36).substr(2,5),
+    orderNo: generateOrderNo(),
+    customer: state.currentCustomer.name,
+    region: state.currentCustomer.region,
+    phone: state.currentCustomer.phone,
+    contact: state.currentCustomer.contact || '',
+    items: state.currentItems,
+    amount: calcOrderAmount(state.currentItems),
+    payment: state.currentPayment || 'cash',
+    time: new Date().toISOString(),
+    status: 'submitted',
+    created_by_name: userName,
+    created_by_role: role
+  };
+  data.orders.push(order);
+  saveData();
+  showToast('订单已提交，等待库管确认');
+  STACK.length = 0;
+  STACK.push('orders');
+  switchTab('orders', true);
+  setTimeout(() => navigateTo('orderDetail', order.id), 300);
+}
+
+function openProductModal(){ renderProductModalList(); openModal('productModal'); }
+function openCustomerModal(){ renderCustomerModalList(); openModal('customerModal'); }
+
+function renderProductModalList(){
+  const kw = ($('productModalSearch')?.value || '').toLowerCase();
+  const list = data.products.filter(p => !kw || p.name.toLowerCase().includes(kw) || (p.material_code||'').toLowerCase().includes(kw) || (p.pinyin||'').toLowerCase().includes(kw));
+  $('productModalList').innerHTML = list.map(p => {
+    const mode = p.pricing_mode || 'case';
+    const base = (p.unit||'').split('/')[0] || '个';
+    let priceLine = '';
+    if(mode === 'case' && p.price_piece != null && p.price_zero != null) priceLine = `售价 ¥${p.price_piece} · ${p.price_zero}/${base}`;
+    else if(mode === 'piece' && p.price_piece != null) priceLine = `售价 ¥${p.price_piece}`;
+    else if(mode === 'unit' && p.price_zero != null) priceLine = `售价 ¥${p.price_zero}/${base}`;
+    else if(p.is_adjustable) priceLine = '下单时自填价格';
+    const adjTag = p.is_adjustable ? ' <span class="badge badge-orange">可调价</span>' : '';
+    return `
+    <div class="modal-item" onclick="selectProduct('${p.material_code}')">
+      <div class="info"><div class="name">${p.name} ${adjTag}</div><div class="sub">商品料号: ${p.material_code} · 规格: ${p.spec} · 单位: ${p.unit} · ${priceLine}</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button onclick="event.stopPropagation();openPriceModal('${p.material_code}')" style="flex-shrink:0;padding:4px 10px;font-size:12px;border:1px solid var(--green);border-radius:6px;background:#fff;color:var(--green);white-space:nowrap">改价</button>
+        <div class="right">${p.unit}</div>
+      </div>
+    </div>`}).join('') || '<div class="empty-state"><div class="text">暂无商品</div></div>';
+}
+
+function selectProduct(materialCode){
+  const p = data.products.find(x => x.material_code === materialCode);
+  if(!p) return;
+  const existing = state.currentItems.find(x => x.material_code === materialCode);
+  if(existing){
+    if(existing.pricing_mode === 'unit') existing.zero_qty = (existing.zero_qty||0) + 1;
+    else existing.piece_qty = (existing.piece_qty||0) + 1;
+  } else {
+    const base = {piece_qty:0, zero_qty:0, remark:''};
+    if(p.pricing_mode === 'unit') base.zero_qty = 1;
+    else base.piece_qty = 1;
+    state.currentItems.push({...p, ...base, is_adjustable: p.is_adjustable || false});
+  }
+  renderProductRows();
+  closeModal('productModal');
+  showToast('已添加：' + p.name);
+}
+
+function renderCustomerModalList(){
+  const kw = ($('customerModalSearch')?.value || '').toLowerCase();
+  const filtered = data.customers.filter(c => !kw || c.name.toLowerCase().includes(kw) || (c.alias||'').toLowerCase().includes(kw) || c.region.includes(kw) || (c.contact||'').includes(kw));
+  const groups = {};
+  filtered.forEach(c => { (groups[c.region] = groups[c.region] || []).push(c); });
+  const html = Object.keys(groups).map(region => `
+    <div class="customer-group">
+      <div class="customer-group-title">${region}</div>
+      ${groups[region].map(c => `
+        <div class="customer-item" onclick="selectCustomer('${c.name}')">
+          <div><div class="name">${c.name} <span style="font-size:11px;color:var(--text-3)">${c.alias||''}</span></div><div class="phone">${c.phone}${c.contact?' · '+c.contact:''}</div></div>
+          <div class="check">✓</div>
+        </div>`).join('')}
+    </div>`).join('');
+  $('customerModalList').innerHTML = html || '<div class="empty-state"><div class="text">暂无客户</div></div>';
+}
+
+function selectCustomer(name){
+  const c = data.customers.find(x => x.name === name);
+  if(!c) return;
+  state.currentCustomer = c;
+  $('selectedCustomerName').textContent = c.name + (c.alias ? '（' + c.alias + '）' : '');
+  $('selectedCustomerRegion').textContent = c.region + ' · ' + c.phone + (c.contact ? ' · ' + c.contact : '');
+  closeModal('customerModal');
+  showToast('已选择：' + c.name);
+}
+
+function renderProductList(){
+  const kw = ($('productSearchInput')?.value || '').toLowerCase();
+  const list = data.products.filter(p => !kw || p.name.toLowerCase().includes(kw) || (p.material_code||'').toLowerCase().includes(kw) || (p.pinyin||'').toLowerCase().includes(kw));
+  $('productManageList').innerHTML = list.map(p => {
+    const mode = p.pricing_mode || 'case';
+    const base = (p.unit||'').split('/')[0] || '个';
+    let priceMain = '', priceSub = '';
+    if(mode === 'case' && p.price_piece != null){ priceMain = '¥' + p.price_piece; priceSub = p.price_zero != null ? `售价 · ${p.price_zero}/${base}` : '售价'; }
+    else if(mode === 'piece' && p.price_piece != null){ priceMain = '¥' + p.price_piece; priceSub = '售价'; }
+    else if(mode === 'unit' && p.price_zero != null){ priceMain = '¥' + p.price_zero; priceSub = `售价/${base}`; }
+    else { priceMain = '—'; priceSub = '下单时自填'; }
+    const adjTag = p.is_adjustable ? ' <span class="badge badge-orange">可调价</span>' : '';
+    return `
+    <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center">
+      <div><div style="font-size:14px;font-weight:600">${p.name} ${adjTag}</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">商品料号: ${p.material_code} · 规格: ${p.spec} · 单位: ${p.unit}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right"><div style="font-size:14px;font-weight:600;color:var(--green)">${priceMain}</div><div style="font-size:11px;color:var(--text-2)">${priceSub}</div></div>
+        <button onclick="openPriceModal('${p.material_code}')" style="flex-shrink:0;padding:6px 12px;font-size:12px;border:none;border-radius:8px;background:var(--green);color:#fff;white-space:nowrap">改价</button>
+      </div>
+    </div>`}).join('') || '<div class="empty-state"><div class="text">暂无商品</div></div>';
+}
+
+let currentEditProduct = null;
+function openPriceModal(materialCode){
+  const p = data.products.find(x => x.material_code === materialCode);
+  if(!p) return;
+  currentEditProduct = p;
+  const mode = p.pricing_mode || 'case';
+  const base = (p.unit||'').split('/')[0] || '个';
+  let html = `<div style="padding:16px 20px">
+    <div style="margin-bottom:16px">
+      <div style="font-size:16px;font-weight:600">${p.name}</div>
+      <div style="font-size:12px;color:var(--text-2);margin-top:4px">商品料号: ${p.material_code} · 规格: ${p.spec} · 单位: ${p.unit}</div>
+    </div>`;
+  if(mode === 'case'){
+    html += `
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">件价（每件售价 ¥）</label>
+        <input type="number" id="editPricePiece" value="${p.price_piece||0}" step="0.01" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:15px">
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">零价（每${base}售价 ¥）</label>
+        <input type="number" id="editPriceZero" value="${p.price_zero||0}" step="0.01" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:15px">
+      </div>`;
+  } else if(mode === 'piece'){
+    html += `
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">件价（每件售价 ¥）</label>
+        <input type="number" id="editPricePiece" value="${p.price_piece||0}" step="0.01" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:15px">
+      </div>`;
+  } else if(mode === 'unit'){
+    html += `
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;color:var(--text-2);display:block;margin-bottom:6px">单价（每${base}售价 ¥）</label>
+        <input type="number" id="editPriceZero" value="${p.price_zero||0}" step="0.01" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:15px">
+      </div>`;
+  }
+  html += `
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="closeModal('priceModal')" style="flex:1;height:42px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:14px">取消</button>
+      <button onclick="savePrice()" style="flex:1;height:42px;border:none;border-radius:8px;background:var(--green);color:#fff;font-size:14px">保存</button>
+    </div>
+  </div>`;
+  $('priceModalBody').innerHTML = html;
+  openModal('priceModal');
+}
+
+function savePrice(){
+  if(!currentEditProduct) return;
+  const p = currentEditProduct;
+  const mode = p.pricing_mode || 'case';
+  if(mode === 'case'){
+    const pp = parseFloat($('editPricePiece').value);
+    const pz = parseFloat($('editPriceZero').value);
+    if(isNaN(pp) || pp < 0){ showToast('件价不能为空或负数'); return; }
+    p.price_piece = pp;
+    p.price_zero = isNaN(pz) ? 0 : pz;
+  } else if(mode === 'piece'){
+    const pp = parseFloat($('editPricePiece').value);
+    if(isNaN(pp) || pp < 0){ showToast('件价不能为空或负数'); return; }
+    p.price_piece = pp;
+  } else if(mode === 'unit'){
+    const pz = parseFloat($('editPriceZero').value);
+    if(isNaN(pz) || pz < 0){ showToast('单价不能为空或负数'); return; }
+    p.price_zero = pz;
+  }
+  saveData();
+  // 同步更新已添加到当前订单的商品价格
+  if(state.currentItems && state.currentItems.length){
+    state.currentItems.forEach(it => {
+      if(it.material_code === p.material_code){
+        if(p.price_piece != null) it.price_piece = p.price_piece;
+        if(p.price_zero != null) it.price_zero = p.price_zero;
+      }
+    });
+    renderProductRows();
+  }
+  renderProductList();
+  renderProductModalList();
+  closeModal('priceModal');
+  showToast(p.name + ' 价格已更新');
+}
+
+function renderCustomerList(){
+  const kw = ($('customerSearchInput')?.value || '').toLowerCase();
+  const list = data.customers.filter(c => !kw || c.name.toLowerCase().includes(kw) || (c.alias||'').toLowerCase().includes(kw) || c.region.includes(kw) || (c.contact||'').includes(kw));
+  const groups = {};
+  list.forEach(c => { (groups[c.region] = groups[c.region] || []).push(c); });
+  $('customerManageList').innerHTML = Object.keys(groups).map(region => `
+    <div class="card-sm" style="padding:4px 16px">
+      <div style="font-size:12px;color:var(--text-2);padding:8px 0;font-weight:500">${region}</div>
+      ${groups[region].map(c => `
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border)">
+          <div><div style="font-size:14px;font-weight:500">${c.name} <span style="font-size:11px;color:var(--text-3)">${c.alias||''}</span></div><div style="font-size:12px;color:var(--text-2)">${c.phone}${c.contact?' · '+c.contact:''}</div></div>
+          <span class="badge badge-green">${c.region}</span>
+        </div>`).join('')}
+    </div>`).join('') || '<div class="empty-state"><div class="text">暂无客户</div></div>';
+}
+
+// ============ ORDER LIST ============
+function filterOrders(filter){
+  state.orderFilter = filter;
+  document.querySelectorAll('.filter-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.filter === filter));
+  renderOrderList();
+}
+
+function renderOrderList(){
+  const filter = state.orderFilter;
+  const kw = ($('orderSearchInput')?.value || '').toLowerCase();
+  const now = new Date();
+  let list = getVisibleOrders();
+
+  if(filter === 'today'){
+    const t = todayStr();
+    list = list.filter(o => o.time && o.time.startsWith(t));
+  } else if(filter === 'week'){
+    const weekAgo = new Date(now.getTime() - 7*86400000);
+    list = list.filter(o => new Date(o.time) >= weekAgo);
+  } else if(filter === 'month'){
+    const y = now.getFullYear(), m = now.getMonth();
+    list = list.filter(o => {
+      const d = new Date(o.time);
+      return d.getFullYear() === y && d.getMonth() === m;
+    });
+  }
+  if(kw) list = list.filter(o => o.orderNo.toLowerCase().includes(kw) || o.customer.toLowerCase().includes(kw));
+  list.sort((a,b) => new Date(b.time) - new Date(a.time));
+
+  const container = $('orderList');
+  if(list.length === 0){
+    container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="text">暂无订单</div></div>';
+    return;
+  }
+  container.innerHTML = list.map(o => {
+    const d = new Date(o.time);
+    const timeStr = `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const payTag = o.payment === 'credit' ? '<span class="badge badge-orange">赊账</span>' : '<span class="badge badge-green">现结</span>';
+    const qtySummary = o.items.map(it => formatQty(it)).join('，');
+    const statusMap = {
+      draft: {text:'草稿', class:'status-draft'},
+      submitted: {text:'待确认', class:'status-submitted'},
+      confirmed: {text:'已确认', class:'status-confirmed'},
+      completed: {text:'已完成', class:'status-completed'},
+      cancelled: {text:'已取消', class:'status-cancelled'}
+    };
+    const s = statusMap[o.status] || statusMap.draft;
+    const autoTag = o.auto_confirmed ? ' <span style="font-size:10px;color:#E6A23C">(自动)</span>' : '';
+    return `<div class="order-card" onclick="navigateTo('orderDetail','${o.id}')">
+      <div class="top"><div class="customer">${o.customer} ${payTag}</div><div class="status ${s.class}">${s.text}${autoTag}</div></div>
+      <div class="info"><span>商品 ${o.items.length} 种</span><span>·</span><span>${timeStr}</span></div>
+      <div class="info" style="color:var(--text-3);font-size:11px">${qtySummary}</div>
+      <div class="bottom"><div class="amount">${fmtMoney(o.amount)}</div><div class="order-no">${o.orderNo}</div></div>
+    </div>`;
+  }).join('');
+}
+
+// ============ ORDER DETAIL ============
+let currentDetailOrder = null;
+function initOrderDetail(id){
+  currentDetailOrder = data.orders.find(o => o.id === id);
+  if(!currentDetailOrder){ showToast('订单不存在'); navigateBack(); return; }
+  const o = currentDetailOrder;
+  $('detailOrderNo').textContent = '订单号：' + o.orderNo;
+  $('detailAmount').textContent = fmtMoney(o.amount);
+  // 显示创建人
+  const creatorEl = $('detailCreator');
+  if(creatorEl) creatorEl.textContent = '下单员：' + (o.created_by_name || '未知');
+  // 按角色控制按钮显示
+  const role = data.currentRole || 'orderer';
+  const deleteBtn = document.querySelector('.detail-actions .btn-delete');
+  if(deleteBtn){
+    // 库管不能删除订单
+    deleteBtn.style.display = (role === 'warehouse') ? 'none' : '';
+  }
+  const editBtn = document.querySelector('.detail-actions .btn-edit');
+  if(editBtn){
+    // 库管不能编辑订单
+    editBtn.style.display = (role === 'warehouse') ? 'none' : '';
+  }
+  const printBtn = document.querySelector('.detail-actions .btn-print');
+  if(printBtn){
+    // 库管不打印送货单（含价格），改导出出库单
+    printBtn.style.display = (role === 'warehouse') ? 'none' : '';
+  }
+  const statusMap = {
+    draft: {text:'草稿', class:'status-draft'},
+    submitted: {text:'待确认', class:'status-submitted'},
+    confirmed: {text:'已确认', class:'status-confirmed'},
+    completed: {text:'已完成', class:'status-completed'},
+    cancelled: {text:'已取消', class:'status-cancelled'}
+  };
+  const s = statusMap[o.status] || statusMap.draft;
+  const autoTag = o.auto_confirmed ? ' (自动)' : '';
+  const statusEl = $('detailStatus');
+  statusEl.textContent = s.text + autoTag;
+  statusEl.className = 'status ' + s.class;
+  $('detailCustomer').textContent = o.customer;
+  $('detailRegion').textContent = o.region;
+  $('detailContact').textContent = o.contact || '—';
+  $('detailPhone').textContent = o.phone;
+  $('detailTime').textContent = new Date(o.time).toLocaleString('zh-CN');
+  $('detailPayment').textContent = o.payment === 'credit' ? '赊账' : '现结';
+  const tbody = document.querySelector('#detailTable tbody');
+  let grandTotal = 0;
+  const rows = [];
+  let idx = 1;
+  o.items.forEach(it => {
+    const remark = it.remark || '';
+    const pieceQty = it.piece_qty || 0;
+    const zeroQty = it.zero_qty || 0;
+    // Piece (件) row - 数量只显示数字
+    if(pieceQty > 0){
+      const unitPrice = it.price_piece != null ? it.price_piece : 0;
+      const amt = pieceQty * unitPrice;
+      grandTotal += amt;
+      const pieceUnit = getUnitByMode(it, 'piece');
+      rows.push(`<tr><td>${idx++}</td><td>${it.name}</td><td>${pieceUnit}</td><td>${pieceQty}</td><td>${fmtMoney(unitPrice)}</td><td>${fmtMoney(amt)}</td><td>${remark}</td></tr>`);
+    }
+    // Zero (零) row - 数量只显示数字
+    if(zeroQty > 0){
+      const unitPrice = it.price_zero != null ? it.price_zero : 0;
+      const amt = zeroQty * unitPrice;
+      grandTotal += amt;
+      const zeroUnit = getUnitByMode(it, 'zero');
+      rows.push(`<tr><td>${idx++}</td><td>${it.name}</td><td>${zeroUnit}</td><td>${zeroQty}</td><td>${fmtMoney(unitPrice)}</td><td>${fmtMoney(amt)}</td><td>${remark}</td></tr>`);
+    }
+  });
+  tbody.innerHTML = rows.join('');
+  $('detailTotal').textContent = fmtMoney(grandTotal);
+}
+
+function goToShipping(){
+  const role = data.currentRole || 'orderer';
+  if(role === 'warehouse'){ showToast('库管无打印权限'); return; }
+  if(currentDetailOrder){ navigateTo('shipping', currentDetailOrder.id); }
+}
+
+// 编辑订单：预填数据跳转新建订单页
+function editOrder(){
+  if(!currentDetailOrder) return;
+  const o = currentDetailOrder;
+  state.currentOrderId = o.id;
+  state.currentCustomer = { name: o.customer, region: o.region, phone: o.phone, contact: o.contact || '' };
+  state.currentItems = o.items.map(it => ({...it}));
+  state.currentPayment = o.payment || 'cash';
+  navigateTo('newOrder');
+}
+
+function copyOrder(){
+  if(!currentDetailOrder) return;
+  const o = currentDetailOrder;
+  const payText = o.payment === 'credit' ? '赊账' : '现结';
+  const text = `订单号：${o.orderNo}\n客户：${o.customer}\n金额：${fmtMoney(o.amount)}\n收款方式：${payText}`;
+  navigator.clipboard?.writeText(text);
+  showToast('订单信息已复制');
+}
+
+// 删除订单（下单员权限：除用户管理和库管确认外，全部业务权限开放）
+function deleteOrder(){
+  if(!currentDetailOrder) return;
+  const o = currentDetailOrder;
+  if(!confirm(`确定删除订单 ${o.orderNo}（${o.customer}）吗？\n删除后不可恢复。`)) return;
+  const idx = data.orders.findIndex(x => x.id === o.id);
+  if(idx === -1){ showToast('订单不存在'); return; }
+  data.orders.splice(idx, 1);
+  saveData();
+  showToast('订单已删除');
+  navigateBack();
+  renderOrderList();
+}
+
+// ============ REPORTS ============
+function switchReportTab(tab){
+  state.reportTab = tab;
+  document.querySelectorAll('.report-tabs .tab').forEach(t => t.classList.toggle('active', t.dataset.rtab === tab));
+  $('reportProductTable').style.display = tab === 'product' ? '' : 'none';
+  $('reportCustomerTable').style.display = tab === 'customer' ? '' : 'none';
+  initReports();
+}
+
+// 时间段筛选模式切换
+function setReportMode(mode){
+  state.reportMode = mode;
+  ['Day','Month','Custom'].forEach(m => {
+    const btn = $('rptMode' + m);
+    if(btn) btn.style.background = (mode === m.toLowerCase()) ? '#409EFF' : '#fff';
+    if(btn) btn.style.color = (mode === m.toLowerCase()) ? '#fff' : '#333';
+  });
+  $('rptDayPicker').style.display = mode === 'day' ? '' : 'none';
+  $('rptMonthPicker').style.display = mode === 'month' ? '' : 'none';
+  $('rptCustomPicker').style.display = mode === 'custom' ? '' : 'none';
+  // 默认值
+  if(mode === 'day' && !$('rptDate').value) $('rptDate').value = todayStr();
+  if(mode === 'month' && !$('rptMonth').value) $('rptMonth').value = todayStr().slice(0,7);
+  if(mode === 'custom' && !$('rptStart').value){ $('rptStart').value = todayStr(); $('rptEnd').value = todayStr(); }
+  initReports();
+}
+
+// 初始化区域下拉
+function initReportRegionFilter(){
+  const sel = $('rptRegion');
+  if(!sel) return;
+  const regions = [...new Set(getVisibleOrders().map(o => o.region).filter(r => r))];
+  sel.innerHTML = '<option value="">全部</option>' + regions.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+// 按时间段+区域筛选订单（按角色过滤可见订单）
+function getReportFilteredOrders(){
+  let orders = getVisibleOrders();
+  const mode = state.reportMode || 'day';
+  if(mode === 'day'){
+    const d = $('rptDate')?.value || todayStr();
+    orders = orders.filter(o => {
+      const od = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+      return od === d;
+    });
+  } else if(mode === 'month'){
+    const m = $('rptMonth')?.value || todayStr().slice(0,7);
+    orders = orders.filter(o => {
+      const om = o.time ? new Date(o.time).toISOString().slice(0,7) : '';
+      return om === m;
+    });
+  } else if(mode === 'custom'){
+    const s = $('rptStart')?.value || todayStr();
+    const e = $('rptEnd')?.value || todayStr();
+    orders = orders.filter(o => {
+      const od = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+      return od >= s && od <= e;
+    });
+  }
+  const region = $('rptRegion')?.value;
+  if(region) orders = orders.filter(o => o.region === region);
+  return orders;
+}
+
+function initReports(){
+  // 首次进入：默认日模式（setReportMode 内会再次调用 initReports，此处直接 return）
+  if(state.reportMode === undefined){ setReportMode('day'); return; }
+  initReportRegionFilter();
+  const orders = getReportFilteredOrders();
+  $('reportTotalOrders').textContent = orders.length;
+  $('reportTotalAmount').textContent = fmtMoney(orders.reduce((s,o) => s + o.amount, 0));
+
+  // Product summary
+  const pMap = {};
+  orders.forEach(o => o.items.forEach(it => {
+    const key = it.material_code || '';
+    if(!pMap[key]) pMap[key] = {material_code:it.material_code || '', name:it.name, spec:it.spec, unit_piece:getUnitByMode(it, 'piece'), unit_zero:getUnitByMode(it, 'zero'), pieceQty:0, zeroQty:0, salePrice:it.price_piece || 0, pieceAmt:0, zeroAmt:0, total:0};
+    pMap[key].pieceQty += it.piece_qty || 0;
+    pMap[key].zeroQty += it.zero_qty || 0;
+    const p_amt = (it.piece_qty || 0) * (it.price_piece || 0);
+    const z_amt = (it.zero_qty || 0) * (it.price_zero != null ? it.price_zero : 0);
+    pMap[key].pieceAmt += p_amt;
+    pMap[key].zeroAmt += z_amt;
+    pMap[key].total += p_amt + z_amt;
+  }));
+  const pList = Object.values(pMap).sort((a,b) => b.total - a.total);
+  $('reportProductTable').innerHTML = `
+    <table><thead><tr><th>商品料号</th><th>商品</th><th>规格</th><th>单位</th><th>售价</th><th>件数</th><th>件数金额</th><th>零数</th><th>零数金额</th><th>总金额</th></tr></thead>
+    <tbody>${pList.map(p => `<tr><td>${p.material_code}</td><td>${p.name}</td><td>${p.spec}</td><td>${p.unit_piece}/${p.unit_zero}</td><td>${fmtMoney(p.salePrice)}</td><td>${p.pieceQty}</td><td>${fmtMoney(p.pieceAmt)}</td><td>${p.zeroQty}</td><td>${fmtMoney(p.zeroAmt)}</td><td>${fmtMoney(p.total)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="5" style="text-align:right">合计</td><td>${pList.reduce((s,p)=>s+p.pieceQty,0)}</td><td>${fmtMoney(pList.reduce((s,p)=>s+p.pieceAmt,0))}</td><td>${pList.reduce((s,p)=>s+p.zeroQty,0)}</td><td>${fmtMoney(pList.reduce((s,p)=>s+p.zeroAmt,0))}</td><td>${fmtMoney(pList.reduce((s,p)=>s+p.total,0))}</td></tr></tfoot></table>`;
+
+  // Customer summary
+  const cMap = {};
+  orders.forEach(o => {
+    if(!cMap[o.customer]) cMap[o.customer] = {name:o.customer, region:o.region, orderCount:0, amount:0, creditAmount:0};
+    cMap[o.customer].orderCount++;
+    cMap[o.customer].amount += o.amount;
+    if(o.payment === 'credit') cMap[o.customer].creditAmount += o.amount;
+  });
+  const cList = Object.values(cMap).sort((a,b) => b.amount - a.amount);
+  $('reportCustomerTable').innerHTML = `
+    <table><thead><tr><th>客户</th><th>区域</th><th>订单数</th><th>总金额</th><th>赊账金额</th></tr></thead>
+    <tbody>${cList.map(c => `<tr><td>${c.name}</td><td>${c.region}</td><td>${c.orderCount}</td><td>${fmtMoney(c.amount)}</td><td>${fmtMoney(c.creditAmount)}</td></tr>`).join('')}</tbody>
+    <tfoot><tr><td colspan="2" style="text-align:right">合计</td><td>${cList.reduce((s,c)=>s+c.orderCount,0)}</td><td>${fmtMoney(cList.reduce((s,c)=>s+c.amount,0))}</td><td>${fmtMoney(cList.reduce((s,c)=>s+c.creditAmount,0))}</td></tr></tfoot></table>`;
+}
+
+// ============ SHIPPING ============
+let currentShippingOrder = null;
+function initShipping(id){
+  currentShippingOrder = data.orders.find(o => o.id === id);
+  if(!currentShippingOrder){ showToast('订单不存在'); navigateBack(); return; }
+  const o = currentShippingOrder;
+  $('shippingOrderNo').textContent = '订单号：' + o.orderNo;
+  $('shippingCustomer').textContent = o.customer;
+  $('shippingRegion').textContent = o.region;
+  $('shippingPhone').textContent = o.phone;
+  $('shippingDate').textContent = todayStr();
+  $('shippingPayment').textContent = o.payment === 'credit' ? '赊账' : '现结';
+  const tbody = document.querySelector('#shippingTable tbody');
+  let idx = 1;
+  let grandTotal = 0;
+  const rows = [];
+  o.items.forEach(it => {
+    const remark = it.remark || '';
+    const pieceQty = it.piece_qty || 0;
+    const zeroQty = it.zero_qty || 0;
+    // Row 1: piece (件) line - 数量只显示数字
+    if(pieceQty > 0){
+      const unitPrice = it.price_piece != null ? it.price_piece : 0;
+      const amt = pieceQty * unitPrice;
+      grandTotal += amt;
+      rows.push(`<tr><td>${idx++}</td><td>${it.name}</td><td>${fmtMoney(unitPrice)}</td><td>${pieceQty}</td><td>${fmtMoney(amt)}</td><td>${remark}</td></tr>`);
+    }
+    // Row 2: zero (零) line - 数量只显示数字
+    if(zeroQty > 0){
+      const unitPrice = it.price_zero != null ? it.price_zero : 0;
+      const amt = zeroQty * unitPrice;
+      grandTotal += amt;
+      rows.push(`<tr><td>${idx++}</td><td>${it.name}</td><td>${fmtMoney(unitPrice)}</td><td>${zeroQty}</td><td>${fmtMoney(amt)}</td><td>${remark}</td></tr>`);
+    }
+  });
+  tbody.innerHTML = rows.join('');
+  $('shippingTotal').textContent = fmtMoney(grandTotal);
+}
+
+// ============ EXPORT ============
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast('已下载：' + filename);
+}
+
+function exportReport(){
+  // 使用报表筛选的时间段+区域
+  if(state.reportMode === undefined){ setReportMode('day'); }
+  const orders = getReportFilteredOrders();
+  if(orders.length === 0){ showToast('所选时间段暂无订单'); return; }
+  const rows = [['类型','商品料号','名称','规格','单位','售价','件数','件数金额','零数','零数金额','总金额','备注','客户','区域','收款方式']];
+  orders.forEach(o => {
+    o.items.forEach(it => {
+      const pieceQty = it.piece_qty || 0;
+      const zeroQty = it.zero_qty || 0;
+      const salePrice = it.price_piece != null ? it.price_piece : 0;
+      const pieceAmt = pieceQty * salePrice;
+      const zeroAmt = zeroQty * (it.price_zero != null ? it.price_zero : 0);
+      const total = pieceAmt + zeroAmt;
+      rows.push(['销售', it.material_code || '', it.name, it.spec, getUnitByMode(it, 'piece') + '/' + getUnitByMode(it, 'zero'), salePrice, pieceQty, pieceAmt, zeroQty, zeroAmt, total, it.remark || '', o.customer, o.region, o.payment === 'credit' ? '赊账' : '现结']);
+    });
+  });
+  downloadCSV('丰淮商贸_报表_' + todayStr() + '.csv', rows);
+  showToast('报表已导出');
+}
+
+function exportDailySummary(){
+  // 使用报表筛选的时间段+区域
+  if(state.reportMode === undefined){ setReportMode('day'); }
+  const orders = getReportFilteredOrders();
+  if(orders.length === 0){ showToast('所选时间段暂无订单'); return; }
+
+  // 生成时间段描述
+  let rangeDesc = '';
+  if(state.reportMode === 'day') rangeDesc = $('rptDate').value;
+  else if(state.reportMode === 'month') rangeDesc = $('rptMonth').value;
+  else rangeDesc = $('rptStart').value + ' 至 ' + $('rptEnd').value;
+
+  // 按客户分组（每家客户汇总一笔，客户间空行分隔，含小计）
+  const byCustomer = {};
+  orders.forEach(o => {
+    const key = o.customer;
+    if(!byCustomer[key]) byCustomer[key] = { customer:o.customer, region:o.region, rows:[] };
+    const time = o.time ? new Date(o.time).toTimeString().slice(0,5) : '';
+    const date = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+    o.items.forEach(it => {
+      const remark = it.remark || '';
+      const pieceQty = it.piece_qty || 0;
+      const zeroQty = it.zero_qty || 0;
+      if(pieceQty > 0){
+        const unitPrice = it.price_piece != null ? it.price_piece : 0;
+        const amt = pieceQty * unitPrice;
+        const pieceUnit = getUnitByMode(it, 'piece');
+        byCustomer[key].rows.push([date, o.region, o.customer, it.name, pieceUnit, pieceQty, fmtMoney(unitPrice), fmtMoney(amt), remark]);
+      }
+      if(zeroQty > 0){
+        const unitPrice = it.price_zero != null ? it.price_zero : 0;
+        const amt = zeroQty * unitPrice;
+        const zeroUnit = getUnitByMode(it, 'zero');
+        byCustomer[key].rows.push([date, o.region, o.customer, it.name, zeroUnit, zeroQty, fmtMoney(unitPrice), fmtMoney(amt), remark]);
+      }
+    });
+  });
+
+  // 生成 CSV 行（外县台账格式：10列）
+  const csvRows = [
+    ['丰淮商贸 客户汇总表（' + rangeDesc + '）'],
+    [],
+    ['编号','时间','区域','客户','商品','单位','数量','单价','金额','备注'],
+  ];
+  let no = 1;
+  let grandTotal = 0;
+  Object.values(byCustomer).forEach(c => {
+    let subTotal = 0;
+    c.rows.forEach((r, idx) => {
+      subTotal += parseFloat(r[7]) || 0;
+      csvRows.push([idx === 0 ? no : '', r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]]);
+    });
+    csvRows.push(['', '', '', '', '', '', '', '小计', fmtMoney(subTotal), '']);
+    csvRows.push([]); // 客户间空行
+    grandTotal += subTotal;
+    no++;
+  });
+  csvRows.push(['', '', '', '', '', '', '', '合计', fmtMoney(grandTotal), '']);
+  downloadCSV('丰淮商贸_客户汇总表_' + rangeDesc.replace(/\//g,'') + '.csv', csvRows);
+  showToast('客户汇总表已导出（外县台账格式）');
+}
+
+function exportSingleOrder(){
+  const o = currentDetailOrder || currentShippingOrder;
+  if(!o){ showToast('请先打开订单详情'); return; }
+  const payText = o.payment === 'credit' ? '赊账' : '现结';
+  const rows = [['丰淮商贸送货单'],[],['订单号', o.orderNo],['客户', o.customer],['区域', o.region],['联系人', o.contact||''],['电话', o.phone],['日期', todayStr()],['收款方式', payText],[]];
+  rows.push(['序号','商品名称','单价','数量','金额','备注']);
+  let idx = 1;
+  let grandTotal = 0;
+  o.items.forEach(it => {
+    const remark = it.remark || '';
+    const pieceQty = it.piece_qty || 0;
+    const zeroQty = it.zero_qty || 0;
+    if(pieceQty > 0){
+      const unitPrice = it.price_piece != null ? it.price_piece : 0;
+      const amt = pieceQty * unitPrice;
+      grandTotal += amt;
+      const pieceUnit = getUnitByMode(it, 'piece');
+      rows.push([idx++, it.name, fmtMoney(unitPrice), pieceQty, fmtMoney(amt), remark]);
+    }
+    if(zeroQty > 0){
+      const unitPrice = it.price_zero != null ? it.price_zero : 0;
+      const amt = zeroQty * unitPrice;
+      grandTotal += amt;
+      const zeroUnit = getUnitByMode(it, 'zero');
+      rows.push([idx++, it.name, fmtMoney(unitPrice), zeroQty, fmtMoney(amt), remark]);
+    }
+  });
+  rows.push([],['合计','','','', grandTotal,'']);
+  downloadCSV(`${o.customer}_送货单_${o.orderNo}.csv`, rows);
+}
+
+// Init
+document.querySelectorAll('.modal-mask').forEach(m => {
+  m.addEventListener('click', e => { if(e.target === m) m.classList.remove('show'); });
+});
+
+// Hide tabbar/nav on login page load
+$('tab-bar').style.display = 'none';
+$('nav-bar').style.display = 'none';
+</script>
+</body>
+</html>
