@@ -13,3 +13,9 @@ miniprogram_npm/
 *.gif
 *.txt
 !_DEFAULT_*.txt
+
+# 本地工作记忆（内部日志/评估纪要，不上传）
+.workbuddy/
+
+# 客户需求来源（不上传远程）
+新增需求.docx
