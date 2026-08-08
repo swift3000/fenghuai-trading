@@ -506,9 +506,9 @@ items_snapshot: [
 | `gift` | 赠品 | 计入 | 不计 |
 | `loss` | 损耗 | 不计 | 不计 |
 
-### 4.5 收款方式（1.0 起取消）
+### 4.5 收款方式（订单级已取消，收款渠道保留）
 
-> **1.0 变更**：`orders.payment_method` 字段**彻底移除**——新建订单及所有订单不再有「收款方式」（现结/赊账）概念，所有订单默认未收款，由 `payment_status`（unpaid/pending/paid）+ `payments` 收款记录体现到账进度。收款记录 `pay_method` 字段同步下线（如需记录到账渠道写入 `note`）。
+> **1.0 变更**：`orders.payment_method` 字段**彻底移除**——新建订单及所有订单不再有「订单级收款方式」（现结/赊账）概念，所有订单默认未收款，由 `payment_status`（unpaid/pending/paid）+ `payments` 收款记录体现到账进度。**收款登记/确认环节保留收款渠道 `method`（现金/微信），用于收款台账"现余/微信"拆分**，不影响金额统计与状态流转。
 
 **收款登记（payments 集合，1.0）**：收款记录独立集合 `payments`，一条记录对应一次登记收款。**收款流程（1.0）**：下单员/分拣员登记收款 → 生成 `status=pending`（待确认）记录，订单 `payment_status=unpaid→pending` → 库管【确认收款】→ `status=confirmed`（已确认），订单 `payment_status=pending→paid`。一笔订单可多次登记（部分收款累计）；订单 `received_amount` 为各条记录 `amount` 之和；登记可填**折价/货损金额（discount）**记录实收与应付的差额（如100元货品实收90元，折价10元）。
 
@@ -516,7 +516,8 @@ items_snapshot: [
 {
   order_id: "订单ID",
   customer_id: "客户ID",
-  amount: 100.00,                 // 实收金额（Number，以商家到账为准；到账渠道如有需要写入 note，不再用 pay_method）
+  method: "wechat",                // 收款渠道（cash 现金 / wechat 微信，台账"现余/微信"拆分用；默认 cash）
+  amount: 100.00,                 // 实收金额（Number，以商家到账为准；到账渠道由 method 记录，不再用 pay_method）
   discount: 10.00,                // 折价/货损金额（Number，默认0；如应付100实收90则折价10）
   registered_by: "张三",          // 登记人（下单员/分拣员，服务端记录）
   registered_at: ISODate(...),    // 登记时间
@@ -621,7 +622,7 @@ items_snapshot: [
 | auto_checked | — | ✅ | **新增（二期规划·当前未启用）**：原14:00超时自动确认已发货（分拣员SLA，当前 MVP 已取消） |
 | pick_large / pick_medium / pick_small | — | ✅ | **新增（二期规划·当前未启用）**：库管并行配货暂存的大/中/小件数（Number，默认0，**暂存不改变订单状态**） |
 | ship_large / ship_medium / ship_small | — | ✅ | **新增**：库管出库确认时的实际发货大/中/小件数（Number，默认0，待出库即已分拣 submitted 状态订单可写入）；即物流包裹（大/中/小件），出库后在列表/详情展示并随报表、出库单、单订单导出输出；未出库为0/空 |
-| collect | — | ✅ | **新增**：收款登记对象 `{method: cash/transfer/credit, amount: 实收金额, time: 收款时间, by: 收款人}`，**以商家到账为准** |
+| collect | — | ✅ | **新增**：收款登记对象 `{method: cash/wechat, amount: 实收金额, time: 收款时间, by: 收款人}`，**以商家到账为准**（method 为收款渠道现金/微信，台账"现余/微信"拆分用） |
 
 ### 6.3 功能精简总览
 
@@ -708,7 +709,7 @@ items_snapshot: [
 - **订单内自定义价格（1.0）**：所有商品下单时均可改价，仅对当前订单有效；改价信息记录在 order_items（is_price_modified + original_price_*），无独立改价表
 - **客户上次价格（1.0）**：新开订单商品价格默认取该客户最近订单（network_time 最近）成交价，无历史则用商品默认价
 - **金额精度**：4位小数存储，2位小数显示和导出
-- **收款方式**：仅做标记（cash/transfer/credit），不影响金额统计
+- **收款方式（订单级已取消；收款渠道 method 现金/微信保留，仅做台账"现余/微信"拆分标记）**：不影响金额统计
 - **收款登记（1.0）**：收款记录独立集合 payments（登记人→库管确认两步，status pending/confirmed）；订单 payment_status（unpaid/pending/paid）；**取消商户收款码与259号文合规内容，不做第三方支付对接**
 - **商品类型**：normal/gift/loss，赠品计入数量不计金额，损耗不计入数量和金额
 - **客户区域**：业务自定义区域（白河县/汉滨区/外县等11个，不按行政区划）

@@ -624,7 +624,7 @@ Array<{
   action: 'collect',
   payload: {
     id: string;
-    // collect_method: 'cash' | 'transfer' | 'credit';  // ⚠️ 1.0 起移除：收款登记不再采集收款方式
+    method?: 'cash' | 'wechat';  // 收款渠道（现金/微信，台账"现余/微信"拆分用；默认 cash）
     collect_amount: number;    // 实收金额，≥ 0，以商家到账为准
     collect_discount: number;  // 折价/货损金额，≥ 0，默认 0（可选）
     collect_time: number;      // 收款时间（毫秒时间戳）
@@ -635,7 +635,7 @@ Array<{
 | 入参 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | id | string | ✅ | 订单 ID |
-| ~~collect_method~~ | 'cash'\|'transfer'\|'credit' | ❌ | **1.0 起移除**：收款登记不再采集收款方式 |
+| method | 'cash'\|'wechat' | ❌ | 收款渠道（现金/微信，台账"现余/微信"拆分用；默认 `cash`） |
 | collect_amount | number | ✅ | 实收金额，≥ 0 |
 | collect_discount | number | ❌ | 折价/货损金额，≥ 0，默认 0 |
 | collect_time | number | ✅ | 收款时间（毫秒时间戳） |

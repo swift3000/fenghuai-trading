@@ -438,7 +438,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 | `order_no` | String | ✅ | — | 订单号（冗余） |
 | `customer_id` | String | ✅ | — | 客户 ID（余额欠款聚合用） |
 | `customer_name` | String | ✅ | — | 客户名称（冗余） |
-| ~~`pay_method`~~ | String | ❌ | — | **v4.3.5 起移除**：收款记录不再采集收款方式（cash/transfer/credit 下线）；如需记录到账渠道写入 `note` |
+| `method` | String | ✅ | `cash` | 收款渠道：`cash` 现金 / `wechat` 微信（**v4.3.5 取消"订单级收款方式"后，保留此为收款记录渠道字段，用于台账"现余/微信"拆分**；原 `pay_method`/`approach` 统一为此 `method`，与原型一致） |
 | `amount` | Number | ✅ | — | 实收金额（元，到账数） |
 | `discount` | Number | ✅ | `0` | 折价/货损金额（元）：应付与实收之差，如应付100元实收90元则折价10元（下单员/分拣员登记时可填） |
 | `registered_by` | String | ✅ | — | 登记人 user_id（下单员/分拣员/管理员） |
@@ -513,7 +513,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 | `collect-confirm`（确认收款，v4.3新增） | `{ id, payment_id }` | `payments.status == pending` | warehouse/admin（= `receivable:confirm`） | 确认收款：`payments.status → confirmed`（写入 confirmed_by/confirmed_at），累加 `orders.received_amount`，`orders.payment_status=paid`（全部还清时） |
 | `receivable`（赊销，v4.3新增） | `{ filter, page, page_size }` | 无 | 全员 | 三栏口径：按客户聚合 **应收总额 / 已收 / 未结清**（金额守恒：应收 = 已收 + 未结清）；支持客户台账/未结清/已结清三栏与周期导出 |
 | `update-remark`（改备注） | `{ id, data: { remark } }` | 任意状态 | 全员（v4.3） | 覆盖 `orders.remark`，任意角色可修改 |
-| `update-status`（状态流转） | `{ id, to_status }` | `submitted → sorted`（分拣）<br>`sorted → confirmed`（出库确认）<br>`confirmed → completed`（完成）<br>`→ cancelled`（取消） | sorter/admin（分拣）；warehouse/admin（出库确认/完成）；**全员（orderer/sorter/warehouse/admin）可取消任意订单（v4.3）** | 分拣完成写入 `checked_at`；出库确认写入 `confirmed_at` |
+| `update-status`（状态流转） | `{ id, to_status }` | `submitted → sorted`（分拣）<br>`sorted → confirmed`（出库确认）<br>`confirmed → completed`（完成） | sorter/admin（分拣）；warehouse/admin（出库确认/完成） | 分拣完成写入 `checked_at`；出库确认写入 `confirmed_at`；**无"取消/草稿"流转（cancelled/draft 为遗留态，当前流程不触发，以原型为准）** |
 
 > **提交二次确认文案**（下单员提交订单时弹窗，不含订单号与金额）：
 > 「（区域-店名）的订单 数量与订单数量确认无误？」
@@ -746,7 +746,7 @@ async function exportOrders(filter) {
 2. **去掉"规格"列**：`spec` 不再打印
 3. **数量列字体放大**：数量字号 ≥ 单价/金额字号的 1.5 倍并加粗
 4. 订单号统一「丰淮商贸-YYYYMMDD-NNNN」
-5. 打印**收款状态**（v4.3，v4.3.5 起不再打印收款方式）：未收款 → 「未收款」；待确认 → 「待确认」；已收款 → 「已收款（实收 ¥xxx）」
+5. **不打印收款状态 / 收款方式（按客户指定格式）**：送货单按「西安迈尚食品销售单」模板原样打印客户信息 + 商品明细 + 合计 + 累计欠款 + 制单人 + 签收栏，**不叠加收款状态 / 三方追溯 / 分拣备注 / 物流件型**（客户端指定格式，详见 PRD §4.3.5）
 6. **不含商户收款码（v4.3 已下线）**：送货单不再印制任何收款码/经营码，无央行259号文合规内容
 7. 打印完成后 `mark-printed` 标记已打印
 
@@ -780,7 +780,7 @@ async function exportOrders(filter) {
 
 > 原「订单转发给客户（订单收款卡片 + 商户收款码，需求#11）」**v4.3 整体取消**（商户收款码 / 央行259号文合规内容下线）。收款改为**内部赊销对账**，两步动作：
 
-**① 收款登记（下单员/分拣员/管理员，v4.3.6 库管无登记权限）**：订单详情/列表或赊销页点【收款】（v4.3.4 统一按钮，自动分流为登记）→ 填写**实收金额**、**折价/货损金额（可选）**、备注（v4.3.5 起不再采集收款方式）→ 保存 → 新增 `payments` 记录（status=pending，registered_by=登记人），`orders.payment_status → pending`，同时该笔收款**下推库管**待确认队列（赊销页按钮显示「·N 待确认」）。**库管角色被禁止登记收款：点【收款】不会进入登记弹窗；若强行提交 `submitCollect` 会被拦截并返回提示「库管仅负责确认收款，不能登记收款」。**
+**① 收款登记（下单员/分拣员/管理员，v4.3.6 库管无登记权限）**：订单详情/列表或赊销页点【收款】（v4.3.4 统一按钮，自动分流为登记）→ 填写**收款方式（现金/微信，台账"现余/微信"拆分用）**、**实收金额**、**折价/货损金额（可选）**、备注 → 保存 → 新增 `payments` 记录（status=pending，method=现金/微信，registered_by=登记人），`orders.payment_status → pending`，同时该笔收款**下推库管**待确认队列（赊销页按钮显示「·N 待确认」）。**库管角色被禁止登记收款：点【收款】不会进入登记弹窗；若强行提交 `submitCollect` 会被拦截并返回提示「库管仅负责确认收款，不能登记收款」。**
 
 **② 确认收款（库管/管理员）**：赊销页客户卡片或订单详情点【收款】→ 若有 pending 收款则直接打开【确认收款】列表逐笔【确认】→ 对应 `payments.status → confirmed`（confirmed_by/confirmed_at 写入），`orders.received_amount` 累加实收；**订单剩余欠款 = total_amount − received_amount − Σ(已确认 discount) ≤ 0 时 `payment_status → paid`，否则保持 `pending`（未结清）**。**库管无 pending 时【收款】提示「暂无待确认收款，请等待下单员/分拣员登记」，不进入登记弹窗（v4.3.6 库管仅确认、不登记）。**
 
@@ -1203,8 +1203,8 @@ cloudfunctions/
 | AC-02 | P1 | 二期规划：暂存配货（见 §6.6） | 库管对 submitted/sorted 订单录入配货件数 pick_large/pick_medium/pick_small | **当前 MVP 不实现**：「暂存配货」移入 §6.6 二期规划，`save-pick` action 取消，不改变订单状态 |
 | AC-03 | P1 | 物流件型（MVP已实现，见 §4.3.3/§6.5） | 出库时录入实际发货件数 ship_large/ship_medium/ship_small | **MVP已实现**：库管一步【确认出库】时填写物流件型，订单详情/出库列表/报表/出库单展示「物流包裹：大件X · 中件X · 小件X」；不再依赖原「配完」中间态 |
 | AC-04 | P1 | 二期规划：超时自动（见 §6.6） | 14:00 / 16:00 触发 SLA 自动确认 | **16:00 出库超时自动定时为二期，但原型保留「⏰模拟16:00通过」手动模拟按钮（simulateAutoConfirm），点击把当日待出库订单置为已出库**；**14:00 分拣超时自动确认保持二期（无对应模拟按钮）**；日常分拣/出库仍由人工一键/一步操作 |
-| AC-05 | P0 | 收款登记（v4.3 两步，v4.3.5 取消收款方式） | 下单员/分拣员对订单登记收款：amount 实收金额（可填 discount 折价/货损）+ 备注（v4.3.5 起不再采集 method） | 保存成功，payments 新增记录（status=pending，registered_by/at 写入，无 pay_method 字段），订单 payment_status → pending；订单详情显示"待确认" |
-| AC-06 | P0 | 收款状态显示（3态） | 查看未收款订单的详情并打印送货单 | 显示"未收款"；登记收款后刷新显示"待确认"；库管确认收款后显示"已收款（含实收金额）"，v4.3.5 起不再显示收款方式 |
+| AC-05 | P0 | 收款登记（v4.3 两步；订单级收款方式取消，收款渠道现金/微信保留） | 下单员/分拣员对订单登记收款：method 收款渠道（现金/微信）+ amount 实收金额（可填 discount 折价/货损）+ 备注 | 保存成功，payments 新增记录（status=pending，method=现金/微信，registered_by/at 写入，无订单级 pay_method 字段），订单 payment_status → pending；订单详情显示"待确认" |
+| AC-06 | P0 | 收款状态显示（3态） | 查看未收款订单的详情并打印送货单 | 显示"未收款"；登记收款后刷新显示"待确认"；库管确认收款后显示"已收款（含实收金额）"；收款登记/确认界面可选"现金/微信"渠道（用于台账"现余/微信"拆分），打印送货单按客户格式不含收款方式/状态 |
 | AC-07 | P0 | 全员完整视图（v4.3） | warehouse/分拣员角色打开订单列表/详情/打印预览 | 单价、金额完整显示（无脱敏、无精简视图），4 角色视图一致 |
 | AC-08 | P1 | 默认数量0 | 录单页添加商品 | 商品数量默认 0，需手动输入后加购，不会误带 1 |
 | AC-09 | P1 | usage 排序 | 录单页打开商品列表 | 商品按使用频率（products.usage）降序排列，高频商品置顶 |
