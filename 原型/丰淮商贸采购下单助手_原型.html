@@ -546,6 +546,25 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .customer-group-title{font-size:calc(12px * var(--font-scale));color:var(--text-2);padding:8px 16px;background:#F5F6F8;font-weight:500}
 .customer-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border)}
 .customer-item:active{background:#F5F6F8}
+
+/* Smart Input */
+.smart-input-btn{width:100%;padding:14px;background:linear-gradient(135deg,#FFF7ED,#FFF3E6);border:1px solid #F5A623;border-radius:var(--radius);font-size:calc(15px * var(--font-scale));font-weight:600;color:#D4820A;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin:12px;transition:all .2s}
+.smart-input-btn:active{background:#FFF0E0;transform:scale(0.98)}
+.smart-input-btn .icon{font-size:calc(20px * var(--font-scale))}
+.smart-textarea{width:100%;height:100px;border:1px solid #F5A623;border-radius:12px;padding:12px;font-size:calc(14px * var(--font-scale));outline:none;resize:none;margin-top:8px}
+.smart-textarea:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(7,193,96,0.1)}
+.smart-parse-btn{width:100%;padding:12px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:calc(15px * var(--font-scale));font-weight:600;cursor:pointer;margin-top:8px}
+.smart-parse-btn:active{opacity:.85}
+.smart-record-btn{width:60px;height:60px;border-radius:50%;background:var(--green);color:#fff;border:none;font-size:calc(28px * var(--font-scale));cursor:pointer;display:flex;align-items:center;justify-content:center;margin:20px auto}
+.smart-record-btn.recording{background:#FF3B30;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.smart-voice-tip{text-align:center;font-size:calc(13px * var(--font-scale));color:var(--text-2);margin-top:8px}
+.smart-draft-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.smart-draft-item:last-child{border-bottom:none}
+.smart-draft-name{font-size:calc(14px * var(--font-scale));font-weight:500}
+.smart-draft-qty{font-size:calc(13px * var(--font-scale));color:var(--text-2)}
+.smart-draft-customer{font-size:calc(14px * var(--font-scale));font-weight:600;color:var(--green);margin-bottom:8px}
+.smart-draft-warning{font-size:calc(12px * var(--font-scale));color:#FF6B35;margin-top:8px;padding:8px;background:#FFF7ED;border-radius:8px}
 .customer-item .name{font-size:calc(15px * var(--font-scale));font-weight:500}
 .customer-item .phone{font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-top:2px}
 .customer-item .check{color:var(--green);font-size:calc(18px * var(--font-scale))}
@@ -791,6 +810,15 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .fz-btn:active{background:#f5f5f5}
 .fz-val{font-size:calc(14px * var(--font-scale));font-weight:600;min-width:44px;text-align:center}
 .fz-reset{font-size:calc(12px * var(--font-scale));color:var(--green);text-align:center;cursor:pointer;padding-top:8px;border-top:1px solid var(--border);user-select:none}
+
+/* Smart Input Home Card */
+.smart-home-card{background:linear-gradient(135deg,#FFF7ED,#FFF3E6);border:1px solid #F5A623;border-radius:var(--radius);padding:16px;margin:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;box-shadow:0 2px 12px rgba(245,166,35,0.15)}
+.smart-home-card:active{background:#FFF0E0;transform:scale(0.98)}
+.smart-home-icon{font-size:calc(32px * var(--font-scale));flex-shrink:0}
+.smart-home-content{flex:1;min-width:0}
+.smart-home-title{font-size:calc(16px * var(--font-scale));font-weight:700;color:#D4820A;margin-bottom:2px}
+.smart-home-desc{font-size:calc(12px * var(--font-scale));color:#B8860B}
+.smart-home-arrow{font-size:calc(20px * var(--font-scale));color:#F5A623;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -879,6 +907,17 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
         <div class="stat"><div class="num" id="statOrders">0</div><div class="lbl">今日订单</div></div>
         <div class="stat"><div class="num" id="statAmount">¥0</div><div class="lbl">今日金额</div></div>
       </div>
+      
+      <!-- 智能录入入口（首页） -->
+      <div class="smart-home-card" onclick="state.currentOrderId=null; openSmartInputModal()">
+        <div class="smart-home-icon">🤖</div>
+        <div class="smart-home-content">
+          <div class="smart-home-title">智能录入</div>
+          <div class="smart-home-desc">文字/语音快速下单</div>
+        </div>
+        <div class="smart-home-arrow">›</div>
+      </div>
+      
       <div class="home-actions">
         <div class="action" onclick="state.currentOrderId=null; navigateTo('newOrder')"><div class="icon c1">📝</div><div class="lbl">新建订单</div></div>
         <div class="action" id="homeActionProducts" onclick="navigateTo('products')"><div class="icon c2">📦</div><div class="lbl">商品管理</div></div>
@@ -902,6 +941,10 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
             <div class="arrow">›</div>
           </div>
           <!-- 1.0：新建订单不再有「收款方式」字段，所有订单统一默认「未付款」，经登记→确认两步收款流转为已结清 -->
+          <button class="smart-input-btn" onclick="openSmartInputModal()">
+            <span class="icon">🤖</span>
+            <span>智能录入（文字/语音）</span>
+          </button>
           <div id="productList"></div>
           <!-- 商品下拉选择器（替代原弹窗） -->
           <div class="product-dropdown-wrapper" id="productDropdownWrapper">
@@ -1376,10 +1419,102 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
   </div>
 </div>
 
+<!-- Smart Input Modal (智能录入) -->
+<div class="modal-mask" id="smartInputModal">
+  <div class="modal" style="max-height:90%">
+    <div class="modal-header">
+      <div class="title">🤖 智能录入</div>
+      <div class="close" onclick="closeSmartInputModal()">✕</div>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <!-- Tab switch -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="smart-tab active" id="smartTabText" onclick="switchSmartTab('text')" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--green);color:#fff;font-size:calc(14px * var(--font-scale));font-weight:600;cursor:pointer">文字录入</button>
+        <button class="smart-tab" id="smartTabVoice" onclick="switchSmartTab('voice')" style="flex:1;padding:10px;border:none;border-radius:10px;background:#F5F6F8;color:var(--text-2);font-size:calc(14px * var(--font-scale));font-weight:600;cursor:pointer">语音录入</button>
+      </div>
+      
+      <!-- Text input mode -->
+      <div id="smartTextMode">
+        <div style="font-size:calc(13px * var(--font-scale));color:var(--text-2);margin-bottom:8px">粘贴微信聊天记录或手动输入订单信息：</div>
+        <textarea class="smart-textarea" id="smartInputText" placeholder="例如：送 2 件手抓饼给东一路刀削面&#10;或：手抓饼 2 件，老酸奶 10 包"></textarea>
+        <button class="smart-parse-btn smart-parse-btn-body" onclick="parseSmartInput()">🔍 智能解析</button>
+      </div>
+      
+      <!-- Voice input mode (模拟) -->
+      <div id="smartVoiceMode" style="display:none;text-align:center;padding:20px 0">
+        <div style="font-size:calc(13px * var(--font-scale));color:var(--text-2);margin-bottom:16px">点击麦克风，语音说出订单信息：</div>
+        <button class="smart-record-btn" id="smartRecordBtn" onclick="toggleVoiceRecord()">🎤</button>
+        <div class="smart-voice-tip" id="smartVoiceTip">点击开始录音</div>
+        <div id="smartVoiceResult" style="margin-top:16px;padding:12px;background:#F5F6F8;border-radius:12px;font-size:calc(14px * var(--font-scale));display:none">
+          <div style="color:var(--text-2);margin-bottom:8px">识别结果：</div>
+          <div id="smartVoiceText" style="font-weight:600;color:var(--text)"></div>
+          <button class="smart-parse-btn smart-parse-btn-voice" style="margin-top:12px" onclick="parseVoiceResult()">🔍 智能解析</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="smartInputFooter" style="display:none">
+      <button class="smart-parse-btn smart-parse-btn-footer" style="background:var(--green)" onclick="confirmSmartDraft()">✅ 确认生成订单</button>
+      <button class="smart-parse-btn smart-parse-btn-footer" style="background:#F5F6F8;color:var(--text);margin-top:8px" onclick="closeSmartInputModal()">取消</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
+// ============ UTILITY FUNCTIONS (must be defined early) ============
+function $(id){ return document.getElementById(id); }
+function fmtMoney(n){ return '¥' + Number(n || 0).toFixed(2); }
+
+// ============ ROLE PROFILES (must be defined before doLogin) ============
+const ROLE_PROFILES = {
+  orderer: { name:'张经理', roleLabel:'下单员', phone:'13800138001', avatar:'张' },
+  sorter:  { name:'周分拣', roleLabel:'分拣员', phone:'13800138002', avatar:'周' },
+  warehouse: { name:'李库管', roleLabel:'库管', phone:'13800138003', avatar:'李' },
+  admin:   { name:'王老板', roleLabel:'管理员', phone:'13800138000', avatar:'王' }
+};
+
+function hasAdmin(){
+  return (data.members||[]).some(m => m.role === 'admin');
+}
+
+// ============ CORE FUNCTIONS ============
+function doLogin(){
+  console.log('[doLogin] 登录按钮被点击');
+  showToast('正在登录...');
+  
+  // Initialize with sample orders if empty
+  if(data.orders.length === 0){
+    seedSampleOrders();
+  }
+  let role = data.currentRole || 'orderer';
+  // 方案 A：系统尚无管理员时，首位登录者自动成为管理员（零配置）
+  if(!hasAdmin()){
+    role = 'admin';
+    const adminName = ROLE_PROFILES.admin.name;
+    data.members = data.members || [];
+    data.members.push({
+      id: 'm_admin_' + Date.now(),
+      name: adminName,
+      role: 'admin',
+      openid: 'oX_admin_' + Math.random().toString(36).substr(2,6),
+      phone: ROLE_PROFILES.admin.phone || '',
+      status: 'active'
+    });
+    showToast('🎉 你已成为首位管理员，管理功能已解锁');
+  }
+  data.currentRole = role;
+  data.currentUserName = ROLE_PROFILES[role].name;
+  saveData();
+  updateUserInfo();
+  if(role === 'warehouse' || role === 'sorter'){
+    navigateTo('outbound');
+  } else {
+    navigateTo('home');
+  }
+}
+
 // ============ DATA LAYER ============
 const STORAGE_KEY = 'fh_order_data';
 const STATE_KEY = 'fh_order_state';
@@ -2395,12 +2530,6 @@ function switchTab(tab, silent){
 }
 
 // ============ LOGIN ============
-const ROLE_PROFILES = {
-  orderer:   { name: '张经理', roleLabel: '下单员', color: '#67C23A',  phone: '15529230158' },
-  sorter:    { name: '周分拣', roleLabel: '分拣员', color: '#F8A44C', phone: '18392073521' },
-  warehouse: { name: '李库管', roleLabel: '库管',   color: '#409EFF', phone: '18909150610' },
-  admin:     { name: '王老板', roleLabel: '管理员', color: '#F56C6C', phone: '13800138000' }
-};
 
 // 1.0 角色权限矩阵（细粒度、按模块分组、可配置）
 // 默认「全员开放」：4 角色均拥有全部功能权限，仅两处分工 + 一项独占：
@@ -2475,10 +2604,7 @@ function ensureMembers(){
   });
   saveData();
 }
-// 是否已有管理员（用于首登录自动管理员判定）
-function hasAdmin(){
-  return !!(data.members || []).some(m => m.role === 'admin');
-}
+
 ensureMembers();
 // 伪二维码（原型演示，无需联网）：固定定位角 + 由邀请码派生的确定性图案
 function genFakeQr(seed){
@@ -2497,42 +2623,6 @@ function genFakeQr(seed){
     if(on) cells += `<rect x="${(c*cell).toFixed(2)}" y="${(r*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}"/>`;
   }}
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#fff"/><g fill="#1a1a1a">${cells}</g></svg>`;
-}
-
-function doLogin(){
-  // Initialize with sample orders if empty
-  if(data.orders.length === 0){
-    seedSampleOrders();
-  }
-  let role = data.currentRole || 'orderer';
-  // 方案 A：系统尚无管理员时，首位登录者自动成为管理员（零配置）
-  if(!hasAdmin()){
-    role = 'admin';
-    const adminName = ROLE_PROFILES.admin.name;
-    data.members = data.members || [];
-    data.members.push({
-      id: 'm_admin_' + Date.now(),
-      name: adminName,
-      role: 'admin',
-      openid: 'oX_admin_' + Math.random().toString(36).substr(2,6),
-      phone: ROLE_PROFILES.admin.phone || '',
-      status: 'active'
-    });
-    showToast('🎉 你已成为首位管理员，管理功能已解锁');
-  }
-  data.currentRole = role;
-  data.currentUserName = ROLE_PROFILES[role].name;
-  saveData();
-  // 更新顶部用户信息
-  updateUserInfo();
-  // 开放权限模型（1.0）：4角色全功能开放，底部5 Tab（首页/订单/赊销/分拣出库/我的）全部可见、不做角色隔离；报表中心经「我的」页入口进入
-  // 「成员管理」作为独占能力，仍仅在「我的」页对管理员展示（见 updateUserInfo）
-  // 默认落地页差异（所有 Tab 仍均可自由切换）：分拣员/库管→分拣出库；其余→首页
-  if(role === 'warehouse' || role === 'sorter'){
-    navigateTo('outbound');
-  } else {
-    navigateTo('home');
-  }
 }
 
 function selectRole(role){
@@ -2858,7 +2948,22 @@ function initNewOrder(){
     renderQuickProducts();
     return;
   }
-  // 新建模式：重置
+  // 新建模式：如果有智能录入的有效数据（客户+商品都有），不重置
+  if(state.currentCustomer && state.currentItems && state.currentItems.length > 0){
+    // 检查数据是否完整（商品必须有名称）
+    const hasValidData = state.currentItems.every(item => item.name && item.material_code);
+    if(hasValidData){
+      // 数据完整，只更新UI
+      $('selectedCustomerName').textContent = state.currentCustomer.name;
+      $('selectedCustomerRegion').textContent = state.currentCustomer.region || (state.currentCustomer.phone || '');
+      setLastOrderInfo();
+      renderProductRows();
+      updateOrderTotal();
+      renderQuickProducts();
+      return;
+    }
+  }
+  // 完全新建或数据无效：重置
   state.currentCustomer = null;
   state.currentItems = [];
   state.lastOrderItems = [];
@@ -5532,6 +5637,993 @@ $('nav-bar').style.display = 'none';
 syncLoginRoleSelection();
 // 首启动横幅：系统尚无管理员时提示"您将成为首位管理员"
 refreshLoginBanner();
+
+// ============ SMART INPUT (智能录入) ============
+// 商品别名库（基于 167 个商品的常用别名）
+const PRODUCT_ALIASES = {
+  "手抓饼": ["手抓", "抓饼"],
+  "老酸奶": ["酸奶", "老酸"],
+  "小笼包子": ["包子", "小笼"],
+  "海藻碘": ["海藻", "碘盐"],
+  "吾宠湾粥": ["粥", "吾宠"],
+  "有情郎奶茶": ["奶茶", "有情郎"],
+  "鲜沫豆浆": ["豆浆", "沫豆浆"],
+  "鲜爽果汁": ["果汁"],
+  "欣朵朵布丁": ["布丁"],
+  "永和豆浆": ["永和", "豆浆"],
+  "久念麻球": ["麻球"],
+  "乡道糖糕": ["糖糕"],
+  "怀念菜角": ["菜角"],
+  "爆珠果奶": ["果奶"],
+  "酥饼（纸箱装）": ["酥饼"],
+  "100个小蒸饺": ["蒸饺"],
+  "玉米粑粑": ["玉米"],
+  "心思源蒸饺": ["蒸饺"],
+  "食自在蒸饺": ["蒸饺"],
+  "曹氏箱水饺": ["水饺"],
+  "早餐伴侣": ["早餐"],
+  "糯玉米": ["糯玉米", "玉米"],
+  "良邦卡通包": ["卡通包"],
+  "良邦组合装卡包": ["组合包"],
+  "125潼关饼": ["潼关饼"],
+  "130老潼关": ["老潼关"],
+  "150潼关饼": ["潼关饼"],
+  "食自在大锅贴": ["锅贴"],
+  "鸡全架": ["鸡架"],
+  "葱油饼": ["葱油饼", "葱油"],
+  "千味烧麦": ["烧麦"],
+  "粉色抽纸": ["抽纸"],
+  "汉纯纸": ["纸"],
+  "80克大包子": ["大包"],
+  "夫宇麦穗肠": ["麦穗肠"],
+  "峰仔樱花糕": ["樱花糕"],
+  "85抽纸": ["抽纸"],
+  "黄金小酥饼": ["小酥饼"],
+  "笑脸牛肉馅饼": ["馅饼"],
+  "金刚鸡排": ["鸡排"],
+  "大件筷子": ["筷子"],
+  "西安手工大包子": ["手工包子"],
+  "360彩杯": ["彩杯"],
+  "400彩杯": ["彩杯"],
+  "450彩杯": ["彩杯"],
+  "大彩碗": ["彩碗"],
+  "一号纸碗": ["纸碗"],
+  "新品绿抽": ["抽纸"],
+  "鸡柳": ["鸡柳"],
+  "清源口杯": ["口杯"],
+  "稀饭杯（三元）": ["稀饭杯"],
+  "兢农玉米": ["玉米"],
+  "A-3餐盒": ["餐盒"],
+  "大稀饭吸管": ["吸管"],
+  "豆浆吸管": ["吸管"],
+  "封口膜": ["封口膜"],
+  "12A豆浆杯": ["豆浆杯"],
+  "大白勺子": ["勺子"],
+  "透明勺子103": ["勺子"],
+  "一次性手套": ["手套"],
+  "清洁球": ["清洁球"],
+  "洗洁精25KG": ["洗洁精"],
+  "空桶、洗洁精 50斤": ["洗洁精"],
+  "调货": ["调货"],
+  "P4餐盒": ["餐盒"],
+  "300圆餐盒": ["圆餐盒"],
+  "450圆餐盒": ["圆餐盒"],
+  "500圆餐盒": ["圆餐盒"],
+  "625圆餐盒": ["圆餐盒"],
+  "分体四格": ["四格"],
+  "750圆餐盒": ["圆餐盒"],
+  "800圆餐盒": ["圆餐盒"],
+  "1000圆餐盒": ["圆餐盒"],
+  "1250圆餐盒": ["圆餐盒"],
+  "1500圆餐盒": ["圆餐盒"],
+  "1750圆餐盒": ["圆餐盒"],
+  "3000盆": ["盆"],
+  "3500盆": ["盆"],
+  "4000盆": ["盆"],
+  "4800盆": ["盆"],
+  "500方餐盒": ["方餐盒"],
+  "650方餐盒": ["方餐盒"],
+  "750方餐盒": ["方餐盒"],
+  "1000方餐盒": ["方餐盒"],
+  "鸡腿堡+鸡肉卷": ["鸡腿堡", "鸡肉卷"],
+  "纸杯": ["纸杯"],
+  "明途包子": ["包子"],
+  "安蜀手撕馒头": ["手撕馒头"],
+  "汉堡胚": ["汉堡胚"],
+  "手工烙饼": ["烙饼"],
+  "木鱼（双色糕）": ["双色糕"],
+  "秦迈馄饨": ["馄饨"],
+  "紫薯+南瓜开花馒头": ["开花馒头"],
+  "金丝藤椒鸡排": ["鸡排"],
+  "雍运肉夹馍": ["肉夹馍"],
+  "木鱼红糖发糕": ["红糖发糕"],
+  "牛舌饼-小馋童": ["牛舌饼"],
+  "安井50克烧麦": ["烧麦"],
+  "110潼关饼": ["潼关饼"],
+  "鸡蛋灌饼": ["灌饼"],
+  "小馋童金丝卷": ["金丝卷"],
+  "千味寻小笼包": ["小笼包"],
+  "保鲜膜": ["保鲜膜"],
+  "思念水饺(韭菜鸡蛋)": ["水饺"],
+  "38克烤肠": ["烤肠"],
+  "绿秦20斤卤肉": ["卤肉"],
+  "汉堡肉": ["汉堡肉"],
+  "白吉馍": ["白吉馍"],
+  "邦杰-手工水饺": ["水饺"],
+  "心思源玉米饼": ["玉米饼"],
+  "马蹄酥": ["马蹄酥"],
+  "手工烧饼": ["烧饼"],
+  "鸡胗": ["鸡胗"],
+  "冻鸭": ["冻鸭"],
+  "久念100g油条": ["油条"],
+  "70克火山石烤肉肠": ["烤肉肠"],
+  "久念80g油条": ["油条"],
+  "雍运照烧馅饼": ["馅饼"],
+  "鸡翅根": ["鸡翅根"],
+  "金牧1315鸡腿": ["鸡腿"],
+  "70克烤肉肠": ["烤肉肠"],
+  "良邦-哪吒包": ["哪吒包"],
+  "立白洗洁精": ["洗洁精"],
+  "标点牛肉花卷": ["花卷"],
+  "20白袋子": ["白袋子"],
+  "24白袋子": ["白袋子"],
+  "30白袋子": ["白袋子"],
+  "博大1518琵琶腿": ["琵琶腿"],
+  "龙利鱼": ["龙利鱼"],
+  "思念小云吞": ["云吞"],
+  "安井锅包肉": ["锅包肉"],
+  "安井茄盒": ["茄盒"],
+  "易太蚝油肉片": ["肉片"],
+  "青豆": ["青豆"],
+  "甜玉米粒": ["玉米粒"],
+  "安井耦盒": ["耦盒"],
+  "安井千叶豆腐": ["千叶豆腐"],
+  "安井小酥肉": ["小酥肉"],
+  "安井香酥带鱼": ["带鱼"],
+  "安井干炸里脊": ["里脊"],
+  "双椒油黄鸡": ["油黄鸡"],
+  "学子膳小炒肉丝": ["小炒肉"],
+  "易太黑椒牛柳": ["牛柳"],
+  "辣子鸡": ["辣子鸡"],
+  "易太蚝油牛柳": ["牛柳"]
+};
+
+// 客户别名库（基于 198 个客户的常用别名）
+const CUSTOMER_ALIASES = {
+  "东一路刀削面": ["东一路", "东一路刀", "刀削面"],
+  "东一路惠家": ["东一路", "东一路惠", "惠家"],
+  "东一路惠家超市": ["东一路", "东一路惠", "惠家超市"],
+  "东一路汉城精品": ["东一路", "东一路汉", "汉城"],
+  "东东早点": ["东东", "东东早点"],
+  "东大门包子": ["东大门", "东大门包", "包子"],
+  "东新街5号": ["东新街", "东新街5"],
+  "东门早点": ["东门", "东门早点"],
+  "中医院对面": ["中医院", "中医院对"],
+  "中驰车库": ["中驰", "中驰车库"],
+  "二中桥头摆摊": ["二中", "二中桥头"],
+  "二宝肉夹馍": ["二宝", "二宝肉夹"],
+  "二幼千层破酥包": ["二幼", "二幼千层"],
+  "云南米线": ["云南", "云南米线"],
+  "五馅包": ["五馅", "五馅包"],
+  "亮亮餐馆": ["亮亮", "亮亮餐馆"],
+  "仁和国际沙县小吃": ["仁和国际", "仁和"],
+  "仁和张秋红": ["仁和", "仁和张秋"],
+  "仁和沙县小吃": ["仁和", "仁和沙县"],
+  "党家坝上海汤包": ["党家坝", "党家坝上", "汤包"],
+  "党家坝民威": ["党家坝", "党家坝民"],
+  "党家坝芭比包子": ["党家坝", "党家坝芭", "包子"],
+  "党家坝酸辣粉": ["党家坝", "党家坝酸", "酸辣粉"],
+  "关中凉皮": ["关中", "关中凉皮"],
+  "关口街包子店": ["关口", "关口街包", "包子"],
+  "农贸市场": ["农贸", "农贸市场"],
+  "刀削面": ["刀削面"],
+  "刘家热面皮": ["刘家", "刘家热面"],
+  "刘家营四岭": ["刘家营", "刘家营四"],
+  "刘师早点": ["刘师", "刘师早点"],
+  "初中门口": ["初中", "初中门口"],
+  "功夫煎饼": ["功夫", "功夫煎饼"],
+  "包子店": ["包子", "包子店"],
+  "包子铺": ["包子", "包子铺"],
+  "包汁百味": ["包汁", "包汁百味"],
+  "千层破酥包": ["千层", "千层破酥"],
+  "千里香馄饨": ["千里", "千里香馄", "馄饨"],
+  "南台路48号": ["南台路", "南台路4"],
+  "南大街": ["南大街"],
+  "南大街包子": ["南大街", "南大街包", "包子"],
+  "南门蒸面": ["南门", "南门蒸面"],
+  "南门口": ["南门口"],
+  "四里坪": ["四里坪"],
+  "四方山": ["四方山"],
+  "四娃子面皮": ["四娃子", "四娃子面皮"],
+  "国栋包子": ["国栋", "国栋包子"],
+  "国兵早点": ["国兵", "国兵早点"],
+  "图图小吃": ["图图", "图图小吃"],
+  "在地锅贴": ["在地", "在地锅贴"],
+  "在兴面皮": ["在兴", "在兴面皮"],
+  "垭口": ["垭口"],
+  "垭口街": ["垭口", "垭口街"],
+  "塔坝": ["塔坝"],
+  "塔坝口": ["塔坝口"],
+  "塔坝老街": ["塔坝老", "塔坝老街"],
+  "城郊": ["城郊"],
+  "城郊中学对面": ["城郊中学", "城郊中"],
+  "城东路": ["城东路"],
+  "城隍庙": ["城隍庙"],
+  "城隍庙巷子": ["城隍庙巷", "城隍庙巷子"],
+  "城里": ["城里"],
+  "城里街": ["城里街"],
+  "城西": ["城西"],
+  "城西十字路口": ["城西十字", "城西十字路口"],
+  "城西中学": ["城西中学"],
+  "城西街": ["城西街"],
+  "城西老街": ["城西老", "城西老街"],
+  "城西菜市场": ["城西菜市", "城西菜市场"],
+  "包子": ["包子"],
+  "包汁百味": ["包汁", "包汁百味"],
+  "刀削面": ["刀削面"],
+  "热面皮": ["热面皮"],
+  "早点": ["早点"],
+  "沙县小吃": ["沙县", "沙县小吃"],
+  "汤包": ["汤包"],
+  "蒸面": ["蒸面"],
+  "面皮": ["面皮"],
+  "馄饨": ["馄饨"],
+  "水饺": ["水饺"],
+  "烧麦": ["烧麦"],
+  "灌饼": ["灌饼"],
+  "锅贴": ["锅贴"],
+  "鸡排": ["鸡排"],
+  "烤肠": ["烤肠"],
+  "油条": ["油条"],
+  "包子店": ["包子店"]
+};
+
+// 口语化单位映射（标准化）
+const UNIT_ALIASES = {
+  // 件级单位
+  "个": "件", "箱": "件", "捆": "件", "提": "件", "桶": "件", "堆": "件",
+  // 包级单位
+  "袋": "包", "瓶": "包", "杯": "包", "碗": "包", "双": "包", "对": "包",
+  "条": "包", "盒": "包", "罐": "包", "支": "包",
+  // 重量单位
+  "斤": "包", "两": "包", "公斤": "件", "千克": "件"
+};
+
+// 常见错别字映射
+const COMMON_TYPOS = {
+  // 商品错别字
+  "抓饼": "手抓饼", "酸奶": "老酸奶", "汽水": "雪碧", "可乐": "可口可乐",
+  "纯净水": "矿泉水", "白开": "矿泉水", "冰红": "冰红茶", "泡面": "方便面",
+  "抽纸": "纸巾", "卷纸": "纸巾", "洗衣粉": "洗衣液", "洗发": "洗发水",
+  // 客户错别字（拼音相似）
+  "万有": "万友", "万佑": "万友", "万邮": "万友",
+  "东一路刀削麵": "东一路刀削面", "好再来": "好再来便利店"
+};
+
+// ========== 智能录入全局变量 ==========
+let smartDraft = null; // 存储解析后的草稿
+let isRecording = false;
+let voiceTimer = null;
+
+// 商品记忆：inputText -> 最后选择的商品名
+let productLastUsed = {};
+
+// 客户记忆：inputText -> 最后选择的客户名
+let customerLastUsed = {};
+
+// ========== 智能识别引擎 ==========
+
+// 打开智能录入弹窗
+function openSmartInputModal() {
+  openModal('smartInputModal');
+  switchSmartTab('text');
+  $('smartInputText').value = '';
+  $('smartVoiceResult').style.display = 'none';
+  $('smartInputFooter').style.display = 'none';
+  smartDraft = null;
+}
+
+// 关闭智能录入弹窗
+function closeSmartInputModal() {
+  closeModal('smartInputModal');
+  if(isRecording) toggleVoiceRecord();
+}
+
+// 切换文字/语音Tab
+function switchSmartTab(mode) {
+  const textTab = $('smartTabText');
+  const voiceTab = $('smartTabVoice');
+  const textMode = $('smartTextMode');
+  const voiceMode = $('smartVoiceMode');
+  
+  if(mode === 'text') {
+    textTab.style.background = 'var(--green)';
+    textTab.style.color = '#fff';
+    voiceTab.style.background = '#F5F6F8';
+    voiceTab.style.color = 'var(--text-2)';
+    textMode.style.display = '';
+    voiceMode.style.display = 'none';
+  } else {
+    voiceTab.style.background = 'var(--green)';
+    voiceTab.style.color = '#fff';
+    textTab.style.background = '#F5F6F8';
+    textTab.style.color = 'var(--text-2)';
+    voiceMode.style.display = '';
+    textMode.style.display = 'none';
+  }
+}
+
+// Levenshtein 距离模糊匹配
+function levenshteinDistance(a, b) {
+  if(!a || !b) return 999;
+  const matrix = [];
+  for(let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for(let j = 0; j <= a.length; j++) matrix[0][j] = j;
+  for(let i = 1; i <= b.length; i++) {
+    for(let j = 1; j <= a.length; j++) {
+      if(b.charAt(i-1) === a.charAt(j-1)) {
+        matrix[i][j] = matrix[i-1][j-1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i-1][j-1] + 1,
+          matrix[i][j-1] + 1,
+          matrix[i-1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+// 模糊匹配客户（增强版 - 原型友好模式）
+function fuzzyMatchCustomers(input) {
+  const candidates = [];
+  if(!input) return candidates;
+  
+  console.log('[fuzzyMatchCustomers] 输入:', input);
+  
+  for(const customer of data.customers) {
+    // 1. 精确匹配（最高优先级）
+    if(customer.name === input || customer.alias === input) {
+      candidates.push({ name: customer.name, score: 1.0 });
+      continue;
+    }
+    
+    // 2. 别名库匹配
+    const customerAliases = CUSTOMER_ALIASES[customer.name];
+    if(customerAliases) {
+      for(const alias of customerAliases) {
+        if(input.includes(alias) || alias.includes(input)) {
+          candidates.push({ name: customer.name, score: 0.95 });
+          break;
+        }
+      }
+    }
+    
+    // 3. 别名字段匹配
+    if(customer.alias && input.includes(customer.alias)) {
+      candidates.push({ name: customer.name, score: 0.95 });
+      continue;
+    }
+    
+    // 4. 包含匹配（输入是客户名的一部分）- 原型核心匹配
+    if(input.length >= 2 && customer.name.includes(input)) {
+      if(!candidates.find(c => c.name === customer.name)) {
+        candidates.push({ name: customer.name, score: 0.90 });
+      }
+      continue;
+    }
+    
+    // 5. 部分匹配（客户名包含输入的关键词）
+    if(input.length >= 2 && !candidates.find(c => c.name === customer.name)) {
+      const inputChars = input.split('');
+      let matchCount = 0;
+      for(const char of inputChars) {
+        if(customer.name.includes(char)) matchCount++;
+      }
+      if(matchCount >= Math.ceil(input.length * 0.5)) {
+        const score = 0.6 + (matchCount / input.length) * 0.3;
+        candidates.push({ name: customer.name, score: Math.min(score, 0.85) });
+      }
+    }
+    
+    // 6. 前缀匹配
+    if(!candidates.find(c => c.name === customer.name)) {
+      if(customer.name.startsWith(input) || (customer.alias && customer.alias.startsWith(input))) {
+        candidates.push({ name: customer.name, score: 0.80 });
+      }
+    }
+    
+    // 7. 模糊匹配（编辑距离）
+    if(!candidates.find(c => c.name === customer.name)) {
+      const nameDist = levenshteinDistance(input, customer.name);
+      const aliasDist = customer.alias ? levenshteinDistance(input, customer.alias) : 999;
+      const minDist = Math.min(nameDist, aliasDist);
+      if(minDist <= 3 && minDist > 0) {
+        candidates.push({
+          name: customer.name,
+          score: Math.max(0.5, 1 - minDist / Math.max(input.length, customer.name.length))
+        });
+      }
+    }
+  }
+  
+  console.log('[fuzzyMatchCustomers] 匹配结果:', candidates.map(c => `${c.name}(${c.score})`).join(', '));
+  return candidates.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
+// 模糊匹配商品（增强版 - 原型友好模式 + 智能记忆）
+function fuzzyMatchProducts(input) {
+  const candidates = [];
+  if(!input) return candidates;
+  
+  console.log('[fuzzyMatchProducts] 输入:', input);
+  
+  // 从商品数据中匹配
+  for(const product of data.products) {
+    if(!product || !product.name) continue;
+    
+    // 1. 精确匹配（最高优先级）
+    if(product.name === input) {
+      candidates.push({ name: product.name, score: 1.0 });
+      continue;
+    }
+    
+    // 2. 别名库匹配
+    const productAliases = PRODUCT_ALIASES[product.name];
+    if(productAliases) {
+      for(const alias of productAliases) {
+        if(input.includes(alias) || alias.includes(input)) {
+          candidates.push({ name: product.name, score: 0.95 });
+          break;
+        }
+      }
+    }
+    
+    // 3. 包含匹配（输入是商品名的一部分）- 原型核心匹配
+    if(input.length >= 1 && product.name.includes(input)) {
+      if(!candidates.find(c => c.name === product.name)) {
+        // 输入越短，分数越高（说明更可能是简称）
+        const score = input.length <= 2 ? 0.95 : 0.85;
+        candidates.push({ name: product.name, score: score });
+      }
+      continue;
+    }
+    
+    // 4. 部分匹配（商品名包含输入的多个关键词）
+    if(input.length >= 2 && !candidates.find(c => c.name === product.name)) {
+      const inputChars = input.split('');
+      let matchCount = 0;
+      for(const char of inputChars) {
+        if(product.name.includes(char)) matchCount++;
+      }
+      if(matchCount >= Math.ceil(input.length * 0.4)) {
+        const score = 0.6 + (matchCount / input.length) * 0.35;
+        candidates.push({ name: product.name, score: Math.min(score, 0.85) });
+      }
+    }
+    
+    // 5. 前缀匹配
+    if(!candidates.find(c => c.name === product.name)) {
+      if(product.name.startsWith(input)) {
+        candidates.push({ name: product.name, score: 0.80 });
+      }
+    }
+    
+    // 6. 模糊匹配（编辑距离）- 放宽到≤4
+    if(!candidates.find(c => c.name === product.name)) {
+      const dist = levenshteinDistance(input, product.name);
+      if(dist <= 4 && dist > 0) {
+        const score = Math.max(0.5, 1 - dist / Math.max(input.length, product.name.length));
+        candidates.push({ name: product.name, score: score });
+      }
+    }
+  }
+  
+  // 智能记忆：如果上次选择过这个输入，优先把上次选的商品排第一
+  if(productLastUsed[input] && candidates.length > 1) {
+    const lastIndex = candidates.findIndex(c => c.name === productLastUsed[input]);
+    if(lastIndex > 0) {
+      const remembered = candidates.splice(lastIndex, 1)[0];
+      remembered.score = 1.0; // 记忆优先
+      candidates.unshift(remembered);
+      console.log('[fuzzyMatchProducts] 使用记忆：', productLastUsed[input]);
+    }
+  }
+  
+  console.log('[fuzzyMatchProducts] 匹配结果:', candidates.map(c => `${c.name}(${c.score})`).join(', '));
+  return candidates.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
+// 解析数量（件/包）
+function parseQuantity(text) {
+  // 替换口语化单位
+  for(const [colloquial, standard] of Object.entries(UNIT_ALIASES)) {
+    text = text.replace(new RegExp(colloquial, 'g'), standard);
+  }
+  
+  const pieceMatch = text.match(/(\d+)\s*件/);
+  const zeroMatch = text.match(/(\d+)\s*包/);
+  const boxMatch = text.match(/(\d+)\s*箱/);
+  
+  return {
+    piece_qty: pieceMatch ? parseInt(pieceMatch[1]) : (boxMatch ? parseInt(boxMatch[1]) : 0),
+    zero_qty: zeroMatch ? parseInt(zeroMatch[1]) : 0
+  };
+}
+
+// 智能解析文字输入（优化版 V2）
+function parseSmartInput() {
+  const text = $('smartInputText').value.trim();
+  if(!text) {
+    showToast('请输入订单信息');
+    return;
+  }
+  
+  console.log('[parseSmartInput] 原始输入:', text);
+  
+  // 0. 错别字容错 - 先纠正常见错别字
+  const correctedText = correctTypos(text);
+  console.log('[parseSmartInput] 纠正后文本:', correctedText);
+  
+  // 1. 匹配客户（宽松匹配 - 原型友好）
+  let bestCustomer = null;
+  let bestCustomerScore = 0;
+  
+  // 先尝试从文本中提取客户名
+  const customerName = extractCustomerName(correctedText);
+  if(customerName) {
+    const customerMatch = fuzzyMatchCustomers(customerName);
+    if(customerMatch.length > 0 && customerMatch[0].score >= 0.6) {
+      bestCustomer = customerMatch[0];
+      bestCustomerScore = customerMatch[0].score;
+      console.log('[parseSmartInput] 匹配客户:', bestCustomer.name, '得分:', bestCustomerScore);
+    } else {
+      console.log('[parseSmartInput] 客户未匹配到:', customerName);
+    }
+  }
+  
+  // 2. 提取商品和数量（只允许匹配库中已有的）
+  const productMatches = [];
+  const unrecognizedItems = [];
+  
+  // 提取所有"数量+商品"的组合
+  const extractedItems = extractQuantityAndProducts(correctedText);
+  console.log('[parseSmartInput] 提取到的商品:', extractedItems);
+  
+  // 3. 匹配每个商品（宽松匹配，阈值 0.6 - 原型友好）
+  for(const item of extractedItems) {
+    const matches = fuzzyMatchProducts(item.name);
+    if(matches.length > 0 && matches[0].score >= 0.6) {
+      // 将数量转换为 piece_qty 或 zero_qty
+      let piece_qty = 0, zero_qty = 0;
+      if(item.unit === '件' || item.unit === '箱' || item.unit === '捆' || item.unit === '提') {
+        piece_qty = item.qty;
+      } else if(item.unit === '包' || item.unit === '袋' || item.unit === '个' || item.unit === '瓶') {
+        zero_qty = item.qty;
+      }
+      
+      // 避免重复添加相同商品
+      if(!productMatches.find(p => p.name === matches[0].name)) {
+        productMatches.push({
+          name: matches[0].name,
+          piece_qty: piece_qty,
+          zero_qty: zero_qty,
+          score: matches[0].score,
+          originalInput: item.name // 记录原始输入，用于记忆
+        });
+      }
+    } else {
+      // 未识别的商品（不添加到 unrecognizedItems，直接丢弃）
+      console.log('[parseSmartInput] 商品未匹配到（丢弃）:', item.name);
+    }
+  }
+  
+  // 4. 如果没有提取到任何商品，尝试简单分割
+  if(extractedItems.length === 0) {
+    console.log('[parseSmartInput] 正则未提取到商品，执行简单分割');
+    const words = correctedText.replace(/[送给给给去]/g, '').split(/[,\s，。、]+/);
+    for(const word of words) {
+      if(word.length < 2 || word.length > 10 || /^\d+$/.test(word)) continue;
+      const matches = fuzzyMatchProducts(word);
+      if(matches.length > 0 && matches[0].score >= 0.6) {
+        productMatches.push({
+          name: matches[0].name,
+          piece_qty: 0,
+          zero_qty: 0,
+          score: matches[0].score
+        });
+      }
+      // 未匹配到的商品直接丢弃，不添加到 unrecognizedItems
+    }
+  } else {
+    console.log('[parseSmartInput] 正则已提取到商品，跳过简单分割');
+  }
+  
+  // 5. 生成草稿（只包含严格匹配到库中的数据）
+  smartDraft = {
+    customer: bestCustomer ? bestCustomer.name : null,
+    customerScore: bestCustomerScore,
+    items: productMatches,
+    hasAllValidData: bestCustomer && productMatches.length > 0
+  };
+  
+  console.log('[parseSmartInput] 最终草稿:', smartDraft);
+  
+  // 6. 展示结果
+  showSmartDraft();
+}
+
+// ========== 辅助函数 ==========
+
+// 纠正常见错别字
+function correctTypos(text) {
+  let corrected = text;
+  for(const [typo, correct] of Object.entries(COMMON_TYPOS)) {
+    // 使用正则替换，避免部分替换
+    const regex = new RegExp(typo, 'g');
+    if(regex.test(corrected)) {
+      corrected = corrected.replace(regex, correct);
+      console.log('[correctTypos]', typo, '→', correct);
+    }
+  }
+  return corrected;
+}
+
+// 从文本中提取客户名
+function extractCustomerName(text) {
+  const patterns = [
+    /给([^\s，。、给去]+)/,      // 给XXX
+    /([^\s，。、]+)\s*要/,          // XXX要
+    /([^\s，。、]+)\s*订/,          // XXX订
+    /([^\s，。、]+)\s*下单/,        // XXX下单
+    /([^\s，。、]+)\s*进货/         // XXX进货
+  ];
+  
+  for(const pattern of patterns) {
+    const match = text.match(pattern);
+    if(match && match[1]) {
+      const name = match[1].trim();
+      // 过滤掉太短的词（可能是商品名）
+      if(name.length >= 2) {
+        return name;
+      }
+    }
+  }
+  return null;
+}
+
+// 提取所有"数量+商品"的组合
+function extractQuantityAndProducts(text) {
+  const extractedItems = [];
+  
+  // 匹配模式 1：数字 + 单位 + 商品名
+  const pattern1 = /(\d+)\s*(件|包|箱|袋|个|捆|桶|瓶|杯|碗|双|对|条|盒|罐|支|斤|两)\s*([^\s，。、给去送订要下进货\d]+)/g;
+  let match;
+  const regex1 = new RegExp(pattern1);
+  while((match = regex1.exec(text)) !== null) {
+    const qty = parseInt(match[1]);
+    const unit = UNIT_ALIASES[match[2]] || match[2]; // 标准化单位
+    let productName = match[3].trim();
+    
+    // 过滤掉太长的匹配（可能是客户名+其他内容）
+    if(productName.length > 8) {
+      console.log('[extractQuantityAndProducts] 跳过过长匹配（模式 1）:', match[0]);
+      continue;
+    }
+    
+    console.log('[extractQuantityAndProducts] 匹配1:', match[0], '→ 商品:', productName, '数量:', qty, '单位:', unit);
+    
+    extractedItems.push({
+      name: productName,
+      qty: qty,
+      unit: unit
+    });
+  }
+  
+  // 匹配模式2：商品名+数字+单位
+  // 注意：必须排除"送""订""要""下""进""货"等动词，且限制商品名长度在 2-10 个字符
+  const pattern2 = /([^\s，。、给去送订要下进货\d]{2,10})\s*(\d+)\s*(件|包|箱|袋|个|捆|桶|瓶|杯|碗|双|对|条|盒|罐|支|斤|两)/g;
+  const regex2 = new RegExp(pattern2);
+  while((match = regex2.exec(text)) !== null) {
+    const productName = match[1].trim();
+    const qty = parseInt(match[2]);
+    const unit = UNIT_ALIASES[match[3]] || match[3]; // 标准化单位
+    
+    // 过滤掉太长的匹配（可能是客户名）
+    if(productName.length > 8) {
+      console.log('[extractQuantityAndProducts] 跳过过长匹配（模式 2）:', match[0]);
+      continue;
+    }
+    
+    console.log('[extractQuantityAndProducts] 匹配2:', match[0], '→ 商品:', productName, '数量:', qty, '单位:', unit);
+    
+    extractedItems.push({
+      name: productName,
+      qty: qty,
+      unit: unit
+    });
+  }
+  
+  // 去重（基于商品名和数量）
+  const uniqueItems = extractedItems.filter((item, index, self) => 
+    index === self.findIndex(t => t.name === item.name && t.qty === item.qty)
+  );
+  
+  console.log('[extractQuantityAndProducts] 去重后:', uniqueItems);
+  return uniqueItems;
+}
+
+// 解析语音识别结果
+function parseVoiceResult() {
+  const voiceText = $('smartVoiceText').textContent;
+  if(!voiceText) {
+    showToast('请先录音');
+    return;
+  }
+  // 复用文字解析逻辑
+  $('smartInputText').value = voiceText;
+  parseSmartInput();
+}
+
+// 展示解析结果
+function showSmartDraft() {
+  if(!smartDraft) {
+    showToast('解析失败');
+    return;
+  }
+  
+  const footer = $('smartInputFooter');
+  footer.style.display = '';
+  
+  // 清空原有内容（保留 Tab 和输入区）
+  const body = footer.parentElement.querySelector('.modal-body');
+  // 移除之前插入的 draftHtml（使用 id 选择器）
+  const existingDraft = body.querySelector('#smartDraftResult');
+  if(existingDraft) existingDraft.remove();
+  
+  let draftHtml = '<div style="margin-top:16px;padding:12px;background:#F0FFF6;border-radius:12px">';
+  draftHtml += '<div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--green)">✅ 解析结果</div>';
+  
+  // 客户信息（只允许选择库中已有的）
+  if(smartDraft.customer) {
+    draftHtml += `<div class="smart-draft-customer">👤 客户：${smartDraft.customer}</div>`;
+  } else {
+    draftHtml += `
+      <div style="padding:10px;background:#FFF7ED;border-radius:8px;margin-bottom:12px;border:1px solid #FFD699">
+        <div style="font-size:13px;color:#D4820A;margin-bottom:8px">⚠️ 未识别到客户</div>
+        <div style="font-size:12px;color:#999">请在库中选择已有客户</div>
+      </div>
+    `;
+  }
+  
+  // 商品信息（只展示已匹配到库中商品的数据）
+  if(smartDraft.items && smartDraft.items.length > 0) {
+    draftHtml += '<div style="font-size:13px;color:var(--text-2);margin-bottom:8px">商品明细：</div>';
+    
+    for(const item of smartDraft.items) {
+      let qtyText = '';
+      if(item.piece_qty > 0) qtyText = `${item.piece_qty}件`;
+      else if(item.zero_qty > 0) qtyText = `${item.zero_qty}包`;
+      
+      // 检查是否有记忆
+      const hasMemory = item.originalInput && productLastUsed[item.originalInput] && productLastUsed[item.originalInput] !== item.name;
+      const memoryBadge = hasMemory ? ` <span style="font-size:10px;color:#1890FF;background:rgba(24,144,255,0.1);padding:1px 4px;border-radius:3px">自动匹配</span>` : '';
+      
+      draftHtml += `
+        <div class="smart-draft-item">
+          <span class="smart-draft-name">${item.name}${memoryBadge}</span>
+          <span class="smart-draft-qty" style="color:var(--orange);font-weight:600">${qtyText}</span>
+        </div>
+      `;
+    }
+  } else {
+    draftHtml += `
+      <div style="padding:10px;background:#FFF7ED;border-radius:8px;margin-bottom:12px;border:1px solid #FFD699">
+        <div style="font-size:13px;color:#D4820A;margin-bottom:8px">⚠️ 未识别到商品</div>
+        <div style="font-size:12px;color:#999">请重新输入，或使用"+ 添加商品"手动添加</div>
+      </div>
+    `;
+  }
+  
+  draftHtml += '</div>';
+  
+  // 插入到 modal-body 的最后（在 parseBtn 之后）
+  const parseBtn = body.querySelector('.smart-parse-btn-body, .smart-parse-btn-voice');
+  if(parseBtn) {
+    // 创建一个包裹容器
+    const draftContainer = document.createElement('div');
+    draftContainer.id = 'smartDraftResult';
+    draftContainer.innerHTML = draftHtml;
+    parseBtn.parentNode.insertBefore(draftContainer, parseBtn.nextSibling);
+  }
+  
+  showToast('解析成功');
+}
+
+// 确认生成订单（严格模式：只允许库中已有的商品和客户）
+function confirmSmartDraft() {
+  console.log('confirmSmartDraft called, smartDraft:', smartDraft);
+  
+  if(!smartDraft) {
+    showToast('请先解析订单');
+    return;
+  }
+  
+  // 必须所有数据都有效才能生成
+  if(!smartDraft.hasAllValidData) {
+    showToast('⚠️ 客户或商品未匹配到库中数据，请重新输入');
+    return;
+  }
+  
+  // 必须匹配到客户
+  if(!smartDraft.customer) {
+    showToast('⚠️ 未识别到客户，请重新输入');
+    return;
+  }
+  
+  // 查找客户（必须精确匹配到库中已有的）
+  const customer = data.customers.find(c => c.name === smartDraft.customer);
+  if(!customer) {
+    showToast('⚠️ 客户"' + smartDraft.customer + '"不在库中，请手动选择客户');
+    return;
+  }
+  
+  // 必须有已识别的商品
+  if(!smartDraft.items || smartDraft.items.length === 0) {
+    showToast('⚠️ 未识别到商品，请重新输入');
+    return;
+  }
+  
+  // 清空现有数据，防止旧数据干扰
+  state.currentCustomer = customer;
+  state.currentItems = [];
+  
+  // 只添加已匹配到库中商品的数据
+  for(const item of smartDraft.items) {
+    const product = data.products.find(p => p.name === item.name);
+    if(product) {
+      state.currentItems.push({
+        name: product.name, // 渲染用名称
+        material_code: product.material_code, // 料号
+        spec: product.spec,
+        pricing_mode: product.pricing_mode || 'case',
+        unit_piece_qty: product.unit_piece_qty,
+        price_piece: product.price_piece || 0,
+        price_zero: product.price_zero || 0,
+        unit: product.unit,
+        is_adjustable: product.is_adjustable || false,
+        piece_qty: item.piece_qty || 0,
+        zero_qty: item.zero_qty || 0
+      });
+    } else {
+      // 如果匹配不到商品，提示并阻止生成
+      showToast('⚠️ 商品"' + item.name + '"不在库中，请重新输入');
+      state.currentItems = [];
+      state.currentCustomer = null;
+      return;
+    }
+  }
+  
+  // 确认有商品才继续
+  if(state.currentItems.length === 0) {
+    showToast('⚠️ 没有可生成的商品，请重新输入');
+    return;
+  }
+  
+  // 保存选择到记忆（用于下次智能匹配）
+  for(const item of smartDraft.items) {
+    if(item.originalInput) {
+      productLastUsed[item.originalInput] = item.name;
+    }
+  }
+  
+  // 更新客户显示
+  const selectedCustomerName = $('selectedCustomerName');
+  const selectedCustomerRegion = $('selectedCustomerRegion');
+  if(selectedCustomerName) selectedCustomerName.textContent = customer.name;
+  if(selectedCustomerRegion) selectedCustomerRegion.textContent = `${customer.region} ${customer.phone}`;
+  if(typeof updateLastOrderTip === 'function') updateLastOrderTip();
+  
+  // 关闭弹窗
+  closeSmartInputModal();
+  
+  // 显示成功提示
+  showToast('✅ 订单已生成');
+  
+  // 切换到订单页（navigateTo 内部会自动调用 initNewOrder）
+  setTimeout(() => {
+    if(typeof navigateTo === 'function') {
+      navigateTo('newOrder');
+    }
+  }, 300);
+}
+
+// 语音录音（模拟）
+function toggleVoiceRecord() {
+  const btn = $('smartRecordBtn');
+  const tip = $('smartVoiceTip');
+  const result = $('smartVoiceResult');
+  
+  if(isRecording) {
+    // 停止录音
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.textContent = '🎤';
+    tip.textContent = '点击开始录音';
+    
+    if(voiceTimer) {
+      clearTimeout(voiceTimer);
+      voiceTimer = null;
+    }
+    
+    // 模拟识别结果
+    const mockResults = [
+      '送 2 件手抓饼给东一路刀削面',
+      '手抓饼 2 件，老酸奶 10 包',
+      '来 3 件手抓饼 5 包老酸奶',
+      '东一路刀削面要 2 件手抓饼 10 包酸奶'
+    ];
+    const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)];
+    
+    $('smartVoiceText').textContent = randomResult;
+    result.style.display = '';
+    tip.textContent = '录音完成';
+    
+  } else {
+    // 开始录音
+    isRecording = true;
+    btn.classList.add('recording');
+    btn.textContent = '⏹';
+    tip.textContent = '录音中... 请说话';
+    result.style.display = 'none';
+    
+    // 3秒后自动停止
+    voiceTimer = setTimeout(() => {
+      if(isRecording) toggleVoiceRecord();
+    }, 3000);
+  }
+}
+
+// 从智能录入新增商品
+// 从智能录入新增商品（当前未使用，智能录入采用严格模式，只允许匹配已有数据）
+function addNewProductFromDraft(productName) {
+  if(!productName) return;
+  
+  // 关闭智能录入弹窗
+  closeSmartInputModal();
+  
+  // 打开新增商品表单
+  setTimeout(() => {
+    openProductForm();
+    // 预填商品名称
+    setTimeout(() => {
+      const nameInput = document.getElementById('pfName');
+      if(nameInput) {
+        nameInput.value = productName;
+      }
+    }, 100);
+  }, 300);
+}
+
+// 从智能录入新增客户（当前未使用，智能录入采用严格模式，只允许匹配已有数据）
+function addNewCustomerFromDraft() {
+  // 关闭智能录入弹窗
+  closeSmartInputModal();
+  
+  // 打开新增客户表单
+  setTimeout(() => {
+    openCustomerForm();
+    // 预填客户名称（如果有 unknownCustomer）
+    setTimeout(() => {
+      const nameInput = document.getElementById('cfName');
+      if(nameInput && smartDraft && smartDraft.unknownCustomer) {
+        nameInput.value = smartDraft.unknownCustomer;
+      }
+    }, 100);
+  }, 300);
+}
+
 </script>
 
 <!-- 日期区间选择弹层 -->

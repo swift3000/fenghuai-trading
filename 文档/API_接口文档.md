@@ -4,10 +4,10 @@
 > **编写日期**：2026-08-03  
 > **最后更新**：2026-08-04  
 > **状态**：已定稿  
-> **总接口数**：25 个（原 23 个 + 新增「赊销 receivable（三栏+已收）」「确认收款 collect-confirm」）  
+> **总接口数**：27 个（原 25 个 + 新增「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
 > **调用方式**：微信云函数（`wx.cloud.callFunction`）
 > **MVP 口径**：本文档已按 MVP（v1.0，2026-08-05）修订，MVP 为最终功能范围，无二期增强；接口契约以《小程序 MVP 落地计划与技术架构》为准。
-> **工期**：约 30 人天（MVP 生产化，详见《工期与工作量评估》）
+> **工期**：约 33 人天（MVP 生产化，详见《工期与工作量评估》）
 
 ---
 
@@ -33,7 +33,7 @@ const res = await app.callFunction({
 });
 ```
 
-### 1.2 云函数与 Action 对照表（仅 8 个云函数，25 个 action）
+### 1.2 云函数与 Action 对照表（9 个云函数，27 个 action）
 
 | # | 云函数 | Action | 接口名 |
 |---|--------|--------|--------|
@@ -62,6 +62,8 @@ const res = await app.callFunction({
 | 23 | | update | 修改区域 |
 | 24 | user-write | create | 新增用户 |
 | 25 | | update | 修改用户 |
+| 26 | smart | match | 智能匹配（商品/客户模糊匹配） |
+| 27 | | transcribe | 语音转文字 |
 
 ### 1.3 返回格式
 
@@ -838,6 +840,64 @@ Array<{
 
 ---
 
+## 7A. 智能录入相关
+
+#### 7A.1 智能匹配（smart.match）
+
+**调用方式**：`wx.cloud.callFunction({ name: 'smart', data: { action: 'match', ... } })`
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|:---:|------|
+| action | string | ✅ | 固定 "match" |
+| text | string | ✅ | 用户输入的自然语言文本 |
+| mode | string | ❌ | "text"（默认）或 "voice" |
+
+**返回**：
+```json
+{
+  "code": 0,
+  "data": {
+    "customer": { "_id": "xxx", "name": "东一路刀削面", "score": 0.95 } | null,
+    "customerCandidates": [],
+    "items": [
+      {
+        "inputText": "手抓饼",
+        "matched": { "_id": "xxx", "name": "葱香手抓饼", "material_code": "SP001", "spec": "100g*20片", "unit_piece_qty": 20, "score": 0.85 },
+        "candidates": [],
+        "qty": { "piece_qty": 2, "bag_qty": 0 }
+      }
+    ],
+    "unmatched": ["未知商品"]
+  }
+}
+```
+
+| 错误码 | 说明 |
+|--------|------|
+| 5001 | text 参数为空 |
+| 5002 | 无匹配结果 |
+
+#### 7A.2 语音转文字（smart.transcribe）
+
+**调用方式**：`wx.cloud.callFunction({ name: 'smart', data: { action: 'transcribe', ... } })`
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|:---:|------|
+| action | string | ✅ | 固定 "transcribe" |
+| audioFileID | string | ✅ | 云存储中的音频文件 ID |
+
+**返回**：
+```json
+{
+  "code": 0,
+  "data": {
+    "text": "送2件手抓饼给东一路刀削面"
+  }
+}
+```
+
+---
+
 ## 8. 接口状态矩阵
 
 | 接口 | orderer | sorter | warehouse | admin |
@@ -866,6 +926,8 @@ Array<{
 | 6.9 修改备注 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 6.10 赊销（三栏+已收） | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 7.x 用户管理 | ❌ | ❌ | ❌ | ✅ |
+| 7A.1 智能匹配 | ✅ 全员 | ✅ 全员 | ✅ 全员 | ✅ 全员 |
+| 7A.2 语音转文字 | ✅ 全员 | ✅ 全员 | ✅ 全员 | ✅ 全员 |
 
 > **细粒度权限键（1.0）**：上表为角色级默认权限（默认全员开放）。在角色之上提供可开关的权限键，管理员可在「成员管理 → 权限配置」中按需关闭，关闭后对应 Tab/功能运行时自动隐藏：
 > - `sort:task`：处理分拣（6.4 submitted→sorted），控制分拣员「分拣完成」；

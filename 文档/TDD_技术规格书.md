@@ -6,7 +6,7 @@
 > **目标读者**：前端工程师、后端工程师、测试工程师  
 > **对应版本**：v4.5（方案A唯一方案，4周交付，技术服务费5,000元）  
 > **一致性**：本文档与 ERD/API/PRD/用户手册/《产品评估报告》《业务流程全景》共用版本 v4.5。催收闭环 / 审计日志 / 趋势报表：**MVP 不含，后续作为独立升级模块按需追加**（机制见《小程序 MVP 落地计划与技术架构》§7 升级机制）；后端底座（微信云开发）**已纳入 MVP**。  
-> **工期**：**MVP 生产化约 30 人天**（见《工期与工作量评估》MVP 专项）  
+> **工期**：**MVP 生产化约 33 人天**（见《工期与工作量评估》MVP 专项）  
 > **预算**：5,000元（技术服务费包干，不含小程序注册/认证/云资源等甲方承担的第三方费用）
 
 > 本文档已按 MVP（v1.0，2026-08-05）口径修订；功能清单与范围以《小程序 MVP 落地计划与技术架构》为准。部分早期草案功能（分拣驳回 / 暂存配货 / 14:00 分拣超时自动确认）已确认移出当前 MVP，统一收录于 §6.6 二期规划（当前不触发）；**物流件型（大件/中件/小件，ship_\*）已随出库确认 MVP 实现**；**16:00 出库超时自动定时为二期，但原型保留「⏰模拟16:00通过」手动模拟按钮（simulateAutoConfirm）**。
@@ -35,7 +35,7 @@
 | 打印方式 | 小程序蓝牙打印（ESC/POS指令，58mm/80mm便携热敏） |
 | Web后台 | ❌ 不做任何Web后台页面（**MVP 亦不做**；文中出现的 Web 后台段落均为早期草案，标注为不适用） |
 | 技术服务费 | 5,000元（包干，3周交付） |
-| **MVP 工作量** | **约 30 人天**（见《工期与工作量评估》MVP 专项） |
+| **MVP 工作量** | **约 33 人天**（见《工期与工作量评估》MVP 专项） |
 | 甲方首年费用 | 约840元（小程序注册+认证+云开发）；MVP 口径：个体户 ≈269 元 / 公司 ≈539 元 |
 | 甲方次年费用 | 约540元/年 |
 
@@ -79,8 +79,8 @@
 │  │         微信云开发（CloudBase）                 │    │
 │  │                                               │    │
 │  │  ┌──────────────┐    ┌──────────────────┐   │    │
-│  │  │  8个云函数    │    │  云开发数据库      │   │    │
-│  │  │  (Node.js)   │    │  (MongoDB 6集合)  │   │    │
+│  │  │  9个云函数    │    │  云开发数据库      │   │    │
+│  │  │  (Node.js)   │    │  (MongoDB 8集合)  │   │    │
 │  │  └──────────────┘    └──────────────────┘   │    │
 │  └─────────────────────────────────────────────┘    │
 │                                                     │
@@ -91,8 +91,8 @@
 **架构极简说明**：
 - 无自建服务器、无 Docker、无 Nginx 反向代理
 - 无任何Web后台页面，全员通过小程序操作
-- 所有后端逻辑封装在 8 个云函数内
-- 数据库仅 6 个核心集合，无冗余
+- 所有后端逻辑封装在 9 个云函数内
+- 数据库仅 8 个核心集合，无冗余
 
 ### 2.2 核心数据流
 
@@ -139,7 +139,7 @@
 | **后台打印** | window.print() + CSS @page | — | 浏览器原生；配合 241mm 针式多联单；零依赖 |
 | **后端服务** | 微信云开发 | — | Serverless 免运维；与小程序/云函数/数据库一体化 |
 | **云函数运行时** | Node.js | 18.x LTS | 与前端统一语言；云开发官方支持 |
-| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；6 个集合极简建模；与云函数零延迟 |
+| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；8 个集合极简建模；与云函数零延迟 |
 | **蓝牙打印** | 微信蓝牙 API + ESC/POS | — | wx.openBluetoothAdapter + wx.createBLEConnection；通用 BLE 热敏打印机 |
 | **认证** | 微信登录（openid） | — | 小程序端 wx.login 换 openid（**MVP 仅此一条链路**） |
 | ~~**Web 后台部署**~~ | — | — | **不适用**：无 Web 后台，MVP 为纯小程序 |
@@ -206,7 +206,7 @@
 
 ### 3.4 云函数命名与编写规范
 
-**仅 8 个云函数**（`module-action` kebab-case）：
+**仅 9 个云函数**（`module-action` kebab-case）：
 
 | 序号 | 云函数名 | 职责 |
 |------|----------|------|
@@ -218,6 +218,7 @@
 | 6 | `region-write` | 区域增、改 |
 | 7 | `user-write` | 用户增、改、禁用 |
 | 8 | `system-config` | 系统配置读写（预留，极简版仅用默认值） |
+| 9 | `smart` | 智能匹配（商品/客户模糊匹配）、语音转文字 |
 
 **编写规范**：
 - 入口：`exports.main = async function(event, context) { ... }`
@@ -229,7 +230,7 @@
 
 ## 4. 数据库设计
 
-### 4.1 集合总览（仅 6 个）
+### 4.1 集合总览（8 个）
 
 | 序号 | 集合名 | 说明 | 数据量级预估 |
 |------|--------|------|-------------|
@@ -239,6 +240,8 @@
 | 4 | `orders` | 订单主表（含商品快照） | > 100 万条 |
 | 5 | `order_items` | 订单明细 | > 500 万条 |
 | 6 | `regions` | 客户区域（11 个预置 + 可扩展） | < 200 条 |
+| 7 | `product_aliases` | 商品别名（智能录入模糊匹配用） | < 5,000 条 |
+| 8 | `customer_aliases` | 客户别名（智能录入模糊匹配用） | < 2,000 条 |
 
 **砍掉的冗余集合**：
 - ~~categories~~：分类合并到 products.category 字段（字符串枚举即可，无多级分类需求）
@@ -491,7 +494,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 
 ## 5. 接口设计
 
-### 5.1 云函数总览（仅 8 个）
+### 5.1 云函数总览（9 个）
 
 | 云函数名 | 入参 event 字段 | 返回 data | 权限 |
 |----------|----------------|-----------|------|
@@ -503,6 +506,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 | **region-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin |
 | **user-write** | `{ action: 'create'/'update'/'disable'/'inherit', data, id?, from_id?, to_id? }` | `{ _id }` | admin |
 | **system-config** | `{ action: 'get'/'set', key?, value? }` | `{ config }` | admin |
+| **smart** | `{ action: 'match'/'transcribe', text?, audioFileID?, mode? }` | `{ customer, items, unmatched }` / `{ text }` | 全员 |
 
 #### 5.1.1 order-write action 规格（简化状态机）
 
@@ -813,6 +817,31 @@ async function exportOrders(filter) {
 - 14:00 分拣超时自动确认发货（`submitted → sorted`，`auto_sorted=true`）：**保持二期，无对应模拟按钮**；
 - 16:00 库管超时自动出库（作用于 `submitted` + `sorted` 订单 → `confirmed`，`auto_confirmed=true`）：**自动定时为二期，但原型保留「⏰模拟16:00通过」手动模拟按钮（simulateAutoConfirm），点击把当日待出库订单置为已出库**；日常出库仍由人工一步确认。
 
+### 6.7 智能录入技术方案
+
+- **前端解析引擎**：
+  - 文字解析：正则表达式 + 关键词提取，从自然语言中识别商品名称、数量（件/包）、客户名称
+  - 语音识别（ASR）：生产化阶段对接阿里云智能语音（免费额度 1000 分钟/月），wx.getRecorderManager 录音 → 云函数转调 ASR API
+  - 自然语言理解（NLP）：生产化阶段可选对接通义千问 Qwen-Turbo/Plus（免费 200 万 Tokens/月），用于复杂语义理解
+- **匹配算法**：
+  - 精确匹配：商品名称/料号完全一致
+  - 模糊匹配：Levenshtein 距离算法，阈值 0.6（允许简称/缩写匹配）
+  - 别名匹配：支持商品别名库（`product_aliases`）和客户别名库（`customer_aliases`）
+  - 拼音匹配：拼音首字母搜索
+  - 包含匹配：输入文本包含库中名称或反之
+  - 智能记忆优先：`productLastUsed` / `customerLastUsed` 缓存，相同输入自动复用上次选择
+- **数据流**：
+  ```
+  用户输入（文字/语音）→ 前端预解析（正则提取候选词）→ 云函数 smart.match
+  → 查 products/customers 集合模糊匹配 → 返回匹配结果列表
+  → 多结果时前端弹选择列表 → 用户选择 → 记忆写入 localStorage
+  → 生成订单草稿 → 确认跳转新建订单页
+  ```
+- **规则引擎 + LLM 混合方案**（生产化阶段）：
+  - 第一层：规则引擎（正则+模糊匹配），覆盖 80% 常见场景，响应 <100ms
+  - 第二层：LLM 兜底（规则引擎未命中时调用），处理口语化/复杂表达，准确率 92-95%
+  - 成本：前期 0 元（纯规则引擎），后期约 80 元/月（ASR + LLM 超出免费额度部分）
+
 ---
 
 ## 7. 安全与部署
@@ -828,7 +857,7 @@ async function exportOrders(filter) {
 
 | 角色 | 范围 |
 |------|------|
-| admin | 全部 8 个云函数全部 action |
+| admin | 全部 9 个云函数全部 action |
 | orderer | auth-login、data-query（全部订单+商品客户+payments）、product-write、customer-write、order-write（create/update-status（取消）/update-remark/copy/modify-price/mark-printed/collect-payment/receivable）、订单详情/列表【登记收款】 |
 | warehouse | data-query（全部订单、**完整视图含价格**）、order-write（create/update-status：sorted→confirmed 出库确认（= `warehouse:confirm`）/取消、update-remark/copy/modify-price/mark-printed/collect-confirm（确认收款，= `receivable:confirm`）/receivable）、**全员下单/改单/删单（v4.3）** |
 | sorter | data-query（全部订单、完整视图）、order-write（update-status: submitted→sorted 分拣（一键，= `sort:task`）；create/取消/改价等同下订单权限）、collect-payment（登记收款，= `receivable:collect`）/receivable、mark-printed |
@@ -857,8 +886,8 @@ async function exportOrders(filter) {
 #### 7.2.1 小程序端
 1. 微信开发者工具 → 云开发 → 创建环境（生产环境仅 1 个，省测试环境）
 2. 写入 AppID、云环境 ID
-3. 云函数目录右键 → 上传并部署：云端安装依赖（8 个函数依次上传）
-4. 数据库 → 按 4.2 建 6 个集合 + 索引 + 预置 11 个 regions
+3. 云函数目录右键 → 上传并部署：云端安装依赖（9 个函数依次上传）
+4. 数据库 → 按 4.2 建 8 个集合 + 索引 + 预置 11 个 regions
 5. 小程序端上传代码 → 提交审核 → 发布
 
 #### 7.2.2 Web 管理后台（两种任选）
@@ -880,8 +909,8 @@ async function exportOrders(filter) {
 | 步骤 | 内容 | 耗时 |
 |------|------|------|
 | 1 | 创建云开发环境（按量付费） | 5 min |
-| 2 | 上传 8 个云函数 | 10 min |
-| 3 | 建 6 个集合 + 索引 | 10 min |
+| 2 | 上传 9 个云函数 | 10 min |
+| 3 | 建 8 个集合 + 索引 | 10 min |
 | 4 | 预置 regions 11 条 | 5 min |
 | 5 | 首管理员零配置：系统首次启动无任何 `role=admin` 用户时，第一位登录者自动成为 `role=admin`（`auth-login` 检测无 admin 即自动赋值，老板部署后直接用微信打开小程序登录即可）；手动插库创建 admin 仅作可选兜底（方式二），无需预置 openid / 环境变量 | 0 min |
 | 6 | 上传小程序代码到微信后台 | 5 min |
@@ -1166,9 +1195,10 @@ cloudfunctions/
 ├── order-write/         index.js + package.json
 ├── region-write/        index.js + package.json
 ├── user-write/          index.js + package.json
-└── system-config/       index.js + package.json
+├── system-config/       index.js + package.json
+├── smart/               index.js + package.json
 
-共 8 个云函数，无 shared 目录（极简，公共逻辑直接复制到各函数，省包管理复杂度）
+共 9 个云函数，无 shared 目录（极简，公共逻辑直接复制到各函数，省包管理复杂度）
 ```
 
 ### 附录 C：~~Web 后台单文件部署注意事项~~（**不适用，已作废**）
@@ -1184,7 +1214,7 @@ cloudfunctions/
 | **v2.0** | **2026-07-30** | **方案B（极简版）：3周 5000元；架构→小程序+单HTML→云函数(8个)→MongoDB(6集合)；砍 Element/Pinia/Router/ECharts/ExcelJS/Docker/Nginx；Excel导出改 SheetJS 前端；蓝牙打印升级为 v1.0 必做，新增 ESC/POS 指令、三款机型参数、二维码/条形码详解** |
 | **v3.0** | **2026-07-30** | **纯小程序双方案版：砍Web后台、砍蓝牙打印；新增方案A(云开发)/方案B(轻量服务器)双选；技术服务费5,000元包干不细化；甲方最少费用方案A首年仅840元** |
 | **v4.0** | **2026-07-30** | **方案A唯一方案定稿：砍Web后台，保留蓝牙打印；微信云开发后端；技术服务费5,000元包干；甲方首年仅840元** |
-| **MVP v1.0** | **2026-08-05** | **MVP 口径修订（最终功能范围，无二期增强）**：新增 §6.1A 0元订单拦截与0件0个过滤、§6.1B 销售单模板（西安迈尚版）、§6.1C 全局字号缩放；`users` 新增 `fontScale` 字段；商品/客户 write 云函数放开为**全角色 CRUD**；Web 后台相关章节（§3.3、附录 C、`username`/`password_hash`）标注为不适用；催收闭环/审计日志/趋势报表改为 MVP 不含的独立升级模块；工期口径统一为 **MVP 约 30 人天** |
+| **MVP v1.0** | **2026-08-05** | **MVP 口径修订（最终功能范围，无二期增强）**：新增 §6.1A 0元订单拦截与0件0个过滤、§6.1B 销售单模板（西安迈尚版）、§6.1C 全局字号缩放；`users` 新增 `fontScale` 字段；商品/客户 write 云函数放开为**全角色 CRUD**；Web 后台相关章节（§3.3、附录 C、`username`/`password_hash`）标注为不适用；催收闭环/审计日志/趋势报表改为 MVP 不含的独立升级模块；工期口径统一为 **MVP 约 33 人天** |
 | **v4.1** | **2026-08-03** | **同步需求变更清单 v2.0（10条）：订单流程改并行（分拣确认发货∥库管配货）、新增 checked 状态、配货暂存 pick_large/medium/small（不改状态）、"配完"确认 confirm（ship_large/medium/small）、收款登记 collect、库管价格脱敏、订单号前缀"丰淮商贸-YYYYMMDD-NNNN"、仓库精简视图、打印模板合并行/去规格列/数量字体放大/收款状态、商品默认数量0、products.usage 排序、单位"零包"→"包"、提交二次确认文案** |
 | **v4.2** | **2026-08-03** | **新增已确认需求#11「订单转发给客户」：下单员/管理员在订单详情弹窗/送货单预览页点「📤 转发给客户」，前端基于订单详情数据生成「订单收款卡片」（丰淮商贸抬头+订单号+客户+商品件包明细+应付金额+商户收款码+付款提示）转发微信，客户扫码付款后复用 collect-payment「确认收款」；纯前端动作不新增后端接口（扩展点：orders.shared_at 可选）；草稿/取消订单不可转发；新增验收用例 AC-21。另含需求#12「物流包裹展示与导出」（ship_large/medium/small 列表卡片+详情展示，主报表/出库单/单订单导出，新增 AC-22）** |
 | **v4.3** | **2026-08-04** | **赊销收款管理版（对齐产品 v4.3）：①取消商户收款码与央行259号文合规（送货单/订单/卡片不再印制，转发收款卡片 4.3.8/6.5 整体下线）；②全员订单权限：下单/改单/删单放开至 4 角色（含订单内改价），取消分拣员只读与库管价格脱敏（完整视图）；③订单内自定义价格：全商品可改仅当前订单有效（is_price_modified + original_price_*），不限可调价档位；④客户上次价格：新开单默认取该客户最近订单成交价，无历史回退商品默认价；⑤录单页单栏布局（通过「+ 添加商品」弹窗选品）；⑥订单列表当日按客户分组完整卡片 + 历史折叠单行；⑦收款改两步：payments 独立集合（registered_by→库管 confirmed_by），新增 collect-confirm（确认收款）与 receivable（赊销看板）action，orders.collect → payment_status（unpaid/pending/paid）+ received_amount，支持部分收款累计与折价/货损（discount）；⑧赊销收款管理独立Tab「赊销」（客户维度每日欠款+累计总欠款，全角色可见）；⑨订单备注修改、标记已打印放开至全员；⑩更新收款/转发相关验收用例，新增 AC-23~26** |

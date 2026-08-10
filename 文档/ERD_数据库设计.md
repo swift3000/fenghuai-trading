@@ -25,6 +25,8 @@ erDiagram
     products ||--o{ order_items : "关联"
     orders ||--o{ payments : "收款"
     customers ||--o{ payments : "欠款"
+    customers ||--o{ product_aliases : "商品别名"
+    customers ||--o{ customer_aliases : "客户别名"
 
     users {
         string id PK "用户ID"
@@ -148,6 +150,22 @@ erDiagram
         string confirmed_by FK "确认人ID(库管)"
         datetime confirmed_at "确认时间"
         string note "备注"
+        datetime created_at "创建时间"
+    }
+
+    product_aliases {
+        string id PK "别名ID"
+        string product_id FK "关联商品ID"
+        string alias "别名(如'手抓饼'→'葱香手抓饼')"
+        string created_by "创建人openid"
+        datetime created_at "创建时间"
+    }
+
+    customer_aliases {
+        string id PK "别名ID"
+        string customer_id FK "关联客户ID"
+        string alias "别名(如'东一路'→'东一路刀削面')"
+        string created_by "创建人openid"
         datetime created_at "创建时间"
     }
 ```
@@ -384,6 +402,34 @@ db.order_items.createIndex({ item_type: 1, snapshot_at: -1 });
 - `unit`（纯个）：`amount = zero_qty × unit_price_zero`，piece_qty = 0
 - 赠品 item_type=gift：amount = 0
 - 损耗 item_type=loss：piece_qty 和 zero_qty 不计入订单总数，amount = 0
+
+---
+
+### 2.7 product_aliases（商品别名表）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|:---:|------|
+| _id | string | ✅ | 自动生成 |
+| product_id | string | ✅ | 关联 products._id |
+| alias | string | ✅ | 别名（如"手抓饼"→"葱香手抓饼"） |
+| created_by | string | ✅ | 创建人 openid |
+| created_at | date | ✅ | 创建时间 |
+
+索引：`product_id`（普通）、`alias`（全文索引）
+
+---
+
+### 2.8 customer_aliases（客户别名表）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|:---:|------|
+| _id | string | ✅ | 自动生成 |
+| customer_id | string | ✅ | 关联 customers._id |
+| alias | string | ✅ | 别名（如"东一路"→"东一路刀削面"） |
+| created_by | string | ✅ | 创建人 openid |
+| created_at | date | ✅ | 创建时间 |
+
+索引：`customer_id`（普通）、`alias`（全文索引）
 
 ---
 
@@ -691,9 +737,11 @@ items_snapshot: [
 | customers | ~0.8 KB | 30 条 | 360 条 | 1,500 条 |
 | orders | ~3 KB（含items_snapshot） | 800 条 | 9,600 条 | 30,000 条 |
 | order_items | ~0.5 KB | 4,000 条 | 48,000 条 | 150,000 条 |
-| **合计（6集合）** | — | **4,860 条** | **58,320 条** | **182,900 条** |
+| `product_aliases` | ~0.3 KB | 50 条 | 600 条 | 2,000 条 |
+| `customer_aliases` | ~0.3 KB | 20 条 | 240 条 | 800 条 |
+| **合计（8集合）** | — | **4,930 条** | **59,160 条** | **185,700 条** |
 
-> 方案B 较原方案：集合数减少 50%（12→6），3年预估总数据量减少约 **51%**（从 36.8 万条降至 18.3 万条），开发和维护成本显著降低。
+> 方案B 较原方案：集合数减少 50%（12→8），3年预估总数据量减少约 **50%**（从 36.8 万条降至 18.6 万条），开发和维护成本显著降低。
 
 ### E. 方案B 重要约束清单
 - **双层快照**：orders.items_snapshot（冗余数组）+ order_items（独立明细），二者内容一致
@@ -713,6 +761,7 @@ items_snapshot: [
 - **收款登记（1.0）**：收款记录独立集合 payments（登记人→库管确认两步，status pending/confirmed）；订单 payment_status（unpaid/pending/paid）；**取消商户收款码与259号文合规内容，不做第三方支付对接**
 - **商品类型**：normal/gift/loss，赠品计入数量不计金额，损耗不计入数量和金额
 - **客户区域**：业务自定义区域（白河县/汉滨区/外县等11个，不按行政区划）
+- **智能录入别名表**：`product_aliases`（商品别名）+ `customer_aliases`（客户别名），支持智能录入模糊匹配，详见 §2.7/§2.8
 - **状态流转**：is_printed / is_modified 去除，改为通过状态机和时间字段推导；主线 `draft→submitted→sorted→confirmed→completed` + `cancelled`，`rejected` 为遗留定义不触发；`auto_checked`（14:00 分拣超时自动）为二期规划字段未启用，`auto_confirmed` 由原型「⏰模拟16:00通过」手动按钮置位（自动定时为二期）
 - **种子数据**：14商品 / 10客户 / 5用户(admin+2orderer+sorter+warehouse) / 28订单(简化态 draft/submitted/sorted/confirmed/completed/cancelled + 已收 received_amount 样例 + 出库确认 ship_* 样例 + 分拣备注样例)
 
