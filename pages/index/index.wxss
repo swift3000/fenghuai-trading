@@ -1,0 +1,135 @@
+.user-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.greeting {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.role-badge {
+  background: #1a73e8;
+  color: #fff;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+}
+
+.notice-bar {
+  background: #fff3cd;
+  padding: 16rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #856404;
+  margin-bottom: 20rpx;
+}
+
+.stats-row {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 30rpx 20rpx;
+}
+
+.stat-value {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #1a73e8;
+  display: block;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.smart-input-card {
+  background: linear-gradient(135deg, #1a73e8, #4a90d9);
+  color: #ffffff;
+  padding: 32rpx;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.smart-input-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  display: block;
+}
+
+.smart-input-desc {
+  font-size: 24rpx;
+  opacity: 0.8;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.action-item {
+  flex: 1;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 30rpx 10rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+}
+
+.action-icon {
+  font-size: 40rpx;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.action-text {
+  font-size: 24rpx;
+  color: #333333;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  margin-bottom: 16rpx;
+}
+
+.order-item {
+  padding: 20rpx 24rpx;
+}
+
+.order-customer {
+  font-size: 28rpx;
+  font-weight: bold;
+}
+
+.order-amount {
+  font-size: 28rpx;
+  color: #1a73e8;
+  font-weight: bold;
+}
+
+.order-status {
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+.view-all {
+  text-align: center;
+  padding: 20rpx;
+  color: #1a73e8;
+  font-size: 26rpx;
+}

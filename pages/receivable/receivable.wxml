@@ -1,0 +1,19 @@
+<view class="container">
+  <view class="overview card">
+    <view class="flex-between"><text>总欠款</text><text class="text-primary text-bold">¥{{totalReceivable}}</text></view>
+    <view class="flex-between"><text>已收</text><text>¥{{totalReceived}}</text></view>
+    <view class="flex-between"><text>未结清</text><text class="text-danger">¥{{totalUnpaid}}</text></view>
+  </view>
+  <view class="search-bar"><input placeholder="搜索客户名称/区域" bindinput="onSearch" /></view>
+  <view class="view-tabs">
+    <view class="tab {{viewTab==='ledger'?'active':''}}" data-tab="ledger" bindtap="switchView"><text>📋 客户台账</text></view>
+    <view class="tab {{viewTab==='unpaid'?'active':''}}" data-tab="unpaid" bindtap="switchView"><text> 未结清</text></view>
+    <view class="tab {{viewTab==='settled'?'active':''}}" data-tab="settled" bindtap="switchView"><text>✅ 已结清</text></view>
+  </view>
+  <view class="customer-list">
+    <view class="customer-card card" wx:for="{{customers}}" wx:key="_id">
+      <view class="flex-between"><text class="customer-name">{{item.name}}</text><text class="text-bold">¥{{item.unpaid}}</text></view>
+      <text class="text-muted">应收: ¥{{item.receivable}} | 已收: ¥{{item.received}}</text>
+    </view>
+  </view>
+</view>

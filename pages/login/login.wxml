@@ -1,0 +1,25 @@
+<view class="container login-page">
+  <view class="brand">
+    <text class="brand-name">丰淮商贸</text>
+    <text class="brand-slogan">让采购更简单</text>
+  </view>
+
+  <view class="role-grid">
+    <view
+      class="role-item {{selectedRole === item.key ? 'active' : ''}}"
+      wx:for="{{roles}}"
+      wx:key="key"
+      data-role="{{item.key}}"
+      bindtap="selectRole"
+    >
+      <text class="role-icon">{{item.icon}}</text>
+      <text class="role-name">{{item.name}}</text>
+    </view>
+  </view>
+
+  <view class="first-admin-tip" wx:if="{{isFirstAdmin}}">
+    <text>首次登录将自动成为管理员</text>
+  </view>
+
+  <button class="btn-primary login-btn" bindtap="handleLogin">微信一键登录</button>
+</view>

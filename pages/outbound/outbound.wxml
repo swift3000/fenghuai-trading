@@ -1,0 +1,22 @@
+<view class="container">
+  <view class="sub-tabs">
+    <view class="tab {{subTab==='sort'?'active':''}}" data-tab="sort" bindtap="switchSub"><text>🔍 分拣</text></view>
+    <view class="tab {{subTab==='out'?'active':''}}" data-tab="out" bindtap="switchSub"><text> 出库</text></view>
+  </view>
+  <view wx:if="{{subTab==='sort'}}">
+    <view class="section-title">待分拣</view>
+    <view class="order-card card" wx:for="{{pendingSort}}" wx:key="_id">
+      <text>{{item.customerName}}</text>
+      <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleSort">分拣确认</button></view>
+    </view>
+    <button class="btn-primary" bindtap="handleAllSort">全部分拣</button>
+  </view>
+  <view wx:if="{{subTab==='out'}}">
+    <view class="section-title">待出库</view>
+    <view class="order-card card" wx:for="{{pendingOut}}" wx:key="_id">
+      <text>{{item.customerName}}</text>
+      <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleOut">出库确认</button></view>
+    </view>
+    <button class="btn-primary" bindtap="handleAllOut">全部出库</button>
+  </view>
+</view>

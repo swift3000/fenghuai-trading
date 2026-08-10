@@ -1,0 +1,11 @@
+<view class="container">
+  <view class="search-bar"><input placeholder="搜索商品名称/料号/拼音" bindinput="onSearch" /></view>
+  <view class="product-list">
+    <view class="product-item card" wx:for="{{products}}" wx:key="_id">
+      <view class="flex-between"><text class="product-name">{{item.name}}</text><text>¥{{item.pricePiece}}</text></view>
+      <text class="product-spec">{{item.materialCode}} | {{item.spec}}</text>
+      <view class="product-actions"><text data-item="{{item}}" bindtap="goEdit">编辑</text><text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text></view>
+    </view>
+  </view>
+  <view class="fab-btn" bindtap="goToAdd"><text>+</text></view>
+</view>

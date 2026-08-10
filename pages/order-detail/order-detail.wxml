@@ -1,0 +1,44 @@
+<view class="container" wx:if="{{order}}">
+  <view class="card order-header">
+    <view class="flex-between">
+      <text class="order-no">{{order.orderNo}}</text>
+      <text class="status-tag">{{order.statusText}}</text>
+    </view>
+    <text class="total-amount">¥{{order.totalAmount}}</text>
+  </view>
+
+  <view class="card customer-info">
+    <text class="section-title">客户信息</text>
+    <view class="info-row"><text>客户：</text><text>{{customer.name}}</text></view>
+    <view class="info-row"><text>区域：</text><text>{{customer.region}}</text></view>
+    <view class="info-row"><text>联系人：</text><text>{{customer.contact}}</text></view>
+    <view class="info-row"><text>电话：</text><text>{{customer.phone}}</text></view>
+  </view>
+
+  <view class="card items-info">
+    <text class="section-title">商品明细</text>
+    <view class="item-row" wx:for="{{items}}" wx:key="index">
+      <view class="flex-between">
+        <text>{{item.name}}</text>
+        <text>¥{{item.amount}}</text>
+      </view>
+      <text class="item-spec">{{item.spec}} × {{item.qty}}</text>
+    </view>
+    <view class="divider"></view>
+    <view class="flex-between total-row">
+      <text class="text-bold">合计</text>
+      <text class="total-amount">¥{{order.totalAmount}}</text>
+    </view>
+  </view>
+
+  <view class="card payment-info">
+    <text class="section-title">收款状态</text>
+    <view class="info-row"><text>状态：</text><text>{{paymentStatusText}}</text></view>
+  </view>
+
+  <view class="action-buttons">
+    <button class="btn-primary" bindtap="handlePrint">打印送货单</button>
+    <button class="btn-secondary" bindtap="handleEdit">编辑订单</button>
+    <button class="btn-danger" bindtap="handleDelete">删除订单</button>
+  </view>
+</view>

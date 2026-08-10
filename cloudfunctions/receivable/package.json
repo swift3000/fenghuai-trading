@@ -1,0 +1,7 @@
+{
+  "name": "receivable",
+  "version": "1.0.0",
+  "description": "赊销收款云函数",
+  "main": "index.js",
+  "dependencies": { "wx-server-sdk": "~2.6.3" }
+}

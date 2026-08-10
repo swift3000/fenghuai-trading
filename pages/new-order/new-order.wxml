@@ -1,0 +1,42 @@
+<view class="container">
+  <view class="customer-bar card" bindtap="selectCustomer">
+    <text wx:if="{{customer}}">{{customer.name}}</text>
+    <text wx:else class="text-muted">点击选择客户</text>
+  </view>
+
+  <view class="smart-input-btn" bindtap="openSmartInput">
+    <text>🗣 智能录入</text>
+  </view>
+
+  <view class="items-section">
+    <view class="section-header flex-between">
+      <text class="section-title">商品明细</text>
+      <text class="add-btn" bindtap="addProduct">+ 添加商品</text>
+    </view>
+
+    <view class="item-row card" wx:for="{{items}}" wx:key="index">
+      <view class="flex-between">
+        <text>{{item.name}}</text>
+        <text class="text-danger" data-index="{{index}}" bindtap="removeItem">删除</text>
+      </view>
+      <view class="item-meta">
+        <text>{{item.spec}}</text>
+        <text>数量: {{item.qty}}</text>
+        <text>单价: ¥{{item.price}}</text>
+      </view>
+    </view>
+
+    <view class="empty-tip" wx:if="{{!items.length}}">
+      <text>点击"添加商品"或"智能录入"开始</text>
+    </view>
+  </view>
+
+  <view class="total-bar card">
+    <view class="flex-between">
+      <text class="total-label">合计</text>
+      <text class="total-amount">¥{{totalAmount}}</text>
+    </view>
+  </view>
+
+  <button class="btn-primary save-btn" bindtap="saveOrder">保存订单</button>
+</view>

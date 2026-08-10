@@ -1,0 +1,6 @@
+.user-card{display:flex;justify-content:space-between;align-items:center;padding:30rpx 24rpx}
+.user-name{font-size:32rpx;font-weight:bold}
+.role-badge{background:#1a73e8;color:#fff;padding:6rpx 16rpx;border-radius:20rpx;font-size:24rpx}
+.menu-item{display:flex;justify-content:space-between;align-items:center;padding:28rpx 24rpx;background:#fff;border-bottom:1rpx solid #f0f0f0;font-size:28rpx}
+.menu-item slider{width:200rpx}
+.logout-btn{margin-top:40rpx}

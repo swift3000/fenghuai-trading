@@ -1,0 +1,72 @@
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120rpx;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 80rpx;
+}
+
+.brand-name {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #1a73e8;
+  display: block;
+}
+
+.brand-slogan {
+  font-size: 28rpx;
+  color: #999999;
+  margin-top: 16rpx;
+  display: block;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24rpx;
+  width: 100%;
+  padding: 0 40rpx;
+  margin-bottom: 40rpx;
+}
+
+.role-item {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 40rpx 20rpx;
+  text-align: center;
+  border: 2rpx solid #eeeeee;
+}
+
+.role-item.active {
+  border-color: #1a73e8;
+  background: #e8f0fe;
+}
+
+.role-icon {
+  font-size: 48rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.role-name {
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.first-admin-tip {
+  background: #fff3cd;
+  color: #856404;
+  padding: 16rpx 32rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  margin-bottom: 40rpx;
+}
+
+.login-btn {
+  width: 80%;
+  margin-top: 20rpx;
+}

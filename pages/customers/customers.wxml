@@ -1,0 +1,11 @@
+<view class="container">
+  <view class="search-bar"><input placeholder="搜索客户名称/简称/联系人/区域" bindinput="onSearch" /></view>
+  <view class="customer-list">
+    <view class="customer-item card" wx:for="{{customers}}" wx:key="_id">
+      <view class="flex-between"><text class="customer-name">{{item.name}}</text><text class="text-muted">{{item.region}}</text></view>
+      <text class="customer-contact">{{item.contact}} | {{item.phone}}</text>
+      <view class="customer-actions"><text data-item="{{item}}" bindtap="goEdit">编辑</text><text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text></view>
+    </view>
+  </view>
+  <view class="fab-btn" bindtap="goToAdd"><text>+</text></view>
+</view>

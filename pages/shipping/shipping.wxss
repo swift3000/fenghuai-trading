@@ -1,0 +1,9 @@
+.shipping-page{background:#fff;min-height:100vh;padding:40rpx}
+.shipping-header .title{font-size:36rpx;font-weight:bold;text-align:center;display:block;margin-bottom:30rpx}
+.customer-section{font-size:28rpx;margin-bottom:20rpx}
+.items-table{border:1rpx solid #ddd}
+.table-header,.table-row{display:flex;padding:12rpx 16rpx;border-bottom:1rpx solid #eee;font-size:24rpx}
+.table-header{font-weight:bold;background:#f5f5f5}
+.total-section{font-size:30rpx;font-weight:bold;margin-top:20rpx;text-align:right}
+.action-buttons{margin-top:40rpx}
+.action-buttons button{margin-bottom:16rpx}

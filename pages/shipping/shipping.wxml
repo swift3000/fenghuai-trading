@@ -1,0 +1,12 @@
+<view class="container shipping-page" wx:if="{{order}}">
+  <view class="shipping-header"><text class="title">丰淮商贸销售单</text></view>
+  <view class="customer-section"><text>客户：{{order.customerName}}</text></view>
+  <view class="items-table">
+    <view class="table-header"><text>商品</text><text>数量</text><text>单价</text><text>金额</text></view>
+    <view class="table-row" wx:for="{{items}}" wx:key="index">
+      <text>{{item.name}}</text><text>{{item.qty}}</text><text>¥{{item.price}}</text><text>¥{{item.amount}}</text>
+    </view>
+  </view>
+  <view class="total-section"><text>合计：¥{{order.totalAmount}}</text></view>
+  <view class="action-buttons"><button class="btn-primary" bindtap="handlePrint">打印销售单</button><button class="btn-secondary" bindtap="handleExport">导出Excel</button></view>
+</view>

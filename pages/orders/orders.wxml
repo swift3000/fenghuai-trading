@@ -1,0 +1,37 @@
+<view class="container">
+  <view class="time-tabs">
+    <view
+      class="tab-item {{timeTab === item.key ? 'active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="key"
+      data-key="{{item.key}}"
+      bindtap="switchTab"
+    >
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="search-bar">
+    <input placeholder="搜索订单号/客户名称" bindinput="onSearch" />
+  </view>
+
+  <view class="order-list">
+    <view class="order-card card" wx:for="{{orders}}" wx:key="_id" data-id="{{item._id}}" bindtap="goToDetail">
+      <view class="flex-between">
+        <text class="customer-name">{{item.customerName}}</text>
+        <text class="order-amount">¥{{item.totalAmount}}</text>
+      </view>
+      <view class="order-meta">
+        <text>{{item.orderNo}}</text>
+        <text class="status-tag">{{item.statusText}}</text>
+      </view>
+    </view>
+    <view class="empty-tip" wx:if="{{!orders.length}}">
+      <text>暂无订单</text>
+    </view>
+  </view>
+
+  <view class="fab-btn" bindtap="goToNewOrder">
+    <text>+</text>
+  </view>
+</view>

@@ -10,6 +10,7 @@ miniprogram_npm/
 *.jpg
 *.jpeg
 *.png
+!assets/icons/*.png
 *.gif
 *.txt
 !_DEFAULT_*.txt
@@ -19,3 +20,6 @@ miniprogram_npm/
 
 # 客户需求来源（不上传远程）
 新增需求.docx
+
+# 微信开发者工具本地配置（含 AppID，不上传）
+project.private.config.json

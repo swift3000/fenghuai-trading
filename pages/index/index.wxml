@@ -1,0 +1,55 @@
+<view class="container">
+  <view class="user-info card">
+    <text class="greeting">你好，{{userInfo.name || '用户'}}</text>
+    <text class="role-badge">{{roleText}}</text>
+  </view>
+
+  <view class="notice-bar" wx:if="{{notices.length}}">
+    <text>{{notices[0]}}</text>
+  </view>
+
+  <view class="stats-row">
+    <view class="stat-item card">
+      <text class="stat-value">{{todayOrders}}</text>
+      <text class="stat-label">今日订单</text>
+    </view>
+    <view class="stat-item card">
+      <text class="stat-value">{{todayAmount}}</text>
+      <text class="stat-label">今日金额</text>
+    </view>
+  </view>
+
+  <view class="smart-input-card card" bindtap="goToSmartInput">
+    <text class="smart-input-title">🗣 智能录入</text>
+    <text class="smart-input-desc">文字/语音快速下单</text>
+  </view>
+
+  <view class="quick-actions">
+    <view class="action-item" bindtap="goToNewOrder">
+      <text class="action-icon">📝</text>
+      <text class="action-text">新建订单</text>
+    </view>
+    <view class="action-item" bindtap="goToProducts">
+      <text class="action-icon">📦</text>
+      <text class="action-text">商品管理</text>
+    </view>
+    <view class="action-item" bindtap="goToCustomers">
+      <text class="action-icon">👥</text>
+      <text class="action-text">客户管理</text>
+    </view>
+  </view>
+
+  <view class="section-title">今日订单</view>
+  <view class="order-list">
+    <view class="order-item card" wx:for="{{recentOrders}}" wx:key="_id">
+      <view class="flex-between">
+        <text class="order-customer">{{item.customerName}}</text>
+        <text class="order-amount">¥{{item.totalAmount}}</text>
+      </view>
+      <text class="order-status">{{item.statusText}}</text>
+    </view>
+    <view class="view-all" bindtap="goToAllOrders" wx:if="{{recentOrders.length}}">
+      <text>查看全部 →</text>
+    </view>
+  </view>
+</view>

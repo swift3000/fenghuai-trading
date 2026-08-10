@@ -1,0 +1,18 @@
+<view class="container">
+  <view class="report-tabs">
+    <view class="tab {{reportTab==='product'?'active':''}}" data-tab="product" bindtap="switchTab"><text>商品汇总</text></view>
+    <view class="tab {{reportTab==='customer'?'active':''}}" data-tab="customer" bindtap="switchTab"><text>客户汇总</text></view>
+    <view class="tab {{reportTab==='payment'?'active':''}}" data-tab="payment" bindtap="switchTab"><text>收款台账</text></view>
+  </view>
+  <view class="time-tabs">
+    <view class="tab {{timeTab==='day'?'active':''}}" data-key="day" bindtap="switchTime"><text>日</text></view>
+    <view class="tab {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime"><text>月</text></view>
+  </view>
+  <view class="report-data">
+    <view class="data-row card" wx:for="{{data}}" wx:key="index">
+      <text>{{item.name}}</text>
+      <text>¥{{item.amount}}</text>
+    </view>
+  </view>
+  <button class="btn-primary" bindtap="handleExport">导出报表</button>
+</view>

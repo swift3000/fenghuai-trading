@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="invite-section card">
+    <text class="section-title">邀请新成员</text>
+    <picker bindchange="changeInviteRole" value="{{inviteRole}}" range="{{['orderer','sorter','warehouse','admin']}}" range-key="name">
+      <view class="role-picker">选择角色：{{inviteRole}}</view>
+    </picker>
+    <button class="btn-primary" bindtap="handleInvite">生成邀请二维码</button>
+  </view>
+  <view class="members-section">
+    <text class="section-title">团队成员</text>
+    <view class="member-item card" wx:for="{{members}}" wx:key="_id">
+      <view class="flex-between"><text>{{item.name}}</text><text class="role-tag">{{item.role}}</text></view>
+      <view class="member-actions"><text class="text-danger" data-id="{{item._id}}" bindtap="handleRemove">移除</text></view>
+    </view>
+  </view>
+</view>
