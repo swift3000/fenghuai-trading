@@ -433,6 +433,57 @@ db.order_items.createIndex({ item_type: 1, snapshot_at: -1 });
 
 ---
 
+### 2.9 order_logs（订单操作记录表）
+
+> **说明**：记录订单的修改历史，用于订单详情页「操作记录」区块展示。每次对订单的创建/编辑/删除/收款/确认/分拣/出库等操作写入一条记录。
+
+| 字段名 | 类型 | 必填 | 默认值 | 说明 | 索引 |
+|--------|------|------|--------|------|------|
+| `_id` | String | 是 | 自动生成 | 操作记录唯一标识 | PK（默认） |
+| `orderId` | String | 是 | — | 关联订单ID（orders集合_id） | 普通索引 |
+| `action` | String | 是 | — | 操作类型：`create`/`edit`/`delete`/`collect`/`confirm`/`sort`/`outbound` | — |
+| `operator` | String | 是 | — | 操作人 openid | — |
+| `operatorName` | String | 是 | — | 操作人姓名 | — |
+| `role` | String | 是 | — | 操作人角色：`orderer`/`sorter`/`warehouse`/`admin` | — |
+| `changes` | String | 否 | null | 变更内容描述（如"数量 2→3，价格 5→6"） | — |
+| `time` | Date | 是 | — | 操作时间 | 普通索引（倒序） |
+
+**索引设计**：
+```javascript
+db.order_logs.createIndex({ orderId: 1 });
+db.order_logs.createIndex({ time: -1 });
+```
+
+---
+
+### 2.10 system_config（系统配置表）
+
+> **说明**：存储系统级配置，含 AI 服务密钥与打印机配置。单文档集合，`_id` 固定为 `'global'`。
+
+| 字段名 | 类型 | 必填 | 默认值 | 说明 | 索引 |
+|--------|------|------|--------|------|------|
+| `_id` | String | 是 | `'global'` | 主键（固定 `'global'`，单文档） | PK（默认） |
+| `ai` | Object | 否 | null | AI 服务配置 | — |
+| `ai.aliyun` | Object | 否 | null | 阿里语音配置 | — |
+| `ai.aliyun.enabled` | Boolean | 否 | false | 是否启用 | — |
+| `ai.aliyun.accessKeyId` | String | 否 | null | 阿里云 AccessKey ID | — |
+| `ai.aliyun.accessKeySecret` | String | 否 | null | 阿里云 AccessKey Secret | — |
+| `ai.aliyun.appKey` | String | 否 | null | 语音识别 AppKey | — |
+| `ai.aliyun.region` | String | 否 | null | 服务地域：`cn-shanghai`/`cn-beijing`/`cn-hangzhou` | — |
+| `ai.aliyun.model` | String | 否 | null | 识别模型：`general`/`telephone` | — |
+| `ai.qwen` | Object | 否 | null | 通义千问配置 | — |
+| `ai.qwen.enabled` | Boolean | 否 | false | 是否启用 | — |
+| `ai.qwen.apiKey` | String | 否 | null | 通义千问 API Key | — |
+| `ai.qwen.model` | String | 否 | null | 模型：`qwen-turbo`/`qwen-plus`/`qwen-max` | — |
+| `printer` | Object | 否 | null | 打印机配置 | — |
+| `printer.brand` | String | 否 | null | 打印机品牌：`xinye`/`jiabo`/`hanyin` | — |
+| `printer.width` | String | 否 | null | 打印纸宽度：`58`/`80` | — |
+| `updatedAt` | Date | 是 | — | 更新时间 | — |
+
+> **安全提示**：`ai.aliyun.accessKeySecret` / `ai.qwen.apiKey` 为敏感密钥，仅管理员可读写，前端不得明文下发。
+
+---
+
 ## 三、数据快照机制（方案B核心设计）
 
 ### 3.1 双层快照冗余模型
@@ -739,9 +790,11 @@ items_snapshot: [
 | order_items | ~0.5 KB | 4,000 条 | 48,000 条 | 150,000 条 |
 | `product_aliases` | ~0.3 KB | 50 条 | 600 条 | 2,000 条 |
 | `customer_aliases` | ~0.3 KB | 20 条 | 240 条 | 800 条 |
-| **合计（8集合）** | — | **4,930 条** | **59,160 条** | **185,700 条** |
+| `order_logs` | ~0.5 KB | 1,600 条 | 19,200 条 | 60,000 条 |
+| `system_config` | ~1 KB | 0 条（单文档） | 0 条（单文档） | 1 条 |
+| **合计（10集合）** | — | **6,530 条** | **78,360 条** | **245,701 条** |
 
-> 方案B 较原方案：集合数减少 50%（12→8），3年预估总数据量减少约 **50%**（从 36.8 万条降至 18.6 万条），开发和维护成本显著降低。
+> 方案B 较原方案：集合数减少约 17%（12→10），3年预估总数据量减少约 **33%**（从 36.8 万条降至 24.6 万条），开发和维护成本显著降低。
 
 ### E. 方案B 重要约束清单
 - **双层快照**：orders.items_snapshot（冗余数组）+ order_items（独立明细），二者内容一致

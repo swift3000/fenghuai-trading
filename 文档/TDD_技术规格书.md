@@ -79,8 +79,8 @@
 │  │         微信云开发（CloudBase）                 │    │
 │  │                                               │    │
 │  │  ┌──────────────┐    ┌──────────────────┐   │    │
-│  │  │  9个云函数    │    │  云开发数据库      │   │    │
-│  │  │  (Node.js)   │    │  (MongoDB 8集合)  │   │    │
+│  │  │  10个云函数   │    │  云开发数据库      │   │    │
+│  │  │  (Node.js)   │    │  (MongoDB 10集合) │   │    │
 │  │  └──────────────┘    └──────────────────┘   │    │
 │  └─────────────────────────────────────────────┘    │
 │                                                     │
@@ -91,8 +91,8 @@
 **架构极简说明**：
 - 无自建服务器、无 Docker、无 Nginx 反向代理
 - 无任何Web后台页面，全员通过小程序操作
-- 所有后端逻辑封装在 9 个云函数内
-- 数据库仅 8 个核心集合，无冗余
+- 所有后端逻辑封装在 10 个云函数内
+- 数据库仅 10 个核心集合，无冗余
 
 ### 2.2 核心数据流
 
@@ -101,14 +101,14 @@
 ```
 [小程序]                     [云函数]                  [数据库]
   │  1. 加载商品列表            │                          │
-  │──调用 data-query ─────────►│────查询 products 集合───►│
+  │──调用 products ─────────►│────查询 products 集合───►│
   │◄──返回商品数据────────────│◄──返回文档列表────────────│
   │                            │                          │
   │  2. 选择商品加入购物车       │                          │
   │  (本地 Storage 缓存)        │                          │
   │                            │                          │
   │  3. 提交订单                │                          │
-  │──调用 order-write ────────►│                          │
+  │──调用 orders ────────────►│                          │
   │   { items: [...] }         │──4. 校验商品状态────────►│
   │                            │◄──返回商品信息──────────│
   │                            │                          │
@@ -139,7 +139,7 @@
 | **后台打印** | window.print() + CSS @page | — | 浏览器原生；配合 241mm 针式多联单；零依赖 |
 | **后端服务** | 微信云开发 | — | Serverless 免运维；与小程序/云函数/数据库一体化 |
 | **云函数运行时** | Node.js | 18.x LTS | 与前端统一语言；云开发官方支持 |
-| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；8 个集合极简建模；与云函数零延迟 |
+| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；10 个集合极简建模；与云函数零延迟 |
 | **蓝牙打印** | 微信蓝牙 API + ESC/POS | — | wx.openBluetoothAdapter + wx.createBLEConnection；通用 BLE 热敏打印机 |
 | **认证** | 微信登录（openid） | — | 小程序端 wx.login 换 openid（**MVP 仅此一条链路**） |
 | ~~**Web 后台部署**~~ | — | — | **不适用**：无 Web 后台，MVP 为纯小程序 |
@@ -206,19 +206,20 @@
 
 ### 3.4 云函数命名与编写规范
 
-**仅 9 个云函数**（`module-action` kebab-case）：
+**仅 10 个云函数**（`module-action` kebab-case）：
 
 | 序号 | 云函数名 | 职责 |
 |------|----------|------|
-| 1 | `auth-login` | 微信登录换 openid、返回用户信息 |
-| 2 | `data-query` | 通用查询：商品/客户/区域/订单/用户列表+详情+筛选 |
-| 3 | `product-write` | 商品增、改（不做删，软删用 status） |
-| 4 | `customer-write` | 客户增、改 |
-| 5 | `order-write` | 订单创建、状态变更、临时改价 |
-| 6 | `region-write` | 区域增、改 |
-| 7 | `user-write` | 用户增、改、禁用 |
-| 8 | `system-config` | 系统配置读写（预留，极简版仅用默认值） |
+| 1 | `auth` | 微信登录换 openid、返回用户信息 |
+| 2 | `products` | 商品查询 + 增、改（不做删，软删用 status） |
+| 3 | `customers` | 客户查询 + 增、改 |
+| 4 | `orders` | 订单查询 + 创建、状态变更、临时改价 |
+| 5 | `users` | 用户查询 + 增、改、禁用 |
+| 6 | `regions` | 区域查询 + 增、改 |
+| 7 | `receivable` | 应收款/赊销查询与统计 |
+| 8 | `system` | 系统配置读写（含 AI 服务配置） |
 | 9 | `smart` | 智能匹配（商品/客户模糊匹配）、语音转文字 |
+| 10 | `report` | 报表统计与导出 |
 
 **编写规范**：
 - 入口：`exports.main = async function(event, context) { ... }`
@@ -230,7 +231,7 @@
 
 ## 4. 数据库设计
 
-### 4.1 集合总览（8 个）
+### 4.1 集合总览（9 个）
 
 | 序号 | 集合名 | 说明 | 数据量级预估 |
 |------|--------|------|-------------|
@@ -242,13 +243,14 @@
 | 6 | `regions` | 客户区域（11 个预置 + 可扩展） | < 200 条 |
 | 7 | `product_aliases` | 商品别名（智能录入模糊匹配用） | < 5,000 条 |
 | 8 | `customer_aliases` | 客户别名（智能录入模糊匹配用） | < 2,000 条 |
+| 9 | `order_logs` | 订单操作记录（订单修改历史） | 随订单操作增长 |
 
 **砍掉的冗余集合**：
 - ~~categories~~：分类合并到 products.category 字段（字符串枚举即可，无多级分类需求）
 - ~~price_changes~~：改价直接在 order_items 记 original_price + is_price_modified 标记
 - ~~account_inheritance_logs~~：直接在 users 表标记 inherited_from，不记独立日志
 - ~~operation_logs~~：**MVP 不含**操作审计日志，后续作为独立升级模块按需追加（机制见《小程序 MVP 落地计划与技术架构》§7 升级机制）；MVP 期间依赖云开发平台自带调用日志
-- ~~system_configs~~：合并到 `system-config` 云函数内默认配置，独立集合无必要
+- ~~system_configs~~：合并到 `system` 云函数内默认配置，独立集合无必要
 - ~~announcements~~：极简版不做系统公告
 - ~~backups~~：云开发自带每日备份，无需自建备份表
 
@@ -485,7 +487,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 ### 4.4 账号继承（极简实现）
 
 员工离职时管理员操作：
-1. `user-write` 云函数接收 `{ from_user_id, to_user_id }`
+1. `users` 云函数接收 `{ from_user_id, to_user_id }`
 2. 批量更新 `orders.created_by`、`customers.created_by`、`products.created_by` 字段
 3. 设置原用户 `status=disabled`、`is_inherited=true`、`inherited_from` 空
 4. 新用户 `is_inherited=true`、`inherited_from=from_user_id`
@@ -494,21 +496,24 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 
 ## 5. 接口设计
 
-### 5.1 云函数总览（9 个）
+### 5.1 云函数总览（10 个）
 
 | 云函数名 | 入参 event 字段 | 返回 data | 权限 |
 |----------|----------------|-----------|------|
-| **auth-login** | `{ code }`（wx.login code） | `{ token, user }` | 公开 |
-| **data-query** | `{ type, filter, page, page_size, sort }`<br>`type` ∈ products/customers/regions/orders/order_items/payments/users | `{ list, pagination }` 或单条详情 | 登录用户按角色过滤；**全员完整视图（价格脱敏与精简视图已取消，v4.3）** |
-| **product-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin/orderer |
-| **customer-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin/orderer |
-| **order-write** | `{ action, id?, data }`<br>`action`: create / update-status / update-remark / copy / modify-price / mark-printed / collect-payment / collect-confirm / receivable（分拣/出库确认经 `update-status` 流转；`confirm`（出库确认）一步完成时一并录入物流件型 `ship_large/ship_medium/ship_small`，**MVP已实现**；`save-pick` 配货暂存移入 §6.6 二期规划） | `{ order_id, order_no }` | 按 action 校验角色；下单/改单/删单/改价放开至 4 角色（v4.3） |
-| **region-write** | `{ action: 'create'/'update', data, id? }` | `{ _id }` | admin |
-| **user-write** | `{ action: 'create'/'update'/'disable'/'inherit', data, id?, from_id?, to_id? }` | `{ _id }` | admin |
-| **system-config** | `{ action: 'get'/'set', key?, value? }` | `{ config }` | admin |
+| **auth** | `{ code }`（wx.login code） | `{ token, user }` | 公开 |
+| **products** | `{ action: 'list'/'detail'/'create'/'update', filter?, id?, data? }` | `{ list, pagination }` 或 `{ _id }` | 登录用户按角色过滤；**全员完整视图（价格脱敏与精简视图已取消，v4.3）** |
+| **customers** | `{ action: 'list'/'detail'/'create'/'update', filter?, id?, data? }` | `{ list, pagination }` 或 `{ _id }` | 登录用户按角色过滤；**全员完整视图（价格脱敏与精简视图已取消，v4.3）** |
+| **orders** | `{ action, id?, data }`<br>`action`: create / update-status / update-remark / copy / modify-price / mark-printed / collect-payment / collect-confirm / receivable（分拣/出库确认经 `update-status` 流转；`confirm`（出库确认）一步完成时一并录入物流件型 `ship_large/ship_medium/ship_small`，**MVP已实现**；`save-pick` 配货暂存移入 §6.6 二期规划） | `{ order_id, order_no }` | 按 action 校验角色；下单/改单/删单/改价放开至 4 角色（v4.3） |
+| **users** | `{ action: 'list'/'detail'/'create'/'update'/'disable'/'inherit', filter?, id?, data?, from_id?, to_id? }` | `{ list, pagination }` 或 `{ _id }` | admin |
+| **regions** | `{ action: 'list'/'create'/'update', filter?, id?, data? }` | `{ list }` 或 `{ _id }` | admin |
+| **receivable** | `{ filter, page, page_size }` | `{ list, pagination }` | 全员 |
+| **system** | `{ action: 'getConfig'/'updateConfig'/'getAiConfig'/'updateAiConfig', key?, value?, aiConfig? }` | `{ config }` | admin |
 | **smart** | `{ action: 'match'/'transcribe', text?, audioFileID?, mode? }` | `{ customer, items, unmatched }` / `{ text }` | 全员 |
+| **report** | `{ action, filter, page, page_size }` | `{ list, pagination }` / 导出数据 | 按角色 |
 
-#### 5.1.1 order-write action 规格（简化状态机）
+> **system 云函数**：负责系统配置读写，其中 `getAiConfig`/`updateAiConfig` 用于管理员配置 AI 服务密钥（阿里语音 ASR + 通义千问 NLP），密钥存 `system_config` 集合，仅管理员可读写。
+
+#### 5.1.1 orders action 规格（简化状态机）
 
 | action | 入参 | 状态校验 | 权限 | 行为 |
 |--------|------|----------|------|------|
@@ -556,7 +561,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 | 3xxxx | 3002 | 订单状态不允许此操作 |
 | 5xxxx | 5001 | 服务器内部错误 |
 
-### 5.4 data-query 通用查询规范
+### 5.4 通用查询规范（products/customers/orders/users/regions/receivable）
 
 **请求**：
 ```jsonc
@@ -597,7 +602,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 
 ### 6.1 数据快照机制
 
-订单创建在 `order-write` 云函数 `action=create` 中一次性完成：
+订单创建在 `orders` 云函数 `action=create` 中一次性完成：
 1. 校验 `customer_id` 有效性
 2. 遍历 items → 查询 `products` → 构建快照；**单价取值优先级（v4.3）**：请求显式单价（自定义价）→ 客户最近订单成交价 → 商品默认价；采用自定义价时写 `is_price_modified=true` + `original_price_*`
 3. 计算总金额
@@ -611,7 +616,7 @@ draft ──提交──► submitted（待分拣）──一键分拣──► 
 
 **写入侧（拦截）**：
 ```javascript
-// order-write: action = create | update
+// orders: action = create | update
 const total = items.reduce((s, it) => s + it.amount, 0);
 if (total === 0) {
   return { code: 'ORDER_ZERO_AMOUNT', msg: '订单金额为 0，无法提交' };
@@ -621,7 +626,7 @@ if (total === 0) {
 
 **读取侧（过滤）**：
 ```javascript
-// data-query: type = orders
+// orders: type = orders
 where.total_amount = _.gt(0);          // 0 元订单不计入任何列表/统计
 // 明细渲染时过滤 0件+0个 行
 const visibleItems = order.items_snapshot.filter(
@@ -661,7 +666,7 @@ function applyScale(scale) {
 // 变更后异步落库，跨设备持久化
 async function persist(scale) {
   await wx.cloud.callFunction({
-    name: 'auth-login', data: { action: 'set-font-scale', fontScale: scale }
+    name: 'auth', data: { action: 'set-font-scale', fontScale: scale }
   });
 }
 ```
@@ -676,8 +681,8 @@ async function persist(scale) {
 
 ```javascript
 async function exportOrders(filter) {
-  // 1. 调用 data-query 拉取全部数据（page_size=10000）
-  const res = await callCloud('data-query', {
+  // 1. 调用 orders 拉取全部数据（page_size=10000）
+  const res = await callCloud('orders', {
     type: 'orders',
     filter,
     page: 1,
@@ -738,7 +743,7 @@ async function exportOrders(filter) {
 
 ### 6.3 送货单（订单明细）打印模板规格
 
-> v4.0 起无 Web 后台，送货单/订单明细由**小程序端**渲染打印（蓝牙热敏 58mm/80mm 或系统打印），打印后调 `order-write` 的 `mark-printed` 标记已打印。
+> v4.0 起无 Web 后台，送货单/订单明细由**小程序端**渲染打印（蓝牙热敏 58mm/80mm 或系统打印），打印后调 `orders` 的 `mark-printed` 标记已打印。
 
 **列结构（共 4 列，无"规格"列）**：
 
@@ -774,7 +779,7 @@ async function exportOrders(filter) {
 1. 订单列表/详情 → 点"打印送货单"
 2. 小程序端按模板渲染打印预览 DOM
 3. 蓝牙热敏打印（58mm）或系统打印（A4/针式），1-3 份
-4. 调 `order-write` 的 `mark-printed` 标记已打印
+4. 调 `orders` 的 `mark-printed` 标记已打印
 
 ### 6.4 蓝牙打印方案（小程序端 BLE + ESC/POS）
 
@@ -841,6 +846,10 @@ async function exportOrders(filter) {
   - 第一层：规则引擎（正则+模糊匹配），覆盖 80% 常见场景，响应 <100ms
   - 第二层：LLM 兜底（规则引擎未命中时调用），处理口语化/复杂表达，准确率 92-95%
   - 成本：前期 0 元（纯规则引擎），后期约 80 元/月（ASR + LLM 超出免费额度部分）
+- **smart 云函数对接 AI**：
+  - `smart.transcribe` 语音转文字对接阿里云智能语音（ISI），需从 `system_config` 集合读取阿里语音配置（AccessKeyId / AccessKeySecret / AppKey / 地域 / 模型），未配置时降级返回空
+  - `smart.match` 复杂语义理解可选对接通义千问（DashScope），需从 `system_config` 集合读取千问配置（API Key / 模型），未配置时降级为纯规则引擎
+  - 密钥统一从 `system_config` 集合读取（由 `system` 云函数 `getAiConfig` 提供），**不写死在前端**，仅管理员可配置
 
 ---
 
@@ -849,21 +858,21 @@ async function exportOrders(filter) {
 ### 7.1 安全设计（极简版）
 
 #### 认证
-- **小程序端**：`wx.login()` → `auth-login` 云函数换 `openid` → 匹配 `users.wx_openid` → 返回用户信息。无 JWT，云函数内部通过 `cloud.getWXContext().OPENID` 即可拿到身份（云开发天然安全）。
-- **首管理员（方案 A 零配置）**：`auth-login` 在系统无任何 `role=admin` 用户时，自动将第一位登录者赋值为 `admin`；老板部署后直接用微信打开小程序登录即可，无需预置 openid 或配置任何环境变量（手动插库创建 admin 仅作可选兜底方式二）。
+- **小程序端**：`wx.login()` → `auth` 云函数换 `openid` → 匹配 `users.wx_openid` → 返回用户信息。无 JWT，云函数内部通过 `cloud.getWXContext().OPENID` 即可拿到身份（云开发天然安全）。
+- **首管理员（方案 A 零配置）**：`auth` 在系统无任何 `role=admin` 用户时，自动将第一位登录者赋值为 `admin`；老板部署后直接用微信打开小程序登录即可，无需预置 openid 或配置任何环境变量（手动插库创建 admin 仅作可选兜底方式二）。
 - ~~**Web 后台端**~~：**不适用**（无 Web 后台）。MVP 仅保留微信 openid 一条认证链路，`users.username` / `password_hash` 字段不启用。
 
 #### 权限（RBAC 四角色）
 
 | 角色 | 范围 |
 |------|------|
-| admin | 全部 9 个云函数全部 action |
-| orderer | auth-login、data-query（全部订单+商品客户+payments）、product-write、customer-write、order-write（create/update-status（取消）/update-remark/copy/modify-price/mark-printed/collect-payment/receivable）、订单详情/列表【登记收款】 |
-| warehouse | data-query（全部订单、**完整视图含价格**）、order-write（create/update-status：sorted→confirmed 出库确认（= `warehouse:confirm`）/取消、update-remark/copy/modify-price/mark-printed/collect-confirm（确认收款，= `receivable:confirm`）/receivable）、**全员下单/改单/删单（v4.3）** |
-| sorter | data-query（全部订单、完整视图）、order-write（update-status: submitted→sorted 分拣（一键，= `sort:task`）；create/取消/改价等同下订单权限）、collect-payment（登记收款，= `receivable:collect`）/receivable、mark-printed |
+| admin | 全部 10 个云函数全部 action |
+| orderer | auth、products/customers/orders/users/regions/receivable（全部订单+商品客户+payments）、orders（create/update-status（取消）/update-remark/copy/modify-price/mark-printed/collect-payment/receivable）、订单详情/列表【登记收款】 |
+| warehouse | products/customers/orders/users/regions/receivable（全部订单、**完整视图含价格**）、orders（create/update-status：sorted→confirmed 出库确认（= `warehouse:confirm`）/取消、update-remark/copy/modify-price/mark-printed/collect-confirm（确认收款，= `receivable:confirm`）/receivable）、**全员下单/改单/删单（v4.3）** |
+| sorter | products/customers/orders/users/regions/receivable（全部订单、完整视图）、orders（update-status: submitted→sorted 分拣（一键，= `sort:task`）；create/取消/改价等同下订单权限）、collect-payment（登记收款，= `receivable:collect`）/receivable、mark-printed |
 
 > **全员订单权限（v4.3）**：4 角色均可新建、修改、删除订单与订单内自定义价格；**取消分拣员只读与库管价格脱敏**，全员查看完整价格视图。
-> **【MVP】商品/客户全角色 CRUD**：`product-write` 与 `customer-write` 的增删改 action 对 **admin / orderer / sorter / warehouse 四角色全部放开**，不再限于 orderer + admin；上表中 warehouse、sorter 行的权限范围据此扩展。
+> **【MVP】商品/客户全角色 CRUD**：`products` 与 `customers` 的增删改 action 对 **admin / orderer / sorter / warehouse 四角色全部放开**，不再限于 orderer + admin；上表中 warehouse、sorter 行的权限范围据此扩展。
 > **收款两步（v4.3）**：下单员/分拣员【登记收款】（collect-payment = `receivable:collect`，可填折价/货损）→ 库管【确认收款】（collect-confirm = `receivable:confirm`）；管理员兼有两者；warehouse 无登记权限、sorter 无确认权限。
 > **细粒度权限标识（v4.5）**：`sort:task`（处理分拣）由 sorter 拥有，控制「待分拣→已分拣」；`warehouse:confirm`（出库确认）由 warehouse 拥有，控制「已分拣→已出库」；两者默认全员开放，管理员可在「成员管理 → 权限配置」开关。`receivable:collect`（登记收款）下单员/分拣员可、库管不可；`receivable:confirm`（确认收款）库管可、下单员/分拣员不可。
 > **物流包裹展示权限（需求#12，MVP已实现）**：物流包裹件数（`ship_large`/`ship_medium`/`ship_small`）非脱敏字段，**已随出库确认 MVP 实现**——库管一步【确认出库】时录入；已出库（`confirmed`/`completed`）订单在库管工作台「已出库」列表卡片、订单详情弹窗与订单详情页对所有角色（orderer/sorter/warehouse/admin）可见；未出库订单物流包裹为空/0。
@@ -886,8 +895,8 @@ async function exportOrders(filter) {
 #### 7.2.1 小程序端
 1. 微信开发者工具 → 云开发 → 创建环境（生产环境仅 1 个，省测试环境）
 2. 写入 AppID、云环境 ID
-3. 云函数目录右键 → 上传并部署：云端安装依赖（9 个函数依次上传）
-4. 数据库 → 按 4.2 建 8 个集合 + 索引 + 预置 11 个 regions
+3. 云函数目录右键 → 上传并部署：云端安装依赖（10 个函数依次上传）
+4. 数据库 → 按 4.2 建 10 个集合 + 索引 + 预置 11 个 regions
 5. 小程序端上传代码 → 提交审核 → 发布
 
 #### 7.2.2 Web 管理后台（两种任选）
@@ -909,10 +918,10 @@ async function exportOrders(filter) {
 | 步骤 | 内容 | 耗时 |
 |------|------|------|
 | 1 | 创建云开发环境（按量付费） | 5 min |
-| 2 | 上传 9 个云函数 | 10 min |
-| 3 | 建 8 个集合 + 索引 | 10 min |
+| 2 | 上传 10 个云函数 | 10 min |
+| 3 | 建 10 个集合 + 索引 | 10 min |
 | 4 | 预置 regions 11 条 | 5 min |
-| 5 | 首管理员零配置：系统首次启动无任何 `role=admin` 用户时，第一位登录者自动成为 `role=admin`（`auth-login` 检测无 admin 即自动赋值，老板部署后直接用微信打开小程序登录即可）；手动插库创建 admin 仅作可选兜底（方式二），无需预置 openid / 环境变量 | 0 min |
+| 5 | 首管理员零配置：系统首次启动无任何 `role=admin` 用户时，第一位登录者自动成为 `role=admin`（`auth` 检测无 admin 即自动赋值，老板部署后直接用微信打开小程序登录即可）；手动插库创建 admin 仅作可选兜底（方式二），无需预置 openid / 环境变量 | 0 min |
 | 6 | 上传小程序代码到微信后台 | 5 min |
 | 7 | 上传 index.html 到静态托管 | 2 min |
 | **合计** | | **~38 分钟** |
@@ -1188,17 +1197,18 @@ async function sendAllPackets(deviceId, serviceId, charId, bytes) {
 
 ```
 cloudfunctions/
-├── auth-login/          index.js + package.json
-├── data-query/          index.js + package.json
-├── product-write/       index.js + package.json
-├── customer-write/      index.js + package.json
-├── order-write/         index.js + package.json
-├── region-write/        index.js + package.json
-├── user-write/          index.js + package.json
-├── system-config/       index.js + package.json
+├── auth/                index.js + package.json
+├── products/            index.js + package.json
+├── customers/           index.js + package.json
+├── orders/              index.js + package.json
+├── users/               index.js + package.json
+├── regions/             index.js + package.json
+├── receivable/          index.js + package.json
+├── system/              index.js + package.json
 ├── smart/               index.js + package.json
+├── report/              index.js + package.json
 
-共 9 个云函数，无 shared 目录（极简，公共逻辑直接复制到各函数，省包管理复杂度）
+共 10 个云函数，无 shared 目录（极简，公共逻辑直接复制到各函数，省包管理复杂度）
 ```
 
 ### 附录 C：~~Web 后台单文件部署注意事项~~（**不适用，已作废**）

@@ -482,6 +482,15 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .detail-actions .btn-print{background:var(--green);color:#fff}
 .detail-actions .btn-export{background:var(--orange);color:#fff}
 .detail-actions .btn-copy{background:#fff;color:var(--text);border:1px solid var(--border)}
+/* 操作记录（订单修改历史） */
+.detail-logs{padding:4px 0}
+.log-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-dot{width:8px;height:8px;border-radius:50%;background:#C0C4CC;margin-top:6px;flex-shrink:0}
+.log-dot.log-dot-create{background:var(--green)}
+.log-body{flex:1;min-width:0}
+.log-desc{font-size:calc(13px * var(--font-scale));color:var(--text)}
+.log-meta{font-size:calc(11px * var(--font-scale));color:var(--text-2);margin-top:2px}
 
 /* Report */
 .report-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border)}
@@ -1098,6 +1107,10 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
         <div class="detail-row"><span class="lbl">微信转发</span><span class="val" id="detailWechatShared">—</span></div>
         <div class="detail-row"><span class="lbl">物流件型</span><span class="val" id="detailPackage">—</span></div>
       </div>
+      <div class="detail-section">
+        <div class="sec-title">操作记录</div>
+        <div class="detail-logs" id="detailLogs"><div style="font-size:calc(12px * var(--font-scale));color:var(--text-3)">暂无操作记录</div></div>
+      </div>
       <div class="detail-actions">
         <button class="btn-print" id="btnOrderPrint" onclick="goToShipping()">🖨️ 打印送货单</button>
         <button class="btn-edit" id="btnOrderEdit" onclick="editOrder()">✏️ 编辑订单</button>
@@ -1227,6 +1240,7 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
         <div class="menu-item" id="menuReports" onclick="navigateTo('reports')"><div class="left"><div class="icon m3">📊</div><span class="lbl">报表统计</span></div><span class="arrow">›</span></div>
         <div class="menu-item" onclick="toggleFontZoomPanel()"><div class="left"><div class="icon" style="background:#5B8DEF">🔠</div><span class="lbl">字体大小</span></div><span style="font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-right:8px" id="profileFontScale">90%</span><span class="arrow">›</span></div>
         <div class="menu-item" id="menuMembers" onclick="openMembers()"><div class="left"><div class="icon" style="background:#534AB7">👥</div><span class="lbl">成员管理</span></div><span class="arrow">›</span></div>
+        <div class="menu-item" id="menuSettings" onclick="navigateTo('settings')"><div class="left"><div class="icon" style="background:#0EA5E9">⚙️</div><span class="lbl">系统设置</span></div><span class="arrow">›</span></div>
       </div>
       <div class="profile-menu">
         <div class="menu-item" onclick="logout()"><div class="left"><div class="icon" style="background:#FF3B30">🚪</div><span class="lbl" style="color:#FF3B30">退出登录</span></div><span class="arrow">›</span></div>
@@ -1279,6 +1293,78 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
             </div>
             <div id="permMatrix"></div>
             <div class="perm-note">说明：「成员管理」固定为管理员独占（防止权限锁死），其余权限管理员可随时按需开关，改动即时保存生效。</div>
+          </div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <!-- Settings Page (系统设置，仅管理员可见) -->
+    <div class="page" id="page-settings">
+      <div class="members-wrap">
+        <div class="sec-card">
+          <div class="sec-head">🎙️ 阿里语音（ASR）配置 <span class="hint">语音转文字</span></div>
+          <div class="sec-body" style="padding:12px 16px">
+            <div class="ag-step"><b>说明</b><br>智能录入的「语音转文字」依赖阿里云智能语音交互（ISI）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</div>
+            <div style="margin-top:12px">
+              <div class="mf-row"><label>启用语音识别</label><select id="aiAliyunEnabled">
+                <option value="0">停用</option>
+                <option value="1">启用</option>
+              </select></div>
+              <div class="mf-row"><label>AccessKeyId</label><input id="aiAliyunAk" type="text" placeholder="阿里云 AccessKeyId"></div>
+              <div class="mf-row"><label>AccessKeySecret</label><input id="aiAliyunSk" type="password" placeholder="阿里云 AccessKeySecret"></div>
+              <div class="mf-row"><label>AppKey</label><input id="aiAliyunAppKey" type="text" placeholder="智能语音交互项目 AppKey"></div>
+              <div class="mf-row"><label>服务地域</label><select id="aiAliyunRegion">
+                <option value="cn-shanghai">华东2（上海）cn-shanghai</option>
+                <option value="cn-beijing">华北2（北京）cn-beijing</option>
+                <option value="cn-hangzhou">华东1（杭州）cn-hangzhou</option>
+              </select></div>
+              <div class="mf-row"><label>识别模型</label><select id="aiAliyunModel">
+                <option value="general">通用（16K，麦克风录音）</option>
+                <option value="telephone">电话（8K）</option>
+              </select></div>
+              <button class="btn primary" style="width:100%" onclick="saveAliyunConfig()">💾 保存阿里语音配置</button>
+            </div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head">🧠 通义千问（NLP）配置 <span class="hint">复杂语义理解</span></div>
+          <div class="sec-body" style="padding:12px 16px">
+            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」可接入通义千问（DashScope），用于规则引擎未命中的口语化/复杂表达。未配置或未启用时，自动降级为纯规则引擎（文字匹配仍可用）。</div>
+            <div style="margin-top:12px">
+              <div class="mf-row"><label>启用千问 NLP</label><select id="aiQwenEnabled">
+                <option value="0">停用</option>
+                <option value="1">启用</option>
+              </select></div>
+              <div class="mf-row"><label>API Key</label><input id="aiQwenKey" type="password" placeholder="DashScope API Key（sk-开头）"></div>
+              <div class="mf-row"><label>模型</label><select id="aiQwenModel">
+                <option value="qwen-turbo">qwen-turbo（推荐，快）</option>
+                <option value="qwen-plus">qwen-plus（均衡）</option>
+                <option value="qwen-max">qwen-max（最强）</option>
+              </select></div>
+              <button class="btn primary" style="width:100%" onclick="saveQwenConfig()">💾 保存千问配置</button>
+            </div>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head">🖨️ 打印机配置 <span class="hint">蓝牙打印</span></div>
+          <div class="sec-body" style="padding:12px 16px">
+            <div class="mf-row"><label>打印机品牌</label><select id="printerBrand">
+              <option value="xinye">芯烨（Xprinter）</option>
+              <option value="jiabo">佳博（Gprinter）</option>
+              <option value="hanyin">汉印（HPRT）</option>
+            </select></div>
+            <div class="mf-row"><label>打印纸宽</label><select id="printerWidth">
+              <option value="58">58mm（便携）</option>
+              <option value="80">80mm</option>
+            </select></div>
+            <button class="btn primary" style="width:100%" onclick="savePrinterConfig()">💾 保存打印机配置</button>
+          </div>
+        </div>
+        <div class="sec-card">
+          <div class="sec-head">💾 数据备份 <span class="hint">云开发自动备份</span></div>
+          <div class="sec-body" style="padding:12px 16px">
+            <div class="ag-step"><b>自动备份</b><br>云开发平台每日自动备份数据库，无需手动操作。如需手动导出，请前往「微信开发者工具 → 云开发控制台 → 数据库」操作。</div>
           </div>
         </div>
       </div>
@@ -2459,7 +2545,7 @@ function navigateTo(page, params){
     tabBar.style.display = 'none';
     navBar.style.display = 'flex';
     STACK.push(page);
-    const titles = {newOrder:'新建订单', orderDetail:'订单详情', shipping:'送货单预览', products:'商品管理', customers:'客户管理', members:'成员管理', sorting:'分拣作业'};
+    const titles = {newOrder:'新建订单', orderDetail:'订单详情', shipping:'送货单预览', products:'商品管理', customers:'客户管理', members:'成员管理', sorting:'分拣作业', settings:'系统设置'};
     let title = titles[page] || '';
     if(page === 'newOrder' && state.currentOrderId) title = '编辑订单';
     navTitle.textContent = title;
@@ -2486,6 +2572,7 @@ function navigateTo(page, params){
   if(page === 'orderDetail') initOrderDetail(params);
   if(page === 'shipping') initShipping(params);
   if(page === 'members') renderMembers();
+  if(page === 'settings') initSettings();
   if(page === 'outbound'){ renderSortList(); renderWhList(); applyOutboundPermGates(); }
 }
 
@@ -2671,6 +2758,9 @@ function updateUserInfo(){
   // 成员管理入口：仅管理员可见（开放模型中为独占能力）
   const mm = $('menuMembers');
   if(mm) mm.style.display = getPerm('member:manage') ? '' : 'none';
+  // 系统设置入口：仅管理员可见
+  const ms = $('menuSettings');
+  if(ms) ms.style.display = getPerm('member:manage') ? '' : 'none';
   // 按权限刷新底部 Tab / 菜单可见性
   applyPermGates();
 }
@@ -2716,7 +2806,12 @@ function seedSampleOrders(){
     {customer:'万友超市',region:'白河县',phone:'13800138001',contact:'王老板',items:[mkItem('1',2,10),mkItem('23',3,25)],time: now.toISOString(), orderNo: generateOrderNo(), status:'submitted', created_by_name:'张经理'},
     {customer:'家惠购物广场',region:'汉滨区',phone:'13800138005',contact:'赵经理',items:[mkItem('45',5,0),mkItem('46',1,15),mkItem('122',2,5)],time: new Date(now.getTime()-3600000).toISOString(), orderNo: generateOrderNo(), status:'submitted', created_by_name:'张经理'},
     {customer:'金州超市',region:'汉滨区',phone:'13800138006',contact:'陈经理',items:[mkItem('1',5,0),mkItem('4',2,10),mkItem('93',0,30)],time: new Date(now.getTime()-14400000).toISOString(), orderNo: generateOrderNo(), status:'sorted', created_by_name:'张经理'},
-    {customer:'万达百货',region:'白河县',phone:'13800138007',contact:'孙主管',items:[mkItem('23',1,50),mkItem('45',3,0)],time: new Date(now.getTime()-18000000).toISOString(), orderNo: generateOrderNo(), status:'confirmed', created_by_name:'张经理', auto_confirmed:true},
+    {customer:'万达百货',region:'白河县',phone:'13800138007',contact:'孙主管',items:[mkItem('23',1,50),mkItem('45',3,0)],time: new Date(now.getTime()-18000000).toISOString(), orderNo: generateOrderNo(), status:'confirmed', created_by_name:'张经理', auto_confirmed:true, logs:[
+      {action:'create', operatorName:'张经理', role:'orderer', time:new Date(now.getTime()-18000000).toISOString(), desc:'创建订单'},
+      {action:'sort', operatorName:'李分拣', role:'sorter', time:new Date(now.getTime()-12000000).toISOString(), desc:'分拣完成'},
+      {action:'outbound', operatorName:'王库管', role:'warehouse', time:new Date(now.getTime()-6000000).toISOString(), desc:'确认出库（大件×1 · 中件×2）'},
+      {action:'collect', operatorName:'张经理', role:'orderer', time:new Date(now.getTime()-3000000).toISOString(), desc:'登记收款 ¥500'}
+    ]},
     {customer:'老街口包子铺',region:'白河县',phone:'13800138004',contact:'刘老板',items:[mkItem('4',4,8),mkItem('93',0,15)],time: new Date(now.getTime()-7200000).toISOString(), orderNo: generateOrderNo(), status:'submitted', created_by_name:'刘业务'},
     {customer:'二幼千层破酥包',region:'旬阳市',phone:'13800138002',contact:'李师傅',items:[mkItem('10',3,20),mkItem('127',2,5),mkItem('147',3,0)],time: new Date(now.getTime()-3888000000).toISOString(), orderNo: generateOrderNo(), status:'confirmed', created_by_name:'刘业务'},
     // 今天更多订单（刘业务）
@@ -4666,6 +4761,57 @@ function genInviteLink(){
 }
 function esc(s){ return String(s==null?'':s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
+// ============ 系统设置（1.0，仅管理员） ============
+// AI 服务配置（阿里语音 + 千问分开）+ 打印机配置 + 数据备份说明
+const AI_CONFIG_KEY = 'aiConfig';
+const PRINTER_CONFIG_KEY = 'printerConfig';
+function initSettings(){
+  if(!getPerm('member:manage')){ showToast('仅管理员可访问系统设置'); navigateBack(); return; }
+  // 回填阿里语音配置
+  const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+  if($('aiAliyunEnabled')) $('aiAliyunEnabled').value = ai.aliyunEnabled || '0';
+  if($('aiAliyunAk')) $('aiAliyunAk').value = ai.aliyunAk || '';
+  if($('aiAliyunSk')) $('aiAliyunSk').value = ai.aliyunSk || '';
+  if($('aiAliyunAppKey')) $('aiAliyunAppKey').value = ai.aliyunAppKey || '';
+  if($('aiAliyunRegion')) $('aiAliyunRegion').value = ai.aliyunRegion || 'cn-shanghai';
+  if($('aiAliyunModel')) $('aiAliyunModel').value = ai.aliyunModel || 'general';
+  // 回填千问配置
+  if($('aiQwenEnabled')) $('aiQwenEnabled').value = ai.qwenEnabled || '0';
+  if($('aiQwenKey')) $('aiQwenKey').value = ai.qwenKey || '';
+  if($('aiQwenModel')) $('aiQwenModel').value = ai.qwenModel || 'qwen-turbo';
+  // 回填打印机配置
+  const pr = JSON.parse(localStorage.getItem(PRINTER_CONFIG_KEY) || '{}');
+  if($('printerBrand')) $('printerBrand').value = pr.brand || 'xinye';
+  if($('printerWidth')) $('printerWidth').value = pr.width || '58';
+}
+function saveAliyunConfig(){
+  const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+  cfg.aliyunEnabled = $('aiAliyunEnabled').value;
+  cfg.aliyunAk = $('aiAliyunAk').value.trim();
+  cfg.aliyunSk = $('aiAliyunSk').value.trim();
+  cfg.aliyunAppKey = $('aiAliyunAppKey').value.trim();
+  cfg.aliyunRegion = $('aiAliyunRegion').value;
+  cfg.aliyunModel = $('aiAliyunModel').value;
+  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
+  showToast('阿里语音配置已保存');
+}
+function saveQwenConfig(){
+  const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+  cfg.qwenEnabled = $('aiQwenEnabled').value;
+  cfg.qwenKey = $('aiQwenKey').value.trim();
+  cfg.qwenModel = $('aiQwenModel').value;
+  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
+  showToast('千问配置已保存');
+}
+function savePrinterConfig(){
+  const cfg = {
+    brand: $('printerBrand').value,
+    width: $('printerWidth').value
+  };
+  localStorage.setItem(PRINTER_CONFIG_KEY, JSON.stringify(cfg));
+  showToast('打印机配置已保存');
+}
+
 function renderMembers(){
   if(!$('memberList')) return;
   const roles = ['orderer','sorter','warehouse','admin'];
@@ -4916,6 +5062,27 @@ function initOrderDetail(id){
   vis('btnOrderExport', getPerm('order:export', role));
   vis('btnOrderForward', getPerm('order:print', role));
   vis('btnOrderDelete', getPerm('order:delete', role));
+  // 操作记录（1.0 新增：订单修改历史）
+  renderOrderLogs(o);
+}
+
+// 渲染订单操作记录（订单修改历史）
+function renderOrderLogs(o){
+  const logsEl = $('detailLogs');
+  if(!logsEl) return;
+  // 原型演示：从订单的 logs 字段读取，无则生成默认创建记录
+  const logs = (o.logs && o.logs.length) ? o.logs : [{ action:'create', operatorName:o.created_by_name||'未知', role:o.created_by_role||'orderer', time:o.time, desc:'创建订单' }];
+  if(!logs.length){ logsEl.innerHTML = '<div style="font-size:calc(12px * var(--font-scale));color:var(--text-3)">暂无操作记录</div>'; return; }
+  const roleLabel = r => (ROLE_PROFILES[r]||{}).roleLabel || r;
+  const html = logs.slice().reverse().map(l => `
+    <div class="log-item">
+      <div class="log-dot ${l.action==='create'?'log-dot-create':''}"></div>
+      <div class="log-body">
+        <div class="log-desc">${esc(l.desc||'')}</div>
+        <div class="log-meta">${esc(l.operatorName||'')}（${roleLabel(l.role)}）· ${new Date(l.time).toLocaleString('zh-CN')}</div>
+      </div>
+    </div>`).join('');
+  logsEl.innerHTML = html;
 }
 
 // 1.0 转发客户微信（使用销售单模板）
@@ -5950,6 +6117,17 @@ function switchSmartTab(mode) {
     textTab.style.color = 'var(--text-2)';
     voiceMode.style.display = '';
     textMode.style.display = 'none';
+    // 1.0：检查阿里语音是否启用，未启用时提示降级
+    const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+    const aliyunEnabled = ai.aliyunEnabled === '1' && ai.aliyunAk && ai.aliyunSk && ai.aliyunAppKey;
+    const tip = $('smartVoiceTip');
+    if(!aliyunEnabled && tip){
+      tip.textContent = '⚠️ 语音识别未启用，请在「系统设置」配置阿里语音';
+      tip.style.color = 'var(--orange)';
+    } else if(tip){
+      tip.textContent = '点击开始录音';
+      tip.style.color = '';
+    }
   }
 }
 

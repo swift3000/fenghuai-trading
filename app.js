@@ -5,6 +5,7 @@ App({
       return
     }
     wx.cloud.init({
+      env: 'cloud1-d6g75loi673b1e039',
       traceUser: true
     })
     this.globalData = {

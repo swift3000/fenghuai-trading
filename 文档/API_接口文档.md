@@ -18,7 +18,7 @@
 小程序端：
 ```javascript
 wx.cloud.callFunction({
-  name: 'order-write',
+  name: 'orders',
   data: { action: 'create', payload: { /* ... */ } },
   success: res => { /* res.result = { code, message, data } */ }
 });
@@ -28,42 +28,46 @@ Web 后台端（云开发静态托管同源时用 tcb-js-sdk）：
 ```javascript
 const app = tcb.init({ env: ENV_ID });
 const res = await app.callFunction({
-  name: 'order-write',
+  name: 'orders',
   data: { action: 'create', payload: { /* ... */ }, __auth: token }
 });
 ```
 
-### 1.2 云函数与 Action 对照表（9 个云函数，27 个 action）
+### 1.2 云函数与 Action 对照表（10 个云函数，29 个 action）
 
 | # | 云函数 | Action | 接口名 |
 |---|--------|--------|--------|
-| 1 | auth-login | — | 用户登录 |
-| 2 | data-query | products | 商品列表 |
+| 1 | auth | — | 用户登录 |
+| 2 | products | products | 商品列表 |
 | 3 | | product-detail | 商品详情 |
-| 4 | | customers | 客户列表 |
-| 5 | | customer-detail | 客户详情 |
-| 6 | | regions | 区域列表 |
-| 7 | | orders | 订单列表 |
-| 8 | | order-detail | 订单详情 |
-| 9 | | users | 用户列表 |
-| 10 | | receivable | 赊销（三栏：客户台账/未结清/已结清 + 收款确认；已收口径） |
-| 11 | product-write | create | 新增商品 |
-| 12 | | update | 修改商品 |
-| 13 | customer-write | create | 新增客户 |
-| 14 | | update | 修改客户 |
-| 15 | order-write | create | 创建订单 |
+| 4 | | create | 新增商品 |
+| 5 | | update | 修改商品 |
+| 6 | customers | customers | 客户列表 |
+| 7 | | customer-detail | 客户详情 |
+| 8 | | create | 新增客户 |
+| 9 | | update | 修改客户 |
+| 10 | regions | regions | 区域列表 |
+| 11 | | create | 新增区域 |
+| 12 | | update | 修改区域 |
+| 13 | orders | orders | 订单列表 |
+| 14 | | order-detail | 订单详情 |
+| 15 | | create | 创建订单 |
 | 16 | | update-status | 更新订单状态（分拣完成/出库确认/完成/取消；驳回为二期遗留） |
 | 17 | | pick-stash | 配货暂存（二期规划·当前未启用） |
 | 18 | | collect | 收款登记（下单员/分拣员） |
 | 19 | | collect-confirm | 确认收款（库管） |
 | 20 | | update-remark | 修改订单备注 |
 | 21 | | mark-printed | 标记已打印 |
-| 22 | region-write | create | 新增区域 |
-| 23 | | update | 修改区域 |
-| 24 | user-write | create | 新增用户 |
-| 25 | | update | 修改用户 |
-| 26 | smart | match | 智能匹配（商品/客户模糊匹配） |
-| 27 | | transcribe | 语音转文字 |
+| 22 | users | users | 用户列表 |
+| 23 | | create | 新增用户 |
+| 24 | | update | 修改用户 |
+| 25 | receivable | receivable | 赊销（三栏：客户台账/未结清/已结清 + 收款确认；已收口径） |
+| 26 | system | getAiConfig | 获取 AI 服务配置（阿里语音 + 千问） |
+| 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
+| 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
+| 29 | | transcribe | 语音转文字 |
+
+> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数用于报表导出（前端 SheetJS 拉全量数据后本地生成，见 §9 FAQ）。
 
 ### 1.3 返回格式
 
@@ -124,13 +128,13 @@ const res = await app.callFunction({
 
 ### 2.1 用户登录
 
-- **云函数**：`auth-login`
+- **云函数**：`auth`
 - **最小权限**：公开
-- **首管理员（方案 A 零配置）**：系统首次启动无任何管理员时，`login` 云函数检测到「当前无 admin」即把**第一位登录者自动赋值为 `role=admin`**（无需预置任何环境变量、也无需先知道 openid）。老板部署后直接用微信打开小程序登录即可，无需配置 `ADMIN_OPENID` 等。预置首管理员 openid（环境变量 `ADMIN_OPENID`）仅作为**可选兜底（方式二）**，主路径为方案 A 零配置。
+- **首管理员（方案 A 零配置）**：系统首次启动无任何管理员时，`auth` 云函数检测到「当前无 admin」即把**第一位登录者自动赋值为 `role=admin`**（无需预置任何环境变量、也无需先知道 openid）。老板部署后直接用微信打开小程序登录即可，无需配置 `ADMIN_OPENID` 等。预置首管理员 openid（环境变量 `ADMIN_OPENID`）仅作为**可选兜底（方式二）**，主路径为方案 A 零配置。
 
 #### 请求
 ```typescript
-// auth-login 的 event 格式直接为 payload
+// auth 的 event 格式直接为 payload
 {
   // 小程序端：不传，云函数内部通过 getWXContext().OPENID 直接拿身份（微信原生，无密码）
   // 邀请绑定：扫码后带 inviteCode，云函数将 openid 写入预建用户并激活
@@ -172,7 +176,7 @@ const res = await app.callFunction({
 
 ### 3.1 商品列表
 
-- **云函数**：`data-query`
+- **云函数**：`products`
 - **Action**：`products`
 - **最小权限**：orderer/sorter/warehouse/admin（商品列表全员可见）
 
@@ -213,7 +217,7 @@ const res = await app.callFunction({
 
 ### 3.2 商品详情
 
-- **云函数**：`data-query` / `product-detail`
+- **云函数**：`products` / `product-detail`
 - **最小权限**：orderer/sorter/warehouse/admin（全员可见）
 
 #### 请求
@@ -225,7 +229,7 @@ const res = await app.callFunction({
 
 ### 3.3 新增商品
 
-- **云函数**：`product-write`
+- **云函数**：`products`
 - **Action**：`create`
 - **最小权限**：orderer/admin
 
@@ -261,7 +265,7 @@ const res = await app.callFunction({
 
 ### 3.4 修改商品
 
-- **云函数**：`product-write`
+- **云函数**：`products`
 - **Action**：`update`
 - **最小权限**：orderer/admin
 
@@ -284,7 +288,7 @@ const res = await app.callFunction({
 
 ### 4.1 客户列表
 
-- **云函数**：`data-query` / `customers`
+- **云函数**：`customers` / `customers`
 - **最小权限**：orderer/admin
 
 #### 请求
@@ -310,7 +314,7 @@ const res = await app.callFunction({
 
 ### 4.2 客户详情
 
-- **云函数**：`data-query` / `customer-detail`
+- **云函数**：`customers` / `customer-detail`
 - **最小权限**：orderer/admin
 
 #### 请求：`{ type: 'customer-detail', filter: { _id: '' } }`
@@ -319,7 +323,7 @@ const res = await app.callFunction({
 
 ### 4.3 新增客户
 
-- **云函数**：`customer-write`
+- **云函数**：`customers`
 - **Action**：`create`
 - **最小权限**：orderer/admin
 
@@ -343,7 +347,7 @@ const res = await app.callFunction({
 
 ### 4.4 修改客户
 
-- **云函数**：`customer-write` / `update`
+- **云函数**：`customers` / `update`
 - **最小权限**：orderer/admin
 
 #### 请求：`{ action:'update', payload:{ id, ...updateFields } }`
@@ -356,7 +360,7 @@ const res = await app.callFunction({
 
 ### 5.1 区域列表
 
-- **云函数**：`data-query` / `regions`
+- **云函数**：`regions` / `regions`
 - **最小权限**：all
 
 #### 请求：`{ type:'regions', filter:{ status:'active' } }`（无分页）
@@ -375,7 +379,7 @@ Array<{
 
 ### 5.2 新增区域
 
-- **云函数**：`region-write` / `create`
+- **云函数**：`regions` / `create`
 - **最小权限**：admin
 
 #### 请求
@@ -385,7 +389,7 @@ Array<{
 
 ### 5.3 修改区域
 
-- **云函数**：`region-write` / `update`
+- **云函数**：`regions` / `update`
 - **最小权限**：admin
 
 #### 请求：`{ action:'update', payload:{ id, name, description, sort, status } }`
@@ -396,7 +400,7 @@ Array<{
 
 ### 6.1 订单列表
 
-- **云函数**：`data-query` / `orders`
+- **云函数**：`orders` / `orders`
 - **最小权限**：orderer/sorter/warehouse/admin（**全部，完整视图，无价格脱敏与精简视图，1.0**）
 
 #### 请求
@@ -453,9 +457,10 @@ Array<{
 
 ### 6.2 订单详情
 
-- **云函数**：`data-query` / `order-detail`
+- **云函数**：`orders` / `order-detail`
 - **最小权限**：orderer/sorter/warehouse/admin（**全部，完整视图，无价格脱敏与精简视图，1.0**）
 - **用途**：返回数据（含 items/amount/payment_status/orderNo/customer/region/phone）用于订单详情、送货单打印与赊销对账（1.0 已取消转发收款卡片）；含 `ship_large`/`ship_medium`/`ship_small` 物流包裹字段（详情显示物流包裹；导出报表/出库单/单订单导出取用）
+- **操作记录**：订单详情页新增「操作记录」区块，订单操作记录（创建/状态流转/收款/备注修改等）通过 `order_logs` 集合存储，随订单详情一并返回。
 
 #### 请求：`{ type:'order-detail', filter:{ _id:'' } }`
 
@@ -486,7 +491,7 @@ Array<{
 
 ### 6.3 创建订单（含快照）
 
-- **云函数**：`order-write` / `create`
+- **云函数**：`orders` / `create`
 - **最小权限**：orderer/sorter/warehouse/admin（**全员可下单，1.0**）
 
 #### 请求
@@ -532,7 +537,7 @@ Array<{
 
 > 状态流转动作统一收敛到 `update-status`：分拣员**分拣完成**（submitted→sorted，受 `sort:task` 权限控制）；库管**出库确认**（sorted→confirmed，受 `warehouse:confirm` 权限控制，写 ship_* 实际发货件数）；`rejected`（驳回）为二期规划遗留状态，当前流程不触发。
 
-- **云函数**：`order-write` / `update-status`（`confirm` 向后兼容）
+- **云函数**：`orders` / `update-status`（`confirm` 向后兼容）
 - **最小权限**：
   - `sorted → confirmed`（出库确认）：warehouse/admin
   - `submitted → sorted`（分拣完成）：sorter/admin
@@ -581,7 +586,7 @@ Array<{
 
 ### 6.5 库管并行配货暂存（二期规划·当前未启用）
 
-- **云函数**：`order-write` / `pick-stash`
+- **云函数**：`orders` / `pick-stash`
 - **最小权限**：warehouse/admin
 - **说明**：【二期规划·当前未启用】原对**已提交（submitted）**订单录入大/中/小件配货数；支持多库管**并行**配货（可同时操作不同订单）；**不改变订单状态**。当前 MVP 简化为库管一步出库确认（已分拣→已出库），无需暂存配货，本接口暂不启用。
 
@@ -607,7 +612,7 @@ Array<{
 
 ### 6.6 标记已打印
 
-- **云函数**：`order-write` / `mark-printed`
+- **云函数**：`orders` / `mark-printed`
 - **最小权限**：orderer/sorter/warehouse/admin（全员可蓝牙打印，1.0）
 
 #### 请求：`{ action:'mark-printed', payload:{ id } }`
@@ -616,7 +621,7 @@ Array<{
 
 ### 6.7 收款登记（第 1 步：登记，1.0）
 
-- **云函数**：`order-write` / `collect`
+- **云函数**：`orders` / `collect`
 - **最小权限**：orderer/sorter/admin（登记收款；1.0 放开分拣员）
 - **说明**：下单员/分拣员登记收款（**以商家到账为准**），生成一条 `status=pending`（待确认）收款记录，订单 `payment_status=unpaid→pending`。一笔订单可多次登记（部分收款累计）；登记可选填**折价/货损金额（collect_discount）**记录实收与应付差额（如100元货品实收90元，折价10元）。
 
@@ -664,7 +669,7 @@ Array<{
 
 ### 6.8 确认收款（第 2 步：库管确认，1.0）
 
-- **云函数**：`order-write` / `collect-confirm`
+- **云函数**：`orders` / `collect-confirm`
 - **最小权限**：warehouse/admin（确认收款，收款流程最后一步）
 - **说明**：库管对已登记（pending）的收款记录点【确认收款】→ 记录 `status=pending→confirmed`，订单 `payment_status=pending→paid`；支持按订单确认（传入 order_id 自动确认该订单全部 pending 记录）。
 
@@ -700,7 +705,7 @@ Array<{
 
 ### 6.9 修改订单备注
 
-- **云函数**：`order-write` / `update-remark`
+- **云函数**：`orders` / `update-remark`
 - **最小权限**：orderer/sorter/warehouse/admin（**全员可随时修改备注，1.0**）
 - **说明**：全员可**随时**修改订单备注，不限制订单状态。
 
@@ -719,7 +724,7 @@ Array<{
 
 ### 6.10 赊销（三栏：客户台账/未结清/已结清 + 收款确认，1.0 已收口径）
 
-- **云函数**：`data-query` / `receivable`
+- **云函数**：`receivable` / `receivable`
 - **最小权限**：orderer/sorter/warehouse/admin（**全员可见，1.0**）
 - **说明**：赊销页数据源（三栏：📋客户台账 / 📌未结清 / ✅已结清，外加独立「✅ 收款确认」按钮）。以客户为单位展示总账 = **应收总额 / 已收(received) / 未结清**（金额守恒：应收 = 已收 + 未结清），台账/汇总/导出三处统一「已收」口径（替代原「已结清」仅完全结清口径）；支持周期选择（全部/今日/本周/本月/自定义）。所有订单默认未收款（unpaid）；账期可跨数月。
 
@@ -767,7 +772,7 @@ Array<{
 
 ### 7.1 用户列表
 
-- **云函数**：`data-query` / `users`
+- **云函数**：`users` / `users`
 - **最小权限**：admin
 
 #### 请求：`{ type:'users', filter:{ role:'', status:'' }, page:1, page_size:20 }`
@@ -795,9 +800,9 @@ Array<{
 
 ### 7.2 新增用户
 
-- **云函数**：`user-write` / `create`
+- **云函数**：`users` / `create`
 - **最小权限**：admin
-- **首管理员（方案 A 零配置）**：首管理员**无需通过 `user-write` 预置**——系统首次启动无 admin 时，`auth-login` 自动把第一位登录者赋为 `role=admin`（见 §2.1）。`user-write` 仅用于管理员新增普通成员（orderer/sorter/warehouse/admin）。环境变量 `ADMIN_OPENID` 预置首管理员 openid 仅作**可选兜底（方式二）**。
+- **首管理员（方案 A 零配置）**：首管理员**无需通过 `users` 预置**——系统首次启动无 admin 时，`auth` 自动把第一位登录者赋为 `role=admin`（见 §2.1）。`users` 仅用于管理员新增普通成员（orderer/sorter/warehouse/admin）。环境变量 `ADMIN_OPENID` 预置首管理员 openid 仅作**可选兜底（方式二）**。
 
 #### 请求
 ```typescript
@@ -820,7 +825,7 @@ Array<{
 
 ### 7.3 修改用户
 
-- **云函数**：`user-write` / `update`
+- **云函数**：`users` / `update`
 - **最小权限**：admin
 
 #### 请求
@@ -881,6 +886,8 @@ Array<{
 
 **调用方式**：`wx.cloud.callFunction({ name: 'smart', data: { action: 'transcribe', ... } })`
 
+> **对接说明**：`transcribe` 对接**阿里云智能语音（ISI）**，运行时从 `system_config` 集合读取阿里语音配置（`aliyun`，见 §7B `getAiConfig`）。若未配置阿里语音，则**降级返回空文本**（`data.text = ""`），前端可提示「语音识别未配置」。
+
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|:---:|------|
 | action | string | ✅ | 固定 "transcribe" |
@@ -895,6 +902,55 @@ Array<{
   }
 }
 ```
+
+---
+
+## 7B. 系统配置（system）
+
+> 系统设置功能（AI 服务配置 + 打印机配置 + 数据备份）统一收敛到 `system` 云函数。AI 服务配置含**阿里语音（aliyun）**与**千问（qwen）**两部分，配置存储于 `system_config` 集合。
+
+#### 7B.1 获取 AI 服务配置（system.getAiConfig）
+
+**调用方式**：`wx.cloud.callFunction({ name: 'system', data: { action: 'getAiConfig' } })`
+
+- **最小权限**：admin
+- **说明**：返回当前 AI 服务配置（阿里语音 + 千问）与打印机配置。
+
+**返回 data**：
+```json
+{
+  "ai": {
+    "aliyun": { "enabled": false, "accessKeyId": "", "accessKeySecret": "", "appKey": "", "region": "", "model": "" },
+    "qwen": { "enabled": false, "apiKey": "", "model": "" }
+  },
+  "printer": { }
+}
+```
+
+#### 7B.2 更新 AI 服务配置（system.updateAiConfig）
+
+**调用方式**：`wx.cloud.callFunction({ name: 'system', data: { action: 'updateAiConfig', aiConfig: { ... } } })`
+
+- **最小权限**：admin（仅管理员）
+- **入参 `aiConfig`**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|:---:|------|
+| aliyun | object | ❌ | 阿里语音配置 |
+| aliyun.enabled | boolean | ❌ | 是否启用阿里语音 |
+| aliyun.accessKeyId | string | ❌ | 阿里云 AccessKey ID |
+| aliyun.accessKeySecret | string | ❌ | 阿里云 AccessKey Secret |
+| aliyun.appKey | string | ❌ | 阿里智能语音 AppKey |
+| aliyun.region | string | ❌ | 阿里云地域 |
+| aliyun.model | string | ❌ | 语音识别模型 |
+| qwen | object | ❌ | 千问配置 |
+| qwen.enabled | boolean | ❌ | 是否启用千问 |
+| qwen.apiKey | string | ❌ | 千问 API Key |
+| qwen.model | string | ❌ | 千问模型名 |
+
+**返回 data**：`{ updated: true }`
+
+> 打印机配置与数据备份相关接口亦由 `system` 云函数承载（详见《系统设置》原型），本文档聚焦 AI 服务配置接口。
 
 ---
 
@@ -934,7 +990,7 @@ Array<{
 > - `warehouse:confirm`：出库确认（6.4 sorted→confirmed），控制库管「出库确认」；
 > - `receivable:collect`：登记收款（6.7），下单员/分拣员可，库管不可；
 > - `receivable:confirm`：确认收款（6.8），库管可，下单员/分拣员不可。
-> 首管理员由 `auth-login` 方案 A 零配置自动赋值（见 §2.1），无需通过 `user-write` 预置。
+> 首管理员由 `auth` 方案 A 零配置自动赋值（见 §2.1），无需通过 `users` 预置。
 
 ---
 
