@@ -74,8 +74,9 @@
       stateMachine.js, permissions.js, fontScale.js
     app.js / app.json / app.wxss
   /cloudfunctions
-    login, product, customer, order,
-    payment, print, export(3种Excel导出), report(预留), smart
+    auth, products, customers, orders,
+    users, regions, receivable, system,
+    smart, report
   project.config.json
 ```
 
@@ -87,13 +88,21 @@
 5. 首年平台费：个体户 ≈269 元 / 公司 ≈539 元
 
 ### 3.4 数据模型（云数据库集合，MVP 字段）
+
+共 **11 个集合**：`users` / `regions` / `products` / `customers` / `orders` / `order_items` / `payments` / `product_aliases` / `customer_aliases` / `order_logs` / `system_config`。
+
 - **users**：`_openid, role, name, phone, region, fontScale, status, invitedBy, createdAt`（**微信原生身份模型，openid 即唯一身份，MVP 不设置密码**；`status` ∈ pending/active/disabled，`invitedBy` 记录邀请人，便于溯源。原 PRD 的 `password_hash`/bcrypt 二次校验在微信原生场景下作废，已与用户确认 MVP 去掉）
-- **products**：`_id, material_code, name, spec, pinyin, unit_piece, unit_bag, price_piece, price_bag, category, status, usage, remark, is_adjustable`（包价/包数字段采用 `price_bag` / `bag_qty` 命名，与 PRD 一致；原 `price_zero` / `zero_qty` 口径作废）
-- **customers**：`_id, code, name, region, phone, contact, address`
-- **orders**：`_id, no, customer, items[], amount, time, status, recvView, payStatus, createdBy, remark`
-  - `items[]`: `{material_code, name, spec, piece_qty, bag_qty, price_piece, price_bag, remark, amount}`
-- **payments**：`_id, orderId, amount, type(登记/确认), operator, time, status(pending/confirmed)`
-- **role_config**：`_id, role, permissions[]`（每角色的权限开关集合；管理员在「成员管理 → 权限配置」中编辑，云函数按此校验，实现 §3.7.2 的权限可配置；默认种子见 §3.7.2）
+- **regions**：`name, sort, status`（预置 11 条：汉滨区(1)、汉阴县(2)、石泉县(3)、宁陕县(4)、紫阳县(5)、岚皋县(6)、平利县(7)、镇坪县(8)、旬阳市(9)、白河县(10)、外县(99)，无 code 字段）
+- **products**：`_id, material_code, name, spec, pinyin, unit_piece, unit_bag, price_piece, price_zero, category, status, usage, remark, is_adjustable`（包价/包数字段采用 `price_zero` / `zero_qty` 命名，与 PRD 一致）
+- **customers**：`_id, name, region, phone, contact, address`
+- **orders**：`_id, no, customer, items[], amount, time, status, recvView, payment_status, createdBy, remark`
+  - `items[]`: `{material_code, name, spec, piece_qty, bag_qty, price_piece, price_zero, remark, amount}`
+- **order_items**：订单明细（`order_id, product_id, sku_code, seq` 等）
+- **payments**：`_id, orderId, amount, operator, time, status(pending/confirmed)`（收款登记→确认两步，`status` ∈ pending/confirmed）
+- **product_aliases**：商品别名（智能录入模糊匹配用）
+- **customer_aliases**：客户别名（智能录入模糊匹配用）
+- **order_logs**：订单操作记录（创建/编辑/删除/收款/分拣/出库留痕）
+- **system_config**：系统配置（AI 服务密钥、打印机配置）
 - 预留字段（升级用，不破坏老数据）：`orders.reportFields`, `users.regionPerm`
 
 ### 3.5 订单状态机（简化主线：新建即入待分拣 → 已分拣 → 已出库 → 已完成）
@@ -102,7 +111,7 @@
    ├─ 分拣员·处理分拣(sort:task) → SORTED(已分拣)     ← 一键完成
    └─ 库管·出库确认(warehouse:confirm) 作用于 SORTED → CONFIRMED(已出库) → DONE(已完成)
 赊销收款：unpaid(未收款) → pending(待确认·已登记) → paid(已收款)
-收款两步：登记 payment(pending) → 确认 payment(confirmed) → payStatus=paid
+收款两步：登记 payment(pending) → 确认 payment(confirmed) → payment_status=paid
 ```
 > 流水线：① **分拣段** 待分拣 → 已分拣（一键完成，无"分拣中"中间态）；② **出库段** 待出库(已分拣) → 已出库（库管一步确认）。两段合并在「分拣出库」页内切换（见 §3.9）。`sort:task` 控制"处理分拣"权限、`warehouse:confirm` 控制"出库确认"权限，可在「成员管理-权限配置」中按角色开关（默认全员开放）。
 状态转换在云函数 `order` 内集中校验；前端仅触发动作，不直接改状态。无"保存草稿"、无"手动取消"动作；`DRAFT`(草稿)、`CANCELED`(已取消)、`REJECTED`(已驳回·必填原因) 状态**保留定义但当前流程不触发**（遗留/二期规划，不纳入主流程）。
@@ -122,7 +131,7 @@
 3. **成员管理独占**：用户/角色管理（邀请、分配角色、启用停用）仅管理员可操作。
 4. **权限可配置**：管理员可随时调整任意角色的任意权限开关，运行时即时生效（见 §3.7.2）。
 
-权限在**前端路由守卫 + 云函数入参校验**双层生效——前端仅控制 tab/按钮显隐，真正的写操作闸门在云函数按 `ctx.openid` 查 `role_config` 对应的 `permissions[]` 校验，越权直接拒绝。
+权限在**前端路由守卫 + 云函数入参校验**双层生效——前端仅控制 tab/按钮显隐，真正的写操作闸门在云函数按 `ctx.openid` 查 `users.role` 对应的 `DEFAULT_ROLE_PERMISSIONS[role].permissions` 校验，越权直接拒绝。
 
 > 原型「成员管理 → 权限配置」即按下列细粒度分组逐项开关；默认全员开放，仅「赊销两步分离」与「成员管理独占」为分工/锁定项。
 
@@ -161,25 +170,26 @@
 
 ### 3.7.2 权限可配置（管理员随时调整各角色权限）
 
-权限**不是写死的常量**，而是存储在 `role_config` 集合（每角色一条记录，含 `permissions[]` 权限开关）。管理员在「成员管理 → 权限配置」页对 4 个角色分别勾选/取消权限，保存后**即时生效**——下一次云函数校验即按新配置放行或拒绝。
+权限**不是写死的常量**，而是存储在 `users.role` 对应的 `DEFAULT_ROLE_PERMISSIONS[role].permissions` 权限开关（与原型一致，非独立集合）。管理员在「成员管理 → 权限配置」页对 4 个角色分别勾选/取消权限，保存后**即时生效**——下一次云函数校验即按新配置放行或拒绝。
 
-- **默认种子**：首次部署由云函数 `init` 写入 4 条 role_config，权限初值 = §3.7 矩阵（全员开放 + 赊销两步分离 + 成员管理独占）。
-- **校验链路**：云函数 `order` / `product` / `customer` / `payment` / `export` 入口统一调用 `checkPerm(openid, 'order:create')` → 查 `users.role` → 查 `role_config[role].permissions` 是否含该 key → 不含则抛 403。
+- **默认种子**：首次部署由云函数 `init` 写入 4 条权限初值 = §3.7 矩阵（全员开放 + 赊销两步分离 + 成员管理独占）。
+- **校验链路**：云函数 `orders` / `products` / `customers` / `receivable` / `report` 入口统一调用 `checkPerm(openid, 'order:create')` → 查 `users.role` → 查 `DEFAULT_ROLE_PERMISSIONS[role].permissions` 是否含该 key → 不含则抛 403。
 - **权限 key 约定（细粒度，与原型 `DEFAULT_ROLE_PERMISSIONS` 一致）**：`order:create` `order:edit` `order:delete` `order:print` `order:export` `product:view` `product:edit` `customer:view` `customer:edit` `sort:task` `warehouse:confirm` `receivable:view` `receivable:collect` `receivable:confirm` `receivable:discount` `report:view` `report:export` `report:ledger` `member:manage` `permission:manage`。按模块分组见 §3.7 矩阵。
-- **防锁死**：`permission:manage` 与 `member:manage` 仅管理员默认拥有，且云函数对这两个 key 做硬校验（即便 role_config 被误改，管理员始终保有权限，不会被自己锁死）。
+- **防锁死**：`permission:manage` 与 `member:manage` 仅管理员默认拥有，且云函数对这两个 key 做硬校验（即便权限配置被误改，管理员始终保有权限，不会被自己锁死）。
 
 ### 3.8 云函数划分
 | 函数 | 职责 |
 |------|------|
-| login | 微信登录(openid) → 查/建 users → 绑定 role；支持邀请码绑定（扫码写入 openid）；**首管理员零配置**：检测无 admin 即把首位登录者自动设为 `role=admin`（可选兜底：环境变量 `ADMIN_OPENID` 预置）。**无密码校验**（微信原生身份） |
-| product | 商品 CRUD + 搜索 |
-| customer | 客户 CRUD + 搜索 |
-| order | 建单（0元拦截）、状态流转、列表过滤（0件0个隐藏、时间降序） |
-| payment | 收款登记/确认 |
-| print | 生成销售单/送货单（西安迈尚模板，制单人电话取登录人）；库管转发为销售单图片、下单员转发为订单明细卡片（见 §3.10） |
-| export | 3 种 Excel 导出（主报表 / 出库单 / 客户台账），入口在「我的」页 |
-| report | 预留（MVP 不含趋势报表） |
+| auth | 微信登录(openid) → 查/建 users → 绑定 role；支持邀请码绑定（扫码写入 openid）；**首管理员零配置**：检测无 admin 即把首位登录者自动设为 `role=admin`（可选兜底：环境变量 `ADMIN_OPENID` 预置）。**无密码校验**（微信原生身份） |
+| products | 商品 CRUD + 搜索 |
+| customers | 客户 CRUD + 搜索 |
+| orders | 建单（0元拦截）、状态流转、列表过滤（0件0个隐藏、时间降序）、收款登记/确认、备注、打印标记、操作记录 |
+| users | 用户增改/分配角色/启用停用（微信原生，无密码） |
+| regions | 区域增改 |
+| receivable | 赊销看板/应收查询 |
+| system | 系统配置（AI 服务密钥、打印机配置）、SLA 定时任务、数据备份 |
 | smart | 智能录入：文字/语音解析、商品/客户模糊匹配、智能记忆 |
+| report | 报表/导出（3 种 Excel 导出） |
 
 ### 3.9 前端架构
 - 底部 tab 切换（微信 tabBar 上限 5 个）：**首页 / 订单 / 赊销 / 分拣出库 / 我的**；按 §3.7 开放模型，4 角色全部可见同一套 Tab（不含按角色隐藏）；任一角色若被管理员关闭 `receivable:view` / `sort:task` / `warehouse:confirm` 等"查看/操作类"权限，对应 Tab 自动隐藏（运行时即时生效，见 §3.7.2）。

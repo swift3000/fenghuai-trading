@@ -660,9 +660,10 @@
                 ▼
         ┌──────────────────────────────┐
         │       微信云开发（Serverless）    │
-        │  云函数：login / product /       │
-        │  customer / order / payment /   │
-        │  print / report(预留)            │
+        │  云函数：auth / products /        │
+        │  customers / orders / users /    │
+        │  regions / receivable / system / │
+        │  smart / report（共 10 个）       │
         └───────┬──────────────┬───────┘
                 ▼              ▼
         ┌──────────────┐  ┌──────────────┐

@@ -222,16 +222,16 @@ db.users.createIndex({ created_at: -1 });
 **预置数据**（按业务表单提供的区域，初始化时插入）：
 
 ```javascript
-{ name: '白河县', sort: 1 }
-{ name: '汉滨区', sort: 2 }
-{ name: '旬阳市', sort: 3 }
-{ name: '汉阴县', sort: 4 }
-{ name: '岚皋县', sort: 5 }
-{ name: '平利县', sort: 6 }
-{ name: '石泉县', sort: 7 }
-{ name: '紫阳县', sort: 8 }
-{ name: '宁陕县', sort: 9 }
-{ name: '镇坪县', sort: 10 }
+{ name: '汉滨区', sort: 1 }
+{ name: '汉阴县', sort: 2 }
+{ name: '石泉县', sort: 3 }
+{ name: '宁陕县', sort: 4 }
+{ name: '紫阳县', sort: 5 }
+{ name: '岚皋县', sort: 6 }
+{ name: '平利县', sort: 7 }
+{ name: '镇坪县', sort: 8 }
+{ name: '旬阳市', sort: 9 }
+{ name: '白河县', sort: 10 }
 { name: '外县', sort: 99 }
 ```
 
@@ -667,7 +667,7 @@ items_snapshot: [
 
 ## 六、与原方案（方案B）的精简对照表
 
-### 6.1 集合层级精简（12 → 6）
+### 6.1 集合层级精简（12 → 11）
 
 | 序号 | 集合名称 | 原方案 | 方案B | 处理方式 |
 |------|----------|-----------|------------|----------|
@@ -677,13 +677,17 @@ items_snapshot: [
 | 4 | customers | ✅ | ✅ | 保留（字段精简） |
 | 5 | orders | ✅ | ✅ | 保留（字段精简） |
 | 6 | order_items | ✅ | ✅ | 保留 |
-| 7 | categories | ✅ | ❌ | **移除**：商品分类功能延后，商品直接列表展示+搜索 |
-| 8 | price_changes | ✅ | ❌ | **移除**：改价信息直接记录在 order_items（is_price_modified + original_price_* 字段），不再单独建表 |
-| 9 | account_inheritance_logs | ✅ | ❌ | **移除**：账号继承功能延后，员工离职场景暂时线下处理 |
-| 10 | operation_logs | ✅ | ❌ | **移除**：操作审计日志延后，依赖云开发自带的操作日志功能 |
-| 11 | announcements | ✅ | ❌ | **移除**：系统公告功能延后 |
-| 12 | backups | ✅ | ❌ | **移除**：数据备份依赖微信云开发自带的自动备份能力 |
-| 13 | system_configs | — | ❌ | **未加入**：原方案也未实现，方案B继续延后 |
+| 7 | payments | — | ✅ | **新增**：收款记录独立集合（登记→库管确认两步，见 §2.5/§4.5） |
+| 8 | product_aliases | — | ✅ | **新增**：商品别名（智能录入模糊匹配用，见 §2.7） |
+| 9 | customer_aliases | — | ✅ | **新增**：客户别名（智能录入模糊匹配用，见 §2.8） |
+| 10 | order_logs | — | ✅ | **新增**：订单操作记录（订单修改历史，见 §2.9） |
+| 11 | system_config | — | ✅ | **新增**：系统配置（AI 服务密钥 + 打印机配置，单文档，见 §2.10） |
+| 12 | categories | ✅ | ❌ | **移除**：商品分类功能延后，商品直接列表展示+搜索 |
+| 13 | price_changes | ✅ | ❌ | **移除**：改价信息直接记录在 order_items（is_price_modified + original_price_* 字段），不再单独建表 |
+| 14 | account_inheritance_logs | ✅ | ❌ | **移除**：账号继承功能延后，员工离职场景暂时线下处理 |
+| 15 | operation_logs | ✅ | ❌ | **移除**：操作审计日志延后，依赖云开发自带的操作日志功能 |
+| 16 | announcements | ✅ | ❌ | **移除**：系统公告功能延后 |
+| 17 | backups | ✅ | ❌ | **移除**：数据备份依赖微信云开发自带的自动备份能力 |
 
 ### 6.2 字段层级精简
 

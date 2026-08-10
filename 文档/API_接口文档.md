@@ -4,7 +4,7 @@
 > **编写日期**：2026-08-03  
 > **最后更新**：2026-08-04  
 > **状态**：已定稿  
-> **总接口数**：27 个（原 25 个 + 新增「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
+> **总接口数**：29 个 action（10 个云函数；含「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
 > **调用方式**：微信云函数（`wx.cloud.callFunction`）
 > **MVP 口径**：本文档已按 MVP（v1.0，2026-08-05）修订，MVP 为最终功能范围，无二期增强；接口契约以《小程序 MVP 落地计划与技术架构》为准。
 > **工期**：约 33 人天（MVP 生产化，详见《工期与工作量评估》）
@@ -66,8 +66,9 @@ const res = await app.callFunction({
 | 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
 | 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
 | 29 | | transcribe | 语音转文字 |
+| 30 | report | — | 报表统计与导出（前端 SheetJS 拉全量数据后本地生成，无独立 action） |
 
-> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数用于报表导出（前端 SheetJS 拉全量数据后本地生成，见 §9 FAQ）。
+> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数用于报表统计与导出（前端 SheetJS 拉全量数据后本地生成，见 §9 FAQ），无独立 action 行。
 
 ### 1.3 返回格式
 
@@ -231,7 +232,7 @@ const res = await app.callFunction({
 
 - **云函数**：`products`
 - **Action**：`create`
-- **最小权限**：orderer/admin
+- **最小权限**：orderer/sorter/warehouse/admin（**商品管理全角色 CRUD，1.0**）
 
 #### 请求
 ```typescript
@@ -267,7 +268,7 @@ const res = await app.callFunction({
 
 - **云函数**：`products`
 - **Action**：`update`
-- **最小权限**：orderer/admin
+- **最小权限**：orderer/sorter/warehouse/admin（**商品管理全角色 CRUD，1.0**）
 
 #### 请求
 ```typescript
@@ -325,7 +326,7 @@ const res = await app.callFunction({
 
 - **云函数**：`customers`
 - **Action**：`create`
-- **最小权限**：orderer/admin
+- **最小权限**：orderer/sorter/warehouse/admin（**客户管理全角色 CRUD，1.0**）
 
 #### 请求
 ```typescript
@@ -348,7 +349,7 @@ const res = await app.callFunction({
 ### 4.4 修改客户
 
 - **云函数**：`customers` / `update`
-- **最小权限**：orderer/admin
+- **最小权限**：orderer/sorter/warehouse/admin（**客户管理全角色 CRUD，1.0**）
 
 #### 请求：`{ action:'update', payload:{ id, ...updateFields } }`
 
@@ -369,9 +370,7 @@ const res = await app.callFunction({
 ```typescript
 Array<{
   id: string;
-  code: string;                // 示例：HBQ
   name: string;                // 示例：汉滨区
-  description: string | null;
   status: 'active' | 'inactive';
   sort: number;                // 排序号，从小到大
 }>;
@@ -384,7 +383,7 @@ Array<{
 
 #### 请求
 ```json
-{ "action": "create", "payload": { "code": "XYX", "name": "新区域", "sort": 99 } }
+{ "action": "create", "payload": { "name": "新区域", "sort": 99 } }
 ```
 
 ### 5.3 修改区域
@@ -392,7 +391,7 @@ Array<{
 - **云函数**：`regions` / `update`
 - **最小权限**：admin
 
-#### 请求：`{ action:'update', payload:{ id, name, description, sort, status } }`
+#### 请求：`{ action:'update', payload:{ id, name, sort, status } }`
 
 ---
 
@@ -961,10 +960,10 @@ Array<{
 | 2.1 登录 | ✅ 小程序 | ✅ 小程序 | ✅ 小程序 | ✅ 小程序 |
 | 3.1 商品列表 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 3.2 商品详情 | ✅ | ✅ | ✅ | ✅ |
-| 3.3 新增商品 | ✅ 本人 | ❌ | ❌ | ✅ 全部 |
-| 3.4 修改商品 | ✅ 本人 | ❌ | ❌ | ✅ 全部 |
+| 3.3 新增商品 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
+| 3.4 修改商品 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 4.1 客户列表 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
-| 4.3 新增客户 | ✅ 本人 | ❌ | ❌ | ✅ 全部 |
+| 4.3 新增客户 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 5.1 区域列表 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
 | 5.2/3 区域写 | ❌ | ❌ | ❌ | ✅ |
 | 6.1 订单列表 | ✅ 全部 | ✅ 全部 | ✅ 全部 | ✅ 全部 |
