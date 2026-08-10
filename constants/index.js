@@ -29,9 +29,9 @@ const PAYMENT_STATUS = {
 }
 
 const PAYMENT_STATUS_TEXT = {
-  unpaid: '未收款',
-  pending: '待确认',
-  paid: '已收款'
+  unpaid: '未付款',
+  pending: '未结清',
+  paid: '已结清'
 }
 
 const USER_ROLES = {
