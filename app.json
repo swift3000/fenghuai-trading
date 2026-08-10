@@ -12,7 +12,8 @@
     "pages/reports/reports",
     "pages/shipping/shipping",
     "pages/profile/profile",
-    "pages/members/members"
+    "pages/members/members",
+    "pages/settings/settings"
   ],
   "window": {
     "backgroundTextStyle": "light",

@@ -11,6 +11,7 @@ Page({
   goToCustomers() { wx.navigateTo({ url: '/pages/customers/customers' }) },
   goToReports() { wx.navigateTo({ url: '/pages/reports/reports' }) },
   goToMembers() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/members/members' }) },
+  goToSettings() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/settings/settings' }) },
   changeFontSize(e) {
     const scale = parseFloat(e.detail.value)
     this.setData({ fontSizeScale: scale })

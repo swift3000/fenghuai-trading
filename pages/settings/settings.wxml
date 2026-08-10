@@ -1,0 +1,96 @@
+<!-- 系统设置页（仅管理员） -->
+<view class="settings-wrap">
+
+  <!-- 阿里语音（ASR）配置 -->
+  <view class="sec-card">
+    <view class="sec-head">🎙️ 阿里语音（ASR）配置</view>
+    <view class="sec-body">
+      <view class="ag-step">智能录入的「语音转文字」依赖阿里云智能语音交互（ISI）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</view>
+      <view class="mf-row">
+        <text class="mf-label">启用语音识别</text>
+        <picker mode="selector" range="{{['停用','启用']}}" value="{{aliyunEnabled}}" bindchange="onAliyunEnabled">
+          <view class="picker-val">{{aliyunEnabled === '1' ? '启用' : '停用'}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">AccessKeyId</text>
+        <input value="{{aliyunAk}}" bindinput="onAliyunAk" placeholder="阿里云 AccessKeyId" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">AccessKeySecret</text>
+        <input password value="{{aliyunSk}}" bindinput="onAliyunSk" placeholder="阿里云 AccessKeySecret" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">AppKey</text>
+        <input value="{{aliyunAppKey}}" bindinput="onAliyunAppKey" placeholder="智能语音交互项目 AppKey" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">服务地域</text>
+        <picker mode="selector" range="{{['cn-shanghai','cn-beijing','cn-hangzhou']}}" value="{{aliyunRegionIndex}}" bindchange="onAliyunRegion">
+          <view class="picker-val">{{aliyunRegion}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">识别模型</text>
+        <picker mode="selector" range="{{['通用（16K，麦克风录音）','电话（8K）']}}" value="{{aliyunModelIndex}}" bindchange="onAliyunModel">
+          <view class="picker-val">{{aliyunModel === 'telephone' ? '电话（8K）' : '通用（16K，麦克风录音）'}}</view>
+        </picker>
+      </view>
+      <button class="btn-primary" bindtap="saveAliyun">💾 保存阿里语音配置</button>
+    </view>
+  </view>
+
+  <!-- 通义千问（NLP）配置 -->
+  <view class="sec-card">
+    <view class="sec-head">🧠 通义千问（NLP）配置</view>
+    <view class="sec-body">
+      <view class="ag-step">智能录入的「复杂语义理解」可接入通义千问（DashScope），用于规则引擎未命中的口语化/复杂表达。未配置或未启用时，自动降级为纯规则引擎（文字匹配仍可用）。</view>
+      <view class="mf-row">
+        <text class="mf-label">启用千问 NLP</text>
+        <picker mode="selector" range="{{['停用','启用']}}" value="{{qwenEnabled}}" bindchange="onQwenEnabled">
+          <view class="picker-val">{{qwenEnabled === '1' ? '启用' : '停用'}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">API Key</text>
+        <input password value="{{qwenKey}}" bindinput="onQwenKey" placeholder="DashScope API Key（sk-开头）" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">模型</text>
+        <picker mode="selector" range="{{['qwen-turbo','qwen-plus','qwen-max']}}" value="{{qwenModelIndex}}" bindchange="onQwenModel">
+          <view class="picker-val">{{qwenModel}}</view>
+        </picker>
+      </view>
+      <button class="btn-primary" bindtap="saveQwen">💾 保存千问配置</button>
+    </view>
+  </view>
+
+  <!-- 打印机配置 -->
+  <view class="sec-card">
+    <view class="sec-head">🖨️ 打印机配置</view>
+    <view class="sec-body">
+      <view class="mf-row">
+        <text class="mf-label">打印机品牌</text>
+        <picker mode="selector" range="{{['芯烨（Xprinter）','佳博（Gprinter）','汉印（HPRT）']}}" value="{{printerBrandIndex}}" bindchange="onPrinterBrand">
+          <view class="picker-val">{{printerBrandText}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">打印纸宽</text>
+        <picker mode="selector" range="{{['58mm（便携）','80mm']}}" value="{{printerWidthIndex}}" bindchange="onPrinterWidth">
+          <view class="picker-val">{{printerWidth === '80' ? '80mm' : '58mm（便携）'}}</view>
+        </picker>
+      </view>
+      <button class="btn-primary" bindtap="savePrinter">💾 保存打印机配置</button>
+    </view>
+  </view>
+
+  <!-- 数据备份 -->
+  <view class="sec-card">
+    <view class="sec-head">💾 数据备份</view>
+    <view class="sec-body">
+      <view class="ag-step">云开发平台每日自动备份数据库，无需手动操作。如需手动导出，请前往「微信开发者工具 → 云开发控制台 → 数据库」操作。</view>
+    </view>
+  </view>
+
+</view>
