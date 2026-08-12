@@ -16,7 +16,7 @@
         <text class="product-name">{{item.name}}</text>
         <view class="price-display">
           <text class="price-piece">件价：¥{{item.price_piece}}</text>
-          <text class="price-unit">零价：¥{{item.price_zero}}</text>
+          <text class="price-zero">零价：¥{{item.price_zero}}</text>
         </view>
       </view>
       <text class="product-spec">{{item.material_code}} | {{item.spec}}</text>
