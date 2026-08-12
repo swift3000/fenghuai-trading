@@ -110,16 +110,54 @@ exports.main = async (event, context) => {
  */
 async function handleLogin(openid, event) {
   try {
-    const { role = 'orderer', name, phone, region } = event
+    const { role = 'orderer', name, phone, region, inviteCode } = event
 
     // 查询用户是否存在
     let userResult = await db.collection('users').where({ openid }).get()
     
     if (userResult.data.length === 0) {
-      // 用户不存在，需要创建
-      console.log('新用户登录，openid:', openid)
-      
-      // 检查是否已有管理员（方案 A 零配置）
+      // 用户不存在
+      console.log('新用户登录，openid:', openid, 'inviteCode:', inviteCode || '无')
+
+      // 邀请绑定：携带邀请码且存在待激活用户 → 绑定 openid，并按管理员预设角色激活
+      if (inviteCode) {
+        const inviteResult = await db.collection('users').where({ inviteCode, inviteStatus: 'pending' }).get()
+        if (inviteResult.data.length === 0) {
+          return { code: 401, message: '邀请码无效或已过期' }
+        }
+        const pre = inviteResult.data[0]
+        if (pre.inviteExpire && new Date() > new Date(pre.inviteExpire)) {
+          return { code: 400, message: '邀请码已过期' }
+        }
+        const finalRole = pre.role || 'orderer'
+        await db.collection('users').doc(pre._id).update({
+          data: {
+            openid,
+            name: name || pre.name || ('用户' + openid.slice(-4)),
+            phone: phone || pre.phone || '',
+            region: region || pre.region || '',
+            role: finalRole,
+            status: 'active',
+            fontScale: 0.9,
+            inviteStatus: 'activated',
+            activatedAt: db.serverDate(),
+            permissions: DEFAULT_ROLE_PERMISSIONS[finalRole]?.permissions || [],
+            updatedAt: db.serverDate()
+          }
+        })
+        const activated = await db.collection('users').doc(pre._id).get()
+        console.log('邀请绑定激活成功，role:', finalRole)
+        return {
+          code: 0,
+          message: '登录成功（邀请绑定）',
+          data: {
+            userInfo: activated.data,
+            isNewUser: true
+          }
+        }
+      }
+
+      // 非邀请：检查是否已有管理员（方案 A 零配置）
       const adminResult = await db.collection('users').where({ role: 'admin' }).count()
       const hasAdmin = adminResult.total > 0
       
@@ -196,9 +234,9 @@ async function handleLogin(openid, event) {
  */
 async function handleGetInviteCode(opening, event) {
   try {
-    const { userId, name, phone, region, role } = event
+    const { name, phone, region, role = 'orderer' } = event
     
-    // 检查权限
+    // 检查权限：仅管理员
     const userResult = await db.collection('users').where({ openid: opening }).get()
     if (userResult.data.length === 0 || userResult.data[0].role !== 'admin') {
       return {
@@ -207,34 +245,36 @@ async function handleGetInviteCode(opening, event) {
       }
     }
     
-    // 检查用户是否存在
-    const user = await db.collection('users').doc(userId).get()
-    if (user.data.length === 0) {
-      return {
-        code: 404,
-        message: '用户不存在'
-      }
-    }
-    
-    // 生成邀请码
+    // 生成邀请码（6 位，7 天有效）
     const inviteCode = generateInviteCode()
     const expireTime = new Date()
     expireTime.setDate(expireTime.getDate() + 7) // 7 天有效
     
-    // 保存邀请码到用户记录
-    await db.collection('users').doc(userId).update({
-      data: {
-        inviteCode,
-        inviteExpire: expireTime,
-        inviteStatus: 'pending'
-      }
-    })
+    // 创建一个「待激活」用户，邀请码作为其注册凭据
+    const preUser = {
+      name: name || '',
+      phone: phone || '',
+      region: region || '',
+      role: role,
+      status: 'pending',
+      fontScale: 0.9,
+      permissions: [],
+      inviteCode,
+      inviteExpire: expireTime,
+      inviteStatus: 'pending',
+      createdBy: opening,
+      createdAt: db.serverDate(),
+      updatedAt: db.serverDate()
+    }
+    const res = await db.collection('users').add({ data: preUser })
     
     return {
       code: 0,
       data: {
+        userId: res._id,
         inviteCode,
-        expireTime
+        expireTime,
+        role
       }
     }
   } catch (err) {

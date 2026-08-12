@@ -3,11 +3,18 @@ const app = getApp();
 Page({
   data: {
     isFirstAdmin: false,
-    loading: false
+    loading: false,
+    inviteCode: ''
   },
 
   onLoad() {
     this.checkFirstAdmin();
+  },
+
+  // 邀请码输入
+  onInviteInput(e) {
+    const code = (e.detail.value || '').trim().toUpperCase()
+    this.setData({ inviteCode: code })
   },
 
   // 检查是否是首位管理员（本机尚未有已登录用户时为首次启动）
@@ -30,9 +37,12 @@ Page({
       const { callCloud } = require('../../utils/request');
       // 调用 auth/login：微信云函数内自动取 OPENID 并决定角色
       // 角色不再由前端自选：首管理员自动为 admin，其余由后端/管理员分配，避免越权
-      const result = await callCloud('auth', {
-        action: 'login'
-      });
+      const params = { action: 'login' }
+      // 填写了邀请码则一并提交，由后端完成 openid 绑定与角色激活
+      if (this.data.inviteCode) {
+        params.inviteCode = this.data.inviteCode
+      }
+      const result = await callCloud('auth', params);
       const userInfo = result.userInfo || {};
       
       // 角色以服务端为准

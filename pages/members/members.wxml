@@ -39,6 +39,10 @@
           <text class="status-{{item.status}}">{{statusMap[item.status]}}</text>
           <text class="member-date">加入：{{formatDate(item.createdAt)}}</text>
         </view>
+        <view class="member-invite" wx:if="{{item.status === 'pending' && item.inviteCode}}">
+          <text class="invite-code-text">邀请码：{{item.inviteCode}}</text>
+          <text class="invite-copy" data-code="{{item.inviteCode}}" bindtap="copyInvite">复制</text>
+        </view>
       </view>
     </view>
   </view>

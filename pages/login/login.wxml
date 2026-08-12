@@ -12,6 +12,11 @@
       👑 首次启动：您将成为<b>首位管理员</b>，无需任何配置。登录后即可管理成员与权限。
     </view>
 
+    <!-- 邀请码输入（有邀请码的成员在此填写，自动绑定对应角色） -->
+    <view class="invite-code-row">
+      <input class="invite-code-input" placeholder="有邀请码请填写（选填）" value="{{inviteCode}}" bindinput="onInviteInput" placeholder-class="invite-placeholder" />
+    </view>
+
     <!-- 微信登录按钮 -->
     <button class="wechat-login-btn" bindtap="handleLogin" loading="{{loading}}">
       <view class="btn-icon">

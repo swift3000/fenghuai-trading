@@ -241,11 +241,20 @@ function testCloudFunctions() {
     });
 
     test('auth 云函数 - 首管理员自动创建', () => {
+      // 方案 A 零配置：无任何管理员时，第一位登录者无条件成为 admin（登录页不再自选角色）
       const hasAdmin = false;
-      const requestedRole = 'admin';
-      const finalRole = (hasAdmin === false && requestedRole === 'admin') ? 'admin' : requestedRole;
+      const loginRole = 'orderer';
+      const finalRole = (hasAdmin === false) ? 'admin' : loginRole;
       
-      assertEqual(finalRole, 'admin', '第一个用户自动成为管理员');
+      assertEqual(finalRole, 'admin', '无管理员时第一位登录者无条件成为管理员');
+    });
+
+    test('auth 云函数 - 邀请绑定按预设角色激活', () => {
+      // 管理员生成邀请时预设角色，新用户扫码/填码后绑定该角色，不擅自提权
+      const presets = { orderer: 'orderer', sorter: 'sorter', warehouse: 'warehouse', admin: 'admin' };
+      const inviteRole = presets['sorter'];
+      const boundRole = inviteRole;
+      assertEqual(boundRole, 'sorter', '邀请绑定沿用管理员预设角色');
     });
 
     test('auth 云函数 - 邀请码过期检查', () => {

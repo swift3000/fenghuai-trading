@@ -174,6 +174,41 @@ const res = await app.callFunction({
 
 ---
 
+### 2.2 生成邀请码（成员邀请，管理员专用）
+
+- **云函数**：`auth` / `getInviteCode`
+- **最小权限**：admin
+- **说明**：管理员在「成员管理」选择角色后调用，后端按预设角色自动创建一个「待激活（pending）」用户并生成 **6 位邀请码（7 天有效）**。员工在登录页填写该邀请码即可自动绑定 openid 并激活为该预设角色（见 §2.1），无需管理员再手动分配。
+
+#### 请求
+```typescript
+// auth 的 event 格式直接为 payload
+{
+  action: 'getInviteCode',
+  role: 'orderer' | 'sorter' | 'warehouse' | 'admin';  // 预设角色
+  name?: string;
+  phone?: string;
+  region?: string;
+}
+```
+
+#### 返回 data
+```typescript
+{
+  userId: string;      // 新建待激活用户的 _id
+  inviteCode: string;  // 6 位邀请码
+  expireTime: Date;    // 有效期（7 天后）
+  role: string;        // 预设角色
+}
+```
+
+#### 失败示例
+```json
+{ "code": 403, "message": "无权生成邀请码" }
+```
+
+---
+
 ## 3. 商品相关
 
 ### 3.1 商品列表

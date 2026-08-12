@@ -200,6 +200,12 @@
   font-weight: 500;
 }
 
+.status-pending {
+  color: #F5A623;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
 .status-inactive {
   color: #999;
   font-size: 24rpx;
@@ -208,4 +214,34 @@
 .member-date {
   font-size: 24rpx;
   color: #999;
+}
+
+.member-invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12rpx;
+  padding: 16rpx 20rpx;
+  background: #FFF9EC;
+  border-radius: 12rpx;
+  font-size: 24rpx;
+}
+
+.invite-code-text {
+  color: #B8860B;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+}
+
+.invite-copy {
+  color: #06AD56;
+  font-weight: 500;
+  padding: 6rpx 16rpx;
+  border: 1rpx solid #06AD56;
+  border-radius: 8rpx;
+}
+
+.invite-copy:active {
+  background: #f9fdfa;
+  opacity: 0.7;
 }
