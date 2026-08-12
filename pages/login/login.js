@@ -2,35 +2,8 @@ const app = getApp();
 
 Page({
   data: {
-    selectedRole: 'orderer', // 默认选择下单员
     isFirstAdmin: false,
-    loading: false,
-    roleProfiles: {
-      orderer: {
-        name: '下单员',
-        icon: '📝',
-        example: '张经理',
-        desc: '负责创建和管理订单'
-      },
-      sorter: {
-        name: '分拣员',
-        icon: '🔍',
-        example: '周分拣',
-        desc: '负责订单分拣作业'
-      },
-      warehouse: {
-        name: '库管',
-        icon: '📦',
-        example: '李库管',
-        desc: '负责出库确认和件型管理'
-      },
-      admin: {
-        name: '管理员',
-        icon: '👑',
-        example: '王老板',
-        desc: '拥有全部管理权限'
-      }
-    }
+    loading: false
   },
 
   onLoad() {
@@ -45,17 +18,9 @@ Page({
     }
   },
 
-  // 选择角色
-  selectRole(e) {
-    const role = e.currentTarget.dataset.role;
-    if (role && role !== this.data.selectedRole) {
-      this.setData({ selectedRole: role });
-    }
-  },
-
   // 处理登录（对接 auth 云函数，换取真实 openid）
   async handleLogin() {
-    const { selectedRole, loading } = this.data;
+    const { loading } = this.data;
     
     if (loading) return;
     
@@ -63,17 +28,15 @@ Page({
     
     try {
       const { callCloud } = require('../../utils/request');
-      // 调用 auth/login：微信云函数内自动取 OPENID，实现真实身份登录
+      // 调用 auth/login：微信云函数内自动取 OPENID 并决定角色
+      // 角色不再由前端自选：首管理员自动为 admin，其余由后端/管理员分配，避免越权
       const result = await callCloud('auth', {
-        action: 'login',
-        role: selectedRole,
-        name: this.getRoleExampleName(selectedRole),
-        region: '汉滨区'
+        action: 'login'
       });
       const userInfo = result.userInfo || {};
       
-      // 首位管理员：后端已按“首个 admin 自动设管理员”规则返回，这里同步角色
-      const role = userInfo.role || selectedRole;
+      // 角色以服务端为准
+      const role = userInfo.role || 'orderer';
       
       // 统一写入 globalData 与本地缓存（供 profile/index/路由守卫使用）
       app.globalData.userInfo = userInfo;
@@ -91,6 +54,11 @@ Page({
       // 登录成功，跳转到对应页面
       this.navigateToPage(role);
       
+      // 首次管理员提示
+      if (result.isNewUser && role === 'admin') {
+        wx.showToast({ title: '🎉 您已成为首位管理员', icon: 'none', duration: 2000 });
+      }
+      
     } catch (error) {
       console.error('登录失败:', error);
       wx.showToast({
@@ -101,17 +69,6 @@ Page({
     } finally {
       this.setData({ loading: false });
     }
-  },
-
-  // 根据角色获取示例姓名
-  getRoleExampleName(role) {
-    const names = {
-      orderer: '张经理',
-      sorter: '周分拣',
-      warehouse: '李库管',
-      admin: '王老板'
-    };
-    return names[role] || '用户';
   },
 
   // 根据角色导航到对应页面

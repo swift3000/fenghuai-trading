@@ -9,7 +9,7 @@ const db = cloud.database()
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: {
     permissions: [
-      'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
       'product:view', 'product:edit',
       'customer:view', 'customer:edit',
       'sort:task',
@@ -21,7 +21,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   },
   orderer: {
     permissions: [
-      'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
       'product:view', 'product:edit',
       'customer:view', 'customer:edit',
       'sort:task',
@@ -32,7 +32,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   },
   sorter: {
     permissions: [
-      'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
       'product:view', 'product:edit',
       'customer:view', 'customer:edit',
       'sort:task',
@@ -43,7 +43,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
   },
   warehouse: {
     permissions: [
-      'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
       'product:view', 'product:edit',
       'customer:view', 'customer:edit',
       'sort:task',
@@ -123,8 +123,9 @@ async function handleLogin(openid, event) {
       const adminResult = await db.collection('users').where({ role: 'admin' }).count()
       const hasAdmin = adminResult.total > 0
       
-      // 如果是第一个用户且请求角色为 admin，自动设为管理员
-      const finalRole = (hasAdmin === false && role === 'admin') ? 'admin' : role
+      // 首管理员（方案 A 零配置）：系统尚无任何管理员时，第一位登录者无条件成为管理员
+      // （登录页不再允许自选角色，角色统一由后端决定，避免任意人自选 admin/库管的越权）
+      const finalRole = (hasAdmin === false) ? 'admin' : role
       
       console.log('创建新用户，role:', finalRole, 'hasAdmin:', hasAdmin)
       

@@ -3,6 +3,49 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
 
+/**
+ * 共享角色权限表（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
+ */
+const ROLE_PERMISSIONS = {
+  admin: [
+    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+    'product:view', 'product:edit',
+    'customer:view', 'customer:edit',
+    'sort:task',
+    'warehouse:confirm',
+    'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
+    'report:view', 'report:export', 'report:ledger',
+    'member:manage', 'permission:manage'
+  ],
+  orderer: [
+    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+    'product:view', 'product:edit',
+    'customer:view', 'customer:edit',
+    'sort:task',
+    'warehouse:confirm',
+    'receivable:view', 'receivable:collect',
+    'report:view', 'report:export', 'report:ledger'
+  ],
+  sorter: [
+    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+    'product:view', 'product:edit',
+    'customer:view', 'customer:edit',
+    'sort:task',
+    'warehouse:confirm',
+    'receivable:view', 'receivable:collect',
+    'report:view', 'report:export', 'report:ledger'
+  ],
+  warehouse: [
+    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
+    'product:view', 'product:edit',
+    'customer:view', 'customer:edit',
+    'sort:task',
+    'warehouse:confirm',
+    'receivable:view', 'receivable:confirm',
+    'report:view', 'report:export', 'report:ledger'
+  ]
+}
+
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
@@ -50,33 +93,8 @@ exports.main = async (event, context) => {
         updatedAt: db.serverDate()
       }
 
-      // 根据角色自动分配权限
-      const rolePermissions = {
-        admin: [
-          'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-          'product:view', 'product:edit',
-          'customer:view', 'customer:edit',
-          'sort:task',
-          'warehouse:confirm',
-          'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
-          'report:view', 'report:export', 'report:ledger',
-          'member:manage', 'permission:manage'
-        ],
-        orderer: [
-          'order:create', 'order:edit',
-          'product:view',
-          'customer:view',
-          'report:view'
-        ],
-        sorter: [
-          'sort:task'
-        ],
-        warehouse: [
-          'warehouse:confirm',
-          'product:view'
-        ]
-      }
-      newUser.permissions = rolePermissions[role] || []
+      // 根据角色自动分配权限（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
+      newUser.permissions = ROLE_PERMISSIONS[role] || []
 
       const res = await db.collection('users').add({ data: newUser })
       return { code: 0, data: { _id: res._id } }
@@ -108,37 +126,11 @@ exports.main = async (event, context) => {
         return { code: 400, message: '无法移除管理员权限' }
       }
 
-      // 根据新角色自动分配权限
-      const rolePermissions = {
-        admin: [
-          'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-          'product:view', 'product:edit',
-          'customer:view', 'customer:edit',
-          'sort:task',
-          'warehouse:confirm',
-          'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
-          'report:view', 'report:export', 'report:ledger',
-          'member:manage', 'permission:manage'
-        ],
-        orderer: [
-          'order:create', 'order:edit',
-          'product:view',
-          'customer:view',
-          'report:view'
-        ],
-        sorter: [
-          'sort:task'
-        ],
-        warehouse: [
-          'warehouse:confirm',
-          'product:view'
-        ]
-      }
-
+      // 根据新角色自动分配权限（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
       await db.collection('users').doc(event.userId).update({
         data: {
           role: event.role,
-          permissions: rolePermissions[event.role] || [],
+          permissions: ROLE_PERMISSIONS[event.role] || [],
           updatedAt: db.serverDate()
         }
       })

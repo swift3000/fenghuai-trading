@@ -229,8 +229,4 @@ Page({
     return html
   },
 
-  // 导出 Excel（预留功能）
-  handleExport() {
-    wx.showToast({ title: '导出功能开发中', icon: 'none' })
-  }
 })

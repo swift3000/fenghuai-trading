@@ -12,49 +12,6 @@
       👑 首次启动：您将成为<b>首位管理员</b>，无需任何配置。登录后即可管理成员与权限。
     </view>
 
-    <!-- 角色选择卡片 -->
-    <view class="role-grid">
-      <view 
-        class="role-card {{selectedRole === 'orderer' ? 'active' : ''}}" 
-        bindtap="selectRole" 
-        data-role="orderer"
-      >
-        <view class="role-icon">📝</view>
-        <view class="role-name">下单员</view>
-        <view class="role-example">张经理</view>
-      </view>
-      
-      <view 
-        class="role-card {{selectedRole === 'sorter' ? 'active' : ''}}" 
-        bindtap="selectRole" 
-        data-role="sorter"
-      >
-        <view class="role-icon">🔍</view>
-        <view class="role-name">分拣员</view>
-        <view class="role-example">周分拣</view>
-      </view>
-      
-      <view 
-        class="role-card {{selectedRole === 'warehouse' ? 'active' : ''}}" 
-        bindtap="selectRole" 
-        data-role="warehouse"
-      >
-        <view class="role-icon">📦</view>
-        <view class="role-name">库管</view>
-        <view class="role-example">李库管</view>
-      </view>
-      
-      <view 
-        class="role-card {{selectedRole === 'admin' ? 'active' : ''}}" 
-        bindtap="selectRole" 
-        data-role="admin"
-      >
-        <view class="role-icon">👑</view>
-        <view class="role-name">管理员</view>
-        <view class="role-example">王老板</view>
-      </view>
-    </view>
-
     <!-- 微信登录按钮 -->
     <button class="wechat-login-btn" bindtap="handleLogin" loading="{{loading}}">
       <view class="btn-icon">
