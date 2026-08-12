@@ -134,17 +134,26 @@ Page({
     this.refreshProducts()
   },
 
+  // 包价归一化：兼容 price_zero / price_unit 双字段口径
+  // （线上商品数据源字段为 price_unit，本地/DB 亦含 price_zero）
+  unitPrice(product) {
+    if (product == null) return null
+    return product.price_zero != null ? product.price_zero :
+           product.price_unit != null ? product.price_unit : null
+  },
+
   // 商品价格展示文案
   priceLine(mode, product) {
     const base = (product.unit || '').split('/')[0] || '包'
-    if (mode === 'case' && product.price_piece != null && product.price_zero != null) {
-      return `¥${product.price_piece} · ¥${product.price_zero}/${base}`
+    const up = this.unitPrice(product)
+    if (mode === 'case' && product.price_piece != null && up != null) {
+      return `¥${product.price_piece} · ¥${up}/${base}`
     }
     if (mode === 'piece' && product.price_piece != null) {
       return `¥${product.price_piece}/件`
     }
-    if (mode === 'unit' && product.price_zero != null) {
-      return `¥${product.price_zero}/${base}`
+    if (mode === 'unit' && up != null) {
+      return `¥${up}/${base}`
     }
     if (product.is_adjustable) return '下单时自填价格'
     return ''
@@ -175,7 +184,7 @@ Page({
       pricing_mode: mode,
       is_adjustable: product.is_adjustable || false,
       price_piece: product.price_piece != null ? product.price_piece : 0,
-      price_zero: product.price_zero != null ? product.price_zero : 0,
+      price_zero: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
       piece_qty: 0,
       zero_qty: 0,
       remark: ''
@@ -305,7 +314,7 @@ Page({
               pricing_mode: product.pricing_mode || 'case',
               is_adjustable: product.is_adjustable || false,
               price_piece: product.price_piece != null ? product.price_piece : 0,
-              price_zero: product.price_zero != null ? product.price_zero : 0,
+              price_zero: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
               piece_qty: 0,
               zero_qty: 0,
               remark: ''
