@@ -1,5 +1,10 @@
 {
   "devDependencies": {
-    "@cloudbase/node-sdk": "^3.18.3"
+    "@cloudbase/node-sdk": "^3.18.3",
+    "miniprogram-automator": "^0.12.1"
+  },
+  "scripts": {
+    "test": "node tests/automated-test.js",
+    "test:ui": "node tests/ui-automation-test.js"
   }
 }
