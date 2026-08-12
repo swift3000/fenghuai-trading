@@ -12,9 +12,9 @@
 
 // 商品数据（180 个）
 const PRODUCTS = [
-  {material_code:'1', name:"海藻碘", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:45, price_zero:0.75, unit:'包', is_adjustable:false},
-  {material_code:'2', name:"淮盐 400g", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:36, price_zero:0.72, unit:'包', is_adjustable:false},
-  {material_code:'3', name:"淮盐 500g", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:70, price_zero:1.75, unit:'包', is_adjustable:false}
+  {material_code:'1', name:"海藻碘", spec:'1×60', pricing_mode:'case', unit_piece_qty:60, price_piece:45, price_unit:0.75, unit:'包', is_adjustable:false},
+  {material_code:'2', name:"淮盐 400g", spec:'1×50', pricing_mode:'case', unit_piece_qty:50, price_piece:36, price_unit:0.72, unit:'包', is_adjustable:false},
+  {material_code:'3', name:"淮盐 500g", spec:'1×40', pricing_mode:'case', unit_piece_qty:40, price_piece:70, price_unit:1.75, unit:'包', is_adjustable:false}
 ];
 
 // 客户数据（284 个）

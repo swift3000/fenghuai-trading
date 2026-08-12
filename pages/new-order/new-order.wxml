@@ -44,9 +44,9 @@
         <view class="qty-box">
           <view class="qty-label">包数({{item.unit}})</view>
           <view class="qty-stepper">
-            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="-1" bindtap="adjustQty">−</view>
-            <input class="qty-input" type="number" value="{{item.zero_qty}}" data-index="{{index}}" data-field="zero_qty" bindinput="onQtyInput" />
-            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="1" bindtap="adjustQty">+</view>
+            <view class="step-btn" data-index="{{index}}" data-field="package_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.package_qty}}" data-index="{{index}}" data-field="package_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="package_qty" data-delta="1" bindtap="adjustQty">+</view>
           </view>
         </view>
       </view>
@@ -66,9 +66,9 @@
         <view class="qty-box">
           <view class="qty-label">数量({{item.unit}})</view>
           <view class="qty-stepper">
-            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="-1" bindtap="adjustQty">−</view>
-            <input class="qty-input" type="number" value="{{item.zero_qty}}" data-index="{{index}}" data-field="zero_qty" bindinput="onQtyInput" />
-            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="1" bindtap="adjustQty">+</view>
+            <view class="step-btn" data-index="{{index}}" data-field="package_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.package_qty}}" data-index="{{index}}" data-field="package_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="package_qty" data-delta="1" bindtap="adjustQty">+</view>
           </view>
         </view>
       </view>
@@ -81,7 +81,7 @@
         </view>
         <view class="price-box">
           <view class="price-label">包价(¥/{{item.unit}})</view>
-          <input class="price-input" type="digit" value="{{item.price_zero}}" data-index="{{index}}" data-field="price_zero" bindinput="onPriceInput" />
+          <input class="price-input" type="digit" value="{{item.price_unit}}" data-index="{{index}}" data-field="price_unit" bindinput="onPriceInput" />
         </view>
       </view>
       <view wx:elif="{{item.pricing_mode === 'piece'}}" class="price-group">
@@ -93,7 +93,7 @@
       <view wx:else class="price-group">
         <view class="price-box">
           <view class="price-label">单价(¥/{{item.unit}})</view>
-          <input class="price-input" type="digit" value="{{item.price_zero}}" data-index="{{index}}" data-field="price_zero" bindinput="onPriceInput" />
+          <input class="price-input" type="digit" value="{{item.price_unit}}" data-index="{{index}}" data-field="price_unit" bindinput="onPriceInput" />
         </view>
       </view>
 

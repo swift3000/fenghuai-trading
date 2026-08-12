@@ -71,7 +71,7 @@ exports.main = async (event, context) => {
         pricing_mode: p.pricing_mode,
         unit_piece_qty: p.unit_piece_qty,
         price_piece: p.price_piece,
-        price_zero: p.price_zero,
+        price_unit: (p.price_unit != null ? p.price_unit : p.price_zero),
         unit: p.unit,
         pinyin: p.pinyin,
         is_adjustable: p.is_adjustable
@@ -85,7 +85,7 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:edit')
       if (authResult.code !== 0) return authResult
 
-      const { name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_zero, unit, pinyin, is_adjustable } = event
+      const { name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable } = event
       
       const newProduct = {
         name,
@@ -94,7 +94,7 @@ exports.main = async (event, context) => {
         pricing_mode: pricing_mode || 'case',
         unit_piece_qty: unit_piece_qty !== undefined ? unit_piece_qty : 1,
         price_piece: price_piece !== undefined ? price_piece : null,
-        price_zero: price_zero !== undefined ? price_zero : null,
+        price_unit: price_unit !== undefined ? price_unit : null,
         unit: unit || '包',
         pinyin: pinyin !== undefined ? pinyin : '',
         is_adjustable: is_adjustable !== undefined ? is_adjustable : false,
@@ -113,7 +113,7 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:edit')
       if (authResult.code !== 0) return authResult
 
-      const { productId, name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_zero, unit, pinyin, is_adjustable } = event
+      const { productId, name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable } = event
       
       const updateData = {}
       if (name !== undefined) updateData.name = name
@@ -122,7 +122,7 @@ exports.main = async (event, context) => {
       if (pricing_mode !== undefined) updateData.pricing_mode = pricing_mode
       if (unit_piece_qty !== undefined) updateData.unit_piece_qty = unit_piece_qty
       if (price_piece !== undefined) updateData.price_piece = price_piece
-      if (price_zero !== undefined) updateData.price_zero = price_zero
+      if (price_unit !== undefined) updateData.price_unit = price_unit
       if (unit !== undefined) updateData.unit = unit
       if (pinyin !== undefined) updateData.pinyin = pinyin
       if (is_adjustable !== undefined) updateData.is_adjustable = is_adjustable

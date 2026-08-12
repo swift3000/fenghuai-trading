@@ -16,7 +16,7 @@
         <text class="product-name">{{item.name}}</text>
         <view class="price-display">
           <text class="price-piece">件价：¥{{item.price_piece}}</text>
-          <text class="price-zero">零价：¥{{item.price_zero}}</text>
+          <text class="price-unit">包价：¥{{item.price_unit}}</text>
         </view>
       </view>
       <text class="product-spec">{{item.material_code}} | {{item.spec}}</text>
@@ -94,7 +94,7 @@
         <text class="form-label">计价方式</text>
         <picker mode="selector" range="{{modeOptions}}" value="{{modeIndex}}" bindchange="onModeChange">
           <view class="picker">
-            {{modeOptions[modeIndex] === 'case' ? '件+零（按件和按零分别计价）' : (modeOptions[modeIndex] === 'piece' ? '仅按件' : '仅按零')}}
+            {{modeOptions[modeIndex] === 'case' ? '件+包（按件和按包分别计价）' : (modeOptions[modeIndex] === 'piece' ? '仅按件' : '仅按包')}}
           </view>
         </picker>
       </view>
@@ -123,10 +123,10 @@
         <input class="form-input" type="number" placeholder="请输入件价" value="{{formData.pricePiece}}" bindinput="onInputChange" data-field="pricePiece" />
       </view>
 
-      <!-- 零价 -->
+      <!-- 包价 -->
       <view class="form-group">
-        <text class="form-label">零价 (每{{formData.unit}}售价) <text class="required">*</text></text>
-        <input class="form-input" type="number" placeholder="请输入零价" value="{{formData.priceZero}}" bindinput="onInputChange" data-field="priceZero" />
+        <text class="form-label">包价 (每{{formData.unit}}售价) <text class="required">*</text></text>
+        <input class="form-input" type="number" placeholder="请输入包价" value="{{formData.priceUnit}}" bindinput="onInputChange" data-field="priceUnit" />
       </view>
     </scroll-view>
 

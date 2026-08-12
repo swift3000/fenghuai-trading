@@ -134,12 +134,10 @@ Page({
     this.refreshProducts()
   },
 
-  // 包价归一化：兼容 price_zero / price_unit 双字段口径
-  // （线上商品数据源字段为 price_unit，本地/DB 亦含 price_zero）
+  // 包价归一化：统一取 price_unit（唯一包价字段）
   unitPrice(product) {
     if (product == null) return null
-    return product.price_zero != null ? product.price_zero :
-           product.price_unit != null ? product.price_unit : null
+    return product.price_unit != null ? product.price_unit : null
   },
 
   // 商品价格展示文案
@@ -184,16 +182,16 @@ Page({
       pricing_mode: mode,
       is_adjustable: product.is_adjustable || false,
       price_piece: product.price_piece != null ? product.price_piece : 0,
-      price_zero: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
+      price_unit: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
       piece_qty: 0,
-      zero_qty: 0,
+      package_qty: 0,
       remark: ''
     }
     // 带出客户上次价格
     const last = (this._lastOrderItems || []).find(it => it.material_code === product.material_code)
     if (last) {
       if (last.price_piece != null) item.price_piece = last.price_piece
-      if (last.price_zero != null) item.price_zero = last.price_zero
+      if (last.price_unit != null) item.price_unit = last.price_unit
     }
     items.push(item)
     this.calcTotal()
@@ -300,7 +298,7 @@ Page({
           const existing = this.data.items.find(it => it.material_code === product.material_code)
           if (existing) {
             const mode = product.pricing_mode || 'case'
-            if (mode === 'unit') existing.zero_qty += qty
+            if (mode === 'unit') existing.package_qty += qty
             else existing.piece_qty += qty
             added.push(product.name)
           } else {
@@ -314,13 +312,13 @@ Page({
               pricing_mode: product.pricing_mode || 'case',
               is_adjustable: product.is_adjustable || false,
               price_piece: product.price_piece != null ? product.price_piece : 0,
-              price_zero: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
+              price_unit: this.unitPrice(product) != null ? this.unitPrice(product) : 0,
               piece_qty: 0,
-              zero_qty: 0,
+              package_qty: 0,
               remark: ''
             })
             const idx = this.data.items.length - 1
-            if (product.pricing_mode === 'unit') this.data.items[idx].zero_qty = qty
+            if (product.pricing_mode === 'unit') this.data.items[idx].package_qty = qty
             else this.data.items[idx].piece_qty = qty
             added.push(product.name)
           }
@@ -334,9 +332,9 @@ Page({
             pricing_mode: 'unit',
             is_adjustable: true,
             price_piece: 0,
-            price_zero: 0,
+            price_unit: 0,
             piece_qty: 0,
-            zero_qty: qty,
+            package_qty: qty,
             remark: ''
           })
           added.push(itemName)
@@ -369,7 +367,7 @@ Page({
       return
     }
     // 过滤 0件0个 的商品行
-    const items = this.data.items.filter(it => (it.piece_qty || 0) > 0 || (it.zero_qty || 0) > 0)
+    const items = this.data.items.filter(it => (it.piece_qty || 0) > 0 || (it.package_qty || 0) > 0)
     if (!items.length) {
       wx.showToast({ title: '无可提交商品', icon: 'none' })
       return

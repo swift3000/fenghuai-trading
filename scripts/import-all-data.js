@@ -145,7 +145,7 @@ async function importProducts() {
           pricing_mode: p.pricing_mode,
           unit_piece_qty: p.unit_piece_qty,
           price_piece: p.price_piece,  // 件价（整箱/整件的价格）
-          price_unit: p.price_zero,    // 包价（单包的价格）
+          price_unit: (p.price_unit != null ? p.price_unit : p.price_zero),    // 包价（单包的价格）
           unit: unit,  // 统一为'件'或'包'
           pinyin: p.pinyin || '',
           is_adjustable: p.is_adjustable,

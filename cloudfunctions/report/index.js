@@ -62,12 +62,12 @@ exports.main = async (event, context) => {
             if (rowAmount === 0) {
               const mode = item.pricing_mode || 'case'
               const pieceQty = item.piece_qty || 0
-              const zeroQty = item.zero_qty || 0
+              const packageQty = item.package_qty != null ? item.package_qty : item.zero_qty || 0
               if (mode === 'piece') rowAmount = pieceQty * (item.price_piece || 0)
-              else if (mode === 'unit') rowAmount = zeroQty * (item.price_zero || 0)
-              else rowAmount = pieceQty * (item.price_piece || 0) + zeroQty * (item.price_zero || 0)
+              else if (mode === 'unit') rowAmount = packageQty * (item.price_unit != null ? item.price_unit : item.price_zero || 0)
+              else rowAmount = pieceQty * (item.price_piece || 0) + packageQty * (item.price_unit != null ? item.price_unit : item.price_zero || 0)
             }
-            productMap[key].totalQty += item.qty || (Math.max(item.piece_qty || 0, item.zero_qty || 0))
+            productMap[key].totalQty += item.qty || (Math.max(item.piece_qty || 0, item.package_qty != null ? item.package_qty : item.zero_qty || 0))
             productMap[key].totalAmount += rowAmount
             productMap[key].orderCount += 1
           })

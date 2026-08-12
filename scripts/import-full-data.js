@@ -350,7 +350,7 @@ async function importProducts() {
         pricing_mode: p.pricing_mode,
         unit_piece_qty: p.unit_piece_qty,
         price_piece: p.price_piece,
-        price_unit: p.price_zero,
+        price_unit: (p.price_unit != null ? p.price_unit : p.price_zero),
         unit: unit,
         pinyin: p.pinyin || '',
         is_adjustable: p.is_adjustable,

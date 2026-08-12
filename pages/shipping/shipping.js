@@ -39,7 +39,7 @@ Page({
       const items = (order.items || []).map(it => {
         const qtyDesc = pricing.formatQtyCombined(it)
         const amount = it.amount != null ? it.amount : pricing.calcItemAmount(it)
-        const price = it.price != null ? it.price : (it.price_piece || it.price_zero || 0)
+        const price = it.price != null ? it.price : (it.price_piece || it.price_unit || it.price_zero || 0)
         const qty = it.qty != null ? it.qty : (Math.max(it.piece_qty || 0, it.zero_qty || 0))
         return Object.assign({}, it, { qtyDesc, amount, price, qty })
       })

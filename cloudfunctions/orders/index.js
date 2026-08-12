@@ -83,16 +83,16 @@ exports.main = async (event, context) => {
       const normalizedItems = (items || []).map(it => {
         const mode = it.pricing_mode || 'case'
         const pieceQty = it.piece_qty || 0
-        const zeroQty = it.zero_qty || 0
+        const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
         const pricePiece = it.price_piece || 0
-        const priceZero = it.price_zero || 0
+        const priceUnit = it.price_unit != null ? it.price_unit : (it.price_zero || 0)
         let amount = 0
         if (mode === 'piece') amount = pieceQty * pricePiece
-        else if (mode === 'unit') amount = zeroQty * priceZero
-        else amount = pieceQty * pricePiece + zeroQty * priceZero
+        else if (mode === 'unit') amount = packageQty * priceUnit
+        else amount = pieceQty * pricePiece + packageQty * priceUnit
         // 兼容旧字段
-        const qty = Math.max(pieceQty, zeroQty) || it.qty || 0
-        const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceZero || it.price || 0)
+        const qty = Math.max(pieceQty, packageQty) || it.qty || 0
+        const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
         return Object.assign({}, it, { qty, price, amount })
       })
       const today = new Date()

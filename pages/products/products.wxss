@@ -86,7 +86,7 @@
   color: #FF3B30;
 }
 
-.price-zero {
+.price-unit {
   font-size: 24rpx;
   color: #666;
   opacity: 0.85;
