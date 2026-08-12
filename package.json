@@ -1,7 +1,9 @@
 {
   "devDependencies": {
     "@cloudbase/node-sdk": "^3.18.3",
-    "miniprogram-automator": "^0.12.1"
+    "@resvg/resvg-js": "^2.6.2",
+    "miniprogram-automator": "^0.12.1",
+    "sharp": "^0.35.3"
   },
   "scripts": {
     "test": "node tests/automated-test.js",

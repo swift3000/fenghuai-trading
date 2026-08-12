@@ -102,7 +102,21 @@ const ROLE_TABBAR_CONFIG = {
 }
 
 /**
+ * 微信小程序 tabBar 的全部条目（顺序与 app.json 保持一致，索引即下标）
+ * 用于把「角色可见的 tab 列表」映射回固定索引，配合 setTabBarItem / showTabBarItem / hideTabBarItem
+ */
+const ALL_TAB_ITEMS = [
+  { index: 0, pagePath: 'pages/index/index' },
+  { index: 1, pagePath: 'pages/orders/orders' },
+  { index: 2, pagePath: 'pages/receivable/receivable' },
+  { index: 3, pagePath: 'pages/outbound/outbound' },
+  { index: 4, pagePath: 'pages/profile/profile' }
+]
+
+/**
  * 根据角色设置 TabBar
+ * 用标准 API wx.setTabBarItem（设置 icon/text）+ wx.showTabBarItem / wx.hideTabBarItem（按角色显隐）
+ * 替代非标准、真机上静默失败的 wx.setTabBarList
  * @param {string} role - 用户角色
  */
 function setTabBarByRole(role) {
@@ -113,10 +127,26 @@ function setTabBarByRole(role) {
   }
 
   try {
-    wx.setTabBarList({
-      tabBarList: tabBarConfig
+    // 该角色可见的 pagePath 集合
+    const visiblePaths = tabBarConfig.map(item => item.pagePath)
+
+    ALL_TAB_ITEMS.forEach(item => {
+      const config = tabBarConfig.find(c => c.pagePath === item.pagePath)
+      if (config) {
+        // 设置图标与文案（index 为固定下标，notSet 之外的字段会更新）
+        wx.setTabBarItem({
+          index: item.index,
+          text: config.text,
+          iconPath: config.iconPath,
+          selectedIconPath: config.selectedIconPath
+        })
+        wx.showTabBarItem({ index: item.index })
+      } else {
+        wx.hideTabBarItem({ index: item.index })
+      }
     })
-    console.log('TabBar 已更新为:', role)
+
+    console.log('TabBar 已更新为:', role, '可见 tab:', visiblePaths.join(','))
   } catch (err) {
     console.error('设置 TabBar 失败:', err)
   }
@@ -172,5 +202,6 @@ module.exports = {
   showTabBar,
   setTabBarBadge,
   removeTabBarBadge,
-  ROLE_TABBAR_CONFIG
+  ROLE_TABBAR_CONFIG,
+  ALL_TAB_ITEMS
 }
