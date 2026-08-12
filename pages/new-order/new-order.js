@@ -10,41 +10,13 @@ Page({
     showSmartModal: false,
     customerList: [],
     productList: [],
+    displayCustomers: [],
+    displayProducts: [],
     customerSearchKeyword: '',
     productSearchKeyword: '',
     smartInputText: '',
     smartInputLoading: false,
     smartPreviewItems: []
-  },
-
-  // 计算属性：过滤客户列表
-  get filteredCustomers() {
-    const keyword = this.data.customerSearchKeyword.toLowerCase().trim()
-    if (!keyword) return this.data.customerList
-    return this.data.customerList.filter(customer =>
-      (customer.name || '').toLowerCase().includes(keyword) ||
-      (customer.alias || '').toLowerCase().includes(keyword) ||
-      (customer.phone || '').includes(keyword) ||
-      (customer.contact || '').toLowerCase().includes(keyword)
-    )
-  },
-
-  // 计算属性：过滤商品列表（无关键词仅展示前 3 个常购/靠前商品）
-  get filteredProducts() {
-    const keyword = this.data.productSearchKeyword.toLowerCase().trim()
-    let list = this.data.productList
-    if (keyword) {
-      list = list.filter(product =>
-        (product.name || '').toLowerCase().includes(keyword) ||
-        (product.material_code && String(product.material_code).toLowerCase().includes(keyword)) ||
-        (product.pinyin && product.pinyin.toLowerCase().includes(keyword)) ||
-        (product.spec && product.spec.toLowerCase().includes(keyword))
-      )
-    } else {
-      list = list.slice(0, 8)
-    }
-    // 附加预计算价格展示文案
-    return list.map(p => Object.assign({}, p, { priceText: this.priceLine(p.pricing_mode || 'case', p) }))
   },
 
   onLoad(options) {
@@ -64,6 +36,7 @@ Page({
       const { callCloud } = require('../../utils/request')
       const res = await callCloud('customers', { action: 'list' })
       this.setData({ customerList: res || [] })
+      this.refreshCustomers()
     } catch (e) {
       console.error('加载客户失败', e)
     }
@@ -74,9 +47,45 @@ Page({
       const { callCloud } = require('../../utils/request')
       const res = await callCloud('products', { action: 'list' })
       this.setData({ productList: res || [] })
+      this.refreshProducts()
     } catch (e) {
       console.error('加载商品失败', e)
     }
+  },
+
+  // 根据搜索关键词计算当前展示客户（写进 this.data，WXML 才能读取）
+  refreshCustomers() {
+    const keyword = (this.data.customerSearchKeyword || '').toLowerCase().trim()
+    let list = this.data.customerList || []
+    if (keyword) {
+      list = list.filter(customer =>
+        (customer.name || '').toLowerCase().includes(keyword) ||
+        (customer.alias || '').toLowerCase().includes(keyword) ||
+        (customer.phone || '').includes(keyword) ||
+        (customer.contact || '').toLowerCase().includes(keyword)
+      )
+    }
+    this.setData({ displayCustomers: list })
+  },
+
+  // 根据搜索关键词计算当前展示商品（无关键词仅前 8 个，附价格文案）
+  refreshProducts() {
+    const keyword = (this.data.productSearchKeyword || '').toLowerCase().trim()
+    let list = this.data.productList || []
+    if (keyword) {
+      list = list.filter(product =>
+        (product.name || '').toLowerCase().includes(keyword) ||
+        (product.material_code && String(product.material_code).toLowerCase().includes(keyword)) ||
+        (product.pinyin && product.pinyin.toLowerCase().includes(keyword)) ||
+        (product.spec && product.spec.toLowerCase().includes(keyword))
+      )
+    } else {
+      list = list.slice(0, 8)
+    }
+    list = list.map(p => Object.assign({}, p, {
+      priceText: this.priceLine(p.pricing_mode || 'case', p)
+    }))
+    this.setData({ displayProducts: list })
   },
 
   loadOrder(id) {
@@ -94,6 +103,7 @@ Page({
 
   onCustomerSearch(e) {
     this.setData({ customerSearchKeyword: e.detail.value })
+    this.refreshCustomers()
   },
 
   async selectCustomerItem(e) {
@@ -121,6 +131,7 @@ Page({
 
   onProductSearch(e) {
     this.setData({ productSearchKeyword: e.detail.value })
+    this.refreshProducts()
   },
 
   // 商品价格展示文案
@@ -143,6 +154,7 @@ Page({
     const product = e.currentTarget.dataset.item
     this.addProductToItems(product)
     this.setData({ showProductModal: false, productSearchKeyword: '' })
+    this.refreshProducts()
   },
 
   // 将商品加入明细（默认数量 0，带上次价格）
