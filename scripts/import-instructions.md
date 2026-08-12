@@ -31,14 +31,14 @@
 ### 导入客户数据
 1. 进入 **数据库** → **customers** 集合
 2. 点击 **导入数据**
-3. 上传 `scripts/customers-data.json` 文件
+3. 上传 `scripts/customers-all.json` 文件
 
 ---
 
 ## 数据概览
 
 ### 商品数据（180 个）
-- 包含字段：material_code, name, spec, pricing_mode, unit_piece_qty, price_piece, price_zero, unit, pinyin, is_adjustable
+- 包含字段：material_code, name, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable
 - 示例：海藻碘、淮盐 400g、淮盐 500g 等
 
 ### 客户数据（284 个）
