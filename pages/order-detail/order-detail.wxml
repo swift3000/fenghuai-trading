@@ -37,7 +37,7 @@
       <text>状态：</text>
       <text class="payment-status-text {{paymentStatus === 'paid' ? 'text-success' : 'text-warning'}}">{{paymentStatusText}}</text>
     </view>
-    <view wx:if="{{paymentStatus === 'unpaid'}}" class="collect-btn">
+    <view wx:if="{{paymentStatus !== 'paid'}}" class="collect-btn">
       <button class="btn-primary" bindtap="handleCollect">登记收款</button>
     </view>
   </view>

@@ -45,9 +45,9 @@ exports.main = async (event, context) => {
       let query = db.collection('orders')
       
       if (viewTab === 'unpaid') {
-        // 未结清：有欠款（totalAmount > paidAmount）
+        // 未结清：有欠款（待确认或部分结清）
         query = query.where({
-          paymentStatus: db.command.in(['unpaid', 'partial'])
+          paymentStatus: db.command.in(['unpaid', 'pending'])
         })
       } else if (viewTab === 'settled') {
         // 已结清：已全额付款
@@ -76,7 +76,7 @@ exports.main = async (event, context) => {
       
       const orders = ordersResult.data
       
-      // 按客户维度聚合统计
+      // 按客户维度聚合统计（已收口径 = received_amount，含折价）
       const customerMap = {}
       orders.forEach(order => {
         const customerId = order.customerId
@@ -88,6 +88,7 @@ exports.main = async (event, context) => {
             contact: order.customerContact || '',
             phone: order.customerPhone || '',
             totalAmount: 0,
+            receivedAmount: 0,
             paidAmount: 0,
             unpaidAmount: 0,
             orderCount: 0,
@@ -96,16 +97,20 @@ exports.main = async (event, context) => {
         }
         
         const customer = customerMap[customerId]
-        customer.totalAmount += order.totalAmount || 0
-        customer.paidAmount += order.paidAmount || 0
-        customer.unpaidAmount += (order.totalAmount || 0) - (order.paidAmount || 0)
+        const total = order.totalAmount || 0
+        const received = order.received_amount || order.receivedAmount || 0
+        customer.totalAmount += total
+        customer.receivedAmount += received
+        customer.paidAmount += received
+        customer.unpaidAmount += Math.max(0, total - received)
         customer.orderCount += 1
         customer.orders.push({
           _id: order._id,
           orderNo: order.orderNo,
-          totalAmount: order.totalAmount,
-          paidAmount: order.paidAmount,
-          unpaidAmount: (order.totalAmount || 0) - (order.paidAmount || 0),
+          totalAmount: total,
+          receivedAmount: received,
+          paidAmount: received,
+          unpaidAmount: Math.max(0, total - received),
           status: order.status,
           paymentStatus: order.paymentStatus,
           createdAt: order.created_at
@@ -158,7 +163,7 @@ exports.main = async (event, context) => {
       
       const orders = ordersResult.data
       const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
-      const paidAmount = orders.reduce((sum, o) => sum + (o.paidAmount || 0), 0)
+      const paidAmount = orders.reduce((sum, o) => sum + (o.received_amount || o.receivedAmount || 0), 0)
       
       return {
         code: 0,
@@ -166,20 +171,19 @@ exports.main = async (event, context) => {
           orders,
           totalAmount,
           paidAmount,
-          unpaidAmount: totalAmount - paidAmount
+          unpaidAmount: Math.max(0, totalAmount - paidAmount)
         }
       }
     }
     
     case 'collect': {
-      // 登记收款（库管操作）
-      const { orderId, amount, paymentMethod, note } = event
+      // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
+      const { orderId, amount, paymentMethod, note, discount } = event
       
       if (!orderId || !amount || amount <= 0) {
         return { code: 4001, message: '订单 ID 和收款金额为必填' }
       }
       
-      // 获取订单信息
       const orderRes = await db.collection('orders').doc(orderId).get()
       const order = orderRes.data
       
@@ -187,77 +191,105 @@ exports.main = async (event, context) => {
         return { code: 4004, message: '订单不存在' }
       }
       
-      // 验证收款金额
-      const remainingAmount = (order.totalAmount || 0) - (order.paidAmount || 0)
+      // 剩余欠款 = 订单金额 − 累计实收 − 累计折价/货损
+      const received = order.received_amount || order.receivedAmount || 0
+      const totalDiscount = order.total_discount || order.totalDiscount || 0
+      const remainingAmount = Math.max(0, (order.totalAmount || 0) - received - totalDiscount)
       if (amount > remainingAmount) {
         return { code: 4002, message: `收款金额不能超过剩余欠款 ¥${remainingAmount.toFixed(2)}` }
       }
       
-      // 更新订单收款信息
-      const newPaidAmount = (order.paidAmount || 0) + amount
-      let newPaymentStatus = order.paymentStatus || 'pending'
-      
-      if (newPaidAmount >= order.totalAmount) {
-        newPaymentStatus = 'paid'
-      } else if (newPaidAmount > 0) {
-        newPaymentStatus = 'partial'
-      }
-      
-      const updateData = {
-        paidAmount: newPaidAmount,
-        paymentStatus: newPaymentStatus,
-        paymentRecord: db.command.push({
-          amount,
-          paymentMethod: paymentMethod || 'cash',
-          note: note || '',
-          paidAt: db.serverDate(),
-          collectedBy: cloud.getWXContext().OPENID
-        })
-      }
-      
-      await db.collection('orders').doc(orderId).update({ data: updateData })
-      
-      // 记录收款流水
-      await db.collection('payments').add({
+      // 登记收款：写入 payments（status=pending，待库管确认）；订单 unpaid→pending；实收在确认时才累加
+      const payRes = await db.collection('payments').add({
         data: {
+          order_id: orderId,
           orderId,
+          customer_id: order.customerId,
           customerId: order.customerId,
+          customer_name: order.customerName,
           customerName: order.customerName,
           amount,
-          paymentMethod: paymentMethod || 'cash',
+          discount: discount || 0,
+          method: paymentMethod || 'cash',
           note: note || '',
-          collectedBy: cloud.getWXContext().OPENID,
+          status: 'pending',
+          registered_by: cloud.getWXContext().OPENID,
+          registered_at: db.serverDate(),
           created_at: db.serverDate()
         }
       })
       
-      return { code: 0, data: {} }
+      // 订单状态：未收款 → 待确认（不改变实收金额，确认时再累加）
+      await db.collection('orders').doc(orderId).update({
+        data: {
+          payment_status: 'pending',
+          paymentStatus: 'pending'
+        }
+      })
+      
+      return { code: 0, data: { paymentId: payRes._id } }
     }
     
     case 'confirmPayment': {
-      // 确认收款（管理员确认）
-      const { orderId, note } = event
+      // 确认收款（两步流程第二步；库管/管理员可）
+      const { paymentId, orderId, note } = event
       
-      if (!orderId) {
-        return { code: 4001, message: '订单 ID 为必填' }
+      let payRes
+      if (paymentId) {
+        payRes = await db.collection('payments').doc(paymentId).get()
+      } else if (orderId) {
+        // 兼容：按订单取最近一条待确认记录
+        const list = await db.collection('payments')
+          .where({ orderId, status: 'pending' })
+          .orderBy('created_at', 'asc')
+          .limit(1)
+          .get()
+        payRes = list.data.length > 0 ? { data: list.data[0] } : null
       }
       
-      const orderRes = await db.collection('orders').doc(orderId).get()
-      const order = orderRes.data
-      
-      if (!order) {
-        return { code: 4004, message: '订单不存在' }
+      const pay = payRes && payRes.data
+      if (!pay) {
+        return { code: 4004, message: '待确认的收款记录不存在' }
       }
       
-      // 确认收款，更新状态
-      await db.collection('orders').doc(orderId).update({
+      const targetOrderId = pay.orderId || pay.order_id
+      if (!targetOrderId) {
+        return { code: 4001, message: '收款记录缺少订单 ID' }
+      }
+      
+      // 标记该笔收款为已确认
+      await db.collection('payments').doc(pay._id).update({
         data: {
-          paymentStatus: 'paid',
-          paymentConfirmedAt: db.serverDate(),
-          paymentConfirmedBy: cloud.getWXContext().OPENID,
-          paymentConfirmNote: note || ''
+          status: 'confirmed',
+          confirmed_by: cloud.getWXContext().OPENID,
+          confirmed_at: db.serverDate(),
+          confirm_note: note || ''
         }
       })
+      
+      // 重算订单：received_amount = Σ已确认实收；payment_status = 结清则 paid，否则 pending
+      const orderRes = await db.collection('orders').doc(targetOrderId).get()
+      const order = orderRes.data
+      if (order) {
+        const confirmedList = await db.collection('payments')
+          .where({ orderId: targetOrderId, status: 'confirmed' })
+          .get()
+        const confirmedAmount = confirmedList.data.reduce((sum, p) => sum + (p.amount || 0), 0)
+        const totalDiscount = order.total_discount || order.totalDiscount || 0
+        const total = order.totalAmount || 0
+        const newStatus = (total - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending'
+        await db.collection('orders').doc(targetOrderId).update({
+          data: {
+            received_amount: confirmedAmount,
+            receivedAmount: confirmedAmount,
+            payment_status: newStatus,
+            paymentStatus: newStatus,
+            paymentConfirmedAt: db.serverDate(),
+            paymentConfirmedBy: cloud.getWXContext().OPENID,
+            paymentConfirmNote: note || ''
+          }
+        })
+      }
       
       return { code: 0, data: {} }
     }

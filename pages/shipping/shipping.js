@@ -36,7 +36,15 @@ Page({
       
       const order = result
       const items = order.items || []
-      
+      // 兼容两种字段命名：received_amount（权威）/ paidAmount
+      if (order.received_amount !== undefined && order.paidAmount === undefined) {
+        order.receivedAmount = order.received_amount
+        order.paidAmount = order.received_amount
+        order.unpaidAmount = Math.max(0, (order.totalAmount || 0) - order.received_amount)
+      } else if (order.receivedAmount !== undefined) {
+        order.paidAmount = order.receivedAmount
+        order.unpaidAmount = Math.max(0, (order.totalAmount || 0) - order.receivedAmount)
+      }
       // 格式化日期
       const createdAt = order.created_at
       let orderDate = ''

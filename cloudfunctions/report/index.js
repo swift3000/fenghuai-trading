@@ -107,9 +107,10 @@ exports.main = async (event, context) => {
             }
           }
           const customer = customerMap[customerId]
+          const received = order.received_amount || order.receivedAmount || 0
           customer.totalAmount += order.totalAmount || 0
-          customer.paidAmount += order.paidAmount || 0
-          customer.unpaidAmount += (order.totalAmount || 0) - (order.paidAmount || 0)
+          customer.paidAmount += received
+          customer.unpaidAmount += Math.max(0, (order.totalAmount || 0) - received)
           customer.orderCount += 1
           customer.itemCount += (order.items || []).length
         })
@@ -144,7 +145,7 @@ exports.main = async (event, context) => {
         // 按收款方式统计
         const methodMap = {}
         payments.forEach(payment => {
-          const method = payment.paymentMethod || '其他'
+          const method = payment.method || payment.paymentMethod || '其他'
           if (!methodMap[method]) {
             methodMap[method] = {
               method,

@@ -45,6 +45,10 @@ Page({
     }
     this.loadCustomers()
     this.loadProducts()
+    // 首页智能录入入口：自动打开智能录入弹窗
+    if (options && options.smart === '1') {
+      this.setData({ showSmartModal: true })
+    }
   },
 
   async loadCustomers() {

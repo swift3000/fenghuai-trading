@@ -23,13 +23,13 @@ Page({
     try {
       const { callCloud } = require('../../utils/request')
       const order = await callCloud('orders', { action: 'detail', orderId: id })
-      const paymentStatus = order.paymentStatus || 'unpaid'
+      const paymentStatus = order.payment_status || order.paymentStatus || 'unpaid'
       this.setData({
         order,
         items: order.items || [],
         customer: order.customer || {},
         paymentStatus,
-        paymentStatusText: paymentStatus === 'paid' ? '已收款' : '未收款'
+        paymentStatusText: paymentStatus === 'paid' ? '已收款' : (paymentStatus === 'pending' ? '待确认' : '未收款')
       })
     } catch (e) {
       console.error('加载失败', e)
@@ -63,8 +63,10 @@ Page({
       wx.showToast({ title: '请输入正确的收款金额', icon: 'none' })
       return
     }
-    if (amount > this.data.order.totalAmount) {
-      wx.showToast({ title: '收款金额不能超过订单总额', icon: 'none' })
+    const received = this.data.order.received_amount || this.data.order.receivedAmount || 0
+    const remaining = Math.max(0, this.data.order.totalAmount - received)
+    if (amount > remaining) {
+      wx.showToast({ title: `收款金额不能超过剩余欠款 ¥${remaining}`, icon: 'none' })
       return
     }
 
@@ -72,14 +74,14 @@ Page({
     try {
       const { callCloud } = require('../../utils/request')
       const paymentMethod = this.data.paymentMethods[this.data.paymentMethodIndex]
-      await callCloud('orders', {
-        action: 'collectPayment',
+      await callCloud('receivable', {
+        action: 'collect',
         orderId: this.data.order._id,
         amount,
         paymentMethod,
         note: this.data.collectNote
       })
-      wx.showToast({ title: '收款成功', icon: 'success' })
+      wx.showToast({ title: '已登记收款，待库管确认', icon: 'success' })
       this.setData({ 
         showCollectModal: false, 
         collectAmount: '',

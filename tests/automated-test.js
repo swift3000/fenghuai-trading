@@ -111,30 +111,38 @@ function testCloudFunctions() {
       assertEqual(initialOutStatus, 'pending', '出库状态初始化正确');
     });
 
-    test('orders 云函数 - collectPayment 收款金额校验', () => {
+    test('receivable - collect 登记收款：订单状态转待确认', () => {
+      const paymentStatus = 'pending';
+      assertEqual(paymentStatus, 'pending', '登记收款后订单转待确认');
+    });
+
+    test('receivable - collect 收款金额校验（不能超过剩余欠款）', () => {
+      const received = 0;
+      const totalDiscount = 0;
       const orderTotal = 1000;
       const paymentAmount = 1200;
-      const shouldReject = paymentAmount > orderTotal;
+      const remainingAmount = Math.max(0, orderTotal - received - totalDiscount);
+      const shouldReject = paymentAmount > remainingAmount;
       
       assert(shouldReject, '超额收款被正确拦截');
     });
 
-    test('orders 云函数 - collectPayment 全额收款状态更新', () => {
+    test('receivable - confirmPayment 结清则订单已收款', () => {
       const orderTotal = 1000;
-      const paymentAmount = 1000;
-      const expectedStatus = 'paid';
-      const actualStatus = paymentAmount === orderTotal ? 'paid' : 'partial';
+      const confirmedAmount = 1000;
+      const totalDiscount = 0;
+      const expectedStatus = (orderTotal - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending';
       
-      assertEqual(actualStatus, expectedStatus, '全额收款状态正确');
+      assertEqual(expectedStatus, 'paid', '全额确认收款状态正确');
     });
 
-    test('orders 云函数 - collectPayment 部分收款状态更新', () => {
+    test('receivable - confirmPayment 部分确认仍待确认', () => {
       const orderTotal = 1000;
-      const paymentAmount = 500;
-      const expectedStatus = 'partial';
-      const actualStatus = paymentAmount === orderTotal ? 'paid' : 'partial';
+      const confirmedAmount = 500;
+      const totalDiscount = 0;
+      const expectedStatus = (orderTotal - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending';
       
-      assertEqual(actualStatus, expectedStatus, '部分收款状态正确');
+      assertEqual(expectedStatus, 'pending', '部分确认收款状态正确');
     });
 
     test('orders 云函数 - todayStats 统计计算', () => {

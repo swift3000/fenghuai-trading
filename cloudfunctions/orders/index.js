@@ -61,7 +61,6 @@ exports.main = async (event, context) => {
     'outboundList': 'warehouse:confirm',
     'confirmSort': 'sort:task',
     'confirmOut': 'warehouse:confirm',
-    'collectPayment': 'receivable:collect'
   }
   
   // 如果 action 不在权限映射中，跳过权限校验
@@ -85,7 +84,9 @@ exports.main = async (event, context) => {
       const orderNo = `丰淮商贸-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
       const order = {
         orderNo, customerId, customerName, items,
-        totalAmount, status: 'submitted', paymentStatus: 'unpaid',
+        totalAmount, status: 'submitted',
+        payment_status: 'unpaid', paymentStatus: 'unpaid',
+        received_amount: 0, receivedAmount: 0,
         sortStatus: 'pending', outStatus: 'pending',
         created_at: db.serverDate()
       }
@@ -185,41 +186,6 @@ exports.main = async (event, context) => {
           }
         })
       }
-      
-      return { code: 0, data: {} }
-    }
-    case 'collectPayment': {
-      const { orderId, amount, paymentMethod, note } = event
-      
-      const orderRes = await db.collection('orders').doc(orderId).get()
-      const order = orderRes.data
-      
-      if (!order) {
-        return { code: 4001, message: '订单不存在' }
-      }
-      
-      if (amount > order.totalAmount) {
-        return { code: 4002, message: '收款金额不能超过订单总额' }
-      }
-      
-      const updateData = {
-        paymentRecord: db.command.push({
-          amount,
-          paymentMethod,
-          note: note || '',
-          paidAt: db.serverDate()
-        })
-      }
-      
-      if (amount === order.totalAmount) {
-        updateData.paymentStatus = 'paid'
-      } else if (amount > 0) {
-        updateData.paymentStatus = 'partial'
-      }
-      
-      await db.collection('orders').doc(orderId).update({
-        data: updateData
-      })
       
       return { code: 0, data: {} }
     }
