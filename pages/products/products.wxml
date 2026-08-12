@@ -16,7 +16,7 @@
         <text class="product-name">{{item.name}}</text>
         <view class="price-display">
           <text class="price-piece">件价：¥{{item.price_piece}}</text>
-          <text class="price-unit">包价：¥{{item.price_unit}}</text>
+          <text class="price-unit">零价：¥{{item.price_zero}}</text>
         </view>
       </view>
       <text class="product-spec">{{item.material_code}} | {{item.spec}}</text>
@@ -89,10 +89,22 @@
         <input class="form-input" placeholder="请输入规格" value="{{formData.spec}}" bindinput="onInputChange" data-field="spec" />
       </view>
 
-      <!-- 描述 -->
+      <!-- 计价方式 -->
       <view class="form-group">
-        <text class="form-label">描述</text>
-        <textarea class="form-textarea" placeholder="请输入商品描述" value="{{formData.description}}" bindinput="onInputChange" data-field="description"></textarea>
+        <text class="form-label">计价方式</text>
+        <picker mode="selector" range="{{modeOptions}}" value="{{modeIndex}}" bindchange="onModeChange">
+          <view class="picker">
+            {{modeOptions[modeIndex] === 'case' ? '件+零（按件和按零分别计价）' : (modeOptions[modeIndex] === 'piece' ? '仅按件' : '仅按零')}}
+          </view>
+        </picker>
+      </view>
+
+      <!-- 允许调价 -->
+      <view class="form-group">
+        <label class="form-label-inline">
+          <switch checked="{{formData.isAdjustable}}" bindchange="onAdjustableChange" color="#07C160" />
+          <text class="form-label-caption">允许下单时调价</text>
+        </label>
       </view>
 
       <!-- 单位 -->
@@ -107,30 +119,14 @@
 
       <!-- 件价 -->
       <view class="form-group">
-        <text class="form-label">件价 (元/件) <text class="required">*</text></text>
+        <text class="form-label">件价 (每件售价) <text class="required">*</text></text>
         <input class="form-input" type="number" placeholder="请输入件价" value="{{formData.pricePiece}}" bindinput="onInputChange" data-field="pricePiece" />
       </view>
 
-      <!-- 包价 -->
+      <!-- 零价 -->
       <view class="form-group">
-        <text class="form-label">包价 (元/包) <text class="required">*</text></text>
-        <input class="form-input" type="number" placeholder="请输入包价" value="{{formData.priceUnit}}" bindinput="onInputChange" data-field="priceUnit" />
-      </view>
-
-      <!-- 库存 -->
-      <view class="form-group">
-        <text class="form-label">库存</text>
-        <input class="form-input" type="number" placeholder="请输入库存数量" value="{{formData.stock}}" bindinput="onInputChange" data-field="stock" />
-      </view>
-
-      <!-- 状态 -->
-      <view class="form-group">
-        <text class="form-label">状态</text>
-        <picker mode="selector" range="{{statusOptions}}" value="{{statusIndex}}" bindchange="onStatusChange">
-          <view class="picker">
-            {{statusOptions[statusIndex]}}
-          </view>
-        </picker>
+        <text class="form-label">零价 (每{{formData.unit}}售价) <text class="required">*</text></text>
+        <input class="form-input" type="number" placeholder="请输入零价" value="{{formData.priceZero}}" bindinput="onInputChange" data-field="priceZero" />
       </view>
     </scroll-view>
 

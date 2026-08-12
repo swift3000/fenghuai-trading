@@ -47,7 +47,7 @@ exports.main = async (event, context) => {
     if (products.data.length > 0) {
       console.log(`✅ 成功，获取到 ${products.data.length} 个商品`)
       const p = products.data[0]
-      console.log('   示例商品:', p.name, '| 件价:', p.price_piece, '| 包价:', p.price_unit, '| 模式:', p.pricing_mode)
+      const _priceUnit = p.price_unit != null ? p.price_unit : p.price_zero; console.log('   示例商品:', p.name, '| 件价:', p.price_piece, '| 包价:', _priceUnit, '| 模式:', p.pricing_mode)
       passed++
       results.push({ test: '查询商品列表', status: 'pass', message: `获取到 ${products.data.length} 个商品` })
     } else {
@@ -68,7 +68,7 @@ exports.main = async (event, context) => {
     let hasIssue = false
     let issueMsg = ''
     for (const p of products.data) {
-      if (!p.price_piece && !p.price_unit) {
+      if (!p.price_piece && !p.price_unit && !p.price_zero) {
         issueMsg = `商品 ${p.name} 缺少价格字段`
         hasIssue = true
         break
@@ -135,12 +135,12 @@ exports.main = async (event, context) => {
               _id: product._id,
               name: product.name,
               spec: product.spec || '',
-              price: product.price_unit || 0,
+              price: product.price_unit != null ? product.price_unit : (product.price_zero || 0),
               unit: product.unit || '包',
               qty: 2
             }
           ],
-          totalAmount: (product.price_unit || 0) * 2,
+          totalAmount: (product.price_unit != null ? product.price_unit : (product.price_zero || 0)) * 2,
           status: 'submitted',
           paymentStatus: 'unpaid',
           sortStatus: 'pending',

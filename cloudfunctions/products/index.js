@@ -71,14 +71,10 @@ exports.main = async (event, context) => {
         pricing_mode: p.pricing_mode,
         unit_piece_qty: p.unit_piece_qty,
         price_piece: p.price_piece,
-        price_unit: p.price_unit,
+        price_zero: p.price_zero,
         unit: p.unit,
         pinyin: p.pinyin,
-        is_adjustable: p.is_adjustable,
-        // 兼容旧字段
-        price: p.price_piece,
-        description: p.spec,
-        status: p.pricing_mode === 'case' ? 1 : 0
+        is_adjustable: p.is_adjustable
       }))
       
       return { code: 0, data: products }
@@ -89,18 +85,18 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:edit')
       if (authResult.code !== 0) return authResult
 
-      const { name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable } = event
+      const { name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_zero, unit, pinyin, is_adjustable } = event
       
       const newProduct = {
         name,
-        material_code: material_code || '',
-        spec: spec || '',
+        material_code: material_code !== undefined ? material_code : '',
+        spec: spec !== undefined ? spec : '',
         pricing_mode: pricing_mode || 'case',
-        unit_piece_qty: unit_piece_qty || 1,
-        price_piece: price_piece || 0,
-        price_unit: price_unit || 0,
+        unit_piece_qty: unit_piece_qty !== undefined ? unit_piece_qty : 1,
+        price_piece: price_piece !== undefined ? price_piece : null,
+        price_zero: price_zero !== undefined ? price_zero : null,
         unit: unit || '包',
-        pinyin: pinyin || '',
+        pinyin: pinyin !== undefined ? pinyin : '',
         is_adjustable: is_adjustable !== undefined ? is_adjustable : false,
         createdBy: openid,
         createdAt: db.serverDate(),
@@ -117,21 +113,20 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:edit')
       if (authResult.code !== 0) return authResult
 
-      const { productId, name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable } = event
+      const { productId, name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_zero, unit, pinyin, is_adjustable } = event
       
-      const updateData = {
-        name: name || event.name,
-        material_code: material_code !== undefined ? material_code : event.material_code,
-        spec: spec !== undefined ? spec : event.spec,
-        pricing_mode: pricing_mode || event.pricing_mode,
-        unit_piece_qty: unit_piece_qty !== undefined ? unit_piece_qty : event.unit_piece_qty,
-        price_piece: price_piece !== undefined ? price_piece : event.price_piece,
-        price_unit: price_unit !== undefined ? price_unit : event.price_unit,
-        unit: unit || event.unit,
-        pinyin: pinyin !== undefined ? pinyin : event.pinyin,
-        is_adjustable: is_adjustable !== undefined ? is_adjustable : event.is_adjustable,
-        updatedAt: db.serverDate()
-      }
+      const updateData = {}
+      if (name !== undefined) updateData.name = name
+      if (material_code !== undefined) updateData.material_code = material_code
+      if (spec !== undefined) updateData.spec = spec
+      if (pricing_mode !== undefined) updateData.pricing_mode = pricing_mode
+      if (unit_piece_qty !== undefined) updateData.unit_piece_qty = unit_piece_qty
+      if (price_piece !== undefined) updateData.price_piece = price_piece
+      if (price_zero !== undefined) updateData.price_zero = price_zero
+      if (unit !== undefined) updateData.unit = unit
+      if (pinyin !== undefined) updateData.pinyin = pinyin
+      if (is_adjustable !== undefined) updateData.is_adjustable = is_adjustable
+      updateData.updatedAt = db.serverDate()
 
       await db.collection('products').doc(productId).update({ data: updateData })
 

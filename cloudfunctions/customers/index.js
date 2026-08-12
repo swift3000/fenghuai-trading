@@ -60,22 +60,14 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission(openid, 'customer:edit')
       if (authResult.code !== 0) return authResult
 
-      const { name, alias, shortName, short_name, region_code, phone, contact, region, description, aliases } = event
-      
-      // 兼容 shortName 和 short_name 字段
-      const finalShortName = shortName || short_name || alias
+      const { name, alias, region, phone, contact } = event
       
       const newCustomer = {
         name,
-        alias,
-        shortName: finalShortName,
-        short_name: finalShortName,
-        region_code: region_code || '',
-        phone: phone || '',
-        contact: contact || '',
-        region: region || '',
-        description: description || '',
-        aliases: aliases || [],
+        alias: alias !== undefined ? alias : '',
+        region: region !== undefined ? region : '',
+        phone: phone !== undefined ? phone : '',
+        contact: contact !== undefined ? contact : '',
         createdBy: openid,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -89,25 +81,16 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission(openid, 'customer:edit')
       if (authResult.code !== 0) return authResult
 
-      const { customerId, name, alias, shortName, short_name, region_code, phone, contact, region, description, aliases } = event
-      
-      // 兼容 shortName 和 short_name 字段
-      const finalShortName = shortName || short_name || event.alias
+      const { customerId, name, alias, region, phone, contact } = event
       
       // 更新客户信息
-      const updateData = {
-        name: name || event.name,
-        alias: alias || event.alias,
-        shortName: finalShortName,
-        short_name: finalShortName,
-        region_code: region_code !== undefined ? region_code : event.region_code || '',
-        phone: phone || event.phone,
-        contact: contact || event.contact,
-        region: region || event.region || '',
-        description: description !== undefined ? description : event.description || '',
-        aliases: aliases !== undefined ? aliases : event.aliases || [],
-        updatedAt: db.serverDate()
-      }
+      const updateData = {}
+      if (name !== undefined) updateData.name = name
+      if (alias !== undefined) updateData.alias = alias
+      if (region !== undefined) updateData.region = region
+      if (phone !== undefined) updateData.phone = phone
+      if (contact !== undefined) updateData.contact = contact
+      updateData.updatedAt = db.serverDate()
       
       await db.collection('customers').doc(customerId).update({ 
         data: updateData

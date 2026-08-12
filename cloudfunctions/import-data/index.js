@@ -76,9 +76,7 @@ async function importCustomers() {
     alias: c.alias,
     region: c.region,
     phone: c.phone,
-    contact: c.contact || '',
-    shortName: c.alias || c.name,
-    description: ''
+    contact: c.contact || ''
   }))
   
   let successCount = 0
@@ -130,7 +128,7 @@ async function importProducts() {
     pricing_mode: p.pricing_mode,
     unit_piece_qty: p.unit_piece_qty,
     price_piece: p.price_piece,
-    price_unit: p.price_unit,
+    price_zero: p.price_zero,
     unit: p.unit,
     pinyin: p.pinyin || '',
     is_adjustable: p.is_adjustable

@@ -132,9 +132,9 @@ Page({
     if (product.pricing_mode === 'case') {
       price = product.price_piece || 0  // 按件计价，使用件价
     } else if (product.pricing_mode === 'piece') {
-      price = product.price_unit || 0  // 按个/按包计价，使用包价
+      price = product.price_zero != null ? product.price_zero : (product.price_unit || 0)  // 按个/按包计价，使用零价
     } else if (product.pricing_mode === 'unit') {
-      price = product.price_unit || 0  // 按单位计价，使用包价
+      price = product.price_zero != null ? product.price_zero : (product.price_unit || 0)  // 按单位计价，使用零价
     }
     
     items.push({
@@ -245,9 +245,9 @@ Page({
           if (product.pricing_mode === 'case') {
             price = product.price_piece || 0  // 按件计价，使用件价
           } else if (product.pricing_mode === 'piece') {
-            price = product.price_unit || 0  // 按个/按包计价，使用包价
+            price = product.price_zero != null ? product.price_zero : (product.price_unit || 0)  // 按个/按包计价，使用零价
           } else if (product.pricing_mode === 'unit') {
-            price = product.price_unit || 0  // 按单位计价，使用包价
+            price = product.price_zero != null ? product.price_zero : (product.price_unit || 0)  // 按单位计价，使用零价
           }
           
           const existingIndex = items.findIndex(item => item._id === product._id)

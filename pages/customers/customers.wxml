@@ -74,50 +74,28 @@
         <input class="form-input" placeholder="请输入客户名称" value="{{formData.name}}" bindinput="onInputChange" data-field="name" />
       </view>
 
-      <!-- 客户简称 -->
+      <!-- 简称 -->
       <view class="form-group">
-        <text class="form-label">客户简称</text>
-        <input class="form-input" placeholder="请输入客户简称" value="{{formData.shortName}}" bindinput="onInputChange" data-field="shortName" />
-      </view>
-
-      <!-- 别名 -->
-      <view class="form-group">
-        <text class="form-label">别名</text>
-        <input class="form-input" placeholder="请输入客户别名" value="{{formData.alias}}" bindinput="onInputChange" data-field="alias" />
-      </view>
-
-      <!-- 联系人 -->
-      <view class="form-group">
-        <text class="form-label">联系人 <text class="required">*</text></text>
-        <input class="form-input" placeholder="请输入联系人姓名" value="{{formData.contact}}" bindinput="onInputChange" data-field="contact" />
-      </view>
-
-      <!-- 电话 -->
-      <view class="form-group">
-        <text class="form-label">电话 <text class="required">*</text></text>
-        <input class="form-input" type="number" placeholder="请输入联系电话" value="{{formData.phone}}" bindinput="onInputChange" data-field="phone" />
+        <text class="form-label">简称</text>
+        <input class="form-input" placeholder="请输入客户简称" value="{{formData.alias}}" bindinput="onInputChange" data-field="alias" />
       </view>
 
       <!-- 区域 -->
       <view class="form-group">
         <text class="form-label">区域 <text class="required">*</text></text>
-        <picker mode="selector" range="{{regionOptions}}" range-key="name" value="{{regionIndex}}" bindchange="onRegionChange">
-          <view class="picker">
-            {{regionOptions.length > 0 ? regionOptions[regionIndex].name : '请选择区域'}}
-          </view>
-        </picker>
+        <input class="form-input" placeholder="请输入区域" value="{{formData.region}}" bindinput="onInputChange" data-field="region" />
       </view>
 
-      <!-- 描述 -->
+      <!-- 电话 -->
       <view class="form-group">
-        <text class="form-label">描述</text>
-        <textarea class="form-textarea" placeholder="请输入客户描述" value="{{formData.description}}" bindinput="onInputChange" data-field="description"></textarea>
+        <text class="form-label">电话</text>
+        <input class="form-input" type="number" placeholder="请输入联系电话" value="{{formData.phone}}" bindinput="onInputChange" data-field="phone" />
       </view>
 
-      <!-- 别名列表 -->
+      <!-- 联系人 -->
       <view class="form-group">
-        <text class="form-label">别名列表 (多个用逗号分隔)</text>
-        <textarea class="form-textarea" placeholder="请输入客户别名，多个用逗号或空格分隔" value="{{aliasesText}}" bindinput="onAliasesChange"></textarea>
+        <text class="form-label">联系人</text>
+        <input class="form-input" placeholder="请输入联系人姓名" value="{{formData.contact}}" bindinput="onInputChange" data-field="contact" />
       </view>
     </scroll-view>
 

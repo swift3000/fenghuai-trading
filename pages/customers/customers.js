@@ -298,25 +298,19 @@ Page({
     importing: false,
     importOverride: true,
     defaultCustomersCount: DEFAULT_CUSTOMERS.length,
-    regionOptions: [],
     formData: {
       name: '',
-      shortName: '',
       alias: '',
-      contact: '',
-      phone: '',
       region: '',
-      description: ''
-    },
-    aliasesText: '',
-    regionIndex: 0
+      phone: '',
+      contact: ''
+    }
   },
 
   onLoad() {
     if (!guardPageLoad(this)) {
       return
     }
-    this.loadRegions()
   },
 
   onShow() {
@@ -326,15 +320,6 @@ Page({
   onSearch(e) {
     this.setData({ searchKeyword: e.detail.value })
     this.loadCustomers()
-  },
-
-  async loadRegions() {
-    try {
-      const regions = await callCloud('customers', { action: 'regions' })
-      this.setData({ regionOptions: regions || [] })
-    } catch (e) {
-      console.error('加载区域失败', e)
-    }
   },
 
   async loadCustomers() {
@@ -358,37 +343,27 @@ Page({
       editingCustomer: null,
       formData: {
         name: '',
-        shortName: '',
         alias: '',
-        contact: '',
-        phone: '',
         region: '',
-        description: ''
-      },
-      aliasesText: '',
-      regionIndex: 0
+        phone: '',
+        contact: ''
+      }
     })
   },
 
   goEdit(e) {
     const item = e.currentTarget.dataset.item
-    const regionIndex = this.data.regionOptions.findIndex(r => r.name === item.region) >= 0 ? this.data.regionOptions.findIndex(r => r.name === item.region) : 0
-    const aliases = item.aliases || []
     
     this.setData({
       showForm: true,
       editingCustomer: item,
       formData: {
         name: item.name || '',
-        shortName: item.shortName || '',
         alias: item.alias || '',
-        contact: item.contact || '',
-        phone: item.phone || '',
         region: item.region || '',
-        description: item.description || ''
-      },
-      aliasesText: aliases.join(', '),
-      regionIndex
+        phone: item.phone || '',
+        contact: item.contact || ''
+      }
     })
   },
 
@@ -422,21 +397,6 @@ Page({
     })
   },
 
-  onAliasesChange(e) {
-    this.setData({
-      aliasesText: e.detail.value
-    })
-  },
-
-  onRegionChange(e) {
-    const index = e.detail.value
-    const region = this.data.regionOptions[index]
-    this.setData({
-      regionIndex: index,
-      [`formData.region`]: region.name
-    })
-  },
-
   closeForm() {
     this.setData({
       showForm: false,
@@ -445,38 +405,24 @@ Page({
   },
 
   async saveCustomer() {
-    const { formData, aliasesText, editingCustomer } = this.data
+    const { formData, editingCustomer } = this.data
 
     // 表单验证
     if (!formData.name) {
       wx.showToast({ title: '请输入客户名称', icon: 'none' })
       return
     }
-    if (!formData.contact) {
-      wx.showToast({ title: '请输入联系人', icon: 'none' })
-      return
-    }
-    if (!formData.phone) {
-      wx.showToast({ title: '请输入电话', icon: 'none' })
-      return
-    }
     if (!formData.region) {
-      wx.showToast({ title: '请选择区域', icon: 'none' })
+      wx.showToast({ title: '请输入区域', icon: 'none' })
       return
     }
-
-    // 处理别名
-    const aliasesArray = aliasesText.split(/[,,\s\n]+/).filter(a => a.trim())
 
     const customerData = {
       name: formData.name,
-      shortName: formData.shortName,
       alias: formData.alias,
-      contact: formData.contact,
-      phone: formData.phone,
       region: formData.region,
-      description: formData.description,
-      aliases: aliasesArray
+      phone: formData.phone,
+      contact: formData.contact
     }
 
     try {
@@ -526,7 +472,8 @@ Page({
   },
 
   async confirmImport() {
-    const { defaultCustomers, importOverride } = this.data
+    const { importOverride } = this.data
+    const defaultCustomers = DEFAULT_CUSTOMERS
     this.setData({ importing: true })
 
     try {
