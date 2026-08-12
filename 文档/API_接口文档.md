@@ -4,7 +4,7 @@
 > **编写日期**：2026-08-03  
 > **最后更新**：2026-08-04  
 > **状态**：已定稿  
-> **总接口数**：29 个 action（10 个云函数；含「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
+> **总接口数**：31 个 action（10 个云函数；含「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
 > **调用方式**：微信云函数（`wx.cloud.callFunction`）
 > **MVP 口径**：本文档已按 MVP（v1.0，2026-08-05）修订，MVP 为最终功能范围，无二期增强；接口契约以《小程序 MVP 落地计划与技术架构》为准。
 > **工期**：约 33 人天（MVP 生产化，详见《工期与工作量评估》）
@@ -33,7 +33,7 @@ const res = await app.callFunction({
 });
 ```
 
-### 1.2 云函数与 Action 对照表（10 个云函数，29 个 action）
+### 1.2 云函数与 Action 对照表（10 个云函数，31 个 action）
 
 | # | 云函数 | Action | 接口名 |
 |---|--------|--------|--------|
@@ -66,9 +66,10 @@ const res = await app.callFunction({
 | 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
 | 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
 | 29 | | transcribe | 语音转文字 |
-| 30 | report | — | 报表统计与导出（前端 SheetJS 拉全量数据后本地生成，无独立 action） |
+| 30 | report | summary | 报表统计（商品汇总/客户汇总/收款台账） |
+| 31 | | export | 报表导出（Excel/CSV） |
 
-> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数用于报表统计与导出（前端 SheetJS 拉全量数据后本地生成，见 §9 FAQ），无独立 action 行。
+> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数实现 `summary`/`export` 两个 action（源码另含 `trend` 趋势统计 action，MVP 前端当前用 summary/export）。
 
 ### 1.3 返回格式
 

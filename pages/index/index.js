@@ -1,71 +1,139 @@
+const app = getApp();
+
 Page({
   data: {
-    userInfo: null,
-    userRole: '',
-    roleText: '',
+    // 用户信息
+    userName: '',
+    userInitial: '',
+    roleName: '',
+    roleEmoji: '',
+    
+    // 日期
+    currentDate: '',
+    
+    // 公告
+    announcement: '欢迎使用丰淮商贸采购下单助手',
+    
+    // 统计数据
     todayOrders: 0,
     todayAmount: 0,
-    recentOrders: [],
-    notices: ['欢迎使用丰淮商贸采购下单助手']
+    
+    // 今日订单列表
+    todayOrdersList: []
   },
 
   onLoad() {
-    this.loadUserInfo()
+    this.loadUserInfo();
+    this.loadTodayStats();
+    this.loadTodayOrders();
+    this.loadCurrentDate();
   },
 
-  onShow() {
-    this.loadTodayStats()
-    this.loadRecentOrders()
-  },
-
+  // 加载用户信息
   loadUserInfo() {
-    const userInfo = wx.getStorageSync('userInfo')
-    const userRole = wx.getStorageSync('userRole')
-    const roleTextMap = { orderer: '下单员', sorter: '分拣员', warehouse: '库管', admin: '管理员' }
+    const currentUser = app.globalData.currentUser || wx.getStorageSync('currentUser') || {};
+    const role = currentUser.role || 'orderer';
+    
+    const roleMap = {
+      orderer: { name: '下单员', emoji: '📝' },
+      sorter: { name: '分拣员', emoji: '🔍' },
+      warehouse: { name: '库管', emoji: '📦' },
+      admin: { name: '管理员', emoji: '👑' }
+    };
+    
+    const roleInfo = roleMap[role] || roleMap.orderer;
+    const userName = currentUser.name || '用户';
+    const userInitial = userName.charAt(0);
+    
     this.setData({
-      userInfo,
-      userRole,
-      roleText: roleTextMap[userRole] || ''
-    })
+      userName,
+      userInitial,
+      roleName: roleInfo.name,
+      roleEmoji: roleInfo.emoji
+    });
   },
 
+  // 加载当前日期
+  loadCurrentDate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const weekDay = weekDays[now.getDay()];
+    
+    this.setData({
+      currentDate: `${year}年${month}月${day}日 ${weekDay}`
+    });
+  },
+
+  // 加载今日统计
   async loadTodayStats() {
     try {
-      const { callCloud } = require('../../utils/request')
-      const stats = await callCloud('orders', { action: 'todayStats' })
-      this.setData({ todayOrders: stats.count || 0, todayAmount: stats.amount || 0 })
-    } catch (e) {
-      console.log('加载今日统计失败', e)
+      // 模拟数据 - 实际应该从云函数获取
+      const todayOrders = 0;
+      const todayAmount = 0;
+      
+      this.setData({
+        todayOrders,
+        todayAmount
+      });
+    } catch (error) {
+      console.error('加载今日统计失败:', error);
     }
   },
 
-  async loadRecentOrders() {
+  // 加载今日订单列表
+  async loadTodayOrders() {
     try {
-      const { callCloud } = require('../../utils/request')
-      const orders = await callCloud('orders', { action: 'list', limit: 5 })
-      this.setData({ recentOrders: orders || [] })
-    } catch (e) {
-      console.log('加载最近订单失败', e)
+      // 模拟数据 - 实际应该从云函数获取
+      const todayOrdersList = [];
+      
+      this.setData({
+        todayOrdersList
+      });
+    } catch (error) {
+      console.error('加载今日订单失败:', error);
     }
   },
 
+  // 跳转到新建订单
   goToNewOrder() {
-    wx.navigateTo({ url: '/pages/new-order/new-order' })
+    wx.navigateTo({ url: '/pages/new-order/new-order' });
   },
 
+  // 跳转到商品管理
   goToProducts() {
-    wx.navigateTo({ url: '/pages/products/products' })
+    wx.navigateTo({ url: '/pages/products/products' });
   },
 
+  // 跳转到客户管理
   goToCustomers() {
-    wx.navigateTo({ url: '/pages/customers/customers' })
+    wx.navigateTo({ url: '/pages/customers/customers' });
   },
 
+  // 跳转到报表
+  goToReports() {
+    wx.navigateTo({ url: '/pages/reports/reports' });
+  },
+
+  // 跳转到订单列表
+  goToOrders() {
+    wx.navigateTo({ url: '/pages/orders/orders' });
+  },
+
+  // 跳转到智能录入
   goToSmartInput() {
-    this.setData({ showSmartInput: true })
+    wx.navigateTo({ url: '/pages/smart-input/smart-input' });
   },
 
-  goToAllOrders() {
-    wx.switchTab({ url: '/pages/orders/orders' })
+  // 跳转到订单详情
+  goToOrderDetail(e) {
+    const id = e.currentTarget.dataset.id;
+    if (id) {
+      wx.navigateTo({
+        url: `/pages/order-detail/order-detail?id=${id}`
+      });
+    }
   }
-})
+});

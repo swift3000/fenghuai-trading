@@ -1,0 +1,76 @@
+<view class="container">
+  <view class="page-header">
+    <text class="header-title">系统配置</text>
+    <text class="header-subtitle">AI 服务与打印机配置</text>
+  </view>
+
+  <!-- AI 服务配置 -->
+  <view class="config-section card">
+    <view class="section-header">
+      <text class="section-title">AI 服务配置</text>
+      <text class="section-desc">阿里云语音识别与千问大模型</text>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">阿里云 AppKey</text>
+      <input class="form-input" placeholder="请输入阿里云 AppKey" value="{{aiConfig.appKey}}" bindinput="onAiInputChange" data-field="appKey" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">阿里云 AccessKey ID</text>
+      <input class="form-input" placeholder="请输入 AccessKey ID" value="{{aiConfig.accessKeyId}}" bindinput="onAiInputChange" data-field="accessKeyId" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">阿里云 AccessKey Secret</text>
+      <input class="form-input" type="password" placeholder="请输入 AccessKey Secret" value="{{aiConfig.accessKeySecret}}" bindinput="onAiInputChange" data-field="accessKeySecret" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">千问模型 API Key</text>
+      <input class="form-input" type="password" placeholder="请输入千问模型 API Key" value="{{aiConfig.qwenApiKey}}" bindinput="onAiInputChange" data-field="qwenApiKey" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">千问模型名称</text>
+      <picker mode="selector" range="{{qwenModelOptions}}" value="{{qwenModelIndex}}" bindchange="onQwenModelChange">
+        <view class="picker">
+          {{qwenModelOptions[qwenModelIndex]}}
+        </view>
+      </picker>
+    </view>
+  </view>
+
+  <!-- 打印机配置 -->
+  <view class="config-section card">
+    <view class="section-header">
+      <text class="section-title">打印机配置</text>
+      <text class="section-desc">云打印服务配置</text>
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">打印机 API 地址</text>
+      <input class="form-input" placeholder="请输入打印机 API 地址" value="{{printerConfig.apiUrl}}" bindinput="onPrinterInputChange" data-field="apiUrl" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">打印机 API Key</text>
+      <input class="form-input" type="password" placeholder="请输入打印机 API Key" value="{{printerConfig.apiKey}}" bindinput="onPrinterInputChange" data-field="apiKey" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">打印机 ID</text>
+      <input class="form-input" placeholder="请输入默认打印机 ID" value="{{printerConfig.printerId}}" bindinput="onPrinterInputChange" data-field="printerId" />
+    </view>
+
+    <view class="form-group">
+      <text class="form-label">纸张宽度 (mm)</text>
+      <input class="form-input" type="number" placeholder="默认 58" value="{{printerConfig.paperWidth}}" bindinput="onPrinterInputChange" data-field="paperWidth" />
+    </view>
+  </view>
+
+  <!-- 保存按钮 -->
+  <view class="btn-group">
+    <button class="btn btn-primary" bindtap="saveConfig" loading="{{saving}}">{{saving ? '保存中...' : '保存配置'}}</button>
+  </view>
+</view>

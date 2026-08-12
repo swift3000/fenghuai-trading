@@ -36,6 +36,137 @@ function fuzzyMatch(text, candidates, threshold) {
   return results
 }
 
+function extractQuantity(text) {
+  const qtyPatterns = [
+    /(\d+(?:\.\d+)?)\s*件/,
+    /(\d+(?:\.\d+)?)\s*箱/,
+    /(\d+(?:\.\d+)?)\s*包/,
+    /(\d+(?:\.\d+)?)\s*个/,
+    /(\d+(?:\.\d+)?)\s*瓶/,
+    /(\d+(?:\.\d+)?)\s*罐/,
+    /(\d+(?:\.\d+)?)\s*袋/,
+    /(\d+(?:\.\d+)?)\s*盒/,
+    /(\d+(?:\.\d+)?)\s*桶/,
+    /(\d+(?:\.\d+)?)\s*打/,
+    /(\d+(?:\.\d+)?)\s*捆/,
+    /(\d+(?:\.\d+)?)\s*包/,
+    /(\d+(?:\.\d+)?)\s*包/,
+    /(\d+(?:\.\d+)?)\s*箱/,
+    /(\d+(?:\.\d+)?)\s*条/,
+    /(\d+(?:\.\d+)?)\s*包/,
+    /(\d+(?:\.\d+)?)\s*包/
+  ]
+  
+  for (const pattern of qtyPatterns) {
+    const match = text.match(pattern)
+    if (match) {
+      return parseFloat(match[1])
+    }
+  }
+  
+  const simpleQty = text.match(/(\d+(?:\.\d+)?)/)
+  if (simpleQty) {
+    return parseFloat(simpleQty[1])
+  }
+  
+  return 1
+}
+
+function extractProductName(text, products) {
+  const commonWords = ['给', '发', '要', '买', '订', '货', '的', '了', '个', '件', '箱', '包', '瓶', '罐', '袋', '盒', '桶', '打', '捆', '条']
+  let cleanText = text
+  for (const word of commonWords) {
+    cleanText = cleanText.replace(word, ' ')
+  }
+  cleanText = cleanText.replace(/\d+(?:\.\d+)?/g, ' ')
+  cleanText = cleanText.replace(/[^\w\u4e00-\u9fa5\s]/g, ' ')
+  cleanText = cleanText.trim()
+  
+  const words = cleanText.split(/\s+/).filter(w => w.length > 1)
+  
+  for (const word of words) {
+    const matches = fuzzyMatch(word, products, 0.7)
+    if (matches.length > 0 && matches[0].score >= 0.7) {
+      return matches[0]
+    }
+  }
+  
+  for (const product of products) {
+    if (cleanText.includes(product.name)) {
+      return product
+    }
+  }
+  
+  const allMatches = fuzzyMatch(cleanText, products, 0.6)
+  if (allMatches.length > 0) {
+    return allMatches[0]
+  }
+  
+  return null
+}
+
+function parseOrderText(text, products) {
+  const items = []
+  const patterns = [
+    /(\d+(?:\.\d+)?)\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)(.+?)(?=\d+(?:\.\d+)?\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)|$)/g,
+    /(.+?)(\d+(?:\.\d+)?)\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)(.+?)(?=\d+(?:\.\d+)?\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)|$)/g
+  ]
+  
+  let match
+  const regex = /(\d+(?:\.\d+)?)\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)([^件箱包包个瓶罐袋盒桶打捆条]+)/g
+  while ((match = regex.exec(text)) !== null) {
+    const qty = parseFloat(match[1])
+    const unit = match[2]
+    const productName = match[3].trim()
+    
+    let product = null
+    for (const p of products) {
+      if (productName.includes(p.name) || p.name.includes(productName)) {
+        product = p
+        break
+      }
+    }
+    
+    if (!product) {
+      const matches = fuzzyMatch(productName, products, 0.65)
+      if (matches.length > 0) {
+        product = matches[0]
+      }
+    }
+    
+    if (product) {
+      items.push({
+        _id: product._id,
+        name: product.name,
+        spec: product.spec || '',
+        price: product.pricePiece || 0,
+        qty: qty
+      })
+    }
+  }
+  
+  if (items.length === 0) {
+    const words = text.split(/[\s，,、]+/).filter(w => w.length > 1)
+    for (const word of words) {
+      if (word.match(/\d/)) continue
+      const product = extractProductName(word, products)
+      if (product) {
+        const qty = extractQuantity(text)
+        items.push({
+          _id: product._id,
+          name: product.name,
+          spec: product.spec || '',
+          price: product.pricePiece || 0,
+          qty: qty
+        })
+        break
+      }
+    }
+  }
+  
+  return items
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   switch (action) {
@@ -48,9 +179,27 @@ exports.main = async (event, context) => {
       const customerResults = fuzzyMatch(text, customers.data, 0.6)
       return { code: 0, data: { products: productResults, customers: customerResults } }
     }
+    
     case 'transcribe': {
       return { code: 0, data: { text: event.audioText || '' } }
     }
+    
+    case 'parse': {
+      const { text } = event
+      if (!text) return { code: 5002, message: 'text 参数为空' }
+      
+      const productsResult = await db.collection('products').where({ status: 1 }).get()
+      const products = productsResult.data
+      
+      if (products.length === 0) {
+        return { code: 5003, message: '暂无商品数据' }
+      }
+      
+      const items = parseOrderText(text, products)
+      
+      return { code: 0, data: { items } }
+    }
+    
     default:
       return { code: 1001, message: '未知 action' }
   }

@@ -1,55 +1,97 @@
 <view class="container">
-  <view class="user-info card">
-    <text class="greeting">你好，{{userInfo.name || '用户'}}</text>
-    <text class="role-badge">{{roleText}}</text>
+  <!-- 隐私政策横幅 -->
+  <view class="privacy-banner">
+    <text class="privacy-icon">🔒</text>
+    <text class="privacy-text">本应用遵循《隐私政策》，仅收集必要信息用于业务处理</text>
+    <text class="privacy-link">查看 ›</text>
+    <text class="privacy-close">✕</text>
   </view>
 
-  <view class="notice-bar" wx:if="{{notices.length}}">
-    <text>{{notices[0]}}</text>
-  </view>
-
-  <view class="stats-row">
-    <view class="stat-item card">
-      <text class="stat-value">{{todayOrders}}</text>
-      <text class="stat-label">今日订单</text>
-    </view>
-    <view class="stat-item card">
-      <text class="stat-value">{{todayAmount}}</text>
-      <text class="stat-label">今日金额</text>
-    </view>
-  </view>
-
-  <view class="smart-input-card card" bindtap="goToSmartInput">
-    <text class="smart-input-title">🗣 智能录入</text>
-    <text class="smart-input-desc">文字/语音快速下单</text>
-  </view>
-
-  <view class="quick-actions">
-    <view class="action-item" bindtap="goToNewOrder">
-      <text class="action-icon">📝</text>
-      <text class="action-text">新建订单</text>
-    </view>
-    <view class="action-item" bindtap="goToProducts">
-      <text class="action-icon">📦</text>
-      <text class="action-text">商品管理</text>
-    </view>
-    <view class="action-item" bindtap="goToCustomers">
-      <text class="action-icon">👥</text>
-      <text class="action-text">客户管理</text>
-    </view>
-  </view>
-
-  <view class="section-title">今日订单</view>
-  <view class="order-list">
-    <view class="order-item card" wx:for="{{recentOrders}}" wx:key="_id">
-      <view class="flex-between">
-        <text class="order-customer">{{item.customerName}}</text>
-        <text class="order-amount">¥{{item.totalAmount}}</text>
+  <!-- Hero 区域 -->
+  <view class="home-hero">
+    <view class="user-row">
+      <view class="avatar">{{userInitial}}</view>
+      <view class="user-info">
+        <text class="greeting">你好，{{userName}} {{roleEmoji}}</text>
+        <text class="date">{{currentDate}}</text>
       </view>
-      <text class="order-status">{{item.statusText}}</text>
+      <view class="role-badge">{{roleName}}</view>
     </view>
-    <view class="view-all" bindtap="goToAllOrders" wx:if="{{recentOrders.length}}">
-      <text>查看全部 →</text>
+  </view>
+
+  <!-- 公告栏 -->
+  <view class="announce-bar">
+    <text class="announce-icon">📢</text>
+    <view class="announce-content">
+      <text class="announce-text">{{announcement}}</text>
+      <view class="announce-dots">
+        <view class="announce-dot active"></view>
+        <view class="announce-dot"></view>
+        <view class="announce-dot"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 统计卡片 -->
+  <view class="home-stats">
+    <view class="stat">
+      <text class="num">{{todayOrders}}</text>
+      <text class="lbl">今日订单</text>
+    </view>
+    <view class="stat">
+      <text class="num">¥{{todayAmount}}</text>
+      <text class="lbl">今日金额</text>
+    </view>
+  </view>
+
+  <!-- 智能录入入口 -->
+  <view class="smart-home-card" bindtap="goToSmartInput">
+    <view class="smart-home-icon">🤖</view>
+    <view class="smart-home-content">
+      <text class="smart-home-title">智能录入</text>
+      <text class="smart-home-desc">文字/语音快速下单</text>
+    </view>
+    <text class="smart-home-arrow">›</text>
+  </view>
+
+  <!-- 快捷操作 -->
+  <view class="home-actions">
+    <view class="action" bindtap="goToNewOrder">
+      <view class="icon c1">📝</view>
+      <text class="lbl">新建订单</text>
+    </view>
+    <view class="action" bindtap="goToProducts">
+      <view class="icon c2">📦</view>
+      <text class="lbl">商品管理</text>
+    </view>
+    <view class="action" bindtap="goToCustomers">
+      <view class="icon c3">🏪</view>
+      <text class="lbl">客户管理</text>
+    </view>
+    <view class="action" bindtap="goToReports">
+      <view class="icon c4">📊</view>
+      <text class="lbl">报表导出</text>
+    </view>
+  </view>
+
+  <!-- 今日订单列表 -->
+  <view class="section-title">
+    <text>今日订单</text>
+    <text class="more" bindtap="goToOrders">查看全部 ›</text>
+  </view>
+  <view class="card order-list-container">
+    <view class="order-list-item" wx:for="{{todayOrdersList}}" wx:key="_id" bindtap="goToOrderDetail" data-id="{{item._id}}">
+      <view class="left">
+        <text class="customer">{{item.customerName}}</text>
+        <text class="sub">{{item.time}} · {{item.itemCount}} 件商品</text>
+      </view>
+      <view class="right">
+        <text class="amount">¥{{item.totalAmount}}</text>
+        <text class="status {{item.status}}">{{item.statusText}}</text>
+      </view>
+    </view>
+    <view class="empty-hint" wx:if="{{todayOrdersList.length === 0}}">
+      <text>暂无今日订单</text>
     </view>
   </view>
 </view>

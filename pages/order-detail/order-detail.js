@@ -4,7 +4,13 @@ Page({
     items: [],
     customer: null,
     paymentStatus: '',
-    paymentStatusText: ''
+    paymentStatusText: '',
+    showCollectModal: false,
+    collectAmount: '',
+    collectNote: '',
+    paymentMethods: ['现金', '微信', '支付宝', '银行转账'],
+    paymentMethodIndex: 0,
+    collectLoading: false
   },
 
   onLoad(options) {
@@ -17,20 +23,75 @@ Page({
     try {
       const { callCloud } = require('../../utils/request')
       const order = await callCloud('orders', { action: 'detail', orderId: id })
+      const paymentStatus = order.paymentStatus || 'unpaid'
       this.setData({
         order,
         items: order.items || [],
         customer: order.customer || {},
-        paymentStatus: order.paymentStatus || 'unpaid',
-        paymentStatusText: order.paymentStatusText || '未收款'
+        paymentStatus,
+        paymentStatusText: paymentStatus === 'paid' ? '已收款' : '未收款'
       })
     } catch (e) {
+      console.error('加载失败', e)
       wx.showToast({ title: '加载失败', icon: 'none' })
     }
   },
 
   handleCollect() {
-    wx.showToast({ title: '登记收款', icon: 'none' })
+    this.setData({ showCollectModal: true })
+  },
+
+  closeCollectModal() {
+    this.setData({ showCollectModal: false })
+  },
+
+  onCollectAmountChange(e) {
+    this.setData({ collectAmount: e.detail.value })
+  },
+
+  onCollectNoteChange(e) {
+    this.setData({ collectNote: e.detail.value })
+  },
+
+  onPaymentMethodChange(e) {
+    this.setData({ paymentMethodIndex: e.detail.value })
+  },
+
+  async confirmCollect() {
+    const amount = parseFloat(this.data.collectAmount)
+    if (!amount || amount <= 0) {
+      wx.showToast({ title: '请输入正确的收款金额', icon: 'none' })
+      return
+    }
+    if (amount > this.data.order.totalAmount) {
+      wx.showToast({ title: '收款金额不能超过订单总额', icon: 'none' })
+      return
+    }
+
+    this.setData({ collectLoading: true })
+    try {
+      const { callCloud } = require('../../utils/request')
+      const paymentMethod = this.data.paymentMethods[this.data.paymentMethodIndex]
+      await callCloud('orders', {
+        action: 'collectPayment',
+        orderId: this.data.order._id,
+        amount,
+        paymentMethod,
+        note: this.data.collectNote
+      })
+      wx.showToast({ title: '收款成功', icon: 'success' })
+      this.setData({ 
+        showCollectModal: false, 
+        collectAmount: '',
+        collectNote: '',
+        collectLoading: false
+      })
+      this.loadOrderDetail(this.data.order._id)
+    } catch (e) {
+      console.error('收款失败', e)
+      wx.showToast({ title: '收款失败', icon: 'none' })
+      this.setData({ collectLoading: false })
+    }
   },
 
   handlePrint() {

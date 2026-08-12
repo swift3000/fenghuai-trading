@@ -1,4 +1,222 @@
-.report-tabs,.time-tabs{display:flex;gap:12rpx;margin-bottom:16rpx}
-.tab{flex:1;text-align:center;padding:14rpx;background:#fff;border-radius:8rpx;font-size:24rpx}
-.tab.active{background:#1a73e8;color:#fff}
-.data-row{padding:16rpx 24rpx;display:flex;justify-content:space-between}
+/* 容器 */
+.container {
+  padding: 20rpx;
+  background: #F5F6F8;
+  min-height: 100vh;
+}
+
+/* 卡片 */
+.card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 统计概览 */
+.overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 12rpx;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 8rpx;
+}
+
+.stat-value {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* 报表标签 */
+.report-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 18rpx 0;
+  background: #ffffff;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  color: #666666;
+  transition: all 0.3s;
+}
+
+.tab.active {
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  color: #ffffff;
+  font-weight: bold;
+  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
+}
+
+/* 时间标签 */
+.time-tabs {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 20rpx;
+}
+
+.time-tab {
+  flex: 1;
+  padding: 14rpx 0;
+  background: #ffffff;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #666666;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.time-tab.active {
+  background: #06AD56;
+  color: #ffffff;
+}
+
+/* 数据列表 */
+.report-data {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.data-row {
+  padding: 24rpx;
+  transition: all 0.3s;
+}
+
+.data-row:active {
+  transform: scale(0.98);
+}
+
+.data-main {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16rpx;
+}
+
+.data-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 4rpx;
+}
+
+.data-spec,
+.data-region {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.data-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  padding: 16rpx;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+}
+
+.data-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.data-stat .stat-label {
+  font-size: 22rpx;
+  color: #999999;
+  margin-bottom: 4rpx;
+}
+
+.data-stat .stat-value {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #999999;
+  margin-bottom: 12rpx;
+}
+
+.empty-hint {
+  font-size: 24rpx;
+  color: #cccccc;
+}
+
+/* 导出按钮 */
+.export-btn {
+  margin-top: 32rpx;
+  padding: 24rpx 0;
+  font-size: 28rpx;
+  background: linear-gradient(135deg, #FF8A2B 0%, #ffa057 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 138, 43, 0.25);
+  transition: all 0.3s;
+}
+
+.export-btn:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+/* 颜色 */
+.text-primary {
+  color: #06AD56;
+}
+
+.text-danger {
+  color: #FF3B30;
+}
+
+.text-success {
+  color: #06AD56;
+}
+
+/* 响应式适配 */
+@media screen and (max-width: 375px) {
+  .overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .data-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .stat-value {
+    font-size: 24rpx;
+  }
+}

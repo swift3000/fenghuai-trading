@@ -1,135 +1,410 @@
-.user-info {
+/* 容器 */
+.container {
+  min-height: 100vh;
+  background: #F5F6F8;
+  padding-bottom: 40rpx;
+}
+
+/* 隐私政策横幅 */
+.privacy-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFF8E1;
+  border-bottom: 1px solid #FFE082;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #8D6E26;
+}
+
+.privacy-banner .privacy-icon {
+  font-size: 13px;
+}
+
+.privacy-banner .privacy-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.privacy-banner .privacy-link {
+  color: #07C160;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.privacy-banner .privacy-close {
+  color: #8D6E26;
+  padding: 2px 4px;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Hero 区域 */
+.home-hero {
+  background: linear-gradient(180deg, #07C160 0%, #06AD56 100%);
+  padding: 16px 16px 60px;
+  color: #fff;
+}
+
+.home-hero .user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-hero .avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.home-hero .user-info {
+  flex: 1;
+}
+
+.home-hero .greeting {
+  font-size: 18px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.home-hero .date {
+  font-size: 12px;
+  opacity: 0.85;
+  display: block;
+}
+
+.home-hero .role-badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* 公告栏 */
+.announce-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  margin: -44px 12px 12px;
+  position: relative;
+  z-index: 2;
+  border-radius: 16px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.announce-bar .announce-icon {
+  font-size: 14px;
+}
+
+.announce-bar .announce-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.announce-bar .announce-text {
+  font-size: 12px;
+  color: #333;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.announce-bar .announce-dots {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.announce-bar .announce-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #999;
+  transition: all 0.2s;
+}
+
+.announce-bar .announce-dot.active {
+  background: #07C160;
+  width: 12px;
+  border-radius: 2px;
+}
+
+/* 统计卡片 */
+.home-stats {
+  display: flex;
+  gap: 12px;
+  margin: 0 12px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.home-stats .stat {
+  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+.home-stats .num {
+  font-size: 24px;
+  font-weight: 700;
+  color: #07C160;
+  display: block;
+}
+
+.home-stats .lbl {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
+}
+
+/* 智能录入卡片 */
+.smart-home-card {
+  background: linear-gradient(135deg, #FFF7ED, #FFF3E6);
+  border: 1px solid #F5A623;
+  border-radius: 16px;
+  padding: 16px;
+  margin: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(245, 166, 35, 0.15);
+}
+
+.smart-home-card:active {
+  background: #FFF0E0;
+  transform: scale(0.98);
+}
+
+.smart-home-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.smart-home-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.smart-home-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #D4820A;
+  margin-bottom: 2px;
+  display: block;
+}
+
+.smart-home-desc {
+  font-size: 12px;
+  color: #B8860B;
+  display: block;
+}
+
+.smart-home-arrow {
+  font-size: 20px;
+  color: #F5A623;
+  flex-shrink: 0;
+}
+
+/* 快捷操作 */
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: #fff;
+  margin: 12px;
+  border-radius: 16px;
+  padding: 16px 0;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.home-actions .action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 4px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.home-actions .action:active {
+  background: #F5F6F8;
+}
+
+.home-actions .action .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+}
+
+.home-actions .action .icon.c1 {
+  background: linear-gradient(135deg, #07C160, #06AD56);
+}
+
+.home-actions .action .icon.c2 {
+  background: linear-gradient(135deg, #FF6B35, #E55A2B);
+}
+
+.home-actions .action .icon.c3 {
+  background: linear-gradient(135deg, #1989FA, #0F7AE0);
+}
+
+.home-actions .action .icon.c4 {
+  background: linear-gradient(135deg, #722ED1, #5B1FB0);
+}
+
+.home-actions .action .lbl {
+  font-size: 12px;
+  color: #333;
+}
+
+/* 分区标题 */
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 16px 16px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title .more {
+  font-size: 12px;
+  color: #666;
+  font-weight: 400;
+}
+
+/* 卡片容器 */
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+/* 订单列表 */
+.order-list-container {
+  padding: 0;
+}
+
+.order-list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid #EFEFEF;
+  cursor: pointer;
 }
 
-.greeting {
-  font-size: 32rpx;
-  font-weight: bold;
+.order-list-item:last-child {
+  border-bottom: none;
 }
 
-.role-badge {
-  background: #1a73e8;
-  color: #fff;
-  padding: 6rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: 24rpx;
+.order-list-item .left .customer {
+  font-size: 15px;
+  font-weight: 600;
+  display: block;
 }
 
-.notice-bar {
-  background: #fff3cd;
-  padding: 16rpx 24rpx;
-  border-radius: 8rpx;
-  font-size: 24rpx;
-  color: #856404;
-  margin-bottom: 20rpx;
+.order-list-item .left .sub {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+  display: block;
 }
 
-.stats-row {
-  display: flex;
-  gap: 20rpx;
-  margin-bottom: 20rpx;
+.order-list-item .right {
+  text-align: right;
 }
 
-.stat-item {
-  flex: 1;
+.order-list-item .right .amount {
+  font-size: 16px;
+  font-weight: 600;
+  color: #07C160;
+  display: block;
+}
+
+.order-list-item .right .status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.order-list-item .right .status.submitted {
+  background: rgba(255, 107, 53, 0.1);
+  color: #FF6B35;
+}
+
+.order-list-item .right .status.sorted {
+  background: rgba(25, 137, 250, 0.1);
+  color: #1989FA;
+}
+
+.order-list-item .right .status.shipped {
+  background: rgba(7, 193, 96, 0.1);
+  color: #07C160;
+}
+
+.order-list-item .right .status.paid {
+  background: rgba(7, 193, 96, 0.1);
+  color: #07C160;
+}
+
+/* 空状态 */
+.empty-hint {
   text-align: center;
-  padding: 30rpx 20rpx;
+  padding: 60px 20px;
+  color: #999;
+  font-size: 14px;
 }
 
-.stat-value {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #1a73e8;
-  display: block;
-}
-
-.stat-label {
-  font-size: 24rpx;
-  color: #999999;
-  margin-top: 8rpx;
-  display: block;
-}
-
-.smart-input-card {
-  background: linear-gradient(135deg, #1a73e8, #4a90d9);
-  color: #ffffff;
-  padding: 32rpx;
-  border-radius: 16rpx;
-  margin-bottom: 20rpx;
-}
-
-.smart-input-title {
-  font-size: 32rpx;
-  font-weight: bold;
-  display: block;
-}
-
-.smart-input-desc {
-  font-size: 24rpx;
-  opacity: 0.8;
-  margin-top: 8rpx;
-  display: block;
-}
-
-.quick-actions {
-  display: flex;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
-}
-
-.action-item {
-  flex: 1;
-  text-align: center;
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 30rpx 10rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
-}
-
-.action-icon {
-  font-size: 40rpx;
-  display: block;
-  margin-bottom: 8rpx;
-}
-
-.action-text {
-  font-size: 24rpx;
-  color: #333333;
-}
-
-.section-title {
-  font-size: 30rpx;
-  font-weight: bold;
-  margin-bottom: 16rpx;
-}
-
-.order-item {
-  padding: 20rpx 24rpx;
-}
-
-.order-customer {
-  font-size: 28rpx;
-  font-weight: bold;
-}
-
-.order-amount {
-  font-size: 28rpx;
-  color: #1a73e8;
-  font-weight: bold;
-}
-
-.order-status {
-  font-size: 24rpx;
-  color: #999999;
-  margin-top: 8rpx;
-  display: block;
-}
-
-.view-all {
-  text-align: center;
-  padding: 20rpx;
-  color: #1a73e8;
-  font-size: 26rpx;
+/* 响应式适配 */
+@media screen and (max-width: 375px) {
+  .home-hero .greeting {
+    font-size: 16px;
+  }
+  
+  .home-hero .date {
+    font-size: 11px;
+  }
+  
+  .home-stats .num {
+    font-size: 22px;
+  }
+  
+  .smart-home-icon {
+    font-size: 28px;
+  }
+  
+  .smart-home-title {
+    font-size: 15px;
+  }
 }

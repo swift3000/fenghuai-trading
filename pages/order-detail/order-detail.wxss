@@ -57,3 +57,161 @@
 .action-buttons button {
   margin-bottom: 16rpx;
 }
+
+.payment-status-text {
+  font-size: 26rpx;
+  font-weight: 500;
+}
+
+.text-success {
+  color: #06AD56;
+}
+
+.text-warning {
+  color: #FF8A2B;
+}
+
+.collect-btn {
+  margin-top: 20rpx;
+}
+
+/* 收款弹窗样式 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
+.modal-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-height: 80%;
+  background: #fff;
+  border-radius: 16rpx;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.collect-modal {
+  max-height: 70vh;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  border-bottom: 1rpx solid #eee;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-close {
+  font-size: 48rpx;
+  color: #999;
+  line-height: 1;
+  padding: 0 8rpx;
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24rpx;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 20rpx;
+  padding: 24rpx 32rpx;
+  border-top: 1rpx solid #eee;
+}
+
+.modal-footer .btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  text-align: center;
+  border: none;
+}
+
+.modal-footer .btn-cancel {
+  background: #f7f7f7;
+  color: #666;
+}
+
+.modal-footer .btn-primary {
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
+}
+
+.form-group {
+  margin-bottom: 24rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.amount-input {
+  display: flex;
+  align-items: center;
+  background: #f7f7f7;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  height: 88rpx;
+}
+
+.currency-symbol {
+  font-size: 36rpx;
+  color: #FF3B30;
+  font-weight: bold;
+  margin-right: 8rpx;
+}
+
+.form-input {
+  flex: 1;
+  font-size: 32rpx;
+  color: #333;
+  height: 88rpx;
+  line-height: 88rpx;
+}
+
+.picker {
+  height: 88rpx;
+  line-height: 88rpx;
+  background: #f7f7f7;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.form-textarea {
+  width: 100%;
+  height: 160rpx;
+  background: #f7f7f7;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+}

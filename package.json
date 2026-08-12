@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}

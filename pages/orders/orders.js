@@ -1,3 +1,5 @@
+const { guardPageLoad } = require('../../utils/router-guard')
+
 Page({
   data: {
     timeTab: 'today',
@@ -11,7 +13,11 @@ Page({
     ]
   },
 
-  onLoad() {},
+  onLoad() {
+    if (!guardPageLoad(this)) {
+      return
+    }
+  },
 
   onShow() {
     this.loadOrders()

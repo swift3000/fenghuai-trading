@@ -33,12 +33,50 @@
 
   <view class="card payment-info">
     <text class="section-title">收款状态</text>
-    <view class="info-row"><text>状态：</text><text>{{paymentStatusText}}</text></view>
+    <view class="info-row flex-between">
+      <text>状态：</text>
+      <text class="payment-status-text {{paymentStatus === 'paid' ? 'text-success' : 'text-warning'}}">{{paymentStatusText}}</text>
+    </view>
+    <view wx:if="{{paymentStatus === 'unpaid'}}" class="collect-btn">
+      <button class="btn-primary" bindtap="handleCollect">登记收款</button>
+    </view>
   </view>
 
   <view class="action-buttons">
     <button class="btn-primary" bindtap="handlePrint">打印送货单</button>
     <button class="btn-secondary" bindtap="handleEdit">编辑订单</button>
     <button class="btn-danger" bindtap="handleDelete">删除订单</button>
+  </view>
+
+  <!-- 收款弹窗 -->
+  <view class="modal-mask" wx:if="{{showCollectModal}}" bindtap="closeCollectModal"></view>
+  <view class="modal-content collect-modal" wx:if="{{showCollectModal}}">
+    <view class="modal-header">
+      <text class="modal-title">登记收款</text>
+      <text class="modal-close" bindtap="closeCollectModal">×</text>
+    </view>
+    <view class="modal-body">
+      <view class="form-group">
+        <text class="form-label">收款金额</text>
+        <view class="amount-input">
+          <text class="currency-symbol">¥</text>
+          <input class="form-input" type="digit" placeholder="请输入收款金额" value="{{collectAmount}}" bindinput="onCollectAmountChange" />
+        </view>
+      </view>
+      <view class="form-group">
+        <text class="form-label">收款方式</text>
+        <picker mode="selector" range="{{paymentMethods}}" value="{{paymentMethodIndex}}" bindchange="onPaymentMethodChange">
+          <view class="picker">{{paymentMethods[paymentMethodIndex]}}</view>
+        </picker>
+      </view>
+      <view class="form-group">
+        <text class="form-label">备注</text>
+        <textarea class="form-textarea" placeholder="请输入备注（选填）" value="{{collectNote}}" bindinput="onCollectNoteChange"></textarea>
+      </view>
+    </view>
+    <view class="modal-footer">
+      <button class="btn btn-cancel" bindtap="closeCollectModal">取消</button>
+      <button class="btn btn-primary" bindtap="confirmCollect" loading="{{collectLoading}}">{{collectLoading ? '提交中...' : '确认收款'}}</button>
+    </view>
   </view>
 </view>

@@ -1,6 +1,211 @@
-.invite-section{padding:24rpx}
-.section-title{font-size:28rpx;font-weight:bold;margin-bottom:16rpx;display:block}
-.role-picker{padding:16rpx;background:#f5f5f5;border-radius:8rpx;margin-bottom:16rpx;font-size:26rpx}
-.member-item{padding:20rpx 24rpx}
-.role-tag{background:#e8f0fe;color:#1a73e8;padding:4rpx 12rpx;border-radius:6rpx;font-size:22rpx}
-.member-actions{margin-top:8rpx;font-size:24rpx}
+.container {
+  padding: 24rpx;
+  background: #F5F6F8;
+  min-height: 100vh;
+}
+
+.invite-section {
+  padding: 28rpx;
+  margin-bottom: 30rpx;
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(6, 173, 86, 0.2);
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.role-picker {
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  font-size: 28rpx;
+  display: flex;
+  align-items: center;
+  backdrop-filter: blur(10rpx);
+}
+
+.role-picker .label {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.role-picker .value {
+  color: #fff;
+  font-weight: bold;
+  margin-left: 12rpx;
+  font-size: 30rpx;
+}
+
+.btn-primary {
+  background: #fff;
+  color: #06AD56;
+  border: none;
+  border-radius: 12rpx;
+  padding: 28rpx;
+  font-size: 30rpx;
+  margin-top: 24rpx;
+  font-weight: bold;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 80rpx 0;
+  color: #999;
+  font-size: 28rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  border: 1rpx dashed #e0e0e0;
+}
+
+.member-list {
+  margin-top: 24rpx;
+}
+
+.member-item {
+  padding: 24rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid rgba(6, 173, 86, 0.08);
+  transition: all 0.3s;
+}
+
+.member-item:active {
+  transform: scale(0.99);
+  box-shadow: 0 8rpx 20rpx rgba(6, 173, 86, 0.1);
+}
+
+.member-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16rpx;
+}
+
+.member-info {
+  flex: 1;
+}
+
+.member-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.member-phone {
+  font-size: 26rpx;
+  color: #666;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.member-region {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+}
+
+.role-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.role-tag {
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.role-admin {
+  background: linear-gradient(135deg, #FF9500 0%, #ffb333 100%);
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(255, 149, 0, 0.3);
+}
+
+.role-orderer {
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(6, 173, 86, 0.3);
+}
+
+.role-sorter {
+  background: linear-gradient(135deg, #34C759 0%, #4dd46a 100%);
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(52, 199, 89, 0.3);
+}
+
+.role-warehouse {
+  background: linear-gradient(135deg, #5856D6 0%, #716ee0 100%);
+  color: #fff;
+  box-shadow: 0 2rpx 8rpx rgba(88, 86, 214, 0.3);
+}
+
+.change-role {
+  font-size: 24rpx;
+  color: #06AD56;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid #06AD56;
+  border-radius: 6rpx;
+  font-weight: 500;
+}
+
+.change-role:active {
+  background: #f9fdfa;
+  opacity: 0.7;
+}
+
+.text-danger {
+  color: #FF3B30;
+  font-size: 24rpx;
+  padding: 8rpx 16rpx;
+  border: 1rpx solid #FF3B30;
+  border-radius: 6rpx;
+  font-weight: 500;
+}
+
+.text-danger:active {
+  background: #fff5f5;
+  opacity: 0.7;
+}
+
+.member-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.status-active {
+  color: #34C759;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.status-inactive {
+  color: #999;
+  font-size: 24rpx;
+}
+
+.member-date {
+  font-size: 24rpx;
+  color: #999;
+}

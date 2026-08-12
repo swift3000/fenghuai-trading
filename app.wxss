@@ -19,12 +19,13 @@ page {
 }
 
 .btn-primary {
-  background: #1a73e8;
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
   color: #ffffff;
   border-radius: 12rpx;
   padding: 20rpx 40rpx;
   text-align: center;
   font-size: 30rpx;
+  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
 }
 
 .btn-secondary {
@@ -64,7 +65,7 @@ page {
 }
 
 .text-primary {
-  color: #1a73e8;
+  color: #06AD56;
 }
 
 .text-danger {

@@ -1,11 +1,142 @@
 <view class="container">
-  <view class="search-bar"><input placeholder="搜索商品名称/料号/拼音" bindinput="onSearch" /></view>
+  <!-- 顶部操作栏 -->
+  <view class="action-bar">
+    <button class="btn-import" bindtap="showImportDialog">导入原型数据</button>
+  </view>
+  
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <input placeholder="搜索商品名称/料号/拼音" value="{{searchKeyword}}" bindinput="onSearch" />
+  </view>
+
+  <!-- 商品列表 -->
   <view class="product-list">
     <view class="product-item card" wx:for="{{products}}" wx:key="_id">
-      <view class="flex-between"><text class="product-name">{{item.name}}</text><text>¥{{item.pricePiece}}</text></view>
-      <text class="product-spec">{{item.materialCode}} | {{item.spec}}</text>
-      <view class="product-actions"><text data-item="{{item}}" bindtap="goEdit">编辑</text><text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text></view>
+      <view class="flex-between">
+        <text class="product-name">{{item.name}}</text>
+        <view class="price-display">
+          <text class="price-piece">件价：¥{{item.price_piece}}</text>
+          <text class="price-unit">包价：¥{{item.price_unit}}</text>
+        </view>
+      </view>
+      <text class="product-spec">{{item.material_code}} | {{item.spec}}</text>
+      <view class="product-actions">
+        <text data-item="{{item}}" bindtap="goEdit">编辑</text>
+        <text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text>
+      </view>
+    </view>
+    <view class="empty-tip" wx:if="{{products.length === 0}}">暂无商品</view>
+  </view>
+
+  <!-- 添加按钮 -->
+  <view class="fab-btn" bindtap="goToAdd">
+    <text>+</text>
+  </view>
+
+  <!-- 导入弹窗 -->
+  <view class="modal-mask" wx:if="{{showImportDialog}}" bindtap="hideImportDialog"></view>
+  <view class="modal-content" wx:if="{{showImportDialog}}">
+    <view class="modal-header">
+      <text class="modal-title">导入原型数据</text>
+      <text class="modal-close" bindtap="hideImportDialog">×</text>
+    </view>
+    <scroll-view scroll-y class="modal-body">
+      <view class="import-info">
+        <text class="info-text">将导入 {{defaultProductsCount}} 个商品数据</text>
+        <view class="import-options">
+          <label class="radio-label">
+            <radio color="#07C160" checked="{{importOverride}}" bindtap="toggleOverride" />
+            <text class="radio-text">覆盖已存在的商品</text>
+          </label>
+        </view>
+        <view class="warning-box">
+          <text class="warning-text">⚠️ 导入过程中请勿关闭页面</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="modal-footer">
+      <button class="btn btn-cancel" bindtap="hideImportDialog">取消</button>
+      <button class="btn btn-primary" bindtap="confirmImport" loading="{{importing}}">
+        {{importing ? '导入中...' : '开始导入'}}
+      </button>
     </view>
   </view>
-  <view class="fab-btn" bindtap="goToAdd"><text>+</text></view>
+
+  <!-- 表单弹窗 -->
+  <view class="modal-mask" wx:if="{{showForm}}" bindtap="closeForm"></view>
+  <view class="modal-content" wx:if="{{showForm}}">
+    <view class="modal-header">
+      <text class="modal-title">{{editingProduct ? '编辑商品' : '添加商品'}}</text>
+      <text class="modal-close" bindtap="closeForm">×</text>
+    </view>
+    
+    <scroll-view scroll-y class="modal-body">
+      <!-- 商品名称 -->
+      <view class="form-group">
+        <text class="form-label">商品名称 <text class="required">*</text></text>
+        <input class="form-input" placeholder="请输入商品名称" value="{{formData.name}}" bindinput="onInputChange" data-field="name" />
+      </view>
+
+      <!-- 料号 -->
+      <view class="form-group">
+        <text class="form-label">料号 <text class="required">*</text></text>
+        <input class="form-input" placeholder="请输入料号" value="{{formData.materialCode}}" bindinput="onInputChange" data-field="materialCode" />
+      </view>
+
+      <!-- 规格 -->
+      <view class="form-group">
+        <text class="form-label">规格</text>
+        <input class="form-input" placeholder="请输入规格" value="{{formData.spec}}" bindinput="onInputChange" data-field="spec" />
+      </view>
+
+      <!-- 描述 -->
+      <view class="form-group">
+        <text class="form-label">描述</text>
+        <textarea class="form-textarea" placeholder="请输入商品描述" value="{{formData.description}}" bindinput="onInputChange" data-field="description"></textarea>
+      </view>
+
+      <!-- 单位 -->
+      <view class="form-group">
+        <text class="form-label">单位 <text class="required">*</text></text>
+        <picker mode="selector" range="{{unitOptions}}" value="{{unitIndex}}" bindchange="onUnitChange">
+          <view class="picker">
+            {{unitOptions[unitIndex]}}
+          </view>
+        </picker>
+      </view>
+
+      <!-- 件价 -->
+      <view class="form-group">
+        <text class="form-label">件价 (元/件) <text class="required">*</text></text>
+        <input class="form-input" type="number" placeholder="请输入件价" value="{{formData.pricePiece}}" bindinput="onInputChange" data-field="pricePiece" />
+      </view>
+
+      <!-- 包价 -->
+      <view class="form-group">
+        <text class="form-label">包价 (元/包) <text class="required">*</text></text>
+        <input class="form-input" type="number" placeholder="请输入包价" value="{{formData.priceUnit}}" bindinput="onInputChange" data-field="priceUnit" />
+      </view>
+
+      <!-- 库存 -->
+      <view class="form-group">
+        <text class="form-label">库存</text>
+        <input class="form-input" type="number" placeholder="请输入库存数量" value="{{formData.stock}}" bindinput="onInputChange" data-field="stock" />
+      </view>
+
+      <!-- 状态 -->
+      <view class="form-group">
+        <text class="form-label">状态</text>
+        <picker mode="selector" range="{{statusOptions}}" value="{{statusIndex}}" bindchange="onStatusChange">
+          <view class="picker">
+            {{statusOptions[statusIndex]}}
+          </view>
+        </picker>
+      </view>
+    </scroll-view>
+
+    <view class="modal-footer">
+      <button class="btn btn-cancel" bindtap="closeForm">取消</button>
+      <button class="btn btn-primary" bindtap="saveProduct" loading="{{saving}}">{{saving ? '保存中...' : '保存'}}</button>
+    </view>
+  </view>
 </view>

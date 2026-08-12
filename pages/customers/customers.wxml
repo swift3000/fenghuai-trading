@@ -1,11 +1,129 @@
 <view class="container">
-  <view class="search-bar"><input placeholder="搜索客户名称/简称/联系人/区域" bindinput="onSearch" /></view>
+  <!-- 顶部操作栏 -->
+  <view class="action-bar">
+    <button class="btn-import" bindtap="showImportDialog">导入原型数据</button>
+  </view>
+  
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <input placeholder="搜索客户名称/简称/联系人/区域" value="{{searchKeyword}}" bindinput="onSearch" />
+  </view>
+
+  <!-- 客户列表 -->
   <view class="customer-list">
     <view class="customer-item card" wx:for="{{customers}}" wx:key="_id">
-      <view class="flex-between"><text class="customer-name">{{item.name}}</text><text class="text-muted">{{item.region}}</text></view>
+      <view class="flex-between">
+        <text class="customer-name">{{item.name}}</text>
+        <text class="text-muted">{{item.region}}</text>
+      </view>
       <text class="customer-contact">{{item.contact}} | {{item.phone}}</text>
-      <view class="customer-actions"><text data-item="{{item}}" bindtap="goEdit">编辑</text><text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text></view>
+      <view class="customer-actions">
+        <text data-item="{{item}}" bindtap="goEdit">编辑</text>
+        <text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text>
+      </view>
+    </view>
+    <view class="empty-tip" wx:if="{{customers.length === 0}}">暂无客户</view>
+  </view>
+
+  <!-- 添加按钮 -->
+  <view class="fab-btn" bindtap="goToAdd">
+    <text>+</text>
+  </view>
+
+  <!-- 导入弹窗 -->
+  <view class="modal-mask" wx:if="{{showImportDialog}}" bindtap="hideImportDialog"></view>
+  <view class="modal-content" wx:if="{{showImportDialog}}">
+    <view class="modal-header">
+      <text class="modal-title">导入原型数据</text>
+      <text class="modal-close" bindtap="hideImportDialog">×</text>
+    </view>
+    <scroll-view scroll-y class="modal-body">
+      <view class="import-info">
+        <text class="info-text">将导入 {{defaultCustomersCount}} 个客户数据</text>
+        <view class="import-options">
+          <label class="radio-label">
+            <radio color="#07C160" checked="{{importOverride}}" bindtap="toggleOverride" />
+            <text class="radio-text">覆盖已存在的客户</text>
+          </label>
+        </view>
+        <view class="warning-box">
+          <text class="warning-text">⚠️ 导入过程中请勿关闭页面</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="modal-footer">
+      <button class="btn btn-cancel" bindtap="hideImportDialog">取消</button>
+      <button class="btn btn-primary" bindtap="confirmImport" loading="{{importing}}">
+        {{importing ? '导入中...' : '开始导入'}}
+      </button>
     </view>
   </view>
-  <view class="fab-btn" bindtap="goToAdd"><text>+</text></view>
+
+  <!-- 表单弹窗 -->
+  <view class="modal-mask" wx:if="{{showForm}}" bindtap="closeForm"></view>
+  <view class="modal-content" wx:if="{{showForm}}">
+    <view class="modal-header">
+      <text class="modal-title">{{editingCustomer ? '编辑客户' : '添加客户'}}</text>
+      <text class="modal-close" bindtap="closeForm">×</text>
+    </view>
+    
+    <scroll-view scroll-y class="modal-body">
+      <!-- 客户名称 -->
+      <view class="form-group">
+        <text class="form-label">客户名称 <text class="required">*</text></text>
+        <input class="form-input" placeholder="请输入客户名称" value="{{formData.name}}" bindinput="onInputChange" data-field="name" />
+      </view>
+
+      <!-- 客户简称 -->
+      <view class="form-group">
+        <text class="form-label">客户简称</text>
+        <input class="form-input" placeholder="请输入客户简称" value="{{formData.shortName}}" bindinput="onInputChange" data-field="shortName" />
+      </view>
+
+      <!-- 别名 -->
+      <view class="form-group">
+        <text class="form-label">别名</text>
+        <input class="form-input" placeholder="请输入客户别名" value="{{formData.alias}}" bindinput="onInputChange" data-field="alias" />
+      </view>
+
+      <!-- 联系人 -->
+      <view class="form-group">
+        <text class="form-label">联系人 <text class="required">*</text></text>
+        <input class="form-input" placeholder="请输入联系人姓名" value="{{formData.contact}}" bindinput="onInputChange" data-field="contact" />
+      </view>
+
+      <!-- 电话 -->
+      <view class="form-group">
+        <text class="form-label">电话 <text class="required">*</text></text>
+        <input class="form-input" type="number" placeholder="请输入联系电话" value="{{formData.phone}}" bindinput="onInputChange" data-field="phone" />
+      </view>
+
+      <!-- 区域 -->
+      <view class="form-group">
+        <text class="form-label">区域 <text class="required">*</text></text>
+        <picker mode="selector" range="{{regionOptions}}" range-key="name" value="{{regionIndex}}" bindchange="onRegionChange">
+          <view class="picker">
+            {{regionOptions.length > 0 ? regionOptions[regionIndex].name : '请选择区域'}}
+          </view>
+        </picker>
+      </view>
+
+      <!-- 描述 -->
+      <view class="form-group">
+        <text class="form-label">描述</text>
+        <textarea class="form-textarea" placeholder="请输入客户描述" value="{{formData.description}}" bindinput="onInputChange" data-field="description"></textarea>
+      </view>
+
+      <!-- 别名列表 -->
+      <view class="form-group">
+        <text class="form-label">别名列表 (多个用逗号分隔)</text>
+        <textarea class="form-textarea" placeholder="请输入客户别名，多个用逗号或空格分隔" value="{{aliasesText}}" bindinput="onAliasesChange"></textarea>
+      </view>
+    </scroll-view>
+
+    <view class="modal-footer">
+      <button class="btn btn-cancel" bindtap="closeForm">取消</button>
+      <button class="btn btn-primary" bindtap="saveCustomer" loading="{{saving}}">{{saving ? '保存中...' : '保存'}}</button>
+    </view>
+  </view>
 </view>

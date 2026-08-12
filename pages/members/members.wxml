@@ -1,16 +1,45 @@
 <view class="container">
+  <!-- 邀请新成员 -->
   <view class="invite-section card">
     <text class="section-title">邀请新成员</text>
-    <picker bindchange="changeInviteRole" value="{{inviteRole}}" range="{{['orderer','sorter','warehouse','admin']}}" range-key="name">
-      <view class="role-picker">选择角色：{{inviteRole}}</view>
+    <picker bindchange="changeInviteRole" value="{{inviteRole}}" range="{{roleOptions}}" range-key="label">
+      <view class="role-picker">
+        <text class="label">选择角色：</text>
+        <text class="value">{{inviteRoleLabel}}</text>
+      </view>
     </picker>
     <button class="btn-primary" bindtap="handleInvite">生成邀请二维码</button>
   </view>
+
+  <!-- 成员列表 -->
   <view class="members-section">
-    <text class="section-title">团队成员</text>
-    <view class="member-item card" wx:for="{{members}}" wx:key="_id">
-      <view class="flex-between"><text>{{item.name}}</text><text class="role-tag">{{item.role}}</text></view>
-      <view class="member-actions"><text class="text-danger" data-id="{{item._id}}" bindtap="handleRemove">移除</text></view>
+    <text class="section-title">团队成员 ({{members.length}})</text>
+    
+    <view class="empty-tip" wx:if="{{members.length === 0}}">
+      <text>暂无成员，请邀请新成员加入</text>
+    </view>
+
+    <view class="member-list">
+      <view class="member-item card" wx:for="{{members}}" wx:key="_id">
+        <view class="member-header">
+          <view class="member-info">
+            <text class="member-name">{{item.name}}</text>
+            <text class="member-phone" wx:if="{{item.phone}}">{{item.phone}}</text>
+            <text class="member-region" wx:if="{{item.region}}">{{item.region}}</text>
+          </view>
+          <view class="role-actions">
+            <text class="role-tag role-{{item.role}}">{{roleMap[item.role]}}</text>
+            <picker bindchange="changeRole" data-id="{{item._id}}" value="{{roleIndex}}" range="{{roleOptions}}" range-key="label" wx:if="{{item.role !== 'admin'}}">
+              <text class="change-role">切换</text>
+            </picker>
+            <text class="text-danger" data-id="{{item._id}}" bindtap="handleRemove" wx:if="{{item.role !== 'admin'}}">移除</text>
+          </view>
+        </view>
+        <view class="member-status">
+          <text class="status-{{item.status}}">{{statusMap[item.status]}}</text>
+          <text class="member-date">加入：{{formatDate(item.createdAt)}}</text>
+        </view>
+      </view>
     </view>
   </view>
 </view>

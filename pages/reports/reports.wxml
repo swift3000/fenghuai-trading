@@ -1,18 +1,135 @@
 <view class="container">
-  <view class="report-tabs">
-    <view class="tab {{reportTab==='product'?'active':''}}" data-tab="product" bindtap="switchTab"><text>商品汇总</text></view>
-    <view class="tab {{reportTab==='customer'?'active':''}}" data-tab="customer" bindtap="switchTab"><text>客户汇总</text></view>
-    <view class="tab {{reportTab==='payment'?'active':''}}" data-tab="payment" bindtap="switchTab"><text>收款台账</text></view>
-  </view>
-  <view class="time-tabs">
-    <view class="tab {{timeTab==='day'?'active':''}}" data-key="day" bindtap="switchTime"><text>日</text></view>
-    <view class="tab {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime"><text>月</text></view>
-  </view>
-  <view class="report-data">
-    <view class="data-row card" wx:for="{{data}}" wx:key="index">
-      <text>{{item.name}}</text>
-      <text>¥{{item.amount}}</text>
+  <!-- 统计概览 -->
+  <view class="overview card" wx:if="{{reportTab !== 'payment'}}">
+    <view class="stat-item">
+      <text class="stat-label">总金额</text>
+      <text class="stat-value text-primary">¥{{totalAmount}}</text>
+    </view>
+    <view class="stat-item" wx:if="{{reportTab === 'product'}}">
+      <text class="stat-label">总数量</text>
+      <text class="stat-value">{{totalQty}}</text>
+    </view>
+    <view class="stat-item" wx:if="{{reportTab === 'product'}}">
+      <text class="stat-label">商品数</text>
+      <text class="stat-value">{{productCount}}</text>
+    </view>
+    <view class="stat-item" wx:if="{{reportTab === 'customer'}}">
+      <text class="stat-label">订单数</text>
+      <text class="stat-value">{{totalOrders}}</text>
+    </view>
+    <view class="stat-item" wx:if="{{reportTab === 'customer'}}">
+      <text class="stat-label">客户数</text>
+      <text class="stat-value">{{customerCount}}</text>
+    </view>
+    <view class="stat-item" wx:if="{{reportTab === 'payment'}}">
+      <text class="stat-label">收款笔数</text>
+      <text class="stat-value">{{paymentCount}}</text>
     </view>
   </view>
-  <button class="btn-primary" bindtap="handleExport">导出报表</button>
+
+  <!-- 报表标签 -->
+  <view class="report-tabs">
+    <view class="tab {{reportTab==='product'?'active':''}}" data-tab="product" bindtap="switchTab">
+      <text>📦 商品汇总</text>
+    </view>
+    <view class="tab {{reportTab==='customer'?'active':''}}" data-tab="customer" bindtap="switchTab">
+      <text>👥 客户汇总</text>
+    </view>
+    <view class="tab {{reportTab==='payment'?'active':''}}" data-tab="payment" bindtap="switchTab">
+      <text>💰 收款台账</text>
+    </view>
+  </view>
+
+  <!-- 时间筛选 -->
+  <view class="time-tabs">
+    <view class="time-tab {{timeTab==='day'?'active':''}}" data-key="day" bindtap="switchTime">
+      <text>今日</text>
+    </view>
+    <view class="time-tab {{timeTab==='week'?'active':''}}" data-key="week" bindtap="switchTime">
+      <text>本周</text>
+    </view>
+    <view class="time-tab {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime">
+      <text>本月</text>
+    </view>
+  </view>
+
+  <!-- 数据列表 -->
+  <view class="report-data" wx:if="{{data.length > 0}}">
+    <!-- 商品汇总 -->
+    <view class="data-row card" wx:for="{{data.products}}" wx:key="_id" wx:if="{{reportTab === 'product'}}">
+      <view class="data-main">
+        <text class="data-name">{{item.name}}</text>
+        <text class="data-spec" wx:if="{{item.spec}}">{{item.spec}}</text>
+      </view>
+      <view class="data-stats">
+        <view class="data-stat">
+          <text class="stat-label">数量</text>
+          <text class="stat-value">{{item.totalQty}}</text>
+        </view>
+        <view class="data-stat">
+          <text class="stat-label">金额</text>
+          <text class="stat-value text-primary">¥{{item.totalAmount}}</text>
+        </view>
+        <view class="data-stat">
+          <text class="stat-label">订单</text>
+          <text class="stat-value">{{item.orderCount}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 客户汇总 -->
+    <view class="data-row card" wx:for="{{data.customers}}" wx:key="_id" wx:if="{{reportTab === 'customer'}}">
+      <view class="data-main">
+        <text class="data-name">{{item.name}}</text>
+        <text class="data-region" wx:if="{{item.region}}">{{item.region}}</text>
+      </view>
+      <view class="data-stats">
+        <view class="data-stat">
+          <text class="stat-label">订单</text>
+          <text class="stat-value">{{item.orderCount}}</text>
+        </view>
+        <view class="data-stat">
+          <text class="stat-label">采购</text>
+          <text class="stat-value text-primary">¥{{item.totalAmount}}</text>
+        </view>
+        <view class="data-stat">
+          <text class="stat-label">已收</text>
+          <text class="stat-value text-success">¥{{item.paidAmount}}</text>
+        </view>
+        <view class="data-stat" wx:if="{{item.unpaidAmount > 0}}">
+          <text class="stat-label">欠款</text>
+          <text class="stat-value text-danger">¥{{item.unpaidAmount}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 收款台账 -->
+    <view class="data-row card" wx:for="{{data.methods}}" wx:key="method" wx:if="{{reportTab === 'payment'}}">
+      <view class="data-main">
+        <text class="data-name">{{item.method}}</text>
+      </view>
+      <view class="data-stats">
+        <view class="data-stat">
+          <text class="stat-label">笔数</text>
+          <text class="stat-value">{{item.count}}</text>
+        </view>
+        <view class="data-stat">
+          <text class="stat-label">金额</text>
+          <text class="stat-value text-primary">¥{{item.amount}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{data.length === 0}}">
+    <text class="empty-icon">📊</text>
+    <text class="empty-text">暂无数据</text>
+    <text class="empty-hint">当前时间范围内没有统计数据</text>
+  </view>
+
+  <!-- 导出按钮 -->
+  <button class="btn-primary export-btn" bindtap="handleExport" wx:if="{{data.length > 0}}">
+    📥 导出报表
+  </button>
 </view>

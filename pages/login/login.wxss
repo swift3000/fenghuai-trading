@@ -1,72 +1,257 @@
-.login-page {
+/* 登录页面容器 - 渐变背景 */
+.login-container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #fff 0%, #F0FFF6 100%);
+  padding: 40rpx 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-content {
+  width: 100%;
+  max-width: 750rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 120rpx;
 }
 
-.brand {
-  text-align: center;
-  margin-bottom: 80rpx;
+/* 品牌区域 */
+.brand-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60rpx;
+}
+
+.logo {
+  width: 176rpx;
+  height: 176rpx;
+  border-radius: 48rpx;
+  background: linear-gradient(135deg, #07C160, #06AD56);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 44rpx;
+  font-weight: 700;
+  margin-bottom: 16rpx;
+  box-shadow: 0 24rpx 64rpx rgba(7, 193, 96, 0.3);
 }
 
 .brand-name {
-  font-size: 48rpx;
-  font-weight: bold;
-  color: #1a73e8;
-  display: block;
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 16rpx;
 }
 
-.brand-slogan {
+.slogan {
   font-size: 28rpx;
-  color: #999999;
-  margin-top: 16rpx;
-  display: block;
+  color: #888;
 }
 
+/* 首次管理员提示横幅 */
+.first-admin-banner {
+  width: 100%;
+  max-width: 600rpx;
+  margin: 0 0 32rpx;
+  padding: 24rpx 28rpx;
+  background: linear-gradient(135deg, #FFF7E6, #FFF1D6);
+  border: 2rpx solid #F5D99B;
+  border-radius: 24rpx;
+  font-size: 25rpx;
+  color: #8B6914;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.first-admin-banner b {
+  color: #B8860B;
+  font-weight: 700;
+}
+
+/* 角色选择网格 */
 .role-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 24rpx;
   width: 100%;
-  padding: 0 40rpx;
-  margin-bottom: 40rpx;
+  max-width: 600rpx;
+  margin: 20rpx 0;
 }
 
-.role-item {
-  background: #ffffff;
-  border-radius: 16rpx;
-  padding: 40rpx 20rpx;
+.role-card {
+  padding: 24rpx;
+  border: 4rpx solid #EFEFEF;
+  border-radius: 24rpx;
   text-align: center;
-  border: 2rpx solid #eeeeee;
+  cursor: pointer;
+  background: #fff;
+  transition: all 0.2s ease;
 }
 
-.role-item.active {
-  border-color: #1a73e8;
-  background: #e8f0fe;
+.role-card:active {
+  transform: scale(0.96);
+}
+
+.role-card.active {
+  border-color: #07C160;
+  background: #F0FAF5;
+  box-shadow: 0 8rpx 32rpx rgba(7, 193, 96, 0.15);
 }
 
 .role-icon {
-  font-size: 48rpx;
-  display: block;
-  margin-bottom: 12rpx;
+  font-size: 52rpx;
+  margin-bottom: 8rpx;
 }
 
 .role-name {
-  font-size: 28rpx;
-  color: #333333;
+  font-weight: 600;
+  font-size: 26rpx;
+  color: #333;
+  margin-top: 8rpx;
 }
 
-.first-admin-tip {
-  background: #fff3cd;
-  color: #856404;
-  padding: 16rpx 32rpx;
-  border-radius: 8rpx;
+.role-example {
+  font-size: 22rpx;
+  color: #888;
+  margin-top: 4rpx;
+}
+
+/* 微信登录按钮 */
+.wechat-login-btn {
+  width: 100%;
+  max-width: 600rpx;
+  height: 96rpx;
+  background: linear-gradient(135deg, #07C160, #06AD56);
+  border: none;
+  border-radius: 48rpx;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  margin-top: 16rpx;
+  box-shadow: 0 8rpx 32rpx rgba(7, 193, 96, 0.3);
+}
+
+.wechat-login-btn:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 底部提示文字 */
+.footer-text {
+  margin-top: 32rpx;
   font-size: 24rpx;
-  margin-bottom: 40rpx;
+  color: #999;
+  text-align: center;
+  line-height: 1.6;
 }
 
-.login-btn {
-  width: 80%;
-  margin-top: 20rpx;
+/* 响应式适配 */
+@media screen and (max-width: 750rpx) {
+  .login-container {
+    padding: 32rpx 24rpx;
+  }
+  
+  .logo {
+    width: 150rpx;
+    height: 150rpx;
+    border-radius: 40rpx;
+    font-size: 38rpx;
+  }
+  
+  .brand-name {
+    font-size: 48rpx;
+  }
+  
+  .slogan {
+    font-size: 24rpx;
+  }
+  
+  .role-grid {
+    gap: 20rpx;
+  }
+  
+  .role-card {
+    padding: 20rpx;
+  }
+  
+  .role-icon {
+    font-size: 46rpx;
+  }
+  
+  .role-name {
+    font-size: 24rpx;
+  }
+  
+  .role-example {
+    font-size: 20rpx;
+  }
+}
+
+/* 小屏幕适配 */
+@media screen and (max-width: 375px) {
+  .login-container {
+    padding: 24rpx 20rpx;
+  }
+  
+  .logo {
+    width: 130rpx;
+    height: 130rpx;
+    border-radius: 36rpx;
+    font-size: 34rpx;
+  }
+  
+  .brand-name {
+    font-size: 42rpx;
+  }
+  
+  .slogan {
+    font-size: 22rpx;
+  }
+  
+  .first-admin-banner {
+    padding: 20rpx 24rpx;
+    font-size: 23rpx;
+  }
+  
+  .role-grid {
+    gap: 16rpx;
+  }
+  
+  .role-card {
+    padding: 18rpx;
+  }
+  
+  .role-icon {
+    font-size: 42rpx;
+  }
+  
+  .role-name {
+    font-size: 22rpx;
+  }
+  
+  .role-example {
+    font-size: 19rpx;
+  }
+  
+  .wechat-login-btn {
+    height: 88rpx;
+    font-size: 28rpx;
+  }
+  
+  .footer-text {
+    font-size: 22rpx;
+  }
 }

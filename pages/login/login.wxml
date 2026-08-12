@@ -1,25 +1,71 @@
-<view class="container login-page">
-  <view class="brand">
-    <text class="brand-name">丰淮商贸</text>
-    <text class="brand-slogan">让采购更简单</text>
-  </view>
-
-  <view class="role-grid">
-    <view
-      class="role-item {{selectedRole === item.key ? 'active' : ''}}"
-      wx:for="{{roles}}"
-      wx:key="key"
-      data-role="{{item.key}}"
-      bindtap="selectRole"
-    >
-      <text class="role-icon">{{item.icon}}</text>
-      <text class="role-name">{{item.name}}</text>
+<view class="login-container">
+  <view class="login-content">
+    <!-- Logo 和品牌 -->
+    <view class="brand-section">
+      <view class="logo">丰淮</view>
+      <view class="brand-name">丰淮商贸</view>
+      <view class="slogan">让采购更简单</view>
     </view>
-  </view>
 
-  <view class="first-admin-tip" wx:if="{{isFirstAdmin}}">
-    <text>首次登录将自动成为管理员</text>
-  </view>
+    <!-- 首次管理员提示 -->
+    <view class="first-admin-banner" wx:if="{{isFirstAdmin}}">
+      👑 首次启动：您将成为<b>首位管理员</b>，无需任何配置。登录后即可管理成员与权限。
+    </view>
 
-  <button class="btn-primary login-btn" bindtap="handleLogin">微信一键登录</button>
+    <!-- 角色选择卡片 -->
+    <view class="role-grid">
+      <view 
+        class="role-card {{selectedRole === 'orderer' ? 'active' : ''}}" 
+        bindtap="selectRole" 
+        data-role="orderer"
+      >
+        <view class="role-icon">📝</view>
+        <view class="role-name">下单员</view>
+        <view class="role-example">张经理</view>
+      </view>
+      
+      <view 
+        class="role-card {{selectedRole === 'sorter' ? 'active' : ''}}" 
+        bindtap="selectRole" 
+        data-role="sorter"
+      >
+        <view class="role-icon">🔍</view>
+        <view class="role-name">分拣员</view>
+        <view class="role-example">周分拣</view>
+      </view>
+      
+      <view 
+        class="role-card {{selectedRole === 'warehouse' ? 'active' : ''}}" 
+        bindtap="selectRole" 
+        data-role="warehouse"
+      >
+        <view class="role-icon">📦</view>
+        <view class="role-name">库管</view>
+        <view class="role-example">李库管</view>
+      </view>
+      
+      <view 
+        class="role-card {{selectedRole === 'admin' ? 'active' : ''}}" 
+        bindtap="selectRole" 
+        data-role="admin"
+      >
+        <view class="role-icon">👑</view>
+        <view class="role-name">管理员</view>
+        <view class="role-example">王老板</view>
+      </view>
+    </view>
+
+    <!-- 微信登录按钮 -->
+    <button class="wechat-login-btn" bindtap="handleLogin" loading="{{loading}}">
+      <view class="btn-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+          <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.5-3.59-4.496-6.367-9.596-6.367zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.27-.027-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>
+        </svg>
+      </view>
+      <text>微信一键登录</text>
+    </button>
+
+    <!-- 底部提示 -->
+    <view class="footer-text">登录即代表同意《服务协议》和《隐私政策》</view>
+  </view>
 </view>

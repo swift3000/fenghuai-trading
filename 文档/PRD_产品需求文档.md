@@ -534,14 +534,14 @@
 **商品快照 ProductSnapshot**
 - {sku, name, spec, price_piece, price_bag, unit_piece_qty}
 
-**状态流转记录 OrderStatusLog（方案B延后，先靠时间字段推导）**
+**状态流转记录 OrderStatusLog（当前 MVP 延后，先靠时间字段推导）**
 - id、order_id、from_status、to_status、operator_id、remark、created_at
 
 **收款记录 Payment（1.0升级：登记→确认两步；订单级收款方式已取消，收款渠道现金/微信保留）**
 - id、order_id、customer_id、**method（收款渠道：现金/微信，台账"现余/微信"拆分用）**、amount（实收金额）、registered_by（登记人ID-下单员/分拣员）、registered_at（登记时间）、status（pending待确认/confirmed已确认）、confirmed_by（确认人ID-库管）、confirmed_at（确认时间）、note、created_at
 - **说明**：订单级"收款方式（现结/赊账）"字段已彻底移除（所有订单默认未付款）；**收款登记/确认环节保留"现金/微信"渠道（`method`），仅用于收款台账"现余/微信"拆分**，不影响金额统计与状态流转。
 
-**蓝牙设备 PrinterDevice（方案B新增）**
+**蓝牙设备 PrinterDevice（MVP 新增）**
 - id、user_id、device_name、mac_address、paper_width(58/80)、is_default、created_at
 
 ### 6.2 订单状态机（简化后：一键分拣 + 一步出库）

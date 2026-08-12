@@ -456,7 +456,40 @@ db.order_logs.createIndex({ time: -1 });
 
 ---
 
-### 2.10 system_config（系统配置表）
+### 2.10 payments（收款记录表）
+
+> **说明**：收款记录独立集合，一次登记收款写入一条记录。配合 `orders.payment_status` / `received_amount` 实现「登记收款 → 库管确认 → 结清」两步收款闭环（详见 §4.5 收款状态）。一笔订单可多次部分收款累计。
+
+| 字段名 | 类型 | 必填 | 默认值 | 说明 | 索引 |
+|--------|------|------|--------|------|------|
+| `_id` | String | 是 | 自动生成 | 收款记录唯一标识 | PK（默认） |
+| `order_id` | String | 是 | — | 所属订单 ID（orders 集合 _id） | 普通索引 |
+| `order_no` | String | 是 | — | 订单号（冗余，赊销台账/报表展示用） | — |
+| `customer_id` | String | 是 | — | 客户 ID（按客户聚合应收/已收/未结清用） | 普通索引 |
+| `customer_name` | String | 是 | — | 客户名称（冗余） | — |
+| `method` | String | 是 | `cash` | 收款渠道：`cash` 现金 / `wechat` 微信 | — |
+| `amount` | Decimal128 | 是 | — | 实收金额（元，到账数） | — |
+| `discount` | Decimal128 | 是 | 0 | 折价/货损金额（元） | — |
+| `registered_by` | String | 是 | — | 登记人 user_id | — |
+| `registered_by_name` | String | 是 | — | 登记人姓名（冗余） | — |
+| `registered_at` | Date | 是 | `new Date()` | 登记时间 | 普通索引（倒序） |
+| `status` | String | 是 | `pending` | `pending`（待确认）/ `confirmed`（已确认） | 组合索引（+customer_id+registered_at） |
+| `confirmed_by` | String | 否 | null | 确认人 user_id | — |
+| `confirmed_by_name` | String | 否 | null | 确认人姓名（冗余） | — |
+| `confirmed_at` | Date | 否 | null | 确认时间 | — |
+| `note` | String | 否 | `""` | 备注 | — |
+
+**索引设计**：
+```javascript
+db.payments.createIndex({ order_id: 1 });
+db.payments.createIndex({ customer_id: 1, status: 1, registered_at: -1 });
+```
+
+**驱动关系**：登记收款 → 新增 `payments`（status=`pending`），同步 `orders.payment_status=pending`；库管确认 → `payments.status=confirmed`，累加 `orders.received_amount` 与折价合计；订单剩余欠款 = `total_amount − received_amount − Σ(已确认记录 discount)`，剩余欠款 ≤ 0 时 `payment_status=paid`，否则保持 `pending`（未结清）。
+
+---
+
+### 2.11 system_config（系统配置表）
 
 > **说明**：存储系统级配置，含 AI 服务密钥与打印机配置。单文档集合，`_id` 固定为 `'global'`。
 
@@ -484,7 +517,7 @@ db.order_logs.createIndex({ time: -1 });
 
 ---
 
-## 三、数据快照机制（方案B核心设计）
+## 三、数据快照机制（双层快照核心设计）
 
 ### 3.1 双层快照冗余模型
 
@@ -643,7 +676,7 @@ items_snapshot: [
 
 ## 五、初始化种子数据量说明
 
-方案B种子数据用于开发调试、演示验收，**精简聚焦核心业务闭环**：
+预置种子数据用于开发调试、演示验收，**精简聚焦核心业务闭环**：
 
 | 集合 | 数量 | 说明 |
 |------|------|------|
@@ -665,11 +698,11 @@ items_snapshot: [
 
 ---
 
-## 六、与原方案（方案B）的精简对照表
+## 六、与早期方案的集合精简对照（历史记录）
 
 ### 6.1 集合层级精简（12 → 11）
 
-| 序号 | 集合名称 | 原方案 | 方案B | 处理方式 |
+| 序号 | 集合名称 | 早期方案 | 当前 MVP | 处理方式 |
 |------|----------|-----------|------------|----------|
 | 1 | users | ✅ | ✅ | 保留 |
 | 2 | regions | ✅ | ✅ | 保留 |
@@ -681,7 +714,7 @@ items_snapshot: [
 | 8 | product_aliases | — | ✅ | **新增**：商品别名（智能录入模糊匹配用，见 §2.7） |
 | 9 | customer_aliases | — | ✅ | **新增**：客户别名（智能录入模糊匹配用，见 §2.8） |
 | 10 | order_logs | — | ✅ | **新增**：订单操作记录（订单修改历史，见 §2.9） |
-| 11 | system_config | — | ✅ | **新增**：系统配置（AI 服务密钥 + 打印机配置，单文档，见 §2.10） |
+| 11 | system_config | — | ✅ | **新增**：系统配置（AI 服务密钥 + 打印机配置，单文档，见 §2.11） |
 | 12 | categories | ✅ | ❌ | **移除**：商品分类功能延后，商品直接列表展示+搜索 |
 | 13 | price_changes | ✅ | ❌ | **移除**：改价信息直接记录在 order_items（is_price_modified + original_price_* 字段），不再单独建表 |
 | 14 | account_inheritance_logs | ✅ | ❌ | **移除**：账号继承功能延后，员工离职场景暂时线下处理 |
@@ -692,7 +725,7 @@ items_snapshot: [
 ### 6.2 字段层级精简
 
 #### products 集合（移除 3 字段，**新增 1 字段**）
-| 字段名 | 原方案 | 方案B | 处理方式 |
+| 字段名 | 早期方案 | 当前 MVP | 处理方式 |
 |--------|------|------------|----------|
 | pinyin | ✅ | ❌ | **移除**：拼音搜索延后，先使用商品名称全文搜索 |
 | category_id | ✅ | ❌ | **移除**：因 categories 集合被移除，无分类关联 |
@@ -700,7 +733,7 @@ items_snapshot: [
 | usage | — | ✅ | **新增**：使用频率（Number，默认0），用于商品排序，**下单成功自动+1（服务端累计，选择越多的越靠前）**；选品场景客户常购优先，其次 usage 降序 |
 
 #### customers 集合（移除 6 字段）
-| 字段名 | 原方案 | 方案B | 处理方式 |
+| 字段名 | 早期方案 | 当前 MVP | 处理方式 |
 |--------|------|------------|----------|
 | alias | ✅ | ❌ | **移除**：客户别名/简称延后，仅用 name 搜索 |
 | total_orders | ✅ | ❌ | **移除**：累计订单数改为按需聚合计算，去冗余 |
@@ -710,12 +743,12 @@ items_snapshot: [
 | created_by | ✅ | ❌ | **移除**：客户创建人追溯延后 |
 
 #### orders 集合（移除 3 字段，**新增 15 字段**）
-| 字段名 | 原方案 | 方案B | 处理方式 |
+| 字段名 | 早期方案 | 当前 MVP | 处理方式 |
 |--------|------|------------|----------|
 | is_printed | ✅ | ❌ | **移除**：是否打印改为状态流转记录（complemented_at 可推导，或后续单独加 print_logs 集合） |
 | is_modified | ✅ | ❌ | **移除**：是否修改过改为通过状态流转推导（submitted→rejected→draft→submitted 即代表被驳回修改过），无需单独布尔字段 |
 | printed_at | ✅ | ❌ | **移除**：与 is_printed 一同移除 |
-| items_snapshot | ✅（文档中有说明但表格漏了） | ✅ | **明确加入**：订单商品快照冗余数组，方案B核心设计 |
+| items_snapshot | ✅（文档中有说明但表格漏了） | ✅ | **明确加入**：订单商品快照冗余数组，双层快照核心设计 |
 | reject_reason | — | ✅ | **新增**：分拣员驳回订单时必填的原因说明（最多300字符） |
 | rejected_by / rejected_at | — | ✅ | **新增**：驳回人ID + 驳回时间（分拣员/管理员操作时写入） |
 | sort_remark | — | ✅ | **新增**：分拣备注（破损/缺货/替换品，分拣员填但不可改商品数量） |
@@ -727,14 +760,14 @@ items_snapshot: [
 
 ### 6.3 功能精简总览
 
-| 功能模块 | 原方案 | 方案B | 备注 |
+| 功能模块 | 早期方案 | 当前 MVP | 备注 |
 |----------|------|------------|------|
 | 核心下单闭环 | ✅ | ✅ | **升级**：草稿→提交→待分拣→（分拣一键）已分拣→（库管一步）已出库→完成→取消（简化 5 态流转：draft/submitted/sorted/confirmed/completed/cancelled；`rejected` 为遗留定义不触发） |
 | 分拣员角色 | ❌ | ✅ | **新增**：处理分拣（待分拣→已分拣，受 `sort:task`）+ 录入分拣备注 + 登记收款（`receivable:collect`），无超时 SLA |
 | 订单驳回流程 | ❌ | ✅（二期规划） | **二期规划·当前未启用**：原分拣员驳回→下单员修改草稿→重新提交，当前 MVP 已取消驳回流程（`rejected` 仅作遗留定义） |
 | 商品管理 | ✅ | ✅ | 保留，仅移除分类和拼音 |
 | 客户管理 | ✅ | ✅ | 保留，移除画像统计字段（按需聚合） |
-| 订单双层快照 | ✅（概念） | ✅（强化） | 方案B明确 items_snapshot 结构和一致性保证 |
+| 订单双层快照 | ✅（概念） | ✅（强化） | 明确 items_snapshot 结构和一致性保证 |
 | 临时改价 | ✅（独立集合） | ✅（明细内嵌） | 改价信息存入 order_items，去除 price_changes 表 |
 | 超时自动处理 | ❌ | ✅（二期规划） | **二期规划·当前未启用**：原分拣员14:00超时自动确认发货（分拣员SLA，二期未启用）；出库超时（库管16:00）自动定时为二期规划（自动未实现），但原型保留『⏰模拟16:00通过』手动演示按钮（作用于submitted订单），当前 MVP 已取消 |
 | 商品分类 | ✅ | ❌ | 延后 |
@@ -744,7 +777,7 @@ items_snapshot: [
 | 操作审计日志 | ✅（独立集合） | ❌（依赖云平台） | 延后 |
 | 系统公告 | ✅ | ❌ | 延后 |
 | 数据备份 | ✅（独立集合） | ❌（依赖云平台） | 延后 |
-| 种子数据 | 未明确 | ✅（14商品/10客户/5用户/28订单） | 方案B升级，覆盖简化态 draft/submitted/sorted/confirmed/completed/cancelled + 已收 received_amount 样例 + 出库确认 ship_* 样例 + 分拣备注全场景（`rejected` 遗留不触发，超时自动/暂存配货为二期） |
+| 种子数据 | 未明确 | ✅（14商品/10客户/5用户/28订单） | 升级，覆盖简化态 draft/submitted/sorted/confirmed/completed/cancelled + 已收 received_amount 样例 + 出库确认 ship_* 样例 + 分拣备注全场景（`rejected` 遗留不触发，超时自动/暂存配货为二期） |
 
 ---
 
@@ -782,7 +815,7 @@ items_snapshot: [
 - 计算金额时由后端完成，前端仅展示结果
 - 金额展示统一使用 `toFixed(2)` 格式化
 
-### D. 数据容量预估（方案B）
+### D. 数据容量预估
 
 | 集合 | 预估单文档大小 | 月增量 | 年增量 | 3年预估总量 |
 |------|---------------|--------|--------|------------|
@@ -796,11 +829,12 @@ items_snapshot: [
 | `customer_aliases` | ~0.3 KB | 20 条 | 240 条 | 800 条 |
 | `order_logs` | ~0.5 KB | 1,600 条 | 19,200 条 | 60,000 条 |
 | `system_config` | ~1 KB | 0 条（单文档） | 0 条（单文档） | 1 条 |
-| **合计（10集合）** | — | **6,530 条** | **78,360 条** | **245,701 条** |
+| `payments` | ~0.5 KB | 200 条 | 2,400 条 | 7,200 条 |
+| **合计（11集合）** | — | **6,530 条** | **78,360 条** | **245,701 条** |
 
-> 方案B 较原方案：集合数减少约 17%（12→10），3年预估总数据量减少约 **33%**（从 36.8 万条降至 24.6 万条），开发和维护成本显著降低。
+> 当前 MVP 采用 11 集合极简建模（含收款记录 payments），3 年预估总数据量约 25 万条，开发和维护成本可控。
 
-### E. 方案B 重要约束清单
+### E. 重要约束清单
 - **双层快照**：orders.items_snapshot（冗余数组）+ order_items（独立明细），二者内容一致
 - **去冗余字段**：客户画像（total_orders/total_amount/avg_amount/last_order_at）改为按需聚合查询
 - **订单编号**：按日生成，格式 `丰淮商贸-YYYYMMDD-NNNN`
@@ -830,7 +864,7 @@ items_snapshot: [
 |------|------|--------|----------|
 | v1.0 | 2026-07-28 | — | 初版发布，完成基础 ERD 设计 |
 | 1.0 | 2026-07-29 | — | v0.1 终版：12集合设计，regions/price_changes/account_inheritance_logs/announcements/backups/operation_logs 等全部集合，31项核心功能 |
-| 1.0 | 2026-07-30 | — | **方案B精简版**：12→6集合；移除categories/price_changes/account_inheritance_logs/operation_logs/announcements/backups；products移除pinyin/category_id/created_by；customers移除alias/total_orders/total_amount/avg_amount/last_order_at/created_by；orders移除is_printed/is_modified；强化双层快照(items_snapshot)；明确种子数据量(14商品/10客户/4用户/21订单)；增加与1.0精简对照表 |
+| 1.0 | 2026-07-30 | — | **早期精简版**：12→6集合；移除categories/price_changes/account_inheritance_logs/operation_logs/announcements/backups；products移除pinyin/category_id/created_by；customers移除alias/total_orders/total_amount/avg_amount/last_order_at/created_by；orders移除is_printed/is_modified；强化双层快照(items_snapshot)；明确种子数据量(14商品/10客户/4用户/21订单)；增加与1.0精简对照表 |
 | **1.0** | **2026-07-30** | — | **分拣确认发货闭环版**：users.role新增`sorter`(分拣员)；orders.status新增`rejected`/`checked`中间态（7态流转：draft→submitted→{checked/rejected}→confirmed→completed）；orders新增7字段：`reject_reason`/`rejected_by`/`rejected_at`/`sort_remark`/`checked_by`/`checked_at`/`auto_checked`；明确SLA：**14:00分拣员超时自动确认发货 + 16:00库管超时自动确认**；新增驳回流程(submitted→rejected→draft修改重提交)；明确"分拣员不可修改商品数量，只能填写分拣备注/驳回原因"；种子数据升级为5用户/28订单，覆盖7种状态+驳回+超时自动+分拣备注全场景 |
 | **1.0** | **2026-08-03** | — | **并行配货+收款登记版**：products 新增 `usage`（使用频率排序）；orders 新增 `remark`（下单员可随时修改）、`pick_large/pick_medium/pick_small`（库管并行配货暂存，默认0，不改状态）、`ship_large/ship_medium/ship_small`（"配完"确认实际发货件数，默认0）、`collect`（收款登记，以商家到账为准）；商品零散单位"零数"统一更名"包"；订单号前缀 `FH-` 改为 `丰淮商贸-`（丰淮商贸-YYYYMMDD-NNNN）；payment_method 新增 `transfer` 转账，收款补充商户收款码合规提示 |
 | **1.0** | **2026-08-03** | — | **流程再优化版（分拣只回复已发+库管直接配完）**：①分拣员"校对"文案全量更新为"确认已发货"，分拣员仅录入分拣备注 + 点【确认已发货/驳回】，去掉校对概念；②库管"配完"确认不再仅限制 checked 订单，submitted/checked 两态均可直接执行（无需等待分拣员结果）；③submitted 订单库管配完时弹窗顶部加蓝色提示条「💡 分拣员尚未确认发货，您可直接配完出库」；④16:00超时自动配完作用范围扩大至 submitted+checked；⑤订单状态枚举 submitted 显示文案从"待确认/待校对"统一为"待发货"，checked为"已发货"；⑥三方追溯：若库管先配完，分拣员后续补录checked_by/checked_at字段允许为空后补 |
