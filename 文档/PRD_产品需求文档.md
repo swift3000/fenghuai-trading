@@ -410,7 +410,7 @@
 
 - **提交拦截**：新建订单与编辑订单**提交时校验订单金额**，金额为 0 的订单**直接拦截、不生成**，并提示"订单金额为 0，无法提交"。
 - **列表过滤**：订单列表、赊销看板、报表汇总等**所有列表均过滤 0 元订单**，不计入统计。
-- **0件0个隐藏**：已成订单中，`piece_qty = 0` 且 `zero_qty = 0` 的商品行**不显示**（列表、详情、打印/转发销售单一致）。
+- **0件0个隐藏**：已成订单中，`piece_qty = 0` 且 `package_qty = 0` 的商品行**不显示**（列表、详情、打印/转发销售单一致）。
 - **实现位置**：云函数 `order` 内集中校验与过滤，前端同步做输入态提示。
 
 #### 4.3A.4 系统设置（1.0 新增，仅管理员）
@@ -515,7 +515,7 @@
 - id、code、name、contact、phone、region、address、tags[]、created_at
 
 **商品 Product**
-- id、sku、name、spec、unit_piece、unit_piece_qty、unit_bag（原 unit_zero，默认单位"包"）、price_piece、price_bag（原 price_zero，包价）、category、status、usage（使用频率，**下单成功自动 +1**，商品列表按此降序；录单选商品时先按客户常购次数、再按 usage 降序）（本轮需求）、updated_at
+- id、sku、name、spec、unit_piece、unit_piece_qty、unit（计量单位，默认"包"）、price_piece、price_unit（包价，唯一包价字段）、category、status、usage（使用频率，**下单成功自动 +1**，商品列表按此降序；录单选商品时先按客户常购次数、再按 usage 降序）（本轮需求）、updated_at
 
 **订单 Order**
 - id、order_no（前缀"丰淮商贸-" + YYYYMMDD + 4位序号）、customer_id、user_id(下单员)、status、total_amount、remark（下单员可随时修改）、
@@ -529,10 +529,10 @@
 - **字段口径说明（简化状态机）**：`status` 主线取值为 `submitted(待分拣) / sorted(已分拣) / confirmed(已出库) / completed(已完成)`（新建即入待分拣，无草稿/取消动作）；`draft / cancelled` 为**遗留定义，当前流程不触发**；`checked_by / checked_at` 复用为**分拣完成人/时间**，`confirmed_by / confirmed_at` 为**出库确认人/时间**。上表中的 `reject_reason / rejected_by / rejected_at`、`packed_* / packed_draft`、`auto_checked / auto_confirmed` 为**遗留字段，当前流程不写入**（对应能力见 §4.7 二期规划），字段本身保留不删除。
 
 **订单明细 OrderItem**
-- id、order_id、product_id、product_snapshot(JSON)、piece_qty、bag_qty（原 zero_qty，包数）、price_piece、price_bag（原 price_zero，包价）、amount
+- id、order_id、product_id、product_snapshot(JSON)、piece_qty、package_qty（包数）、price_piece、price_unit（包价）、amount
 
 **商品快照 ProductSnapshot**
-- {sku, name, spec, price_piece, price_bag, unit_piece_qty}
+- {sku, name, spec, price_piece, price_unit, unit_piece_qty}
 
 **状态流转记录 OrderStatusLog（当前 MVP 延后，先靠时间字段推导）**
 - id、order_id、from_status、to_status、operator_id、remark、created_at

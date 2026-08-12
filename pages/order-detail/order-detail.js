@@ -114,6 +114,15 @@ Page({
     wx.navigateTo({ url: `/pages/new-order/new-order?id=${this.data.order._id}` })
   },
 
+  // 转发客户微信（对齐原型 btnOrderForward）
+  onShareAppMessage() {
+    const order = this.data.order || {}
+    return {
+      title: `丰淮商贸订单 ${order.orderNo || ''} · ¥${order.totalAmount || ''}`,
+      path: order._id ? `/pages/order-detail/order-detail?id=${order._id}` : '/pages/orders/orders'
+    }
+  },
+
   handleDelete() {
     wx.showModal({
       title: '确认删除',

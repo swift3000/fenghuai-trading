@@ -57,7 +57,7 @@ erDiagram
         string pricing_mode "计价模式 case/piece/unit"
         int unit_piece_qty "每件包数"
         decimal price_piece "件价"
-        decimal price_zero "包价"
+        decimal price_unit "包价(单包价)"
         int usage "使用频率(商品排序,默认0;下单成功自动+1)"
         string status "状态 active/disabled"
         datetime created_at "创建时间"
@@ -125,7 +125,7 @@ erDiagram
         string pricing_mode "计价模式快照"
         int unit_piece_qty "每件包数快照"
         int piece_qty "件数"
-        int zero_qty "包数"
+        int package_qty "包数"
         decimal unit_price_piece "件价快照"
         decimal unit_price_zero "包价快照"
         boolean is_price_modified "是否临时改价"
@@ -254,7 +254,7 @@ db.regions.createIndex({ status: 1 });
 | `pricing_mode` | String | 是 | — | `case`（件+包双轨）/ `piece`（纯件）/ `unit`（纯个） | 普通索引 |
 | `unit_piece_qty` | Number | 是 | 1 | 每件包含的包数（如24瓶/件） | — |
 | `price_piece` | Decimal | 条件必填 | null | 件价（pricing_mode=case/piece 必填） | — |
-| `price_zero` | Decimal | 条件必填 | null | 包价（pricing_mode=case/unit 必填） | — |
+| `price_unit` | Decimal | 条件必填 | null | 包价/单价（pricing_mode=case/unit 必填，唯一包价字段） | — |
 | `unit` | String | 是 | — | 计量单位，2-8字符 | — |
 | `usage` | Number | 是 | 0 | 使用频率，用于商品排序（默认0，**下单成功自动+1**，服务端累计，选择越多的商品越靠前） | 普通索引 |
 | `status` | String | 是 | `active` | `active`（在售）/ `disabled`（下架） | 普通索引 |
@@ -262,7 +262,7 @@ db.regions.createIndex({ status: 1 });
 | `updated_at` | Date | 是 | — | 更新时间 | — |
 
 **计价模式说明**：
-- `case`（件+包双轨）：价格 = 件数 × price_piece + 包数 × price_zero
+- `case`（件+包双轨）：价格 = 件数 × price_piece + 包数 × price_unit
 - `piece`（纯件）：仅一个件价，单位=件，unit_piece_qty=1
 - `unit`（纯个）：按个销售，无件价概念
 
@@ -375,7 +375,7 @@ db.orders.createIndex({ created_at: -1 });
 | `pricing_mode` | String | 是 | — | 计价模式（快照）case/piece/unit | — |
 | `unit_piece_qty` | Number | 是 | 1 | 每件包数（快照） | — |
 | `piece_qty` | Number | 是 | 0 | 件数（≥0） | — |
-| `zero_qty` | Number | 是 | 0 | 包数（≥0） | — |
+| `package_qty` | Number | 是 | 0 | 包数（≥0） | — |
 | `unit_price_piece` | Decimal128 | 条件必填 | null | 件单价（快照） | — |
 | `unit_price_zero` | Decimal128 | 条件必填 | null | 包单价（快照） | — |
 | `is_price_modified` | Boolean | 是 | false | 是否为临时改价商品 | 普通索引 |
@@ -397,11 +397,11 @@ db.order_items.createIndex({ item_type: 1, snapshot_at: -1 });
 ```
 
 **计算规则**：
-- `case`（件+包双轨）：`amount = piece_qty × unit_price_piece + zero_qty × unit_price_zero`
-- `piece`（纯件）：`amount = piece_qty × unit_price_piece`，zero_qty = 0
-- `unit`（纯个）：`amount = zero_qty × unit_price_zero`，piece_qty = 0
+- `case`（件+包双轨）：`amount = piece_qty × unit_price_piece + package_qty × unit_price_zero`
+- `piece`（纯件）：`amount = piece_qty × unit_price_piece`，package_qty = 0
+- `unit`（纯个）：`amount = package_qty × unit_price_zero`，piece_qty = 0
 - 赠品 item_type=gift：amount = 0
-- 损耗 item_type=loss：piece_qty 和 zero_qty 不计入订单总数，amount = 0
+- 损耗 item_type=loss：piece_qty 和 package_qty 不计入订单总数，amount = 0
 
 ---
 
@@ -555,7 +555,7 @@ items_snapshot: [
     pricing_mode: "case",
     unit_piece_qty: 24,
     piece_qty: 2,
-    zero_qty: 5,
+    package_qty: 5,
     unit_price_piece: Decimal128("48.0000"),
     unit_price_zero: Decimal128("2.5000"),
     is_price_modified: false,
@@ -575,7 +575,7 @@ items_snapshot: [
 在**创建/修改订单**的业务逻辑中：
 
 ```
-1. 前端提交商品列表（含 product_id、piece_qty、zero_qty）
+1. 前端提交商品列表（含 product_id、piece_qty、package_qty）
 2. 后端根据 product_id 批量查询 products 表获取最新商品信息
 3. 构造 order_items 明细文档（快照 sku_code、name、spec、价格等）
 4. 同时构造 items_snapshot 数组（内容与 order_items 明细一致）
@@ -625,9 +625,9 @@ items_snapshot: [
 ### 4.3 商品计价模式（products.pricing_mode）
 | 值 | 说明 | 必填字段 |
 |----|------|----------|
-| `case` | 件+包双轨（如1件24瓶，120元/件+5元/瓶） | price_piece + price_zero |
+| `case` | 件+包双轨（如1件24瓶，120元/件+5元/瓶） | price_piece + price_unit |
 | `piece` | 纯件（单位=件，规格=1） | price_piece |
-| `unit` | 纯个（按个销售，无件价） | price_zero |
+| `unit` | 纯个（按个销售，无件价） | price_unit |
 
 ### 4.4 商品类型（order_items.item_type）
 | 值 | 说明 | 数量 | 金额 |

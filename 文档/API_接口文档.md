@@ -474,7 +474,7 @@ Array<{
     sku: string; name: string; spec: string | null;
     pricing_mode: 'case' | 'piece' | 'unit';
     pieces_per_case: number | null;
-    piece_qty: number; zero_qty: number;
+    piece_qty: number; package_qty: number;
     unit_price_piece: number;
     unit_price_zero: number;
     original_price: number | null;
@@ -505,7 +505,7 @@ Array<{
     items: Array<{
       product_id: string;
       piece_qty: number;        // ≥ 0
-      zero_qty: number;         // ≥ 0
+      package_qty: number;         // ≥ 0
       // 订单内自定义价格（1.0）：所有商品均可传临时价，仅当前订单有效，不影响商品默认价
       tmp_unit_price_piece?: number;  // ≥ 0，可改价件价（选填，缺省用商品默认价/客户上次价）
       tmp_unit_price_zero?: number;   // ≥ 0，可改价包价（选填）
@@ -521,7 +521,7 @@ Array<{
 |----------|---|
 | items 非空 | 空返回 1001 |
 | **价格来源（1.0）** | 传 tmp_ 价 → 用订单内自定义价（写 is_price_modified + original_price_*）；未传 → 取**该客户最近订单成交价**；无历史 → 商品默认价 |
-| piece_qty + zero_qty | 至少一个 > 0，否则整条明细被忽略 |
+| piece_qty + package_qty | 至少一个 > 0，否则整条明细被忽略 |
 | 计价金额 | 服务端重算，不信任前端 |
 
 | 行为说明 | |
@@ -869,7 +869,7 @@ Array<{
         "inputText": "手抓饼",
         "matched": { "_id": "xxx", "name": "葱香手抓饼", "material_code": "SP001", "spec": "100g*20片", "unit_piece_qty": 20, "score": 0.85 },
         "candidates": [],
-        "qty": { "piece_qty": 2, "bag_qty": 0 }
+        "qty": { "piece_qty": 2, "package_qty": 0 }
       }
     ],
     "unmatched": ["未知商品"]

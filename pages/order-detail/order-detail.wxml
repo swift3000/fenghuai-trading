@@ -45,6 +45,7 @@
   <view class="action-buttons">
     <button class="btn-primary" bindtap="handlePrint">打印送货单</button>
     <button class="btn-secondary" bindtap="handleEdit">编辑订单</button>
+    <button class="btn-secondary" open-type="share">转发客户微信</button>
     <button class="btn-danger" bindtap="handleDelete">删除订单</button>
   </view>
 

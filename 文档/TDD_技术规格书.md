@@ -283,7 +283,7 @@
 | `spec` | String | ✅ | — | 规格，如"1×24" |
 | `unit_piece_qty` | Number | ✅ | `1` | 每件零数 |
 | `price_piece` | Number | ❌ | `null` | 件价 |
-| `price_zero` | Number | ❌ | `null` | 零价 |
+| `price_unit` | Number | ❌ | `null` | 包价/单价（唯一包价字段） |
 | `pinyin` | String | ❌ | `""` | 拼音首字母 |
 | `status` | String | ✅ | `"active"` | active / disabled |
 | `sort` | Number | ❌ | `0` | 排序值 |
@@ -421,7 +421,7 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 | `pricing_mode` | String | ✅ | — | 计件模式（快照） |
 | `unit_piece_qty` | Number | ✅ | — | 每件零数（快照） |
 | `piece_qty` | Number | ✅ | `0` | 件数 |
-| `zero_qty` | Number | ✅ | `0` | 零数 |
+| `package_qty` | Number | ✅ | `0` | 包数 |
 | `unit_price_piece` | Number | ✅ | — | 件价（快照，可改价） |
 | `unit_price_zero` | Number | ✅ | — | 零价（快照，可改价） |
 | `is_price_modified` | Boolean | ✅ | `false` | 是否改价 |
@@ -473,7 +473,7 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
       "pricing_mode": "case",
       "unit_piece_qty": 24,
       "piece_qty": 1,
-      "zero_qty": 5,
+      "package_qty": 5,
       "unit_price_piece": 120.00,
       "unit_price_zero": 5.00,
       "amount": 145.00,
@@ -533,7 +533,7 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 >
 > **订单内自定义价格（v4.3）**：创建/修改订单时，任意商品可传自定义单价（创建时 `tmp_unit_price_piece`/`tmp_unit_price_zero`，改单用 `modify-price`），**仅当前订单生效**；写入快照 `is_price_modified=true` + `original_price_*`（改价前商品默认价）。不限原「93/可调价」档位，全商品可改。
 >
-> **客户上次价格（v4.3）**：创建订单未传单价时，云函数默认取该客户**最近一笔订单**（`orders.network_time` 最近、非 cancelled）对应商品的成交单价；该客户无历史订单时回退商品默认价（`products.unit_price_piece/unit_price_zero`）。
+> **客户上次价格（v4.3）**：创建订单未传单价时，云函数默认取该客户**最近一笔订单**（`orders.network_time` 最近、非 cancelled）对应商品的成交单价；该客户无历史订单时回退商品默认价（`products.price_piece/price_unit`）。
 
 ### 5.2 统一响应格式
 
@@ -629,7 +629,7 @@ if (total === 0) {
 where.total_amount = _.gt(0);          // 0 元订单不计入任何列表/统计
 // 明细渲染时过滤 0件+0个 行
 const visibleItems = order.items_snapshot.filter(
-  it => !(it.piece_qty === 0 && it.zero_qty === 0)
+  it => !(it.piece_qty === 0 && it.package_qty === 0)
 );
 ```
 - 过滤规则对**订单列表、订单详情、赊销页（客户台账/未结清/已结清）、报表汇总、打印/转发销售单**一致生效。
@@ -703,7 +703,7 @@ async function exportOrders(filter) {
         规格: item.spec,
         SKU: item.sku,
         件数: item.piece_qty,
-        零数: item.zero_qty,
+        包数: item.package_qty,
         件价: item.unit_price_piece,
         零价: item.unit_price_zero,
         小计: item.amount,
@@ -750,7 +750,7 @@ async function exportOrders(filter) {
 |----------|------------------------|------|------|
 
 **模板规格（需求变更 v2.1）**：
-1. **同商品件+包合并 1 行**：`piece_qty>0 且 zero_qty>0` → 「N件M包」；仅件 → 「N件」；仅零 → 「M包」（单位统一为"包"）
+1. **同商品件+包合并 1 行**：`piece_qty>0 且 package_qty>0` → 「N件M包」；仅件 → 「N件」；仅包 → 「M包」（单位统一为"包"）
 2. **去掉"规格"列**：`spec` 不再打印
 3. **数量列字体放大**：数量字号 ≥ 单价/金额字号的 1.5 倍并加粗
 4. 订单号统一「丰淮商贸-YYYYMMDD-NNNN」

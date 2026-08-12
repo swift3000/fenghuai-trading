@@ -93,10 +93,10 @@
 
 - **users**：`_openid, role, name, phone, region, fontScale, status, invitedBy, createdAt`（**微信原生身份模型，openid 即唯一身份，MVP 不设置密码**；`status` ∈ pending/active/disabled，`invitedBy` 记录邀请人，便于溯源。原 PRD 的 `password_hash`/bcrypt 二次校验在微信原生场景下作废，已与用户确认 MVP 去掉）
 - **regions**：`name, sort, status`（预置 11 条：汉滨区(1)、汉阴县(2)、石泉县(3)、宁陕县(4)、紫阳县(5)、岚皋县(6)、平利县(7)、镇坪县(8)、旬阳市(9)、白河县(10)、外县(99)，无 code 字段）
-- **products**：`_id, material_code, name, spec, pinyin, unit_piece, unit_bag, price_piece, price_zero, category, status, usage, remark, is_adjustable`（包价/包数字段采用 `price_zero` / `zero_qty` 命名，与 PRD 一致）
+- **products**：`_id, material_code, name, spec, pinyin, unit_piece, unit_bag, price_piece, price_unit, category, status, usage, remark, is_adjustable`（包价唯一字段 `price_unit`，包数字段 `package_qty`）
 - **customers**：`_id, name, region, phone, contact, address`
 - **orders**：`_id, no, customer, items[], amount, time, status, recvView, payment_status, createdBy, remark`
-  - `items[]`: `{material_code, name, spec, piece_qty, bag_qty, price_piece, price_zero, remark, amount}`
+  - `items[]`: `{material_code, name, spec, piece_qty, package_qty, price_piece, price_unit, remark, amount}`
 - **order_items**：订单明细（`order_id, product_id, sku_code, seq` 等）
 - **payments**：`_id, orderId, amount, operator, time, status(pending/confirmed)`（收款登记→确认两步，`status` ∈ pending/confirmed）
 - **product_aliases**：商品别名（智能录入模糊匹配用）
