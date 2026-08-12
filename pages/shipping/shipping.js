@@ -1,4 +1,5 @@
 const { guardPageLoad } = require('../../utils/router-guard')
+const pricing = require('../../utils/order-pricing')
 
 Page({
   data: {
@@ -35,7 +36,13 @@ Page({
       })
       
       const order = result
-      const items = order.items || []
+      const items = (order.items || []).map(it => {
+        const qtyDesc = pricing.formatQtyCombined(it)
+        const amount = it.amount != null ? it.amount : pricing.calcItemAmount(it)
+        const price = it.price != null ? it.price : (it.price_piece || it.price_zero || 0)
+        const qty = it.qty != null ? it.qty : (Math.max(it.piece_qty || 0, it.zero_qty || 0))
+        return Object.assign({}, it, { qtyDesc, amount, price, qty })
+      })
       // 兼容两种字段命名：received_amount（权威）/ paidAmount
       if (order.received_amount !== undefined && order.paidAmount === undefined) {
         order.receivedAmount = order.received_amount
@@ -194,7 +201,7 @@ Page({
               <tr>
                 <td>${item.name}</td>
                 <td>${item.spec || '-'}</td>
-                <td>${item.qty}</td>
+                <td>${item.qtyDesc}</td>
                 <td>¥${item.price}</td>
                 <td>¥${item.amount}</td>
               </tr>

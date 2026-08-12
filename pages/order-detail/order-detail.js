@@ -1,3 +1,10 @@
+const pricing = require('../../utils/order-pricing')
+
+// 为一行商品生成合并数量文案（2件+10包）
+function qtyDesc(it) {
+  return pricing.formatQtyCombined(it)
+}
+
 Page({
   data: {
     order: null,
@@ -24,9 +31,12 @@ Page({
       const { callCloud } = require('../../utils/request')
       const order = await callCloud('orders', { action: 'detail', orderId: id })
       const paymentStatus = order.payment_status || order.paymentStatus || 'unpaid'
+      const rawItems = (order.items || []).map(it => Object.assign({}, it, {
+        qtyDesc: qtyDesc(it)
+      }))
       this.setData({
         order,
-        items: order.items || [],
+        items: rawItems,
         customer: order.customer || {},
         paymentStatus,
         paymentStatusText: paymentStatus === 'paid' ? '已收款' : (paymentStatus === 'pending' ? '待确认' : '未收款')

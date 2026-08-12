@@ -1,11 +1,14 @@
 <view class="container">
   <view class="customer-bar card" bindtap="selectCustomer">
-    <text wx:if="{{customer}}">{{customer.name}}</text>
-    <text wx:else class="text-muted">点击选择客户</text>
+    <view class="customer-bar-info">
+      <text class="customer-bar-name">{{customer ? customer.name : '请选择客户'}}</text>
+      <text class="customer-bar-region">{{customer ? (customer.region || '选择客户') : '点击选择客户'}}</text>
+    </view>
+    <text class="customer-bar-arrow">›</text>
   </view>
 
   <view class="smart-input-btn" bindtap="openSmartInput">
-    <text>🗣 智能录入</text>
+    <text>🤖 智能录入（文字/语音）</text>
   </view>
 
   <view class="items-section">
@@ -14,15 +17,96 @@
       <text class="add-btn" bindtap="addProduct">+ 添加商品</text>
     </view>
 
-    <view class="item-row card" wx:for="{{items}}" wx:key="index">
-      <view class="flex-between">
-        <text>{{item.name}}</text>
-        <text class="text-danger" data-index="{{index}}" bindtap="removeItem">删除</text>
+    <view class="prow-card card" wx:for="{{items}}" wx:key="index">
+      <view class="prow-head">
+        <view>
+          <view class="pname-box">
+            <text class="pname">{{item.name}}</text>
+            <text wx:if="{{item.pricing_mode === 'piece'}}" class="pmode-tag">件</text>
+            <text wx:elif="{{item.pricing_mode === 'unit'}}" class="pmode-tag">单件</text>
+            <text wx:if="{{item.is_adjustable}}" class="badge-adjust">可调价</text>
+          </view>
+          <view class="pspec">料号 {{item.material_code || '-'}} · {{item.spec}}</view>
+        </view>
+        <text class="del-btn" data-index="{{index}}" bindtap="removeItem">🗑️</text>
       </view>
-      <view class="item-meta">
-        <text>{{item.spec}}</text>
-        <text>数量：{{item.qty}}</text>
-        <text>单价：¥{{item.price}}</text>
+
+      <!-- 数量双轨：case=件数+包数；piece=件数；unit=数量 -->
+      <view wx:if="{{item.pricing_mode !== 'piece' && item.pricing_mode !== 'unit'}}" class="qty-group">
+        <view class="qty-box">
+          <view class="qty-label">件数</view>
+          <view class="qty-stepper">
+            <view class="step-btn" data-index="{{index}}" data-field="piece_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.piece_qty}}" data-index="{{index}}" data-field="piece_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="piece_qty" data-delta="1" bindtap="adjustQty">+</view>
+          </view>
+        </view>
+        <view class="qty-box">
+          <view class="qty-label">包数({{item.unit}})</view>
+          <view class="qty-stepper">
+            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.zero_qty}}" data-index="{{index}}" data-field="zero_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="1" bindtap="adjustQty">+</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:elif="{{item.pricing_mode === 'piece'}}" class="qty-group">
+        <view class="qty-box">
+          <view class="qty-label">件数</view>
+          <view class="qty-stepper">
+            <view class="step-btn" data-index="{{index}}" data-field="piece_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.piece_qty}}" data-index="{{index}}" data-field="piece_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="piece_qty" data-delta="1" bindtap="adjustQty">+</view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:else class="qty-group">
+        <view class="qty-box">
+          <view class="qty-label">数量({{item.unit}})</view>
+          <view class="qty-stepper">
+            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="-1" bindtap="adjustQty">−</view>
+            <input class="qty-input" type="number" value="{{item.zero_qty}}" data-index="{{index}}" data-field="zero_qty" bindinput="onQtyInput" />
+            <view class="step-btn" data-index="{{index}}" data-field="zero_qty" data-delta="1" bindtap="adjustQty">+</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 下单内改价（仅当前订单） -->
+      <view wx:if="{{item.pricing_mode === 'case'}}" class="price-group">
+        <view class="price-box">
+          <view class="price-label">件价(¥/件)</view>
+          <input class="price-input" type="digit" value="{{item.price_piece}}" data-index="{{index}}" data-field="price_piece" bindinput="onPriceInput" />
+        </view>
+        <view class="price-box">
+          <view class="price-label">包价(¥/{{item.unit}})</view>
+          <input class="price-input" type="digit" value="{{item.price_zero}}" data-index="{{index}}" data-field="price_zero" bindinput="onPriceInput" />
+        </view>
+      </view>
+      <view wx:elif="{{item.pricing_mode === 'piece'}}" class="price-group">
+        <view class="price-box">
+          <view class="price-label">件价(¥/件)</view>
+          <input class="price-input" type="digit" value="{{item.price_piece}}" data-index="{{index}}" data-field="price_piece" bindinput="onPriceInput" />
+        </view>
+      </view>
+      <view wx:else class="price-group">
+        <view class="price-box">
+          <view class="price-label">单价(¥/{{item.unit}})</view>
+          <input class="price-input" type="digit" value="{{item.price_zero}}" data-index="{{index}}" data-field="price_zero" bindinput="onPriceInput" />
+        </view>
+      </view>
+
+      <!-- 备注 -->
+      <view class="remark-row">
+        <text class="remark-label">备注:</text>
+        <input class="remark-input" placeholder="下单员备注..." value="{{item.remark}}" data-index="{{index}}" bindinput="onRemarkInput" />
+      </view>
+
+      <!-- 小计 -->
+      <view class="prow-total">
+        <text class="row-subtotal-label">小计</text>
+        <text class="row-subtotal">¥{{item.subtotal}}</text>
       </view>
     </view>
 
@@ -52,7 +136,7 @@
         <input placeholder="搜索客户名称/联系人" value="{{customerSearchKeyword}}" bindinput="onCustomerSearch" />
       </view>
       <scroll-view scroll-y class="customer-list">
-        <view class="customer-item" wx:for="{{customers}}" wx:key="_id" bindtap="selectCustomerItem" data-item="{{item}}">
+        <view class="customer-item" wx:for="{{filteredCustomers}}" wx:key="_id" bindtap="selectCustomerItem" data-item="{{item}}">
           <view class="flex-between">
             <text class="customer-name">{{item.name}}</text>
             <text wx:if="{{customer && customer._id === item._id}}" class="selected-tag">✓</text>
@@ -72,15 +156,15 @@
     </view>
     <view class="modal-body">
       <view class="search-bar">
-        <input placeholder="搜索商品名称/SKU" value="{{productSearchKeyword}}" bindinput="onProductSearch" />
+        <input placeholder="搜索商品名称/料号/拼音" value="{{productSearchKeyword}}" bindinput="onProductSearch" />
       </view>
       <scroll-view scroll-y class="product-list">
         <view class="product-item" wx:for="{{filteredProducts}}" wx:key="_id" bindtap="selectProductItem" data-item="{{item}}">
           <view class="product-info">
             <text class="product-name">{{item.name}}</text>
-            <text class="product-sku">{{item.material_code}}</text>
+            <text class="product-sku">{{item.material_code}} · {{item.spec}}</text>
           </view>
-          <text class="product-price">¥{{item.price_piece}}</text>
+          <text class="product-price">{{item.priceText}}</text>
         </view>
       </scroll-view>
     </view>
@@ -96,7 +180,7 @@
     <view class="modal-body">
       <view class="smart-hint">
         <text>📝 输入商品清单，系统自动识别</text>
-        <text class="hint-example">示例：茅台 53 度 500ml 2 件 飞天 3 箱</text>
+        <text class="hint-example">示例：手抓饼 2 件，老酸奶 10 包</text>
       </view>
       <textarea class="smart-textarea" placeholder="请输入商品清单，每行一个" value="{{smartInputText}}" bindinput="onSmartInputChange" />
       <view class="smart-preview" wx:if="{{smartPreviewItems.length > 0}}">

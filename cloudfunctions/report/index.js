@@ -57,8 +57,18 @@ exports.main = async (event, context) => {
                 orderCount: 0
               }
             }
-            productMap[key].totalQty += item.qty || 0
-            productMap[key].totalAmount += (item.price || 0) * (item.qty || 0)
+            // 新订单已归一化含 amount；旧数据回退用 件×件价+包×包价
+            let rowAmount = item.amount != null ? item.amount : 0
+            if (rowAmount === 0) {
+              const mode = item.pricing_mode || 'case'
+              const pieceQty = item.piece_qty || 0
+              const zeroQty = item.zero_qty || 0
+              if (mode === 'piece') rowAmount = pieceQty * (item.price_piece || 0)
+              else if (mode === 'unit') rowAmount = zeroQty * (item.price_zero || 0)
+              else rowAmount = pieceQty * (item.price_piece || 0) + zeroQty * (item.price_zero || 0)
+            }
+            productMap[key].totalQty += item.qty || (Math.max(item.piece_qty || 0, item.zero_qty || 0))
+            productMap[key].totalAmount += rowAmount
             productMap[key].orderCount += 1
           })
         })

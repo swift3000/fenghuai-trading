@@ -78,12 +78,29 @@ exports.main = async (event, context) => {
     case 'create': {
       const { customerId, customerName, items, totalAmount } = event
       if (totalAmount <= 0) return { code: 2001, message: '订单金额不能为 0' }
+
+      // 归一化 items：补齐 qty/price/amount 展示字段（兼容详情/送货单/报表），保留件包双轨字段
+      const normalizedItems = (items || []).map(it => {
+        const mode = it.pricing_mode || 'case'
+        const pieceQty = it.piece_qty || 0
+        const zeroQty = it.zero_qty || 0
+        const pricePiece = it.price_piece || 0
+        const priceZero = it.price_zero || 0
+        let amount = 0
+        if (mode === 'piece') amount = pieceQty * pricePiece
+        else if (mode === 'unit') amount = zeroQty * priceZero
+        else amount = pieceQty * pricePiece + zeroQty * priceZero
+        // 兼容旧字段
+        const qty = Math.max(pieceQty, zeroQty) || it.qty || 0
+        const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceZero || it.price || 0)
+        return Object.assign({}, it, { qty, price, amount })
+      })
       const today = new Date()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `丰淮商贸-${dateStr}`, options: 'i' }) }).count()
       const orderNo = `丰淮商贸-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
       const order = {
-        orderNo, customerId, customerName, items,
+        orderNo, customerId, customerName, items: normalizedItems,
         totalAmount, status: 'submitted',
         payment_status: 'unpaid', paymentStatus: 'unpaid',
         received_amount: 0, receivedAmount: 0,
@@ -112,6 +129,18 @@ exports.main = async (event, context) => {
     case 'detail': {
       const res = await db.collection('orders').doc(event.orderId).get()
       return { code: 0, data: res.data }
+    }
+    // 取某客户最近一笔订单（用于下单时带出上次价格/商品）
+    case 'lastOrder': {
+      const { customerId } = event
+      if (!customerId) return { code: 2002, message: '缺少客户 ID' }
+      const res = await db.collection('orders')
+        .where({ customerId })
+        .orderBy('created_at', 'desc')
+        .limit(1)
+        .get()
+      const order = res.data[0] || null
+      return { code: 0, data: order ? order.items || [] : [] }
     }
     case 'update-status': {
       await db.collection('orders').doc(event.orderId).update({ data: { status: event.status } })

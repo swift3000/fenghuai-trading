@@ -332,3 +332,39 @@
   box-sizing: border-box;
   line-height: 1.6;
 }
+
+
+/* ===== 商品行卡片（件/包双轨 + 改价） ===== */
+.prow-card { padding: 24rpx; }
+.prow-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16rpx; }
+.pname-box { display: flex; align-items: center; gap: 10rpx; flex-wrap: wrap; }
+.pname { font-size: 30rpx; font-weight: bold; color: #333; }
+.pspec { font-size: 22rpx; color: #999; margin-top: 6rpx; }
+.pmode-tag { font-size: 20rpx; color: #06AD56; background: #e8f5e9; border-radius: 6rpx; padding: 2rpx 10rpx; }
+.badge-adjust { font-size: 20rpx; color: #E67E22; background: #fef3e7; border-radius: 6rpx; padding: 2rpx 10rpx; }
+.badge-prefill { font-size: 20rpx; color: #888; background: #f0f0f0; border-radius: 6rpx; padding: 2rpx 10rpx; }
+.del-btn { color: #ccc; font-size: 30rpx; padding: 8rpx; }
+
+/* 数量双轨 */
+.qty-group { display: flex; gap: 20rpx; margin: 12rpx 0 4rpx; }
+.qty-box { flex: 1; }
+.qty-label { font-size: 22rpx; color: #888; margin-bottom: 8rpx; }
+.qty-stepper { display: flex; align-items: center; gap: 8rpx; }
+.step-btn { width: 64rpx; height: 64rpx; border-radius: 10rpx; background: #f5f5f5; color: #333; font-size: 36rpx; line-height: 64rpx; text-align: center; flex-shrink: 0; }
+.qty-input { flex: 1; height: 64rpx; border: 2rpx solid #e0e0e0; border-radius: 10rpx; text-align: center; font-size: 34rpx; font-weight: 600; color: #333; }
+
+/* 价格（下单内改价） */
+.price-group { display: flex; gap: 20rpx; margin: 10rpx 0; }
+.price-box { flex: 1; }
+.price-label { font-size: 22rpx; color: #888; margin-bottom: 8rpx; }
+.price-input { height: 64rpx; border: 2rpx solid #e0e0e0; border-radius: 10rpx; padding: 0 12rpx; text-align: center; font-size: 30rpx; font-weight: 600; color: #06AD56; width: 100%; box-sizing: border-box; }
+
+/* 备注 */
+.remark-row { display: flex; align-items: center; gap: 12rpx; margin-top: 12rpx; }
+.remark-label { font-size: 24rpx; color: #666; white-space: nowrap; }
+.remark-input { flex: 1; height: 56rpx; border: 2rpx solid #e0e0e0; border-radius: 10rpx; padding: 0 16rpx; font-size: 26rpx; }
+
+/* 小计 */
+.prow-total { display: flex; justify-content: space-between; align-items: center; margin-top: 14rpx; padding-top: 14rpx; border-top: 1rpx dashed #eee; }
+.row-subtotal-label { font-size: 24rpx; color: #666; }
+.row-subtotal { font-size: 34rpx; font-weight: bold; color: #FF3B30; }
