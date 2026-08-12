@@ -14,6 +14,30 @@
 }
 
 /* 统计概览 */
+/* 导出工具栏 */
+.recv-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20rpx;
+}
+
+.btn-export-recv {
+  padding: 12rpx 28rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  border: none;
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
+  line-height: 1.5;
+}
+
+.btn-export-recv:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
 .overview {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

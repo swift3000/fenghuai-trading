@@ -201,8 +201,85 @@ Page({
     }
   },
 
-  // 导出功能（预留）
+  // 导出赊销报表 CSV（复用页面已聚合数据）
   handleExport() {
-    wx.showToast({ title: '导出功能开发中', icon: 'none' })
+    const customers = this.data.customers || []
+    if (!customers.length) {
+      wx.showToast({ title: '没有可导出的数据', icon: 'none' })
+      return
+    }
+    try {
+      wx.showLoading({ title: '导出中...' })
+      const esc = (v) => {
+        const s = (v === null || v === undefined) ? '' : String(v)
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+      }
+      const dateStr = () => {
+        const d = new Date()
+        const p = (n) => (n < 10 ? '0' + n : '' + n)
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      }
+      const timeLabel = {
+        all: '全部', today: '今日', week: '本周', month: '本月'
+      }[this.data.timeTab] || this.data.timeTab
+      const viewLabel = {
+        ledger: '客户台账', unpaid: '未结清', settled: '已结清'
+      }[this.data.viewTab] || this.data.viewTab
+
+      const rows = []
+      rows.push(['丰淮商贸赊销报表'])
+      rows.push(['导出时间：' + new Date().toLocaleString()])
+      rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel + (this.data.searchKey ? ' · 搜索:' + this.data.searchKey : '')])
+      rows.push([])
+      const totalReceivable = customers.reduce((s, c) => s + (c.totalAmount || 0), 0)
+      const totalReceived = customers.reduce((s, c) => s + (c.paidAmount || 0), 0)
+      const totalUnpaid = customers.reduce((s, c) => s + (c.unpaidAmount || 0), 0)
+      rows.push(['应收总额：' + totalReceivable.toFixed(2) + ' | 已收：' + totalReceived.toFixed(2) + ' | 未结清：' + totalUnpaid.toFixed(2)])
+      rows.push([])
+      rows.push(['客户', '区域', '订单数', '应收(¥)', '已收(¥)', '欠款(¥)'])
+
+      customers.forEach(c => {
+        rows.push([
+          c.name,
+          c.region || '',
+          c.orderCount,
+          (c.totalAmount || 0).toFixed(2),
+          (c.paidAmount || 0).toFixed(2),
+          (c.unpaidAmount || 0).toFixed(2)
+        ])
+        ;(c.orders || []).forEach(o => {
+          rows.push([
+            '  └ ' + o.orderNo,
+            '',
+            '',
+            (o.totalAmount || 0).toFixed(2),
+            (o.paidAmount || 0).toFixed(2),
+            (o.unpaidAmount || 0).toFixed(2)
+          ])
+        })
+      })
+
+      rows.push([])
+      rows.push(['合计', '', customers.length, totalReceivable.toFixed(2), totalReceived.toFixed(2), totalUnpaid.toFixed(2)])
+
+      const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
+      const filename = '丰淮商贸赊销报表_' + dateStr() + '.csv'
+      const filePath = wx.env.USER_DATA_PATH + '/' + filename
+      const fs = wx.getFileSystemManager()
+      fs.writeFileSync(filePath, csvContent, 'utf8')
+
+      wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
+      wx.showToast({ title: '已导出到临时目录', icon: 'success' })
+      wx.showModal({
+        title: '导出成功',
+        content: '文件已保存到:\n' + filePath + '\n\n共导出 ' + customers.length + ' 家客户赊销数据，您可通过文件管理工具获取 CSV 文件',
+        showCancel: false
+      })
+    } catch (e) {
+      console.error('导出失败', e)
+      wx.showToast({ title: '导出失败', icon: 'none' })
+    } finally {
+      wx.hideLoading()
+    }
   }
 })

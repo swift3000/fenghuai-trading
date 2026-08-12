@@ -1,4 +1,8 @@
 <view class="container">
+  <!-- 导出工具栏 -->
+  <view class="recv-toolbar" wx:if="{{customers.length > 0}}">
+    <button class="btn-export-recv" bindtap="handleExport">📥 导出</button>
+  </view>
   <!-- 统计概览 -->
   <view class="overview card">
     <view class="stat-item">
