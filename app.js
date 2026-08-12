@@ -68,13 +68,11 @@ App({
   },
 
   redirectByRole(role) {
-    // 根据角色自动跳转
+    // 根据角色自动跳转（分拣员/库管进入「分拣出库」工作台，与 login 导航一致）
     switch (role) {
       case 'sorter':
-        wx.reLaunch({ url: '/pages/shipping/shipping' })
-        break
       case 'warehouse':
-        wx.reLaunch({ url: '/pages/shipping/shipping' })
+        wx.reLaunch({ url: '/pages/outbound/outbound' })
         break
       default:
         wx.reLaunch({ url: '/pages/index/index' })

@@ -37,13 +37,10 @@ Page({
     this.checkFirstAdmin();
   },
 
-  // 检查是否是首位管理员
+  // 检查是否是首位管理员（本机尚未有已登录用户时为首次启动）
   checkFirstAdmin() {
-    const users = app.globalData.users || [];
-    const isAdminExists = users.some(u => u.role === 'admin');
-    
-    // 如果没有任何用户，说明是首次启动，当前选择的角色将成为管理员
-    if (users.length === 0) {
+    const hasLocalUser = wx.getStorageSync('userInfo') || wx.getStorageSync('firstAdmin');
+    if (!hasLocalUser) {
       this.setData({ isFirstAdmin: true });
     }
   },
@@ -56,7 +53,7 @@ Page({
     }
   },
 
-  // 处理登录
+  // 处理登录（对接 auth 云函数，换取真实 openid）
   async handleLogin() {
     const { selectedRole, loading } = this.data;
     
@@ -65,24 +62,34 @@ Page({
     this.setData({ loading: true });
     
     try {
-      // 获取用户信息（演示模式：使用模拟数据）
-      const userInfo = {
-        name: this.getRoleExampleName(selectedRole),
-        phone: '138****0000',
-        region: '汉滨区',
+      const { callCloud } = require('../../utils/request');
+      // 调用 auth/login：微信云函数内自动取 OPENID，实现真实身份登录
+      const result = await callCloud('auth', {
+        action: 'login',
         role: selectedRole,
-        avatar: this.getRoleAvatar(selectedRole)
-      };
+        name: this.getRoleExampleName(selectedRole),
+        region: '汉滨区'
+      });
+      const userInfo = result.userInfo || {};
       
-      // 检查是否是首次登录
-      const users = app.globalData.users || [];
-      const isFirstLogin = users.length === 0;
+      // 首位管理员：后端已按“首个 admin 自动设管理员”规则返回，这里同步角色
+      const role = userInfo.role || selectedRole;
       
-      // 保存用户信息
-      await this.saveUserLogin(userInfo, isFirstLogin);
+      // 统一写入 globalData 与本地缓存（供 profile/index/路由守卫使用）
+      app.globalData.userInfo = userInfo;
+      app.globalData.userRole = role;
+      app.globalData.currentUser = userInfo;
+      wx.setStorageSync('userInfo', userInfo);
+      wx.setStorageSync('userRole', role);
+      wx.setStorageSync('currentUser', userInfo);
+      
+      // 根据角色更新 TabBar
+      app.updateTabBarByRole(role);
+      
+      console.log('登录成功:', userInfo);
       
       // 登录成功，跳转到对应页面
-      this.navigateToPage(selectedRole);
+      this.navigateToPage(role);
       
     } catch (error) {
       console.error('登录失败:', error);
@@ -105,42 +112,6 @@ Page({
       admin: '王老板'
     };
     return names[role] || '用户';
-  },
-
-  // 根据角色获取头像
-  getRoleAvatar(role) {
-    const avatars = {
-      orderer: '张',
-      sorter: '周',
-      warehouse: '李',
-      admin: '王'
-    };
-    return avatars[role] || '用';
-  },
-
-  // 保存用户登录信息
-  async saveUserLogin(userInfo, isFirstLogin) {
-    // 保存到全局
-    app.globalData.currentUser = userInfo;
-    
-    // 如果是首次登录，自动成为管理员
-    if (isFirstLogin) {
-      userInfo.role = 'admin';
-      userInfo.isFirstAdmin = true;
-      
-      const users = app.globalData.users || [];
-      users.push(userInfo);
-      app.globalData.users = users;
-      
-      // 保存到本地存储
-      wx.setStorageSync('users', users);
-      wx.setStorageSync('firstAdmin', true);
-    }
-    
-    // 保存当前用户
-    wx.setStorageSync('currentUser', userInfo);
-    
-    console.log('用户登录成功:', userInfo);
   },
 
   // 根据角色导航到对应页面
