@@ -178,7 +178,8 @@ const res = await app.callFunction({
 
 - **云函数**：`auth` / `getInviteCode`
 - **最小权限**：admin
-- **说明**：管理员在「成员管理」选择角色后调用，后端按预设角色自动创建一个「待激活（pending）」用户并生成 **6 位邀请码（7 天有效）**。员工在登录页填写该邀请码即可自动绑定 openid 并激活为该预设角色（见 §2.1），无需管理员再手动分配。
+- **说明**：管理员在「成员管理」选择角色后调用，后端按预设角色自动创建一个「待激活（pending）」用户并生成 **6 位邀请码（7 天有效）+ 邀请小程序码**。员工可扫码进入登录页（自动带出邀请码）或在登录页手动填写邀请码，一键登录即自动绑定 openid 并激活为该预设角色（见 §2.1），无需管理员再手动分配。
+- **小程序码**：`wxacode.getUnlimited` 生成，`scene = invite=<inviteCode>`，`page = pages/login/login`，上传云存储，`inviteQr` 字段返回 fileID 供成员管理展示（auth 云函数 `config.json` 已声明 `wxacode.getUnlimited` 权限）。
 
 #### 请求
 ```typescript
@@ -199,6 +200,7 @@ const res = await app.callFunction({
   inviteCode: string;  // 6 位邀请码
   expireTime: Date;    // 有效期（7 天后）
   role: string;        // 预设角色
+  qrFileID: string | null;  // 邀请小程序码 fileID（云存储，供成员管理 <image> 展示）
 }
 ```
 

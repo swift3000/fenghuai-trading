@@ -9,6 +9,20 @@
       </view>
     </picker>
     <button class="btn-primary" bindtap="handleInvite">生成邀请二维码</button>
+
+    <!-- 生成的邀请卡片 -->
+    <view class="invite-result" wx:if="{{inviteQr || lastInvite}}">
+      <image class="invite-qr" wx:if="{{inviteQr}}" src="{{inviteQr}}" mode="aspectFit" />
+      <view class="invite-result-info" wx:if="{{lastInvite}}">
+        <text class="invite-result-role">角色：{{lastInvite.roleLabel}}</text>
+        <view class="invite-result-code-row">
+          <text class="invite-result-label">邀请码：{{lastInvite.code}}</text>
+          <text class="invite-copy" data-code="{{lastInvite.code}}" bindtap="copyInvite">复制</text>
+        </view>
+        <text class="invite-result-expire">{{lastInvite.expireText}} · 员工扫码即自动绑定该角色</text>
+      </view>
+      <text class="invite-close" bindtap="closeInvite">× 关闭</text>
+    </view>
   </view>
 
   <!-- 成员列表 -->

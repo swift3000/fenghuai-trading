@@ -67,6 +67,31 @@ function generateInviteCode() {
 }
 
 /**
+ * 生成邀请小程序码（scene 携带邀请码），上传云存储返回 fileID
+ * 扫码后进入小程序（登录页 onLoad 读取 options.scene 解析），自动带出邀请码完成绑定
+ */
+async function generateInviteQR(inviteCode) {
+  try {
+    const result = await cloud.openapi.wxacode.getUnlimited({
+      scene: 'invite=' + inviteCode, // 场景值（扫码进入后的 options.scene）
+      page: 'pages/login/login',
+      checkPath: false,
+      width: 280,
+      envVersion: 'release'
+    })
+    const buffer = result.buffer
+    const upload = await cloud.uploadFile({
+      cloudPath: 'invite/' + inviteCode + '.png',
+      fileContent: buffer
+    })
+    return upload.fileID
+  } catch (err) {
+    console.error('生成邀请小程序码失败:', err)
+    return null
+  }
+}
+
+/**
  * auth 云函数入口
  * Actions:
  * - login: 微信登录 + 首管理员自动创建
@@ -268,13 +293,22 @@ async function handleGetInviteCode(opening, event) {
     }
     const res = await db.collection('users').add({ data: preUser })
     
+    // 生成邀请小程序码（scene 携带邀请码）：扫码进入登录页自动带出邀请码并绑定
+    const qrFileID = await generateInviteQR(inviteCode)
+    
+    // 回写小程序码 fileID
+    if (qrFileID) {
+      await db.collection('users').doc(res._id).update({ data: { inviteQr: qrFileID } })
+    }
+    
     return {
       code: 0,
       data: {
         userId: res._id,
         inviteCode,
         expireTime,
-        role
+        role,
+        qrFileID
       }
     }
   } catch (err) {

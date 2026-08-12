@@ -11,6 +11,62 @@
   border-radius: 16rpx;
   box-shadow: 0 4rpx 16rpx rgba(6, 173, 86, 0.2);
 }
+.invite-result {
+  margin-top: 24rpx;
+  padding: 28rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.invite-qr {
+  width: 320rpx;
+  height: 320rpx;
+  margin-bottom: 20rpx;
+}
+
+.invite-result-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.invite-result-role {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.invite-result-code-row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.invite-result-label {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #06AD56;
+  letter-spacing: 2rpx;
+}
+
+.invite-result-expire {
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+}
+
+.invite-close {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
 
 .section-title {
   font-size: 30rpx;

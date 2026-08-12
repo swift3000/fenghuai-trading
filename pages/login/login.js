@@ -7,8 +7,17 @@ Page({
     inviteCode: ''
   },
 
-  onLoad() {
+  onLoad(options) {
     this.checkFirstAdmin();
+    // 扫码进入：scene 携带 invite=XXXXXX，自动填入邀请码
+    if (options && options.scene) {
+      const scene = decodeURIComponent(options.scene)
+      const m = scene.match(/invite=([A-Z0-9]+)/)
+      if (m && m[1]) {
+        this.setData({ inviteCode: m[1] })
+        wx.showToast({ title: '已识别邀请码，请登录', icon: 'none' })
+      }
+    }
   },
 
   // 邀请码输入

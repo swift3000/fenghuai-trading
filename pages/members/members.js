@@ -24,7 +24,9 @@ Page({
       inactive: '禁用'
     },
     roleIndex: 0,
-    inviteRoleLabel: '下单员'
+    inviteRoleLabel: '下单员',
+    inviteQr: '',
+    lastInvite: null
   },
 
   onLoad() {
@@ -82,35 +84,32 @@ Page({
     }
   },
 
-  // 生成带角色的邀请码（调用后端 auth/getInviteCode，自动创建待激活用户）
+  // 生成带角色的邀请码 + 二维码（调用后端 auth/getInviteCode，自动创建待激活用户）
   async handleInvite() {
     wx.showLoading({ title: '生成中...' })
     try {
       const { inviteRole, inviteRoleLabel } = this.data
       const data = await callCloud('auth', { action: 'getInviteCode', role: inviteRole })
       const inviteCode = data && data.inviteCode
+      const qrFileID = data && data.qrFileID
       const expireTime = data && data.expireTime
       if (!inviteCode) {
         throw new Error('未返回邀请码')
       }
-      // 有效期提示（后端返回 Date 对象，可能为 ISO 字符串）
       const expireText = expireTime
         ? ('有效期至 ' + new Date(expireTime).toLocaleDateString())
         : '7 天内有效'
-      wx.showModal({
-        title: '邀请码已生成',
-        content: `角色：${inviteRoleLabel}\n邀请码：${inviteCode}\n${expireText}\n\n将邀请码发给员工，员工在登录页填写后即可自动绑定该角色。`,
-        confirmText: '复制邀请码',
-        cancelText: '关闭',
-        success: res => {
-          if (res.confirm) {
-            wx.setClipboardData({ data: inviteCode })
-          }
+      // 展示邀请卡片（二维码为主，邀请码文本兜底）
+      this.setData({
+        inviteQr: qrFileID || '',
+        lastInvite: {
+          code: inviteCode,
+          roleLabel: inviteRoleLabel,
+          expireText
         }
       })
       this.loadMembers()
     } catch (e) {
-      // callCloud 内部已 toast 错误信息
       if (!e || e.code === undefined) {
         wx.showToast({ title: '生成失败，请重试', icon: 'none' })
       }
@@ -119,7 +118,7 @@ Page({
     }
   },
 
-  // 复制某成员（待激活）的邀请码
+  // 复制邀请码
   copyInvite(e) {
     const code = e.currentTarget.dataset.code
     if (!code) {
@@ -127,6 +126,18 @@ Page({
       return
     }
     wx.setClipboardData({ data: code })
+  },
+
+  // 复制当前生成的邀请码
+  copyLastInvite() {
+    const inv = this.data.lastInvite
+    if (inv && inv.code) {
+      wx.setClipboardData({ data: inv.code })
+    }
+  },
+
+  closeInvite() {
+    this.setData({ inviteQr: '', lastInvite: null })
   },
 
   handleRemove(e) {
