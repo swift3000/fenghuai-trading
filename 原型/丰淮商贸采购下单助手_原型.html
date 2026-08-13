@@ -1347,6 +1347,22 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
           </div>
         </div>
         <div class="sec-card">
+          <div class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置 <span class="hint">语义理解</span></div>
+          <div class="sec-body" style="padding:12px 16px">
+            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（与千问并存互为降级）。未配置或未启用时自动使用本地规则引擎。</div>
+            <div style="margin-top:12px">
+              <div class="mf-row"><label>启用中转站 AI</label><select id="aiRelayEnabled">
+                <option value="0">停用</option>
+                <option value="1">启用</option>
+              </select></div>
+              <div class="mf-row"><label>接口地址</label><input id="aiRelayBaseUrl" type="text" value="https://api.qiyuanapi.cc/v1" placeholder="https://api.example.com/v1"></div>
+              <div class="mf-row"><label>API Key</label><input id="aiRelayKey" type="password" value="sk-opc-ie0JPeJwbnSv7NZZZ6NIuIj2BJSR2RZN" placeholder="中转站 API Key"></div>
+              <div class="mf-row"><label>模型名</label><input id="aiRelayModel" type="text" value="qwen-0810" placeholder="如 qwen-0810 / gpt-4o"></div>
+              <button class="btn primary" style="width:100%" onclick="saveRelayConfig()">💾 保存中转站 AI 配置</button>
+            </div>
+          </div>
+        </div>
+        <div class="sec-card">
           <div class="sec-head">🖨️ 打印机配置 <span class="hint">蓝牙打印</span></div>
           <div class="sec-body" style="padding:12px 16px">
             <div class="mf-row"><label>打印机品牌</label><select id="printerBrand">
@@ -4779,6 +4795,11 @@ function initSettings(){
   if($('aiQwenEnabled')) $('aiQwenEnabled').value = ai.qwenEnabled || '0';
   if($('aiQwenKey')) $('aiQwenKey').value = ai.qwenKey || '';
   if($('aiQwenModel')) $('aiQwenModel').value = ai.qwenModel || 'qwen-turbo';
+  // 回填中转站 AI 配置
+  if($('aiRelayEnabled')) $('aiRelayEnabled').value = ai.relayEnabled || '0';
+  if($('aiRelayBaseUrl')) $('aiRelayBaseUrl').value = ai.relayBaseUrl || '';
+  if($('aiRelayKey')) $('aiRelayKey').value = ai.relayKey || '';
+  if($('aiRelayModel')) $('aiRelayModel').value = ai.relayModel || '';
   // 回填打印机配置
   const pr = JSON.parse(localStorage.getItem(PRINTER_CONFIG_KEY) || '{}');
   if($('printerBrand')) $('printerBrand').value = pr.brand || 'xinye';
@@ -4802,6 +4823,15 @@ function saveQwenConfig(){
   cfg.qwenModel = $('aiQwenModel').value;
   localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
   showToast('千问配置已保存');
+}
+function saveRelayConfig(){
+  const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+  cfg.relayEnabled = $('aiRelayEnabled').value;
+  cfg.relayBaseUrl = $('aiRelayBaseUrl').value.trim();
+  cfg.relayKey = $('aiRelayKey').value.trim();
+  cfg.relayModel = $('aiRelayModel').value.trim();
+  localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
+  showToast('中转站 AI 配置已保存');
 }
 function savePrinterConfig(){
   const cfg = {
@@ -6331,7 +6361,7 @@ function parseQuantity(text) {
 }
 
 // 智能解析文字输入（优化版 V2）
-function parseSmartInput() {
+async function parseSmartInput() {
   const text = $('smartInputText').value.trim();
   if(!text) {
     showToast('请输入订单信息');
@@ -6416,6 +6446,54 @@ function parseSmartInput() {
     }
   } else {
     console.log('[parseSmartInput] 正则已提取到商品，跳过简单分割');
+  }
+
+  // 4.5. AI 兜底：规则未命中任何商品且配置了中转站/千问时，调用 chat/completions 语义解析
+  if(productMatches.length === 0) {
+    const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+    const relayEnabled = ai.relayEnabled === '1' && ai.relayBaseUrl && ai.relayKey;
+    const qwenEnabled = ai.qwenEnabled === '1' && ai.qwenKey;
+    if(relayEnabled || qwenEnabled) {
+      try {
+        // 优先中转站，其次千问（OpenAI 兼容 /chat/completions）
+        const engBase = relayEnabled ? ai.relayBaseUrl : 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+        const engKey = relayEnabled ? ai.relayKey : ai.qwenKey;
+        const engModel = relayEnabled ? (ai.relayModel || 'qwen-0810') : (ai.qwenModel || 'qwen-turbo');
+        const names = (data && data.products || []).map(pp => pp.name).filter(Boolean).slice(0, 200);
+        const sys = '你是采购下单助手。根据用户口语订单把每行解析为 {name,qty,unit} JSON 数组，name 尽量匹配商品表标准名，unit 用 件/包/箱/个。商品表：[' + names.map(n => JSON.stringify(n)).join(',') + ']。只输出 JSON。';
+        const resp = await fetch((engBase.replace(/\/$/,'')) + (/(\/chat\/completions)$/.test(engBase) ? '' : '/chat/completions'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + engKey },
+          body: JSON.stringify({ model: engModel, messages: [{role:'system',content:sys},{role:'user',content:correctedText}], temperature: 0.2, max_tokens: 600 })
+        });
+        const j = await resp.json();
+        const content = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || '';
+        const clean = content.replace(/```json/gi,'').replace(/```/g,'').trim();
+        const start = clean.indexOf('['), end = clean.lastIndexOf(']');
+        if(start !== -1 && end > start) {
+          let arr = [];
+          try { arr = JSON.parse(clean.slice(start,end+1)); } catch(e){ arr = []; }
+          if(Array.isArray(arr)) {
+            for(const it of arr) {
+              const name = it.name || '';
+              const qty = parseFloat(it.qty) || 1;
+              const unit = it.unit || '包';
+              const match = fuzzyMatchProducts(name);
+              if(match.length > 0 && match[0].score >= 0.6) {
+                let piece_qty = 0, zero_qty = 0;
+                if(unit === '件' || unit === '箱' || unit === '捆' || unit === '提') piece_qty = qty;
+                else zero_qty = qty;
+                if(!productMatches.find(x => x.name === match[0].name)) {
+                  productMatches.push({ name: match[0].name, piece_qty: piece_qty, zero_qty: zero_qty, score: match[0].score, originalInput: name });
+                }
+              }
+            }
+          }
+        }
+      } catch(e) {
+        console.log('[parseSmartInput] AI 兜底失败，保持规则结果', e);
+      }
+    }
   }
   
   // 5. 生成草稿（只包含严格匹配到库中的数据）

@@ -357,6 +357,71 @@ Page({
     }
   },
 
+  // 在线智能解析：调 smart 云函数 parseWithAI（规则优先 + AI 兜底）
+  async parseOnline(text) {
+    const { callCloud } = require('../../utils/request')
+    try {
+      const res = await callCloud('smart', { action: 'parseWithAI', text })
+      const srcItems = (res && res.items) || []
+      if (srcItems.length === 0) return null
+      const addedNames = []
+      srcItems.forEach(it => {
+        // 有具体商品（已匹配到库内产品）
+        if (it.material_code) {
+          const existing = this.data.items.find(x => x.material_code === it.material_code)
+          const qty = parseFloat(it.qty) || 1
+          const unit = it.unit || '包'
+          const pieceUnits = ['件','箱','捆','提','桶']
+          const usePiece = pieceUnits.includes(unit)
+          const mode = it.pricing_mode || 'case'
+          if (existing) {
+            if (mode === 'unit' || !usePiece) existing.package_qty += qty
+            else existing.piece_qty += qty
+          } else {
+            const prod = this.data.productList.find(ppl => String(ppl.material_code) === String(it.material_code))
+            this.data.items.push({
+              _id: prod ? prod._id : it._id,
+              material_code: it.material_code,
+              name: it.name || (prod && prod.name) || '',
+              spec: it.spec || (prod && prod.spec) || '',
+              unit: (prod && prod.unit) || unit || '包',
+              pricing_mode: mode,
+              is_adjustable: prod ? (prod.is_adjustable || false) : true,
+              price_piece: it.price != null ? it.price : (prod ? (prod.price_piece || 0) : 0),
+              price_unit: it.price_unit != null ? it.price_unit : 0,
+              piece_qty: (mode === 'unit' || !usePiece) ? 0 : qty,
+              package_qty: (mode === 'unit' || !usePiece) ? qty : 0,
+              remark: ''
+            })
+          }
+          addedNames.push(it.name)
+        } else if (it.name) {
+          // 未匹配到库内产品：作为可调自由项加入
+          const qty = parseFloat(it.qty) || 1
+          this.data.items.push({
+            _id: Date.now().toString() + Math.random().toString(),
+            material_code: '',
+            name: it.name,
+            spec: it.spec || '',
+            unit: it.unit || '包',
+            pricing_mode: 'unit',
+            is_adjustable: true,
+            price_piece: 0,
+            price_unit: 0,
+            piece_qty: 0,
+            package_qty: qty,
+            remark: ''
+          })
+          addedNames.push(it.name)
+        }
+      })
+      return addedNames
+    } catch (e) {
+      console.error('在线解析失败，回落本地', e)
+      return null
+    }
+  },
+
   async processSmartInput() {
     if (!this.data.smartInputText.trim()) {
       wx.showToast({ title: '请输入内容', icon: 'none' })
@@ -364,6 +429,14 @@ Page({
     }
     this.setData({ smartInputLoading: true })
     try {
+      // 优先在线解析：云函数先走规则引擎、规则不中调 AI（中转站/千问并存降级）
+      const online = await this.parseOnline(this.data.smartInputText)
+      if (online && online.length > 0) {
+        this.calcTotal()
+        this.setData({ items: this.data.items, smartInputLoading: false, smartInputText: '', smartPreviewItems: [] })
+        wx.showToast({ title: `已添加 ${online.length} 项`, icon: 'success' })
+        return
+      }
       const lines = this.data.smartInputText.split('\n').filter(line => line.trim())
       const added = []
       lines.forEach(line => {

@@ -222,6 +222,32 @@
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
+    <view class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置</view>
+    <view class="sec-body">
+      <view class="ag-step">智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（如 qiyuanapi），与千问并存互为降级。未配置或未启用时自动使用本地规则引擎。</view>
+      <view class="mf-row">
+        <text class="mf-label">启用中转站 AI</text>
+        <picker mode="selector" range="{{['停用','启用']}}" value="{{relayEnabled}}" bindchange="onRelayEnabled">
+          <view class="picker-val">{{relayEnabled === '1' ? '启用' : '停用'}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">接口地址</text>
+        <input value="{{relayBaseUrl}}" bindinput="onRelayBaseUrl" placeholder="https://api.example.com/v1" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">API Key</text>
+        <input password value="{{relayKey}}" bindinput="onRelayKey" placeholder="中转站 API Key" />
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">模型名</text>
+        <input value="{{relayModel}}" bindinput="onRelayModel" placeholder="如 qwen-0810 / gpt-4o" />
+      </view>
+      <button class="btn-primary" bindtap="saveRelay">💾 保存中转站 AI 配置</button>
+    </view>
+  </view>
+
+  <view class="sec-card" wx:if="{{userRole === 'admin'}}">
     <view class="sec-head">🖨️ 打印机配置</view>
     <view class="sec-body">
       <view class="mf-row">

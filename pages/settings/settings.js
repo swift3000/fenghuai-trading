@@ -32,6 +32,11 @@ Page({
     qwenKey: '',
     qwenModel: 'qwen-turbo',
     qwenModelIndex: 0,
+    // 中转站 AI（OpenAI 兼容）配置
+    relayEnabled: '0',
+    relayBaseUrl: 'https://api.qiyuanapi.cc/v1',
+    relayKey: 'sk-opc-ie0JPeJwbnSv7NZZZ6NIuIj2BJSR2RZN',
+    relayModel: 'qwen-0810',
     // 打印机配置
     printerBrand: 'xinye',
     printerBrandIndex: 0,
@@ -57,6 +62,7 @@ Page({
       const ai = cfg.ai || {}
       const aliyun = ai.aliyun || {}
       const qwen = ai.qwen || {}
+      const relay = ai.relay || {}
       const printer = cfg.printer || {}
       this.setData({
         aliyunEnabled: aliyun.enabled ? '1' : '0',
@@ -71,6 +77,10 @@ Page({
         qwenKey: qwen.apiKey || '',
         qwenModel: qwen.model || 'qwen-turbo',
         qwenModelIndex: ['qwen-turbo','qwen-plus','qwen-max'].indexOf(qwen.model || 'qwen-turbo'),
+        relayEnabled: relay.enabled ? '1' : '0',
+        relayBaseUrl: relay.baseUrl || '',
+        relayKey: relay.apiKey || '',
+        relayModel: relay.model || '',
         printerBrand: printer.brand || 'xinye',
         printerBrandIndex: ['xinye','jiabo','hanyin'].indexOf(printer.brand || 'xinye'),
         printerBrandText: {xinye:'芯烨（Xprinter）',jiabo:'佳博（Gprinter）',hanyin:'汉印（HPRT）'}[printer.brand || 'xinye'],
@@ -103,6 +113,12 @@ Page({
     const idx = Number(e.detail.value)
     this.setData({ qwenModelIndex: idx, qwenModel: ['qwen-turbo','qwen-plus','qwen-max'][idx] })
   },
+
+  // 中转站 AI 配置事件
+  onRelayEnabled(e) { this.setData({ relayEnabled: e.detail.value }) },
+  onRelayBaseUrl(e) { this.setData({ relayBaseUrl: e.detail.value }) },
+  onRelayKey(e) { this.setData({ relayKey: e.detail.value }) },
+  onRelayModel(e) { this.setData({ relayModel: e.detail.value }) },
 
   // 打印机配置事件
   onPrinterBrand(e) {
@@ -147,6 +163,21 @@ Page({
     }
     await callCloud('system', { action: 'updateAiConfig', aiConfig: ai })
     wx.showToast({ title: '千问配置已保存', icon: 'success' })
+  },
+
+  // 保存中转站 AI 配置
+  async saveRelay() {
+    const d = this.data
+    const cfg = await callCloud('system', { action: 'getAiConfig' })
+    const ai = cfg.ai || {}
+    ai.relay = {
+      enabled: d.relayEnabled === '1',
+      baseUrl: d.relayBaseUrl,
+      apiKey: d.relayKey,
+      model: d.relayModel
+    }
+    await callCloud('system', { action: 'updateAiConfig', aiConfig: ai })
+    wx.showToast({ title: '中转站 AI 配置已保存', icon: 'success' })
   },
 
   // 保存打印机配置

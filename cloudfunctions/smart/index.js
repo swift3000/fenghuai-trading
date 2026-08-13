@@ -1,6 +1,7 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const https = require('https')
 
 function levenshtein(a, b) {
   const matrix = []
@@ -183,6 +184,103 @@ async function checkPermission(permission) {
   return { code: 403, message: '无权限访问' }
 }
 
+// 读取系统配置（含 AI 密钥，仅云端使用，不落前端）
+async function getConfig() {
+  try {
+    const res = await db.collection('system_config').doc('global').get()
+    return res.data || {}
+  } catch (e) {
+    return {}
+  }
+}
+
+// 调 OpenAI 兼容 /chat/completions 接口（中转站）
+function chatCompletions(baseUrl, apiKey, model, messages, maxTokens) {
+  return new Promise((resolve, reject) => {
+    let url = (baseUrl || '').replace(/\/$/, '')
+    if (!/\/chat\/completions$/.test(url)) url += '/chat/completions'
+    const body = JSON.stringify({ model, messages, temperature: 0.2, max_tokens: maxTokens || 600 })
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }
+    let u
+    try { u = new URL(url) } catch (e) { reject(new Error('无效的接口地址')); return }
+    const req = https.request({
+      hostname: u.hostname,
+      port: u.port || (u.protocol === 'https:' ? 443 : 80),
+      path: u.pathname + u.search,
+      method: 'POST',
+      headers
+    }, res => {
+      let data = ''
+      res.on('data', c => data += c)
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data)
+          if (json.error) return reject(new Error(json.error.message || 'AI 服务错误'))
+          const content = json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content
+          resolve(content || '')
+        } catch (e) { reject(new Error('解析 AI 响应失败')) }
+      })
+    })
+    req.on('error', e => reject(e))
+    req.setTimeout(20000, () => { req.destroy(new Error('请求超时')) })
+    req.write(body)
+    req.end()
+  })
+}
+
+// 抽取 JSON 数组（AI 可能包在 markdown 代码块/说明文字里）
+function extractJsonArray(text) {
+  if (!text) return null
+  const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim()
+  const start = cleaned.indexOf('[')
+  const end = cleaned.lastIndexOf(']')
+  if (start === -1 || end === -1 || end <= start) return null
+  try {
+    const arr = JSON.parse(cleaned.slice(start, end + 1))
+    return Array.isArray(arr) ? arr : null
+  } catch (e) { return null }
+}
+
+// 用 AI 把口语文本解析为结构化清单，再对回商品库
+async function parseWithAI(text, products, ai) {
+  if (!ai || !ai.enabled || !ai.apiKey || !ai.baseUrl) return { used: false, items: [] }
+  const model = ai.model || 'qwen-0810'
+  const productNames = (products || []).map(pp => pp.name || '').filter(Boolean).slice(0, 200)
+  const allNames = '[' + productNames.map(n => JSON.stringify(n)).join(', ') + ']'
+  const system = '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
+    'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
+    '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
+  const user = '订单：' + text
+  const content = await chatCompletions(ai.baseUrl, ai.apiKey, model, [
+    { role: 'system', content: system },
+    { role: 'user', content: user }
+  ])
+  const arr = extractJsonArray(content)
+  if (!arr) return { used: true, items: [] }
+  const items = arr.map(it => {
+    const product = (products || []).find(pp =>
+      (it.name && (pp.name === it.name || pp.name.includes(it.name) || it.name.includes(pp.name))) ||
+      (it.spec && pp.spec && pp.spec.includes(it.spec))
+    )
+    const qty = parseFloat(it.qty) || 1
+    if (!product) {
+      return { _id: '', name: it.name || '', spec: it.spec || '', price: 0, qty, unit: it.unit || '包', unmatched: true }
+    }
+    return {
+      _id: product._id,
+      name: product.name,
+      spec: product.spec || '',
+      price: product.price_piece || 0,
+      qty,
+      unit: it.unit || '包',
+      material_code: product.material_code || '',
+      pricing_mode: product.pricing_mode || 'case',
+      price_unit: product.price_unit != null ? product.price_unit : 0
+    }
+  }).filter(it => it.name)
+  return { used: true, items }
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   switch (action) {
@@ -217,6 +315,53 @@ exports.main = async (event, context) => {
       const items = parseOrderText(text, products)
       
       return { code: 0, data: { items } }
+    }
+
+    case 'parseWithAI': {
+      // 智能录入：优先规则引擎，规则未命中才调 AI（与千问/中转站并存，互为降级）
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
+      const { text } = event
+      if (!text) return { code: 5002, message: 'text 参数为空' }
+
+      const productsResult = await db.collection('products').get()
+      const products = productsResult.data
+
+      if (products.length === 0) {
+        return { code: 5003, message: '暂无商品数据' }
+      }
+
+      // 1. 先用本地规则引擎
+      const ruleItems = parseOrderText(text, products)
+
+      // 2. 读取 AI 配置（中转站 relay 优先，千问 qwen 次之）
+      const cfg = await getConfig()
+      const ai = cfg.ai || {}
+      const engines = []
+      if (ai.relay && ai.relay.enabled) engines.push(ai.relay)
+      if (ai.qwen && ai.qwen.enabled && ai.qwen.apiKey) engines.push(ai.qwen)
+
+      // 3. 规则已命中所有行则直接用；有未命中且配了引擎则走 AI
+      if (ruleItems.length > 0) {
+        return { code: 0, data: { items: ruleItems, engine: 'rule' } }
+      }
+
+      for (const eng of engines) {
+        try {
+          const aiResult = await parseWithAI(text, products, {
+            enabled: true,
+            baseUrl: eng.baseUrl || '',
+            apiKey: eng.apiKey || '',
+            model: eng.model || ''
+          })
+          if (aiResult.used && aiResult.items.length > 0) {
+            return { code: 0, data: { items: aiResult.items, engine: 'ai' } }
+          }
+        } catch (e) {
+          console.error('AI 解析失败，继续降级', e.message)
+        }
+      }
+
+      return { code: 0, data: { items: ruleItems, engine: 'rule' } }
     }
     
     default:
