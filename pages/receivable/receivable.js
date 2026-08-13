@@ -245,7 +245,9 @@ Page({
     try {
       wx.showLoading({ title: '导出中...' })
       const esc = (v) => {
-        const s = (v === null || v === undefined) ? '' : String(v)
+        let s = (v === null || v === undefined) ? '' : String(v)
+        // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头单元格前缀 ' 转文本
+        if (/^[=+\-@]/.test(s)) s = "'" + s
         return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
       }
       const dateStr = () => {

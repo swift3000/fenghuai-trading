@@ -43,6 +43,8 @@ exports.main = async (event, context) => {
 
   switch (action) {
     case 'getConfig': {
+      // 含 AI 服务密钥、打印机配置，仅管理员可读（纵深防御，与 getAiConfig 口径一致）
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
       const cfg = await getConfig()
       return { code: 0, data: cfg }
     }
@@ -55,7 +57,8 @@ exports.main = async (event, context) => {
       return { code: 0, data: {} }
     }
     case 'getAiConfig': {
-      // 获取 AI 服务配置（阿里语音 + 千问 + 打印机）
+      // 获取 AI 服务配置（阿里语音 + 千问 + 打印机）— 含密钥，仅管理员可读（纵深防御）
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
       const cfg = await getConfig()
       return { code: 0, data: { ai: cfg.ai || {}, printer: cfg.printer || {} } }
     }

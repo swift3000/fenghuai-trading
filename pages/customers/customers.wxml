@@ -1,7 +1,7 @@
 <view class="container" style="{{uiStyle}}">
   <!-- 顶部操作栏 -->
   <view class="action-bar">
-    <button class="btn-import" bindtap="showImportDialog">导入原型数据</button>
+    <button class="btn-import" wx:if="{{isAdmin}}" bindtap="showImportDialog">导入原型数据</button>
   </view>
   
   <!-- 搜索栏 -->

@@ -2,6 +2,11 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// 转义搜索词中的正则特殊字符
+function escapeRegExp(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 async function checkPermission(openid, permission) {
   // 如果是后台调用（OPENID 为空），跳过权限校验
   if (!openid) {
@@ -11,25 +16,11 @@ async function checkPermission(openid, permission) {
   
   const userResult = await db.collection('users').where({ openid }).get()
   if (userResult.data.length === 0) {
-    // 如果没有用户数据，自动创建管理员
-    try {
-      await db.collection('users').add({
-        data: {
-          openid,
-          name: '管理员',
-          role: 'admin',
-          phone: '',
-          permissions: ['product:view', 'product:edit', 'customer:view', 'customer:edit', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'],
-          createdAt: db.serverDate(),
-          updatedAt: db.serverDate()
-        }
-      })
-      return { code: 0, user: { permissions: [permission] } }
-    } catch (e) {
-      return { code: 401, message: '用户不存在且创建失败' }
-    }
+    // 未注册用户不自动提权：管理员创建统一走 auth.login 的「零配置首管理员」逻辑
+    return { code: 401, message: '用户不存在，请先登录' }
   }
   const user = userResult.data[0]
+  if (user.role === 'admin') return { code: 0, user }
   if (!user.permissions || !user.permissions.includes(permission)) {
     return { code: 403, message: '无权限访问' }
   }
@@ -42,14 +33,16 @@ exports.main = async (event, context) => {
 
   switch (action) {
     case 'list': {
+      const authResult = await checkPermission(openid, 'customer:view')
+      if (authResult.code !== 0) return authResult
       const { searchKey } = event
       let query = db.collection('customers')
       if (searchKey) {
         query = query.where(db.command.or([
-          { name: db.RegExp({ regexp: searchKey, options: 'i' }) },
-          { alias: db.RegExp({ regexp: searchKey, options: 'i' }) },
-          { phone: db.RegExp({ regexp: searchKey, options: 'i' }) },
-          { region: db.RegExp({ regexp: searchKey, options: 'i' }) }
+          { name: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { alias: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { phone: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { region: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) }
         ]))
       }
       const res = await query.orderBy('createdAt', 'desc').limit(100).get()
@@ -107,6 +100,8 @@ exports.main = async (event, context) => {
       return { code: 0, data: {} }
     }
     case 'regions': {
+      const authResult = await checkPermission(openid, 'customer:view')
+      if (authResult.code !== 0) return authResult
       // 获取所有区域用于下拉选择
       const regionsResult = await db.collection('regions').get()
       return { code: 0, data: regionsResult.data }

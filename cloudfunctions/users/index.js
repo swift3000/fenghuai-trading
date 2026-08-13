@@ -24,7 +24,7 @@ const ROLE_PERMISSIONS = {
     'customer:view', 'customer:edit',
     'sort:task',
     'warehouse:confirm',
-    'receivable:view', 'receivable:collect',
+    'receivable:view', 'receivable:collect', 'receivable:discount',
     'report:view', 'report:export', 'report:ledger'
   ],
   sorter: [
@@ -33,7 +33,7 @@ const ROLE_PERMISSIONS = {
     'customer:view', 'customer:edit',
     'sort:task',
     'warehouse:confirm',
-    'receivable:view', 'receivable:collect',
+    'receivable:view', 'receivable:collect', 'receivable:discount',
     'report:view', 'report:export', 'report:ledger'
   ],
   warehouse: [
@@ -42,7 +42,7 @@ const ROLE_PERMISSIONS = {
     'customer:view', 'customer:edit',
     'sort:task',
     'warehouse:confirm',
-    'receivable:view', 'receivable:confirm',
+    'receivable:view', 'receivable:confirm', 'receivable:discount',
     'report:view', 'report:export', 'report:ledger'
   ]
 }

@@ -139,7 +139,7 @@ function parseOrderText(text, products) {
         _id: product._id,
         name: product.name,
         spec: product.spec || '',
-        price: product.pricePiece || 0,
+        price: product.price_piece || 0,
         qty: qty
       })
     }
@@ -156,7 +156,7 @@ function parseOrderText(text, products) {
           _id: product._id,
           name: product.name,
           spec: product.spec || '',
-          price: product.pricePiece || 0,
+          price: product.price_piece || 0,
           qty: qty
         })
         break
@@ -207,7 +207,7 @@ exports.main = async (event, context) => {
       const { text } = event
       if (!text) return { code: 5002, message: 'text 参数为空' }
       
-      const productsResult = await db.collection('products').where({ status: 1 }).get()
+      const productsResult = await db.collection('products').get()
       const products = productsResult.data
       
       if (products.length === 0) {

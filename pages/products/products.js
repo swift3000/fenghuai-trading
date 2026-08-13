@@ -179,6 +179,7 @@ Page({
     searchKeyword: '',
     products: [],
     canEdit: false,
+  isAdmin: false,
     showForm: false,
     showImportDialog: false,
     editingProduct: null,
@@ -207,8 +208,9 @@ Page({
       return
     }
     const app = getApp()
-    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
+const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
     this.setData({ canEdit: perms.includes('product:edit') })
+    this.setData({ isAdmin: (app.globalData.userInfo && app.globalData.userInfo.role === "admin") || false })
   },
 
   onShow() {

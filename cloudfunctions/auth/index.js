@@ -41,7 +41,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
       'customer:view', 'customer:edit',
       'sort:task',
       'warehouse:confirm',
-      'receivable:view', 'receivable:collect',
+      'receivable:view', 'receivable:collect', 'receivable:discount',
       'report:view', 'report:export', 'report:ledger'
     ]
   },
@@ -52,7 +52,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
       'customer:view', 'customer:edit',
       'sort:task',
       'warehouse:confirm',
-      'receivable:view', 'receivable:collect',
+      'receivable:view', 'receivable:collect', 'receivable:discount',
       'report:view', 'report:export', 'report:ledger'
     ]
   },
@@ -63,7 +63,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
       'customer:view', 'customer:edit',
       'sort:task',
       'warehouse:confirm',
-      'receivable:view', 'receivable:confirm',
+      'receivable:view', 'receivable:confirm', 'receivable:discount',
       'report:view', 'report:export', 'report:ledger'
     ]
   }
@@ -202,8 +202,8 @@ async function handleLogin(openid, event) {
       const hasAdmin = adminResult.total > 0
       
       // 首管理员（方案 A 零配置）：系统尚无任何管理员时，第一位登录者无条件成为管理员
-      // （登录页不再允许自选角色，角色统一由后端决定，避免任意人自选 admin/库管的越权）
-      const finalRole = (hasAdmin === false) ? 'admin' : role
+      // 非邀请新用户一律为 orderer：角色只能由管理员通过邀请码分配，绝不信任前端传入 role（防任意提权）
+      const finalRole = (hasAdmin === false) ? 'admin' : 'orderer'
       
       console.log('创建新用户，role:', finalRole, 'hasAdmin:', hasAdmin)
       
@@ -364,16 +364,17 @@ async function handleActivateByInvite(openid, event) {
       }
     }
     
-    // 更新用户信息并激活
+    // 更新用户信息并激活（角色取管理员预设的 user.role，绝不信任事件传入 role，防持邀请码者自提权）
+    const finalRole = user.role || 'orderer'
     await db.collection('users').doc(user._id).update({
       data: {
         openid, // 绑定微信 openid
-        role,
+        role: finalRole,
         name: name || user.name,
         phone: phone || user.phone,
         region: region || user.region,
         status: 'active',
-        permissions: await effectivePermsForRole(role),
+        permissions: await effectivePermsForRole(finalRole),
         inviteStatus: 'activated',
         activatedAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -388,11 +389,11 @@ async function handleActivateByInvite(openid, event) {
           _id: user._id,
           openid,
           name: user.name,
-          role,
+          role: finalRole,
           phone: user.phone,
           region: user.region,
           status: 'active',
-          permissions: await effectivePermsForRole(role)
+          permissions: await effectivePermsForRole(finalRole)
         }
       }
     }

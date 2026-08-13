@@ -11,9 +11,22 @@ const db = cloud.database()
 const { DEFAULT_CUSTOMERS } = require('./data')
 const { DEFAULT_PRODUCTS } = require('./products')
 
+// 管理员门禁：清空并重导入数据属破坏性操作，仅管理员可用（纵深防御，前端已用 canEdit 隐藏 UI）
+async function checkAdmin() {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) return false
+  const res = await db.collection('users').where({ openid: OPENID }).get()
+  const user = res.data[0]
+  return !!(user && user.role === 'admin')
+}
+
 exports.main = async (event, context) => {
   const { action = 'import' } = event
-  
+
+  // 所有动作（import-customers/import-products/import-all/verify）统一走管理员门禁
+  if (!(await checkAdmin())) {
+    return { success: false, message: '无权限：仅管理员可执行数据导入' }
+  }
   try {
     if (action === 'import-customers') {
       return await importCustomers()

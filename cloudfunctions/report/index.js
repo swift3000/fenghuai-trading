@@ -45,11 +45,32 @@ async function getFilteredOrdersFull(timeTab, region, customStart, customEnd) {
     const end = new Date(customEnd); end.setHours(23,59,59,999)
     dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
   }
+  // 合并多条件为单次 where：Query.where() 会整体替换旧条件而非合并
+  const conds = []
+  if (dateFilter) conds.push(dateFilter)
+  if (region) conds.push({ customerRegion: region })
   let query = db.collection('orders')
-  if (dateFilter) query = query.where(dateFilter)
-  if (region) query = query.where({ customerRegion: region })
+  if (conds.length === 1) query = query.where(conds[0])
+  else if (conds.length > 1) query = query.where(db.command.and(conds))
   const res = await query.orderBy('created_at', 'desc').get()
-  return res.data
+  const orders = res.data
+  // 关联各订单的已确认收款，注入 o.payments 供 buildLedgerData 使用（收款存独立 payments 集合）
+  const ids = orders.map(o => o._id).filter(Boolean)
+  if (ids.length > 0) {
+    try {
+      const payRes = await db.collection('payments').where({
+        orderId: db.command.in(ids),
+        status: 'confirmed'
+      }).get()
+      const byOrder = {}
+      payRes.data.forEach(p => {
+        if (!byOrder[p.orderId]) byOrder[p.orderId] = []
+        byOrder[p.orderId].push(p)
+      })
+      orders.forEach(o => { if (byOrder[o._id]) o.payments = byOrder[o._id] })
+    } catch (e) { console.error('关联订单收款失败', e) }
+  }
+  return orders
 }
 
 // 单个商品金额
@@ -76,9 +97,12 @@ function buildLedgerData(orders) {
     const actual = zheng - sun
     const payments = o.payments || []
     const confirmed = payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + (p.amount || 0), 0)
-    const cash = payments.filter(p => p.status === 'confirmed' && (p.method || 'cash') === 'cash').reduce((sum, p) => sum + (p.amount || 0), 0)
-    const wechat = payments.filter(p => p.status === 'confirmed' && p.method === 'wechat').reduce((sum, p) => sum + (p.amount || 0), 0)
-    const debt = Math.max(0, actual - confirmed)
+    const m = (p) => (p.method || p.paymentMethod || '其他')
+    const cash = payments.filter(p => p.status === 'confirmed' && ['现金','cash'].includes(m(p))).reduce((sum, p) => sum + (p.amount || 0), 0)
+    const wechat = payments.filter(p => p.status === 'confirmed' && ['微信','wechat'].includes(m(p))).reduce((sum, p) => sum + (p.amount || 0), 0)
+    // 折价/货损(collect 登记的 total_discount)独立于实收现金，欠款 = 实际货值 - 实收 - 累计折价（与赊销 dashboard/order-detail 口径一致）
+    const discount = o.total_discount || o.totalDiscount || 0
+    const debt = Math.max(0, actual - confirmed - discount)
     const recvDates = payments.filter(p => p.status === 'confirmed').map(p => p.confirmed_at || p.paid_at || '').filter(Boolean).sort()
     const recvDate = recvDates.length ? recvDates[recvDates.length - 1] : ''
     const pkgs = (o.ship_large || 0) + (o.ship_medium || 0) + (o.ship_small || 0)
@@ -91,11 +115,17 @@ function buildLedgerData(orders) {
   return { rows, totals }
 }
 
+function sanitizeCell(v) {
+  if (v === null || v === undefined) return ''
+  let s = String(v)
+  // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头的单元格前缀 ' 转文本
+  if (/^[=+\-@]/.test(s)) s = "'" + s
+  return s
+}
 function toCSV(rows) {
   return rows.map(row => {
     return (row || []).map(c => {
-      if (c === null || c === undefined) return ''
-      const s = String(c)
+      const s = sanitizeCell(c)
       return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
     }).join(',')
   }).join('\n')
@@ -146,13 +176,13 @@ exports.main = async (event, context) => {
       
       if (reportTab === 'product') {
         // 商品汇总统计
+        // 合并多条件为单次 where：Query.where() 会整体替换旧条件而非合并
+        const conds = []
+        if (dateFilter) conds.push(dateFilter)
+        if (regionFilter) conds.push(regionFilter)
         let query = db.collection('orders')
-        if (dateFilter) {
-          query = query.where(dateFilter)
-        }
-        if (regionFilter) {
-          query = query.where(regionFilter)
-        }
+        if (conds.length === 1) query = query.where(conds[0])
+        else if (conds.length > 1) query = query.where(db.command.and(conds))
         
         const ordersResult = await query.get()
         const orders = ordersResult.data
@@ -208,13 +238,13 @@ exports.main = async (event, context) => {
         }
       } else if (reportTab === 'customer') {
         // 客户汇总统计
+        // 合并多条件为单次 where：Query.where() 会整体替换旧条件而非合并
+        const conds = []
+        if (dateFilter) conds.push(dateFilter)
+        if (regionFilter) conds.push(regionFilter)
         let query = db.collection('orders')
-        if (dateFilter) {
-          query = query.where(dateFilter)
-        }
-        if (regionFilter) {
-          query = query.where(regionFilter)
-        }
+        if (conds.length === 1) query = query.where(conds[0])
+        else if (conds.length > 1) query = query.where(db.command.and(conds))
         
         const ordersResult = await query.get()
         const orders = ordersResult.data
@@ -358,7 +388,7 @@ exports.main = async (event, context) => {
       const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
       // 导出报表数据
       const { reportTab, timeTab, region, format = 'csv' } = event
-      
+
       // 获取统计数据（透传 region，与报表页筛选一致）
       const summaryResult = await exports.main({
         action: 'summary',
@@ -366,35 +396,34 @@ exports.main = async (event, context) => {
         timeTab,
         region
       }, context)
-      
+
       const data = summaryResult.data || {}
-      
-      // 生成 CSV 内容
-      let csvContent = ''
-      
+
+      // 生成 CSV 内容（统一走 toCSV，防 = + - @ 公式注入 + 引号转义）
+      let csvRows = []
       if (reportTab === 'product') {
-        csvContent = '商品名称，规格，数量，金额，订单数\n'
-        data.products?.forEach(p => {
-          csvContent += `"${p.name}","${p.spec || ''}",${p.totalQty},${p.totalAmount.toFixed(2)},${p.orderCount}\n`
+        csvRows = [['商品名称', '规格', '数量', '金额', '订单数']]
+        ;(data.products || []).forEach(p => {
+          csvRows.push([p.name, p.spec || '', p.totalQty, (p.totalAmount||0).toFixed(2), p.orderCount])
         })
       } else if (reportTab === 'customer') {
-        csvContent = '客户名称，区域，订单数，商品数，采购金额，已收款，欠款\n'
-        data.customers?.forEach(c => {
-          csvContent += `"${c.name}","${c.region || ''}",${c.orderCount},${c.itemCount},${c.totalAmount.toFixed(2)},${c.paidAmount.toFixed(2)},${c.unpaidAmount.toFixed(2)}
-`
+        csvRows = [['客户名称', '区域', '订单数', '商品数', '采购金额', '已收款', '欠款']]
+        ;(data.customers || []).forEach(c => {
+          csvRows.push([c.name, c.region || '', c.orderCount, c.itemCount, (c.totalAmount||0).toFixed(2), (c.paidAmount||0).toFixed(2), (c.unpaidAmount||0).toFixed(2)])
         })
       } else if (reportTab === 'payment') {
-        csvContent = '收款方式，笔数，金额\n'
-        data.methods?.forEach(m => {
-          csvContent += `"${m.method}",${m.count},${m.amount.toFixed(2)}\n`
+        csvRows = [['收款方式', '笔数', '金额']]
+        ;(data.methods || []).forEach(m => {
+          csvRows.push([m.method, m.count, (m.amount||0).toFixed(2)])
         })
       }
-      
+      const csvContent = csvRows.length ? toCSV(csvRows) : ''
+
       return {
         code: 0,
         data: {
           csvContent,
-          filename: `报表_${reportTab}_${timeTab}_${Date.now()}.csv`
+          filename: '报表_' + reportTab + '_' + timeTab + '_' + Date.now() + '.csv'
         }
       }
     }

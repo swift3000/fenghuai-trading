@@ -294,6 +294,7 @@ Page({
     searchKeyword: '',
     customers: [],
     canEdit: false,
+  isAdmin: false,
     showForm: false,
     showImportDialog: false,
     editingCustomer: null,
@@ -317,6 +318,7 @@ Page({
     const app = getApp()
     const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
     this.setData({ canEdit: perms.includes('customer:edit') })
+    this.setData({ isAdmin: (app.globalData.userInfo && app.globalData.userInfo.role === "admin") || false })
   },
 
   onShow() {

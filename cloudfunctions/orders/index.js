@@ -2,6 +2,11 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// 转义搜索词中的正则特殊字符，避免 db.RegExp 构造抛异常（用户输入含 ( [ * ? 等会 500）
+function escapeRegExp(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 // 权限校验
 async function checkPermission(permission) {
   const { OPENID } = cloud.getWXContext()
@@ -15,24 +20,8 @@ async function checkPermission(permission) {
   
   const userResult = await db.collection('users').where({ openid }).get()
   if (userResult.data.length === 0) {
-    // 如果没有用户数据，自动创建管理员
-    try {
-      await db.collection('users').add({
-        data: {
-          openid,
-          name: '管理员',
-          role: 'admin',
-          phone: '',
-          permissions: ['product:view', 'product:edit', 'customer:view', 'customer:edit', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'],
-          createdAt: db.serverDate(),
-          updatedAt: db.serverDate()
-        }
-      })
-      return { code: 0, user: { permissions: [permission] } }
-    } catch (e) {
-      console.error('创建管理员失败:', e)
-      return { code: 401, message: '用户不存在且创建失败' }
-    }
+    // 未注册用户不自动提权：管理员创建统一走 auth.login 的「零配置首管理员」逻辑
+    return { code: 401, message: '用户不存在，请先登录' }
   }
   
   const user = userResult.data[0]
@@ -161,25 +150,32 @@ exports.main = async (event, context) => {
     }
     case 'list': {
       const { timeTab, searchKey } = event
-      let query = db.collection('orders')
+      // 合并搜索词与时间过滤为单次 where：多次链式 .where() 会互相覆盖，导致两者无法同时生效
+      const conditions = []
       if (searchKey) {
-        query = query.where(db.command.or([
-          { orderNo: db.RegExp({ regexp: searchKey, options: 'i' }) },
-          { customerName: db.RegExp({ regexp: searchKey, options: 'i' }) }
+        conditions.push(db.command.or([
+          { orderNo: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { customerName: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) }
         ]))
       }
       const now = new Date()
       if (timeTab === 'today') {
         const today = new Date(); today.setHours(0,0,0,0)
-        query = query.where({ created_at: db.command.gte(today) })
+        conditions.push({ created_at: db.command.gte(today) })
       } else if (timeTab === 'week') {
         const day = now.getDay() || 7
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
         start.setHours(0,0,0,0)
-        query = query.where({ created_at: db.command.gte(start) })
+        conditions.push({ created_at: db.command.gte(start) })
       } else if (timeTab === 'month') {
         const start = new Date(now.getFullYear(), now.getMonth(), 1)
-        query = query.where({ created_at: db.command.gte(start) })
+        conditions.push({ created_at: db.command.gte(start) })
+      }
+      let query = db.collection('orders')
+      if (conditions.length === 1) {
+        query = query.where(conditions[0])
+      } else if (conditions.length > 1) {
+        query = query.where(db.command.and(conditions))
       }
       const res = await query.orderBy('created_at', 'desc').limit(200).get()
       return { code: 0, data: res.data }
@@ -414,8 +410,15 @@ exports.main = async (event, context) => {
         })
       })
       const header = ['编号','时间','区域','订单号','客户','商品','单位','数量','备注','大件数','中件数','小件数']
+      // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头单元格前缀 ' 转文本
+      const sanitizeCell = (v) => {
+        if (v === null || v === undefined) return ''
+        let s = String(v)
+        if (/^[=+\-@]/.test(s)) s = "'" + s
+        return s
+      }
       const csvRows = [header, ...rows]
-      const csvContent = csvRows.map(r => (r||[]).map(c => c === null || c === undefined ? '' : String(c)).join(',')).join('\n')
+      const csvContent = csvRows.map(r => (r||[]).map(sanitizeCell).join(',')).join('\n')
       const filename = '出库单_' + new Date().toISOString().split('T')[0] + '.csv'
       return { code: 0, data: { csvContent, filename, count: orders.length } }
     }

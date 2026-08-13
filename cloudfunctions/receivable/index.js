@@ -2,6 +2,11 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// 转义搜索词中的正则特殊字符
+function escapeRegExp(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 
 // 权限校验
 async function checkPermission(permission) {
@@ -98,39 +103,32 @@ exports.main = async (event, context) => {
         }
       }
 
-      // 根据视图标签查询不同数据
-      let query = db.collection('orders')
-      
+      // 合并视图/时间/搜索为单次 where：Query.where() 会整体替换旧条件而非合并
+      const conds = []
       if (viewTab === 'unpaid') {
         // 未结清：有欠款（待确认或部分结清）
-        query = query.where({
-          paymentStatus: db.command.in(['unpaid', 'pending'])
-        })
+        conds.push({ paymentStatus: db.command.in(['unpaid', 'pending']) })
       } else if (viewTab === 'settled') {
         // 已结清：已全额付款
-        query = query.where({
-          paymentStatus: 'paid'
-        })
+        conds.push({ paymentStatus: 'paid' })
       }
       // ledger（客户台账）：显示所有客户，不过滤订单状态
       
       // 应用时间过滤
       if (dateFilter) {
-        query = query.where({
-          ...dateFilter
-        })
+        conds.push({ ...dateFilter })
       }
       
       // 应用搜索过滤
-      let ordersResult
       if (searchKey) {
-        ordersResult = await query.where({
-          customerName: db.RegExp({ regexp: searchKey, options: 'i' })
-        }).get()
-      } else {
-        ordersResult = await query.get()
+        conds.push({ customerName: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) })
       }
       
+      let query = db.collection('orders')
+      if (conds.length === 1) query = query.where(conds[0])
+      else if (conds.length > 1) query = query.where(db.command.and(conds))
+      
+      const ordersResult = await query.get()
       const orders = ordersResult.data
       
       // 按客户维度聚合统计（已收口径 = received_amount，含折价）
@@ -240,6 +238,12 @@ exports.main = async (event, context) => {
       const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
       const { orderId, amount, paymentMethod, note, discount } = event
+
+      // 折价/减免属独立权限：即使持有 receivable:collect，若未配置 receivable:discount 也不得折价（纵深防御，前端已用 canDiscount 隐藏入口）
+      if (discount && discount > 0) {
+        const __d = await checkPermission('receivable:discount')
+        if (__d.code !== 0) return { code: 403, message: '无折价/减免权限' }
+      }
       
       if (!orderId || !amount || amount <= 0) {
         return { code: 4001, message: '订单 ID 和收款金额为必填' }
