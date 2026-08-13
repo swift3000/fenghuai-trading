@@ -14,11 +14,11 @@ const PAGE_PERMISSIONS = {
   'pages/products/products': ['product:view'],
   'pages/customers/customers': ['customer:view'],
   'pages/receivable/receivable': ['receivable:view'],
-  'pages/outbound/outbound': ['warehouse:confirm', 'sort:task'],
-  'pages/shipping/shipping': ['sort:task', 'warehouse:confirm'],
+  'pages/outbound/outbound': ['warehouse:confirm', 'sort:task'], // ANY
+  'pages/shipping/shipping': ['order:print'], // 打印送货单页
   'pages/reports/reports': ['report:view'],
   'pages/members/members': ['member:manage'],
-  'pages/settings/settings': ['permission:manage'],
+  'pages/settings/settings': ['member:manage'],
   'pages/profile/profile': [] // 所有人都可以访问
 }
 
@@ -72,8 +72,8 @@ function checkPageAccess(pagePath) {
     return { allowed: true }
   }
   
-  // 检查是否有所需权限
-  const hasPermission = userPermissions.includes(requiredPermissions[0])
+  // 检查是否有所需权限（任一即可，匹配原型 outbound=sort:task||warehouse:confirm）
+  const hasPermission = requiredPermissions.some(p => userPermissions.includes(p))
   console.log('[路由守卫] 权限检查结果:', hasPermission)
   
   if (!hasPermission) {

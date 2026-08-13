@@ -104,7 +104,7 @@ const ROLE_DEFINITIONS = {
       'warehouse:confirm',
       'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
       'report:view', 'report:export', 'report:ledger',
-      'member:manage', 'permission:manage'
+      'member:manage'
     ],
     menuAccess: ['首页', '订单列表', '商品管理', '客户管理', '分拣出库', '赊销看板', '报表统计', '成员管理', '系统设置'],
     canRegisterPayment: true,
@@ -562,7 +562,7 @@ function testPermissionControl() {
             if (operation === '登记收款') hasPermission = roleDef.canRegisterPayment
             else if (operation === '确认收款') hasPermission = roleDef.canConfirmPayment
             else if (operation === '成员管理') hasPermission = roleDef.permissions.includes('member:manage')
-            else if (operation === '系统配置') hasPermission = roleDef.permissions.includes('permission:manage')
+            else if (operation === '系统配置') hasPermission = roleDef.permissions.includes('member:manage')
             else hasPermission = true // 其他操作全员可用
             
             assert(hasPermission, `${ROLE_DEFINITIONS[role].name}有${operation}权限`, role)

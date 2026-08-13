@@ -1,9 +1,12 @@
 const app = getApp()
 const { callCloud } = require('../../utils/request')
 const { guardPageLoad } = require('../../utils/router-guard')
+const { PERM_GROUPS, PERM_LABELS, PERM_LOCKED, ROLE_ORDER, ROLE_LABELS, DEFAULT_MATRIX } = require('../../utils/perm-matrix')
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     members: [],
     inviteRole: 'orderer',
     roleOptions: [
@@ -26,7 +29,11 @@ Page({
     roleIndex: 0,
     inviteRoleLabel: '下单员',
     inviteQr: '',
-    lastInvite: null
+    lastInvite: null,
+    // 权限矩阵
+    roleCols: ROLE_ORDER.map(r => ({ role: r, label: ROLE_LABELS[r] })),
+    permGroups: [],
+    permLoading: false
   },
 
   onLoad() {
@@ -36,7 +43,11 @@ Page({
   },
 
   onShow() {
+    uiStyle.applyUiStyle(this)
     this.loadMembers()
+    if (app.globalData && app.globalData.userInfo && app.globalData.userInfo.role === 'admin') {
+      this.loadPermConfig()
+    }
   },
 
   async loadMembers() {
@@ -162,9 +173,118 @@ Page({
     })
   },
 
+  // ===== 角色权限配置（权限矩阵） =====
+
+  // 加载各角色实际权限并渲染矩阵
+  async loadPermConfig() {
+    try {
+      const result = await callCloud('users', { action: 'perm-config' })
+      if (!result) return
+      const rolePerms = result // { admin: [keys], orderer: [...], ... }
+      const groups = PERM_GROUPS.map(g => {
+        const rows = g.keys.map(key => {
+          const locked = !!PERM_LOCKED[key]
+          const cells = ROLE_ORDER.map(r => ({
+            on: !!(rolePerms[r] && rolePerms[r].includes(key)),
+            disabled: locked
+          }))
+          return { key, label: PERM_LABELS[key] || key, locked, cells }
+        })
+        return { name: g.name, count: g.keys.length, rows }
+      })
+      this.setData({ permGroups: groups, permLoading: false })
+    } catch (e) {
+      this.setData({ permLoading: false })
+      wx.showToast({ title: '权限配置加载失败', icon: 'none' })
+    }
+  },
+
+  // 切换某角色某权限开关（点击某格）
+  async togglePerm(e) {
+    const { group, row, role } = e.currentTarget.dataset
+    const rowIdx = Number(row)
+    const roleIdx = Number(role)
+    const grp = this.data.permGroups[Number(group)]
+    if (!grp) return
+    const r = grp.rows[rowIdx]
+    if (!r || r.locked) return   // 锁定项不可改
+    const target = r.cells[roleIdx]
+    if (!target) return
+    const roleName = ROLE_ORDER[roleIdx]
+    const newOn = !target.on
+
+    // 乐观更新
+    const cells = r.cells.map((c, i) => (i === roleIdx ? { ...c, on: newOn } : c))
+    const newGroups = this.data.permGroups.map((g, gi) => (gi === Number(group)
+      ? { ...g, rows: g.rows.map((rr, ri) => (ri === rowIdx ? { ...rr, cells } : rr)) }
+      : g))
+    this.setData({ permGroups: newGroups })
+
+    try {
+      wx.showLoading({ title: '保存中...' })
+      // 计算该角色当前勾选的完整权限数组
+      const perms = []
+      this.data.permGroups.forEach(g => g.rows.forEach(rr => {
+        rr.cells.forEach((c, ci) => {
+          if (ci === roleIdx && c.on) perms.push(rr.key)
+        })
+      }))
+      await callCloud('users', { action: 'save-perm', role: roleName, permissions: perms })
+      wx.showToast({ title: newOn ? '已开启' : '已关闭', icon: 'none' })
+    } catch (err) {
+      wx.showToast({ title: '保存失败', icon: 'none' })
+      // 回滚
+      const rollCells = r.cells.map((c, i) => (i === roleIdx ? { ...c, on: target.on } : c))
+      const rollGroups = this.data.permGroups.map((g, gi) => (gi === Number(group)
+        ? { ...g, rows: g.rows.map((rr, ri) => (ri === rowIdx ? { ...rr, cells: rollCells } : rr)) }
+        : g))
+      this.setData({ permGroups: rollGroups })
+    } finally {
+      wx.hideLoading()
+    }
+  },
+
+  // 恢复默认（全员开放）
+  async resetPerms() {
+    const saved = this.data.permGroups
+    wx.showModal({
+      title: '恢复默认',
+      content: '确认将所有角色权限恢复为「全员开放」默认？（成员管理仍仅管理员）',
+      success: async res => {
+        if (!res.confirm) return
+        try {
+          wx.showLoading({ title: '恢复中...' })
+          await Promise.all(ROLE_ORDER.map(r => callCloud('users', { action: 'reset-perm', role: r })))
+          wx.showToast({ title: '已恢复默认' })
+          // 用默认矩阵重建渲染
+          const groups = PERM_GROUPS.map(g => {
+            const rows = g.keys.map(key => {
+              const locked = !!PERM_LOCKED[key]
+              const cells = ROLE_ORDER.map(r => ({
+                on: !!(PERM_LOCKED[key] ? (r === 'admin') : (DEFAULT_MATRIX[key] && DEFAULT_MATRIX[key][r])),
+                disabled: locked
+              }))
+              return { key, label: PERM_LABELS[key] || key, locked, cells }
+            })
+            return { name: g.name, count: g.keys.length, rows }
+          })
+          this.setData({ permGroups: groups })
+        } catch (e) {
+          this.setData({ permGroups: saved })
+          wx.showToast({ title: '恢复失败', icon: 'none' })
+        } finally {
+          wx.hideLoading()
+        }
+      }
+    })
+  },
+
   formatDate(date) {
     if (!date) return '-'
     const d = new Date(date)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

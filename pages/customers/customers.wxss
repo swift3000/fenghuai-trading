@@ -16,7 +16,7 @@
   color: #F5A623;
   border: 2rpx solid #F5A623;
   border-radius: 16rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   font-weight: 500;
   text-align: center;
   transition: all 0.3s;
@@ -45,13 +45,13 @@
 
 .search-bar::before {
   content: '🔍';
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   opacity: 0.6;
 }
 
 .search-bar input {
   flex: 1;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   outline: none;
 }
 
@@ -68,7 +68,7 @@
 }
 
 .customer-name {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
   flex: 1;
@@ -78,7 +78,7 @@
 }
 
 .text-muted {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #999;
   white-space: nowrap;
   margin-left: 16rpx;
@@ -86,7 +86,7 @@
 }
 
 .customer-contact {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #666;
   margin-top: 12rpx;
   display: block;
@@ -97,8 +97,8 @@
   display: flex;
   gap: 24rpx;
   margin-top: 16rpx;
-  font-size: 26rpx;
-  color: #06AD56;
+  font-size: calc(26rpx * var(--font-scale));
+  color: var(--theme-primary);
   font-weight: 500;
 }
 
@@ -114,7 +114,7 @@
   text-align: center;
   padding: 80rpx 0;
   color: #999;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   background: #fafafa;
   border-radius: 16rpx;
   border: 1rpx dashed #e0e0e0;
@@ -126,13 +126,13 @@
   bottom: 120rpx;
   width: 112rpx;
   height: 112rpx;
-  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #fff;
-  font-size: 56rpx;
+  font-size: calc(56rpx * var(--font-scale));
   font-weight: bold;
   box-shadow: 0 8rpx 24rpx rgba(6, 173, 86, 0.35);
   transition: all 0.3s;
@@ -177,11 +177,11 @@
   align-items: center;
   padding: 28rpx 32rpx;
   border-bottom: 1rpx solid #f0f0f0;
-  background: linear-gradient(135deg, #f9fdfa 0%, #fff 100%);
+  background: linear-gradient(135deg, var(--theme-primary-bg) 0%, #fff 100%);
 }
 
 .modal-title {
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
   position: relative;
@@ -196,12 +196,12 @@
   transform: translateY(-50%);
   width: 6rpx;
   height: 28rpx;
-  background: linear-gradient(180deg, #06AD56 0%, #06c167 100%);
+  background: linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   border-radius: 3rpx;
 }
 
 .modal-close {
-  font-size: 48rpx;
+  font-size: calc(48rpx * var(--font-scale));
   color: #999;
   line-height: 1;
   transition: all 0.2s;
@@ -234,7 +234,7 @@
 
 .form-label {
   display: block;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
   margin-bottom: 16rpx;
   font-weight: 500;
@@ -251,15 +251,15 @@
   padding: 0 24rpx;
   background: #fff;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   box-sizing: border-box;
   border: 1rpx solid #e8e8e8;
   transition: all 0.3s;
 }
 
 .form-input:focus {
-  border-color: #06AD56;
-  background: #f9fdfa;
+  border-color: var(--theme-primary);
+  background: var(--theme-primary-bg);
   box-shadow: 0 0 0 3rpx rgba(6, 173, 86, 0.1);
 }
 
@@ -269,15 +269,15 @@
   padding: 20rpx 24rpx;
   background: #fff;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   box-sizing: border-box;
   border: 1rpx solid #e8e8e8;
   transition: all 0.3s;
 }
 
 .form-textarea:focus {
-  border-color: #06AD56;
-  background: #f9fdfa;
+  border-color: var(--theme-primary);
+  background: var(--theme-primary-bg);
   box-shadow: 0 0 0 3rpx rgba(6, 173, 86, 0.1);
 }
 
@@ -287,14 +287,14 @@
   padding: 0 24rpx;
   background: #fff;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   border: 1rpx solid #e8e8e8;
   transition: all 0.3s;
 }
 
 .picker:active {
-  background: #f9fdfa;
-  border-color: #06AD56;
+  background: var(--theme-primary-bg);
+  border-color: var(--theme-primary);
 }
 
 /* 按钮样式 */
@@ -303,7 +303,7 @@
   height: 88rpx;
   line-height: 88rpx;
   border-radius: 12rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   text-align: center;
   font-weight: 500;
   transition: all 0.3s;
@@ -325,7 +325,7 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   color: #fff;
   box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
   position: relative;
@@ -360,7 +360,7 @@
 
 .info-text {
   display: block;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
   margin-bottom: 24rpx;
   text-align: center;
@@ -368,8 +368,8 @@
 }
 
 .import-options {
-  background: #f9fdfa;
-  border: 1rpx solid #e8f5e9;
+  background: var(--theme-primary-bg);
+  border: 1rpx solid var(--theme-primary-bg);
   border-radius: 12rpx;
   padding: 24rpx;
   margin-bottom: 24rpx;
@@ -382,7 +382,7 @@
 }
 
 .radio-text {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
 }
 
@@ -395,7 +395,7 @@
 
 .warning-text {
   display: block;
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   color: #FA8C16;
   line-height: 1.6;
 }

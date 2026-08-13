@@ -27,7 +27,7 @@
 }
 
 .privacy-banner .privacy-link {
-  color: #07C160;
+  color: var(--theme-primary);
   font-weight: 500;
   white-space: nowrap;
 }
@@ -41,7 +41,7 @@
 
 /* Hero 区域 */
 .home-hero {
-  background: linear-gradient(180deg, #07C160 0%, #06AD56 100%);
+  background: linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
   padding: 16px 16px 60px;
   color: #fff;
 }
@@ -138,7 +138,7 @@
 }
 
 .announce-bar .announce-dot.active {
-  background: #07C160;
+  background: var(--theme-primary);
   width: 12px;
   border-radius: 2px;
 }
@@ -164,7 +164,7 @@
 .home-stats .num {
   font-size: 24px;
   font-weight: 700;
-  color: #07C160;
+  color: var(--theme-primary);
   display: block;
 }
 
@@ -264,7 +264,7 @@
 }
 
 .home-actions .action .icon.c1 {
-  background: linear-gradient(135deg, #07C160, #06AD56);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary));
 }
 
 .home-actions .action .icon.c2 {
@@ -346,7 +346,7 @@
 .order-list-item .right .amount {
   font-size: 16px;
   font-weight: 600;
-  color: #07C160;
+  color: var(--theme-primary);
   display: block;
 }
 
@@ -370,12 +370,12 @@
 
 .order-list-item .right .status.shipped {
   background: rgba(7, 193, 96, 0.1);
-  color: #07C160;
+  color: var(--theme-primary);
 }
 
 .order-list-item .right .status.paid {
   background: rgba(7, 193, 96, 0.1);
-  color: #07C160;
+  color: var(--theme-primary);
 }
 
 /* 空状态 */

@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <!-- 顶部操作栏 -->
   <view class="action-bar">
     <button class="btn-import" bindtap="showImportDialog">导入原型数据</button>
@@ -17,7 +17,7 @@
         <text class="text-muted">{{item.region}}</text>
       </view>
       <text class="customer-contact">{{item.contact}} | {{item.phone}}</text>
-      <view class="customer-actions">
+      <view class="customer-actions" wx:if="{{canEdit}}">
         <text data-item="{{item}}" bindtap="goEdit">编辑</text>
         <text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text>
       </view>
@@ -26,7 +26,7 @@
   </view>
 
   <!-- 添加按钮 -->
-  <view class="fab-btn" bindtap="goToAdd">
+  <view class="fab-btn" wx:if="{{canEdit}}" bindtap="goToAdd">
     <text>+</text>
   </view>
 

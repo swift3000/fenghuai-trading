@@ -89,7 +89,7 @@
 
 ### 3.4 数据模型（云数据库集合，MVP 字段）
 
-共 **11 个集合**：`users` / `regions` / `products` / `customers` / `orders` / `order_items` / `payments` / `product_aliases` / `customer_aliases` / `order_logs` / `system_config`。
+共 **12 个集合**：`users` / `regions` / `products` / `customers` / `orders` / `order_items` / `payments` / `product_aliases` / `customer_aliases` / `order_logs` / `system_config` / `perm_configs`。
 
 - **users**：`_openid, role, name, phone, region, fontScale, status, invitedBy, createdAt`（**微信原生身份模型，openid 即唯一身份，MVP 不设置密码**；`status` ∈ pending/active/disabled，`invitedBy` 记录邀请人，便于溯源。原 PRD 的 `password_hash`/bcrypt 二次校验在微信原生场景下作废，已与用户确认 MVP 去掉）
 - **regions**：`name, sort, status`（预置 11 条：汉滨区(1)、汉阴县(2)、石泉县(3)、宁陕县(4)、紫阳县(5)、岚皋县(6)、平利县(7)、镇坪县(8)、旬阳市(9)、白河县(10)、外县(99)，无 code 字段）
@@ -102,6 +102,7 @@
 - **product_aliases**：商品别名（智能录入模糊匹配用）
 - **customer_aliases**：客户别名（智能录入模糊匹配用）
 - **order_logs**：订单操作记录（创建/编辑/删除/收款/分拣/出库留痕）
+- **perm_configs**：`role, permissions`（角色权限覆盖，权限矩阵存储；每角色至多 1 条，无记录=默认全员开放）
 - **system_config**：系统配置（AI 服务密钥、打印机配置）
 - 预留字段（升级用，不破坏老数据）：`orders.reportFields`, `users.regionPerm`
 

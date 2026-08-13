@@ -1,7 +1,10 @@
 const pricing = require('../../utils/order-pricing')
+const { guardPageLoad } = require('../../utils/router-guard')
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     customer: null,
     items: [],
     totalAmount: '0.00',
@@ -16,10 +19,15 @@ Page({
     productSearchKeyword: '',
     smartInputText: '',
     smartInputLoading: false,
-    smartPreviewItems: []
+    smartPreviewItems: [],
+    editMode: false
   },
 
   onLoad(options) {
+    uiStyle.applyUiStyle(this)
+    if (!guardPageLoad(this)) {
+      return
+    }
     if (options.id) {
       this.loadOrder(options.id)
     }
@@ -88,8 +96,45 @@ Page({
     this.setData({ displayProducts: list })
   },
 
-  loadOrder(id) {
+  async loadOrder(id) {
     console.log('加载订单', id)
+    this._editingOrderId = id
+    try {
+      const { callCloud } = require('../../utils/request')
+      const order = await callCloud('orders', { action: 'detail', orderId: id })
+      if (!order) {
+        wx.showToast({ title: '订单不存在', icon: 'none' })
+        return
+      }
+      const customer = {
+        _id: order.customerId,
+        name: order.customerName || ''
+      }
+      // 还原商品明细（对齐 prefillFromLastOrder 的行结构）
+      const items = (order.items || []).map(li => {
+        const mode = li.pricing_mode || 'case'
+        return {
+          _id: li._id || li.material_code || '',
+          material_code: li.material_code || '',
+          name: li.name,
+          spec: li.spec || '',
+          unit: li.unit || '包',
+          pricing_mode: mode,
+          is_adjustable: li.is_adjustable || false,
+          price_piece: li.price_piece != null ? li.price_piece : 0,
+          price_unit: li.price_unit != null ? li.price_unit : (li.price_zero != null ? li.price_zero : 0),
+          piece_qty: li.piece_qty || 0,
+          package_qty: li.package_qty != null ? li.package_qty : (li.zero_qty || 0),
+          remark: li.remark || ''
+        }
+      })
+      this.setData({ customer, items, editMode: true })
+      wx.setNavigationBarTitle && wx.setNavigationBarTitle({ title: '编辑订单' })
+      this.calcTotal()
+    } catch (e) {
+      console.error('加载订单失败', e)
+      wx.showToast({ title: '加载订单失败', icon: 'none' })
+    }
   },
 
   // ============ 客户选择 ============
@@ -109,15 +154,50 @@ Page({
   async selectCustomerItem(e) {
     const customer = e.currentTarget.dataset.item
     this.setData({ customer, showCustomerModal: false })
-    // 1.0：选择客户后带出该客户上次订单（用于带出上次价格），不直接预填明细，由用户点击「添加商品」取价
+    // 1.0：选择客户后自动带出上次订单的商品与数量（对齐原型 prefillFromLastOrder）
     try {
       const { callCloud } = require('../../utils/request')
       const lastItems = await callCloud('orders', { action: 'lastOrder', customerId: customer._id })
       this._lastOrderItems = lastItems || []
+      this.prefillFromLastOrder()
+      if (this._lastOrderItems && this._lastOrderItems.length) {
+        wx.showToast({ title: '已带入上次订单商品，请核对数量', icon: 'none' })
+      }
     } catch (err) {
       console.error('加载上次订单失败', err)
       this._lastOrderItems = []
     }
+  },
+
+  // 1.0：把该客户上次订单的商品+数量直接带出到当前订单（编辑模式不覆盖已有明细）
+  prefillFromLastOrder() {
+    if (this._editingOrderId) return
+    if (!this._lastOrderItems || !this._lastOrderItems.length) {
+      // 无上次订单时不自动清空已有明细（避免误删），仅在用户已手工添加时才保留
+      return
+    }
+    // 若当前已有明细（如已手动添加过商品），则不再覆盖
+    if (this.data.items && this.data.items.length) return
+    const items = (this._lastOrderItems || []).map(li => {
+      const mode = li.pricing_mode || 'case'
+      return {
+        _id: li._id || li.material_code,
+        material_code: li.material_code,
+        name: li.name,
+        spec: li.spec || '',
+        unit: li.unit || '包',
+        pricing_mode: mode,
+        is_adjustable: li.is_adjustable || false,
+        price_piece: li.price_piece != null ? li.price_piece : 0,
+        price_unit: li.price_unit != null ? li.price_unit : (li.price_zero != null ? li.price_zero : 0),
+        piece_qty: li.piece_qty || 0,
+        package_qty: li.package_qty != null ? li.package_qty : (li.zero_qty || 0),
+        remark: li.remark || '',
+        prefilled: true
+      }
+    })
+    this.setData({ items })
+    this.calcTotal()
   },
 
   // ============ 商品选择 ============
@@ -374,18 +454,34 @@ Page({
     }
     try {
       const { callCloud } = require('../../utils/request')
-      await callCloud('orders', {
-        action: 'create',
+      const payload = {
         customerId: this.data.customer._id,
         customerName: this.data.customer.name,
+        customerRegion: this.data.customer.region || '',
         items,
         totalAmount: pricing.fmtMoney(total)
-      })
-      wx.showToast({ title: '订单已创建', icon: 'success' })
+      }
+      if (this._editingOrderId) {
+        payload.orderId = this._editingOrderId
+        await callCloud('orders', Object.assign({ action: 'update' }, payload))
+        wx.showToast({ title: '订单已更新', icon: 'success' })
+      } else {
+        await callCloud('orders', Object.assign({ action: 'create' }, payload))
+        wx.showToast({ title: '订单已创建', icon: 'success' })
+      }
       setTimeout(() => wx.navigateBack(), 600)
     } catch (e) {
       console.error('创建订单失败', e)
       wx.showToast({ title: '创建失败', icon: 'none' })
     }
+  },
+  onThemeChange(theme) {
+    uiStyle.applyUiStyle(this)
+
+    console.log('主题已切换:', theme.name)
+    // 页面可以在这里添加自定义逻辑
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

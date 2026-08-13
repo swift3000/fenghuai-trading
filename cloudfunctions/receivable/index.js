@@ -2,10 +2,55 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+
+// 权限校验
+async function checkPermission(permission) {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) {
+    console.log('⚠️ 后台调用，跳过权限校验')
+    return { code: 0 }
+  }
+  const userResult = await db.collection('users').where({ openid: OPENID }).get()
+  if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
+  const user = userResult.data[0]
+  if (user.role === 'admin') return { code: 0 }
+  if (user.permissions && user.permissions.includes(permission)) return { code: 0 }
+  return { code: 403, message: '无权限访问' }
+}
+
+// 追加订单操作记录
+async function getUserIdentity() {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) return { name: '系统', role: 'system' }
+  try {
+    const r = await db.collection('users').where({ openid: OPENID }).get()
+    if (r.data && r.data.length > 0) {
+      const u = r.data[0]
+      return { name: u.name || '未知', role: u.role || 'orderer' }
+    }
+  } catch (e) { console.error('获取用户身份失败', e) }
+  return { name: '未知', role: 'orderer' }
+}
+
+async function appendOrderLog(orderId, action, desc) {
+  if (!orderId) return
+  try {
+    const identity = await getUserIdentity()
+    await db.collection('orders').doc(orderId).update({
+      data: {
+        logs: db.command.push([{ action, desc, operatorName: identity.name, role: identity.role, time: Date.now() }])
+      }
+    })
+  } catch (e) {
+    console.error('记录订单操作日志失败', e)
+  }
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   switch (action) {
     case 'dashboard': {
+      const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
       const { viewTab, timeTab, searchKey } = event
       const now = new Date()
       
@@ -33,6 +78,18 @@ exports.main = async (event, context) => {
       } else if (timeTab === 'month') {
         const start = new Date(now.getFullYear(), now.getMonth(), 1)
         const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        dateFilter = {
+          created_at: db.command.and([
+            db.command.gte(start),
+            db.command.lte(end)
+          ])
+        }
+      } else if (timeTab === 'custom' && event.startDate && event.endDate) {
+        // 自定义日期范围
+        const start = new Date(event.startDate)
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(event.endDate)
+        end.setHours(23, 59, 59, 999)
         dateFilter = {
           created_at: db.command.and([
             db.command.gte(start),
@@ -102,7 +159,8 @@ exports.main = async (event, context) => {
         customer.totalAmount += total
         customer.receivedAmount += received
         customer.paidAmount += received
-        customer.unpaidAmount += Math.max(0, total - received)
+        const discount1 = order.total_discount || order.totalDiscount || 0
+        customer.unpaidAmount += Math.max(0, total - received - discount1)
         customer.orderCount += 1
         customer.orders.push({
           _id: order._id,
@@ -110,7 +168,7 @@ exports.main = async (event, context) => {
           totalAmount: total,
           receivedAmount: received,
           paidAmount: received,
-          unpaidAmount: Math.max(0, total - received),
+          unpaidAmount: Math.max(0, total - received - (order.total_discount || order.totalDiscount || 0)),
           status: order.status,
           paymentStatus: order.paymentStatus,
           createdAt: order.created_at
@@ -150,6 +208,7 @@ exports.main = async (event, context) => {
     }
     
     case 'customerDetail': {
+      const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
       // 获取单个客户的详细信息
       const { customerId } = event
       if (!customerId) {
@@ -164,6 +223,7 @@ exports.main = async (event, context) => {
       const orders = ordersResult.data
       const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
       const paidAmount = orders.reduce((sum, o) => sum + (o.received_amount || o.receivedAmount || 0), 0)
+      const discountAmount = orders.reduce((sum, o) => sum + (o.total_discount || o.totalDiscount || 0), 0)
       
       return {
         code: 0,
@@ -171,12 +231,13 @@ exports.main = async (event, context) => {
           orders,
           totalAmount,
           paidAmount,
-          unpaidAmount: Math.max(0, totalAmount - paidAmount)
+          unpaidAmount: Math.max(0, totalAmount - paidAmount - discountAmount)
         }
       }
     }
     
     case 'collect': {
+      const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
       const { orderId, amount, paymentMethod, note, discount } = event
       
@@ -200,6 +261,20 @@ exports.main = async (event, context) => {
       }
       
       // 登记收款：写入 payments（status=pending，待库管确认）；订单 unpaid→pending；实收在确认时才累加
+      // 折价/货损：登记时即累加到订单 total_discount（前端登记时校验 金额+折价<=剩余欠款）
+      if (discount && discount > 0) {
+        try {
+          const newDiscount = (order.total_discount || order.totalDiscount || 0) + discount
+          await db.collection('orders').doc(orderId).update({
+            data: {
+              total_discount: newDiscount,
+              totalDiscount: newDiscount,
+              payment_status: 'pending',
+              paymentStatus: 'pending'
+            }
+          })
+        } catch (e) { console.error('累加折价失败', e) }
+      }
       const payRes = await db.collection('payments').add({
         data: {
           order_id: orderId,
@@ -226,11 +301,13 @@ exports.main = async (event, context) => {
           paymentStatus: 'pending'
         }
       })
+      await appendOrderLog(orderId, 'collect', `登记收款 ¥${Number(amount).toFixed(2)}（待确认）`)
       
       return { code: 0, data: { paymentId: payRes._id } }
     }
     
     case 'confirmPayment': {
+      const __p = await checkPermission('receivable:confirm'); if (__p.code !== 0) return __p
       // 确认收款（两步流程第二步；库管/管理员可）
       const { paymentId, orderId, note } = event
       
@@ -289,12 +366,14 @@ exports.main = async (event, context) => {
             paymentConfirmNote: note || ''
           }
         })
+        await appendOrderLog(targetOrderId, 'confirm', `确认收款 ¥${Number(pay.amount || 0).toFixed(2)}`)
       }
       
       return { code: 0, data: {} }
     }
     
     case 'paymentHistory': {
+      const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
       // 获取收款历史记录
       const { customerId, limit = 50 } = event
       
@@ -315,6 +394,43 @@ exports.main = async (event, context) => {
       }
     }
     
+    
+    case 'pendingConfirm': {
+      const __p = await checkPermission('receivable:confirm'); if (__p.code !== 0) return __p
+      // 获取待确认收款列表（库管/管理员可见）
+      const res = await db.collection('payments')
+        .where({ status: 'pending' })
+        .orderBy('registered_at', 'asc')
+        .limit(50)
+        .get()
+      
+      // 补充订单号和登记人信息
+      const payments = await Promise.all(res.data.map(async (pay) => {
+        const orderRes = await db.collection('orders').doc(pay.orderId).get()
+        const order = orderRes.data || {}
+        
+        // 获取登记人信息
+        let registeredBy = '未知'
+        if (pay.registered_by) {
+          const userRes = await db.collection('users').where({ openid: pay.registered_by }).get()
+          if (userRes.data.length > 0) {
+            registeredBy = userRes.data[0].name || '未知'
+          }
+        }
+        
+        return {
+          ...pay,
+          orderNo: order.orderNo || '未知订单',
+          registeredBy,
+          registeredAt: pay.registered_at ? new Date(pay.registered_at).toLocaleString('zh-CN') : ''
+        }
+      }))
+      
+      return {
+        code: 0,
+        data: payments
+      }
+    }
     default:
       return { code: 1001, message: '未知 action' }
   }

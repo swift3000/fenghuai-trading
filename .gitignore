@@ -24,3 +24,6 @@ miniprogram_npm/
 # 微信开发者工具本地配置（含 AppID，不上传）
 project.private.config.json
 ui-test.log
+
+# loop 技能本地状态（内部迭代日志）
+loop_project/

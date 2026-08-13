@@ -807,6 +807,86 @@ Array<{
 
 ## 7. 用户相关
 
+### 7.4 角色权限配置（权限矩阵）
+
+> **云函数**：`users`。权限矩阵 = 权限键 × 角色的二维开关，管理员可在「成员管理 → 权限配置」逐项开关，改动即时保存至 `perm_configs` 集合。登录/门禁按覆盖后的实际权限生效。
+
+#### 7.4.1 读取各角色实际权限（users.perm-config）
+
+- **最小权限**：admin（页面仅管理员显示；后端校验当前登录者为 admin）
+
+#### 请求
+```typescript
+{ action: 'perm-config' }
+```
+
+#### 返回 data（每个角色的有效权限数组）
+```typescript
+{
+  admin:   string[];  // 含 member:manage（固定）
+  orderer: string[];
+  sorter:  string[];
+  warehouse: string[];
+}
+```
+> 返回的是「默认 ∪ 覆盖」后的**实际生效**数组；无覆盖记录的回落默认（全员开放）。
+
+#### 7.4.2 保存某角色权限（users.save-perm）
+
+- **最小权限**：admin
+
+#### 请求
+```typescript
+{
+  action: 'save-perm',
+  role: 'admin' | 'orderer' | 'sorter' | 'warehouse';
+  permissions: string[];  // 该角色的完整权限键数组（前端按矩阵勾选结果提交）
+}
+```
+
+#### 行为
+- 校验 `role` 合法；过滤非法键；
+- 锁定权限保护：`member:manage` 仅 admin 且不可关闭（防锁死）——非 admin 一律过滤，admin 强制保留；
+- 覆盖写入 `perm_configs`（存在则更新，否则新增）。
+
+#### 返回 data：`{ role, permissions: string[] }`（保存后的实际权限数组）
+
+#### 7.4.3 恢复默认（users.reset-perm）
+
+- **最小权限**：admin
+
+#### 请求
+```typescript
+{ action: 'reset-perm', role: 'admin' | 'orderer' | 'sorter' | 'warehouse' }
+```
+
+#### 行为
+删除该角色的 `perm_configs` 覆盖记录，回落默认（全员开放，成员管理仍仅管理员）。
+
+#### 返回 data：`{ role, permissions: string[] }`（默认权限数组）
+
+#### 7.4.4 权限键全集（17 个，按分组）
+
+| 分组 | 权限键 |
+|------|--------|
+| 订单管理 | `order:create` `order:edit` `order:delete` `order:print` `order:export` |
+| 商品管理 | `product:view` `product:edit` |
+| 客户管理 | `customer:view` `customer:edit` |
+| 分拣作业 | `sort:task` |
+| 库管出库 | `warehouse:confirm` |
+| 赊销收款 | `receivable:view` `receivable:collect` `receivable:confirm` `receivable:discount` |
+| 报表中心 | `report:view` `report:export` `report:ledger` |
+| 系统管理 | `member:manage`（锁定，仅 admin） |
+
+#### 7.4.5 默认矩阵（全员开放）
+
+| 权限键 | orderer | sorter | warehouse | admin |
+|--------|:---:|:---:|:---:|:---:|
+| 订单/商品/客户/分拣/出库/报表/大部分赊销 | ✅ | ✅ | ✅ | ✅ |
+| `receivable:collect` 登记收款 | ✅ | ✅ | ❌ | ✅ |
+| `receivable:confirm` 确认收款 | ❌ | ❌ | ✅ | ✅ |
+| `member:manage` 成员管理 | ❌ | ❌ | ❌ | ✅ 锁定 |
+
 ### 7.1 用户列表
 
 - **云函数**：`users` / `users`

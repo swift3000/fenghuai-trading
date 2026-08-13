@@ -11,12 +11,12 @@
   justify-content: space-between;
   align-items: center;
   padding: 50rpx 30rpx;
-  background: linear-gradient(135deg, #06AD56 0%, #059d4e 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
   margin-bottom: 20rpx;
 }
 
 .user-name {
-  font-size: 36rpx;
+  font-size: calc(36rpx * var(--font-scale));
   font-weight: bold;
   color: #fff;
   flex: 1;
@@ -27,7 +27,7 @@
   color: #fff;
   padding: 10rpx 24rpx;
   border-radius: 30rpx;
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   font-weight: 500;
   backdrop-filter: blur(10rpx);
 }
@@ -48,7 +48,7 @@
   padding: 32rpx 30rpx;
   background: #fff;
   border-bottom: 1rpx solid #f0f0f0;
-  font-size: 30rpx;
+  font-size: calc(30rpx * var(--font-scale));
   color: #333;
   transition: background 0.2s;
 }
@@ -67,7 +67,7 @@
 
 .menu-item text:last-child {
   color: #ccc;
-  font-size: 34rpx;
+  font-size: calc(34rpx * var(--font-scale));
   margin-left: 10rpx;
 }
 
@@ -78,7 +78,7 @@
 
 /* 字体大小标签 */
 .font-size-label {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #666;
   margin-right: 15rpx;
   min-width: 100rpx;
@@ -94,7 +94,7 @@
   color: #FF3B30;
   border: 2rpx solid #FF3B30;
   border-radius: 14rpx;
-  font-size: 30rpx;
+  font-size: calc(30rpx * var(--font-scale));
   font-weight: 500;
   transition: all 0.2s;
 }
@@ -114,7 +114,7 @@
   display: inline-block;
   width: 8rpx;
   height: 30rpx;
-  background: #06AD56;
+  background: var(--theme-primary);
   border-radius: 4rpx;
   margin-right: 15rpx;
   opacity: 0.8;
@@ -139,13 +139,13 @@
 }
 
 .stat-value {
-  font-size: 40rpx;
+  font-size: calc(40rpx * var(--font-scale));
   font-weight: bold;
-  color: #06AD56;
+  color: var(--theme-primary);
 }
 
 .stat-label {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #999;
 }
 
@@ -153,7 +153,7 @@
 .version-info {
   text-align: center;
   padding: 30rpx;
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #ccc;
 }
 
@@ -164,12 +164,12 @@
   }
   
   .user-name {
-    font-size: 32rpx;
+    font-size: calc(32rpx * var(--font-scale));
   }
   
   .menu-item {
     padding: 28rpx 24rpx;
-    font-size: 28rpx;
+    font-size: calc(28rpx * var(--font-scale));
   }
   
   .menu-item slider {

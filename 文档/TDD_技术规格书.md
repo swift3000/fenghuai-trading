@@ -139,7 +139,7 @@
 | **后台打印** | window.print() + CSS @page | — | 浏览器原生；配合 241mm 针式多联单；零依赖 |
 | **后端服务** | 微信云开发 | — | Serverless 免运维；与小程序/云函数/数据库一体化 |
 | **云函数运行时** | Node.js | 18.x LTS | 与前端统一语言；云开发官方支持 |
-| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；11 个集合极简建模；与云函数零延迟 |
+| **数据库** | 云开发数据库（MongoDB） | — | MongoDB 兼容；12 个集合极简建模；与云函数零延迟 |
 | **蓝牙打印** | 微信蓝牙 API + ESC/POS | — | wx.openBluetoothAdapter + wx.createBLEConnection；通用 BLE 热敏打印机 |
 | **认证** | 微信登录（openid） | — | 小程序端 wx.login 换 openid（**MVP 仅此一条链路**） |
 | ~~**Web 后台部署**~~ | — | — | **不适用**：无 Web 后台，MVP 为纯小程序 |
@@ -246,6 +246,7 @@
 | 9 | `customer_aliases` | 客户别名（智能录入模糊匹配用） | < 2,000 条 |
 | 10 | `order_logs` | 订单操作记录（订单修改历史） | 随订单操作增长 |
 | 11 | `system_config` | 系统配置（AI 服务密钥 + 打印机配置，单文档） | 1 条 |
+| 12 | `perm_configs` | 角色权限覆盖（每角色 1 条：role + permissions 完整数组，权限矩阵存储） | 4 条 |
 
 **砍掉的冗余集合**：
 - ~~categories~~：分类合并到 products.category 字段（字符串枚举即可，无多级分类需求）
@@ -503,7 +504,8 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 | **products** | `{ action: 'list'/'detail'/'create'/'update', filter?, id?, data? }` | `{ list, pagination }` 或 `{ _id }` | 登录用户按角色过滤；**全员完整视图（价格脱敏与精简视图已取消，v4.3）** |
 | **customers** | `{ action: 'list'/'detail'/'create'/'update', filter?, id?, data? }` | `{ list, pagination }` 或 `{ _id }` | 登录用户按角色过滤；**全员完整视图（价格脱敏与精简视图已取消，v4.3）** |
 | **orders** | `{ action, id?, data }`<br>`action`: create / update-status / update-remark / copy / modify-price / mark-printed / collect-payment / collect-confirm / receivable（分拣/出库确认经 `update-status` 流转；`confirm`（出库确认）一步完成时一并录入物流件型 `ship_large/ship_medium/ship_small`，**MVP已实现**；`save-pick` 配货暂存移入 §6.6 二期规划） | `{ order_id, order_no }` | 按 action 校验角色；下单/改单/删单/改价放开至 4 角色（v4.3） |
-| **users** | `{ action: 'list'/'detail'/'create'/'update'/'disable'/'inherit', filter?, id?, data?, from_id?, to_id? }` | `{ list, pagination }` 或 `{ _id }` | admin |
+| **users** | `{ action: 'list'/'detail'/'create'/'update'/'disable'/'inherit'/'perm-config'/'save-perm'/'reset-perm', filter?, id?, data?, from_id?, to_id?, role?, permissions? }` | `{ list, pagination }` 或 `{ _id }`；`perm-config` 返回各角色权限数组；`save-perm`/`reset-perm` 返回 `{ role, permissions }` | admin |
+| **perm_configs** | 集合（角色权限覆盖，每角色 1 条 `{ role, permissions: string[] }`） | — | admin 读写；auth 登录合并生效 |
 | **regions** | `{ action: 'list'/'create'/'update', filter?, id?, data? }` | `{ list }` 或 `{ _id }` | admin |
 | **receivable** | `{ filter, page, page_size }` | `{ list, pagination }` | 全员 |
 | **system** | `{ action: 'getConfig'/'updateConfig'/'getAiConfig'/'updateAiConfig', key?, value?, aiConfig? }` | `{ config }` | admin |
@@ -880,7 +882,7 @@ async function exportOrders(filter) {
 >
 > **底部 5 个 Tab（v4.5 规范，符合微信 tabBar 上限）**：📋首页 / 📦订单 / 💰赊销 / 🔍分拣出库 / 👤我的。原「分拣」「库管」两个 Tab 已合并为「分拣出库」一个 Tab；全角色可见同一套 5 个 Tab，若某角色被管理员关闭 `receivable:view` / `sort:task` / `warehouse:confirm` 等查看/操作权限，对应 Tab 运行时自动隐藏。「分拣出库」页内含两段切换：① 分拣段（待分拣/已分拣）；② 出库段（待出库/已出库）。报表入口在「我的 → 报表统计」。
 
-> **极简权限校验**：云函数入口处统一 checkRole 中间件，不做细粒度权限标识（省掉 permissions 数组）。
+> **极简权限校验**：云函数入口处统一 checkRole 中间件（管理员 `member:manage` 判定）。**细粒度权限（1.0）**：在角色校验之上提供可开关权限键，解除"不做细粒度标识"的限制——前端按 `users.permissions`（默认 ∪ `perm_configs` 覆盖）动态隐藏 Tab/按钮，管理员可在「成员管理 → 权限配置」矩阵逐项开关（`users.perm-config` / `users.save-perm` / `users.reset-perm`，详见 §7.4 API 文档）。
 
 #### 其他安全
 - **传输加密**：云开发默认 HTTPS
@@ -895,7 +897,7 @@ async function exportOrders(filter) {
 1. 微信开发者工具 → 云开发 → 创建环境（生产环境仅 1 个，省测试环境）
 2. 写入 AppID、云环境 ID
 3. 云函数目录右键 → 上传并部署：云端安装依赖（10 个函数依次上传）
-4. 数据库 → 按 4.2 建 11 个集合 + 索引 + 预置 11 个 regions
+4. 数据库 → 按 4.2 建 12 个集合 + 索引 + 预置 11 个 regions
 5. 小程序端上传代码 → 提交审核 → 发布
 
 #### 7.2.2 Web 管理后台（两种任选）
@@ -918,7 +920,7 @@ async function exportOrders(filter) {
 |------|------|------|
 | 1 | 创建云开发环境（按量付费） | 5 min |
 | 2 | 上传 10 个云函数 | 10 min |
-| 3 | 建 11 个集合 + 索引 | 10 min |
+| 3 | 建 12 个集合 + 索引 | 10 min |
 | 4 | 预置 regions 11 条 | 5 min |
 | 5 | 首管理员零配置：系统首次启动无任何 `role=admin` 用户时，第一位登录者自动成为 `role=admin`（`auth` 检测无 admin 即自动赋值，老板部署后直接用微信打开小程序登录即可）；手动插库创建 admin 仅作可选兜底（方式二），无需预置 openid / 环境变量 | 0 min |
 | 6 | 上传小程序代码到微信后台 | 5 min |

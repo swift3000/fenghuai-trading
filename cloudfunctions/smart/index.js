@@ -167,10 +167,27 @@ function parseOrderText(text, products) {
   return items
 }
 
+
+// 权限校验
+async function checkPermission(permission) {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) {
+    console.log('⚠️ 后台调用，跳过权限校验')
+    return { code: 0 }
+  }
+  const userResult = await db.collection('users').where({ openid: OPENID }).get()
+  if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
+  const user = userResult.data[0]
+  if (user.role === 'admin') return { code: 0 }
+  if (user.permissions && user.permissions.includes(permission)) return { code: 0 }
+  return { code: 403, message: '无权限访问' }
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   switch (action) {
     case 'match': {
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       const { text } = event
       if (!text) return { code: 5001, message: 'text 参数为空' }
       const products = await db.collection('products').get()
@@ -181,10 +198,12 @@ exports.main = async (event, context) => {
     }
     
     case 'transcribe': {
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       return { code: 0, data: { text: event.audioText || '' } }
     }
     
     case 'parse': {
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       const { text } = event
       if (!text) return { code: 5002, message: 'text 参数为空' }
       

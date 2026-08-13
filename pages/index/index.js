@@ -1,7 +1,9 @@
 const app = getApp();
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     // 用户信息
     userName: '',
     userInitial: '',
@@ -19,10 +21,24 @@ Page({
     todayAmount: 0,
     
     // 今日订单列表
-    todayOrdersList: []
+    todayOrdersList: [],
+
+    // 快捷入口权限
+    canCreateOrder: false,
+    canViewProducts: false,
+    canViewCustomers: false,
+    canViewReports: false
   },
 
   onLoad() {
+    uiStyle.applyUiStyle(this)
+    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || [];
+    this.setData({
+      canCreateOrder: perms.includes('order:create'),
+      canViewProducts: perms.includes('product:view'),
+      canViewCustomers: perms.includes('customer:view'),
+      canViewReports: perms.includes('report:view')
+    });
     this.loadUserInfo();
     this.loadTodayStats();
     this.loadTodayOrders();
@@ -154,5 +170,14 @@ Page({
         url: `/pages/order-detail/order-detail?id=${id}`
       });
     }
+  },
+
+  onThemeChange(theme) {
+    uiStyle.applyUiStyle(this)
+
+    console.log('主题已切换:', theme.name)
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 });

@@ -19,11 +19,11 @@
   text-align: center;
   margin-bottom: 40rpx;
   padding-bottom: 30rpx;
-  border-bottom: 2rpx solid #06AD56;
+  border-bottom: 2rpx solid var(--theme-primary);
 }
 
 .shipping-header .title {
-  font-size: 40rpx;
+  font-size: calc(40rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
   display: block;
@@ -31,7 +31,7 @@
 }
 
 .shipping-header .subtitle {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #666;
   letter-spacing: 4rpx;
 }
@@ -42,7 +42,7 @@
 }
 
 .info-row {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   line-height: 2;
   display: flex;
 }
@@ -60,45 +60,13 @@
 /* 客户信息区域 */
 .customer-section {
   margin-bottom: 30rpx;
-  padding: 25rpx;
-  background: #f9f9f9;
-  border-radius: 8rpx;
+  padding: 20rpx 4rpx;
 }
 
-.section-title {
-  font-size: 30rpx;
-  font-weight: bold;
+.customer-name {
+  font-size: calc(30rpx * var(--font-scale));
+  font-weight: 600;
   color: #333;
-  margin-bottom: 20rpx;
-  padding-bottom: 15rpx;
-  border-bottom: 1rpx solid #e5e5e5;
-}
-
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 15rpx;
-}
-
-.info-item {
-  font-size: 26rpx;
-  line-height: 2;
-  display: flex;
-  align-items: center;
-}
-
-.info-item .label {
-  color: #666;
-  margin-right: 10rpx;
-  flex-shrink: 0;
-}
-
-.info-item .value {
-  color: #333;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 商品表格 */
@@ -112,7 +80,7 @@
   display: flex;
   padding: 15rpx 12rpx;
   border-bottom: 1rpx solid #ddd;
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   align-items: center;
 }
 
@@ -130,12 +98,67 @@
   border-bottom: none;
 }
 
-/* 列宽 */
+/* 列宽（对齐原型销售单：编号/产品/规格型号/单位/总数量/单价/金额/备注） */
+.col-idx { flex: 0.6; text-align: center; }
 .col-name { flex: 2; }
-.col-spec { flex: 1.5; }
+.col-spec { flex: 1.4; }
+.col-unit { flex: 0.7; text-align: center; }
 .col-qty { flex: 1; text-align: center; }
-.col-price { flex: 1.2; text-align: right; }
-.col-amount { flex: 1.3; text-align: right; }
+.col-price { flex: 1.1; text-align: right; }
+.col-amount { flex: 1.2; text-align: right; }
+.col-remark { flex: 1.2; }
+
+/* 合计行（表内） */
+.total-row.in-table {
+  display: flex;
+  padding: 15rpx 12rpx;
+  border-top: 2rpx solid #333;
+  font-weight: bold;
+  background: #f9f9f9;
+}
+.total-row.in-table .col {
+  align-items: center;
+}
+
+/* 汇总/欠款行 */
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: calc(26rpx * var(--font-scale));
+  padding: 20rpx 4rpx;
+  font-weight: 500;
+}
+
+.debt-line {
+  font-size: calc(28rpx * var(--font-scale));
+  font-weight: bold;
+  color: #c0392b;
+  padding: 10rpx 4rpx 20rpx;
+}
+
+/* 页脚信息 */
+.footer-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding: 20rpx 0;
+  border-top: 1rpx solid #e5e5e5;
+  font-size: calc(24rpx * var(--font-scale));
+  line-height: 2;
+}
+
+.footer-right {
+  text-align: right;
+}
+
+.so-note {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #888;
+  line-height: 1.8;
+  margin-top: 15rpx;
+  border-top: 1rpx dashed #ddd;
+  padding-top: 15rpx;
+}
 
 /* 合计区域 */
 .total-section {
@@ -150,7 +173,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 15rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
 }
 
 .total-row:last-child {
@@ -163,13 +186,13 @@
 }
 
 .total-value {
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
 }
 
 .total-value.text-success {
-  color: #06AD56;
+  color: var(--theme-primary);
 }
 
 .total-value.text-danger {
@@ -185,7 +208,7 @@
 
 .footer-text {
   display: block;
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   color: #666;
   line-height: 1.8;
   margin-bottom: 25rpx;
@@ -198,7 +221,7 @@
 }
 
 .signature-item {
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   line-height: 2;
   display: flex;
   align-items: center;
@@ -230,7 +253,7 @@
   height: 90rpx;
   line-height: 90rpx;
   border-radius: 12rpx;
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   font-weight: 500;
   border: none;
   display: flex;
@@ -239,7 +262,7 @@
 }
 
 .action-buttons .btn-primary {
-  background: linear-gradient(135deg, #06AD56 0%, #059d4e 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
   color: #fff;
 }
 
@@ -290,13 +313,13 @@
 }
 
 .modal-title {
-  font-size: 34rpx;
+  font-size: calc(34rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
 }
 
 .modal-close {
-  font-size: 50rpx;
+  font-size: calc(50rpx * var(--font-scale));
   color: #999;
   line-height: 1;
   padding: 0 10rpx;
@@ -321,7 +344,7 @@
   height: 80rpx;
   line-height: 80rpx;
   border-radius: 10rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   border: none;
 }
 
@@ -331,7 +354,7 @@
 }
 
 .modal-footer .btn-primary {
-  background: linear-gradient(135deg, #06AD56 0%, #059d4e 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
   color: #fff;
 }
 
@@ -355,13 +378,13 @@
 }
 
 .preview-label {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #666;
 }
 
 .preview-value,
 .preview-picker {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
   font-weight: 500;
 }
@@ -373,7 +396,7 @@
   border: 1rpx solid #ddd;
   border-radius: 8rpx;
   text-align: center;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
 }
 
 .preview-picker {
@@ -401,12 +424,12 @@
 }
 
 .loading-icon {
-  font-size: 80rpx;
+  font-size: calc(80rpx * var(--font-scale));
   animation: spin 1s linear infinite;
 }
 
 .loading-text {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #999;
 }
 

@@ -113,6 +113,34 @@ const ALL_TAB_ITEMS = [
   { index: 4, pagePath: 'pages/profile/profile' }
 ]
 
+
+/**
+ * 根据权限键动态设置 TabBar（对齐原型：赊销=receivable:view；分拣出库=sort:task||warehouse:confirm）
+ * 订单 tab 默认始终显示（order:view 默认全员开放）。
+ * @param {string[]} permissions - 当前用户权限数组
+ */
+function setTabBarByPerms(permissions) {
+  const perms = permissions || []
+  const canReceivable = perms.includes('receivable:view')
+  const canOutbound = perms.includes('sort:task') || perms.includes('warehouse:confirm')
+
+  ALL_TAB_ITEMS.forEach(item => {
+    let visible = true
+    if (item.index === 2) {           // 赊销
+      visible = canReceivable
+    } else if (item.index === 3) {    // 分拣出库
+      visible = canOutbound
+    }
+    // index 0 首页 / 1 订单 / 4 我的 默认可见
+    if (visible) {
+      wx.showTabBarItem({ index: item.index })
+    } else {
+      wx.hideTabBarItem({ index: item.index })
+    }
+  })
+  console.log('TabBar 已按权限更新: 赊销=' + canReceivable + ' 分拣出库=' + canOutbound)
+}
+
 /**
  * 根据角色设置 TabBar
  * 用标准 API wx.setTabBarItem（设置 icon/text）+ wx.showTabBarItem / wx.hideTabBarItem（按角色显隐）
@@ -199,6 +227,7 @@ function removeTabBarBadge(index) {
 
 module.exports = {
   setTabBarByRole,
+  setTabBarByPerms,
   showTabBar,
   setTabBarBadge,
   removeTabBarBadge,

@@ -515,6 +515,20 @@ db.payments.createIndex({ customer_id: 1, status: 1, registered_at: -1 });
 
 > **安全提示**：`ai.aliyun.accessKeySecret` / `ai.qwen.apiKey` 为敏感密钥，仅管理员可读写，前端不得明文下发。
 
+### 2.12 perm_configs（角色权限覆盖表）
+
+> **说明**：存储各角色在「成员管理 → 权限配置」中的权限覆盖。每角色至多 1 条：`permissions` 为该角色的**完整**有效权限数组（save-perm 已含锁定项保护）。无记录 = 使用默认矩阵（全员开放）。`auth` 登录/激活时合并默认+覆盖写 `users.permissions`，前端门禁按实际权限生效。
+
+| 字段名 | 类型 | 必填 | 默认值 | 说明 | 索引 |
+|--------|------|------|--------|------|------|
+| `_id` | String | 是 | 自动 | 主键 | PK（默认） |
+| `role` | String | 是 | — | 角色：`admin`/`orderer`/`sorter`/`warehouse` | 普通索引 |
+| `permissions` | Array<String> | 是 | `[]` | 该角色完整权限键数组（覆盖，含锁定项保护） | — |
+| `createdAt` | Date | 是 | — | 创建时间 | — |
+| `updatedAt` | Date | 是 | — | 更新时间 | — |
+
+> **默认权限矩阵（全员开放）**：订单/商品/客户/分拣/出库/报表/大部分赊销全员 ✅；`receivable:collect`（登记收款）下单员/分拣员 ✅、库管 ❌；`receivable:confirm`（确认收款）库管 ✅、下单员/分拣员 ❌；`member:manage`（成员管理）固定管理员独占且锁定（防锁死，不可关闭）。
+
 ---
 
 ## 三、数据快照机制（双层快照核心设计）

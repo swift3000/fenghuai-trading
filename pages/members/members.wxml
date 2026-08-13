@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <!-- 邀请新成员 -->
   <view class="invite-section card">
     <text class="section-title">邀请新成员</text>
@@ -56,6 +56,45 @@
         <view class="member-invite" wx:if="{{item.status === 'pending' && item.inviteCode}}">
           <text class="invite-code-text">邀请码：{{item.inviteCode}}</text>
           <text class="invite-copy" data-code="{{item.inviteCode}}" bindtap="copyInvite">复制</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 角色权限配置（权限矩阵）：仅管理员 -->
+  <view class="perm-section card" wx:if="{{permGroups.length > 0}}">
+    <view class="perm-header">
+      <text class="perm-title">角色权限配置</text>
+      <text class="perm-sub">管理员可逐项调整每个角色的功能权限</text>
+      <button class="perm-reset" bindtap="resetPerms" size="mini">↺ 恢复默认（全员开放）</button>
+    </view>
+
+    <view class="perm-note">
+      默认全员开放，仅「登记收款 / 确认收款」两步分离，<text class="perm-note-strong">成员管理固定管理员独占</text>（不可改，防锁死）。改动即时保存。
+    </view>
+
+    <view class="perm-group" wx:for="{{permGroups}}" wx:key="name" wx:for-item="group" wx:for-index="gi">
+      <view class="perm-group-head">
+        <text class="perm-group-name">{{group.name}}</text>
+        <text class="perm-group-tag">{{group.count}} 项</text>
+      </view>
+      <view class="perm-table">
+        <view class="perm-row perm-head">
+          <view class="perm-cell perm-name">权限</view>
+          <view class="perm-cell perm-col" wx:for="{{roleCols}}" wx:key="role" wx:for-item="col">{{col.label}}</view>
+        </view>
+        <view class="perm-row" wx:for="{{group.rows}}" wx:key="key" wx:for-item="r" wx:for-index="ri">
+          <view class="perm-cell perm-name">
+            <text>{{r.label}}</text>
+            <text class="perm-locked-tip" wx:if="{{r.locked}}">仅管理员</text>
+          </view>
+          <view class="perm-cell perm-col" wx:for="{{r.cells}}" wx:key="index" wx:for-item="c" wx:for-index="ci">
+            <view class="perm-switch {{c.on ? 'on' : ''}} {{c.disabled ? 'locked' : ''}}"
+                  data-group="{{gi}}" data-row="{{ri}}" data-role="{{ci}}"
+                  bindtap="togglePerm">
+              <view class="perm-knob"></view>
+            </view>
+          </view>
         </view>
       </view>
     </view>

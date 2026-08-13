@@ -6,6 +6,21 @@ const db = cloud.database()
  * 权限配置常量
  * 定义各角色的默认权限（20 个权限 key）
  */
+const pmShared = require('../perm-matrix-shared.js')
+
+/**
+ * 读取某角色在 perm_configs 中的覆盖，合并默认得到有效权限
+ */
+async function effectivePermsForRole(role) {
+  try {
+    const cfg = await db.collection('perm_configs').where({ role }).get()
+    const overrides = (cfg.data && cfg.data[0] && cfg.data[0].permissions) || []
+    return pmShared.mergedPerms(role, overrides)
+  } catch (e) {
+    return pmShared.defaultPermsForRole(role)
+  }
+}
+
 const DEFAULT_ROLE_PERMISSIONS = {
   admin: {
     permissions: [
@@ -16,7 +31,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
       'warehouse:confirm',
       'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
       'report:view', 'report:export', 'report:ledger',
-      'member:manage', 'permission:manage'
+      'member:manage'
     ]
   },
   orderer: {
@@ -166,7 +181,7 @@ async function handleLogin(openid, event) {
             fontScale: 0.9,
             inviteStatus: 'activated',
             activatedAt: db.serverDate(),
-            permissions: DEFAULT_ROLE_PERMISSIONS[finalRole]?.permissions || [],
+            permissions: await effectivePermsForRole(finalRole),
             updatedAt: db.serverDate()
           }
         })
@@ -200,7 +215,7 @@ async function handleLogin(openid, event) {
         role: finalRole,
         status: 'active',
         fontScale: 0.9,
-        permissions: DEFAULT_ROLE_PERMISSIONS[finalRole]?.permissions || [],
+        permissions: await effectivePermsForRole(finalRole),
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
       }
@@ -223,10 +238,9 @@ async function handleLogin(openid, event) {
       const user = userResult.data[0]
       console.log('老用户登录，role:', user.role)
       
-      // 同步权限（如果角色未变但权限配置已更新）
-      const currentPermissions = DEFAULT_ROLE_PERMISSIONS[user.role]?.permissions || []
-      if (!user.permissions || user.permissions.length === 0) {
-        // 旧数据没有 permissions 字段，同步一下
+      // 同步权限：管理员改权限开关(perm_configs)后，老用户每次登录都刷新覆盖后权限
+      const currentPermissions = await effectivePermsForRole(user.role)
+      if (!user.permissions || JSON.stringify(user.permissions) !== JSON.stringify(currentPermissions)) {
         await db.collection('users').doc(user._id).update({
           data: {
             permissions: currentPermissions,
@@ -359,7 +373,7 @@ async function handleActivateByInvite(openid, event) {
         phone: phone || user.phone,
         region: region || user.region,
         status: 'active',
-        permissions: DEFAULT_ROLE_PERMISSIONS[role]?.permissions || [],
+        permissions: await effectivePermsForRole(role),
         inviteStatus: 'activated',
         activatedAt: db.serverDate(),
         updatedAt: db.serverDate()
@@ -378,7 +392,7 @@ async function handleActivateByInvite(openid, event) {
           phone: user.phone,
           region: user.region,
           status: 'active',
-          permissions: DEFAULT_ROLE_PERMISSIONS[role]?.permissions || []
+          permissions: await effectivePermsForRole(role)
         }
       }
     }

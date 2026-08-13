@@ -1,12 +1,16 @@
+const { COMPANY_NAME } = require('../../constants/index.js')
 const pricing = require('../../utils/order-pricing')
+const { ORDER_STATUS_TEXT } = require('../../constants/index.js')
 
 // 为一行商品生成合并数量文案（2件+10包）
 function qtyDesc(it) {
   return pricing.formatQtyCombined(it)
 }
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     order: null,
     items: [],
     customer: null,
@@ -17,10 +21,36 @@ Page({
     collectNote: '',
     paymentMethods: ['现金', '微信', '支付宝', '银行转账'],
     paymentMethodIndex: 0,
-    collectLoading: false
+    collectLoading: false,
+    canPrint: false,
+    canEdit: false,
+    editEnabled: false,
+    canDelete: false,
+    canCollect: false,
+    canExport: false,
+    canDiscount: false,
+    collectDiscount: '',
+    receivedAmount: 0,
+    totalDiscount: 0,
+    remainingDebt: 0,
+    creatorText: '',
+    shareCardReady: false,
+    shareTempFilePath: '',
+    logs: []
   },
 
   onLoad(options) {
+    uiStyle.applyUiStyle(this)
+    const app = getApp()
+    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
+    this.setData({
+      canPrint: perms.includes('order:print'),
+      canEdit: perms.includes('order:edit'),
+      canDelete: perms.includes('order:delete'),
+      canCollect: perms.includes('receivable:collect'),
+      canExport: perms.includes('order:export'),
+      canDiscount: perms.includes('receivable:discount')
+    })
     if (options.id) {
       this.loadOrderDetail(options.id)
     }
@@ -34,12 +64,44 @@ Page({
       const rawItems = (order.items || []).map(it => Object.assign({}, it, {
         qtyDesc: qtyDesc(it)
       }))
+      // 操作记录（对齐原型 renderOrderLogs）：无则生成默认创建记录
+      const roleLabels = {
+        orderer: '下单员', sorter: '分拣员', warehouse: '库管', admin: '管理员', system: '系统'
+      }
+      let logs = (order.logs || []).map(l => Object.assign({}, l, {
+        roleLabel: roleLabels[l.role] || l.role || '',
+        timeText: l.time ? new Date(l.time).toLocaleString('zh-CN') : ''
+      }))
+      if (!logs.length) {
+        logs = [{
+          action: 'create',
+          desc: '创建订单',
+          operatorName: order.createdByName || '未知',
+          roleLabel: '',
+          timeText: order.created_at ? new Date(order.created_at).toLocaleString('zh-CN') : ''
+        }]
+      }
+      // 倒序展示（最新在上）
+      logs = logs.slice().reverse()
+      // 收款三行：已收金额 / 折价货损 / 剩余欠款（对齐原型 detailPaySection）
+      const totalAmount = Number(order.totalAmount || order.total_amount || 0)
+      const received = Number(order.received_amount != null ? order.received_amount : (order.receivedAmount || 0))
+      const discount = Number(order.total_discount != null ? order.total_discount : (order.totalDiscount || 0))
+      const remaining = Math.max(0, totalAmount - received - discount)
+      const creatorText = '下单员：' + (order.createdByName || order.created_by_name || '未知')
       this.setData({
         order,
         items: rawItems,
         customer: order.customer || {},
         paymentStatus,
-        paymentStatusText: paymentStatus === 'paid' ? '已收款' : (paymentStatus === 'pending' ? '待确认' : '未收款')
+        paymentStatusText: paymentStatus === 'paid' ? '已收款' : (paymentStatus === 'pending' ? '待确认' : '未收款'),
+        orderStatusText: (ORDER_STATUS_TEXT[order.status] || order.status || '未知'),
+        receivedAmount: received,
+        totalDiscount: discount,
+        remainingDebt: remaining,
+        creatorText,
+        logs,
+        editEnabled: ['submitted', 'sorted', 'rejected'].includes(order.status)
       })
     } catch (e) {
       console.error('加载失败', e)
@@ -48,7 +110,7 @@ Page({
   },
 
   handleCollect() {
-    this.setData({ showCollectModal: true })
+    this.setData({ showCollectModal: true, collectDiscount: '' })
   },
 
   closeCollectModal() {
@@ -63,20 +125,35 @@ Page({
     this.setData({ collectNote: e.detail.value })
   },
 
+  onCollectDiscountChange(e) {
+    this.setData({ collectDiscount: e.detail.value })
+  },
+
   onPaymentMethodChange(e) {
     this.setData({ paymentMethodIndex: e.detail.value })
   },
 
   async confirmCollect() {
     const amount = parseFloat(this.data.collectAmount)
+    const discount = parseFloat(this.data.collectDiscount) || 0
     if (!amount || amount <= 0) {
       wx.showToast({ title: '请输入正确的收款金额', icon: 'none' })
       return
     }
-    const received = this.data.order.received_amount || this.data.order.receivedAmount || 0
-    const remaining = Math.max(0, this.data.order.totalAmount - received)
-    if (amount > remaining) {
-      wx.showToast({ title: `收款金额不能超过剩余欠款 ¥${remaining}`, icon: 'none' })
+    if (discount < 0) {
+      wx.showToast({ title: '折价不能为负数', icon: 'none' })
+      return
+    }
+    const total = Number(this.data.order.totalAmount || 0)
+    const received = Number(this.data.order.received_amount != null ? this.data.order.received_amount : (this.data.order.receivedAmount || 0))
+    const existingDiscount = Number(this.data.order.total_discount != null ? this.data.order.total_discount : (this.data.order.totalDiscount || 0))
+    const remaining = Math.max(0, total - received - existingDiscount)
+    if (amount + discount > remaining) {
+      wx.showToast({ title: `收款+折价不能超过剩余欠款 ¥${remaining}`, icon: 'none' })
+      return
+    }
+    if (discount > 0 && !this.data.canDiscount) {
+      wx.showToast({ title: '无折价/减免权限', icon: 'none' })
       return
     }
 
@@ -89,7 +166,8 @@ Page({
         orderId: this.data.order._id,
         amount,
         paymentMethod,
-        note: this.data.collectNote
+        note: this.data.collectNote,
+        discount
       })
       wx.showToast({ title: '已登记收款，待库管确认', icon: 'success' })
       this.setData({ 
@@ -114,13 +192,210 @@ Page({
     wx.navigateTo({ url: `/pages/new-order/new-order?id=${this.data.order._id}` })
   },
 
-  // 转发客户微信（对齐原型 btnOrderForward）
+  // 转发客户微信（对齐原型：发送「销售单」卡片给客户微信）
+  // 微信转发只能带封面图，此处用 canvas 绘制销售单卡片作为转发图片
+  onForwardTap() {
+    this.drawSalesCard(() => {
+      // 绘制完成后引导用户通过右上角菜单转发
+      wx.showModal({
+        title: '转发销售单',
+        content: '销售单卡片已生成，请点击右上角「...」选择「转发给朋友」发送给客户微信。',
+        showCancel: false
+      })
+    })
+  },
+
+  // 绘制销售单卡片图（对齐原型 forward 模式紧凑卡片）
+  drawSalesCard(cb) {
+    const order = this.data.order || {}
+    const ctx = wx.createCanvasContext('salesCardCanvas', this)
+    const W = 500
+    // 高度根据明细行数动态计算
+    const rows = this.data.items.length || 1
+    const H = 420 + rows * 34 + 80
+    // 顶部标题
+    ctx.setFillStyle('#c0392b')
+    ctx.fillRect(0, 0, W, 8)
+    ctx.setFillStyle('#222')
+    ctx.setFontSize(24)
+    ctx.setTextAlign('center')
+    ctx.fillText(`${COMPANY_NAME}食品销售单`, W / 2, 44)
+    ctx.setFontSize(13)
+    ctx.setFillStyle('#888')
+    ctx.fillText(`${order.orderNo || ''}`, W / 2, 66)
+    ctx.setTextAlign('left')
+    // 客户
+    ctx.setFillStyle('#c0392b')
+    ctx.setFontSize(18)
+    ctx.fillText(`客户：${order.customerName || ''}`, 22, 100)
+
+    // 表头
+    let y = 124
+    ctx.setFillStyle('#f5f5f5')
+    ctx.fillRect(22, y - 22, W - 44, 26)
+    ctx.setFillStyle('#333')
+    ctx.setFontSize(13)
+    const cols = [
+      { x: 22, w: 150, t: '产品' },
+      { x: 172, w: 90, t: '规格' },
+      { x: 262, w: 60, t: '数量', align: 'center' },
+      { x: 322, w: 70, t: '单价', align: 'right' },
+      { x: 392, w: 86, t: '金额', align: 'right' }
+    ]
+    cols.forEach(c => {
+      ctx.setTextAlign(c.align || 'left')
+      ctx.fillText(c.t, c.align === 'right' ? c.x + c.w : c.x, y)
+    })
+    ctx.setTextAlign('left')
+    y += 8
+    // 明细行
+    this.data.items.forEach(it => {
+      y += 34
+      ctx.setFillStyle('#333')
+      ctx.setFontSize(13)
+      ctx.fillText(it.name || '', 22, y)
+      ctx.fillText(it.spec || '-', 172, y)
+      ctx.setTextAlign('center')
+      ctx.fillText(it.qtyDesc || '', 292, y)
+      ctx.setTextAlign('right')
+      ctx.fillText(pricing.fmtMoney(it.price || 0), 322 + 70, y)
+      ctx.fillText(pricing.fmtMoney(it.amount || 0), 392 + 86, y)
+      ctx.setTextAlign('left')
+    })
+
+    // 合计行
+    y += 40
+    ctx.setFillStyle('#fef9f5')
+    ctx.fillRect(22, y - 22, W - 44, 26)
+    ctx.setFillStyle('#c0392b')
+    ctx.setFontSize(15)
+    const total = Number(order.totalAmount || 0)
+    ctx.fillText(`合计金额：${pricing.numberToChinese(total)}  ¥${pricing.fmtMoney(total)}`, 22, y)
+
+    // 累计欠款
+    y += 34
+    ctx.setFontSize(14)
+    ctx.setFillStyle('#e74c3c')
+    const debt = this.data.order.totalDebt != null ? Number(this.data.order.totalDebt) : 0
+    ctx.fillText(`累计欠款：¥${pricing.fmtMoney(debt)}`, 22, y)
+
+    // 底部提示
+    ctx.setFontSize(11)
+    ctx.setFillStyle('#999')
+    ctx.setTextAlign('right')
+    ctx.fillText('冷冻食品非质量问题概不退换', W - 22, H - 18)
+
+    ctx.draw(false, () => {
+      wx.canvasToTempFilePath({
+        canvasId: 'salesCardCanvas',
+        x: 0, y: 0, width: W, height: H,
+        destWidth: W, destHeight: H,
+        success: res => {
+          this.setData({ shareTempFilePath: res.tempFilePath, shareCardReady: true })
+          if (cb) cb(res.tempFilePath)
+        },
+        fail: err => {
+          console.error('生成销售单卡片失败', err)
+          if (cb) cb('')
+        }
+      }, this)
+    })
+  },
+
   onShareAppMessage() {
     const order = this.data.order || {}
-    return {
-      title: `丰淮商贸订单 ${order.orderNo || ''} · ¥${order.totalAmount || ''}`,
-      path: order._id ? `/pages/order-detail/order-detail?id=${order._id}` : '/pages/orders/orders'
+    const orderId = order._id || order.id
+
+    // 若销售单卡片已生成，用它作为转发封面
+    const imageUrl = this.data.shareTempFilePath || ''
+
+    // 记录转发状态
+    if (orderId) {
+      const { callCloud } = require('../../utils/request')
+      callCloud('orders', {
+        action: 'markShared',
+        orderId: orderId
+      }).catch(e => console.error('记录转发状态失败', e))
     }
+
+    return {
+      title: `「${COMPANY_NAME}食品销售单」${order.customerName || ''} ${order.orderNo || ''} · ¥${order.totalAmount || ''}`,
+      path: orderId ? `/pages/order-detail/order-detail?id=${orderId}` : '/pages/orders/orders',
+      imageUrl: imageUrl || undefined
+    }
+  },
+
+  // 导出订单 Excel（对齐原型 exportSingleOrder：送货单格式）
+  handleExportExcel() {
+    const order = this.data.order || {}
+    const items = this.data.items || []
+    if (!order.orderNo) {
+      wx.showToast({ title: '暂无订单数据', icon: 'none' })
+      return
+    }
+    try {
+      wx.showLoading({ title: '导出中...' })
+      const esc = (v) => {
+        const s = (v === null || v === undefined) ? '' : String(v)
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+      }
+      const dateStr = () => {
+        const d = new Date()
+        const p = (n) => (n < 10 ? '0' + n : '' + n)
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+      }
+      const rows = []
+      rows.push([COMPANY_NAME + '送货单'])
+      rows.push([])
+      rows.push(['订单号', order.orderNo])
+      rows.push(['客户', order.customerName || ''])
+      rows.push(['区域', order.customerRegion || ''])
+      rows.push(['联系人', order.customerContact || ''])
+      rows.push(['电话', order.customerPhone || ''])
+      rows.push(['日期', dateStr()])
+      rows.push([])
+      const pkgText = (order.ship_large || order.ship_medium || order.ship_small) ? `大件${order.ship_large||0}/中件${order.ship_medium||0}/小件${order.ship_small||0}` : '未填写'
+      rows.push(['物流件型', pkgText])
+      rows.push(['序号', '商品名称', '单价', '数量', '金额', '备注'])
+      let idx = 1
+      let grandTotal = 0
+      items.forEach(it => {
+        const pq = Number(it.piece_qty || 0)
+        const zq = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+        if (pq <= 0 && zq <= 0) return
+        const amt = Number(it.amount != null ? it.amount : 0)
+        grandTotal += amt
+        rows.push([idx++, it.name || '', Number(it.price || it.price_piece || 0).toFixed(2), it.qtyDesc || '', amt.toFixed(2), it.remark || ''])
+      })
+      rows.push([])
+      rows.push(['合计', '', '', '', grandTotal.toFixed(2), ''])
+
+      const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
+      const filename = (order.customerName || '客户') + '_送货单_' + order.orderNo + '.csv'
+      const filePath = wx.env.USER_DATA_PATH + '/' + filename
+      wx.getFileSystemManager().writeFileSync(filePath, csvContent, 'utf8')
+      wx.stopPullDownRefresh && wx.stopPullDownRefresh()
+      wx.hideLoading()
+      wx.showModal({
+        title: '导出成功',
+        content: '文件已保存到:\n' + filePath,
+        showCancel: false
+      })
+    } catch (e) {
+      console.error('导出失败', e)
+      wx.hideLoading()
+      wx.showToast({ title: '导出失败', icon: 'none' })
+    }
+  },
+
+  // 复制订单（对齐原型 copyOrder：复制订单信息到剪贴板）
+  handleCopyOrder() {
+    const order = this.data.order || {}
+    const text = `订单号：${order.orderNo || ''}\n客户：${order.customerName || ''}\n金额：¥${Number(order.totalAmount || 0).toFixed(2)}`
+    wx.setClipboardData({
+      data: text,
+      success: () => wx.showToast({ title: '订单信息已复制', icon: 'success' })
+    })
   },
 
   handleDelete() {
@@ -140,5 +415,8 @@ Page({
         }
       }
     })
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

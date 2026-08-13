@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <!-- 统计概览 -->
   <view class="overview card" wx:if="{{reportTab !== 'payment'}}">
     <view class="stat-item">
@@ -53,8 +53,13 @@
     </view>
   </view>
 
+  <!-- 区域筛选（对齐原型 rptRegion） -->
+  <picker mode="selector" range="{{regionOptions}}" value="{{regionIndex}}" bindchange="onRegionChange">
+    <view class="region-picker">📍 区域：{{regionOptions[regionIndex]}}</view>
+  </picker>
+
   <!-- 数据列表 -->
-  <view class="report-data" wx:if="{{data.length > 0}}">
+  <view class="report-data" wx:if="{{hasData}}">
     <!-- 商品汇总 -->
     <view class="data-row card" wx:for="{{data.products}}" wx:key="_id" wx:if="{{reportTab === 'product'}}">
       <view class="data-main">
@@ -122,14 +127,16 @@
   </view>
 
   <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{data.length === 0}}">
+  <view class="empty-state" wx:if="{{!hasData}}">
     <text class="empty-icon">📊</text>
     <text class="empty-text">暂无数据</text>
     <text class="empty-hint">当前时间范围内没有统计数据</text>
   </view>
 
-  <!-- 导出按钮 -->
-  <button class="btn-primary export-btn" bindtap="handleExport" wx:if="{{data.length > 0}}">
-    📥 导出报表
-  </button>
+  <!-- 导出按钮（对齐原型三个导出） -->
+  <view wx:if="{{canExport && hasData}}" class="export-buttons">
+    <button class="btn-primary export-btn" bindtap="handleExport">📥 导出报表Excel</button>
+    <button class="btn-primary export-btn" bindtap="handleExportDailySummary">📊 客户汇总表</button>
+    <button class="btn-primary export-btn" bindtap="handleExportLedger">💰 收款台账</button>
+  </view>
 </view>

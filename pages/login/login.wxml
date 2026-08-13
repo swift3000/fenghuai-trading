@@ -1,4 +1,4 @@
-<view class="login-container">
+<view class="login-container" style="{{uiStyle}}">
   <view class="login-content">
     <!-- Logo 和品牌 -->
     <view class="brand-section">

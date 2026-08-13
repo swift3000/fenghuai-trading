@@ -1,13 +1,16 @@
 const app = getApp();
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     isFirstAdmin: false,
     loading: false,
     inviteCode: ''
   },
 
   onLoad(options) {
+    uiStyle.applyUiStyle(this)
     this.checkFirstAdmin();
     // 扫码进入：scene 携带 invite=XXXXXX，自动填入邀请码
     if (options && options.scene) {
@@ -114,5 +117,8 @@ Page({
         wx.redirectTo({ url: route });
       }
     }, 1500);
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 });

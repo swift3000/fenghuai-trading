@@ -2,17 +2,128 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+
+// 权限校验
+async function checkPermission(permission) {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) {
+    console.log('⚠️ 后台调用，跳过权限校验')
+    return { code: 0 }
+  }
+  const userResult = await db.collection('users').where({ openid: OPENID }).get()
+  if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
+  const user = userResult.data[0]
+  if (user.role === 'admin') return { code: 0 }
+  if (user.permissions && user.permissions.includes(permission)) return { code: 0 }
+  return { code: 403, message: '无权限访问' }
+}
+
+
+// 公司名（用于导出标题；云函数无法 require 前端 constants）
+const COMPANY_NAME = '丰淮商贸'
+
+// 按时间+区域获取订单（供专用导出使用；同时返回 payments 用于收款台账）
+async function getFilteredOrdersFull(timeTab, region, customStart, customEnd) {
+  const now = new Date()
+  let dateFilter = null
+  if (timeTab === 'day') {
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+    dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
+  } else if (timeTab === 'week') {
+    const day = now.getDay() || 7
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+    dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
+  } else if (timeTab === 'month') {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
+  } else if (timeTab === 'custom' && customStart && customEnd) {
+    const start = new Date(customStart); start.setHours(0,0,0,0)
+    const end = new Date(customEnd); end.setHours(23,59,59,999)
+    dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
+  }
+  let query = db.collection('orders')
+  if (dateFilter) query = query.where(dateFilter)
+  if (region) query = query.where({ customerRegion: region })
+  const res = await query.orderBy('created_at', 'desc').get()
+  return res.data
+}
+
+// 单个商品金额
+function itemAmount(it) {
+  const mode = it.pricing_mode || 'case'
+  const pieceQty = it.piece_qty || 0
+  const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+  const pricePiece = it.price_piece || 0
+  const priceUnit = it.price_unit != null ? it.price_unit : it.price_zero || 0
+  if (mode === 'piece') return pieceQty * pricePiece
+  if (mode === 'unit') return packageQty * priceUnit
+  return pieceQty * pricePiece + packageQty * priceUnit
+}
+
+// 收款台账数据（对标原型 buildLedgerData）
+function buildLedgerData(orders) {
+  const rows = orders.filter(o => (o.totalAmount || 0) > 0).map((o, i) => {
+    let zheng = 0, sun = 0
+    ;(o.items || []).forEach(it => {
+      const amt = itemAmount(it)
+      if (it.pricing_mode === 'case' || it.pricing_mode === 'piece') zheng += amt
+      else sun += amt
+    })
+    const actual = zheng - sun
+    const payments = o.payments || []
+    const confirmed = payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + (p.amount || 0), 0)
+    const cash = payments.filter(p => p.status === 'confirmed' && (p.method || 'cash') === 'cash').reduce((sum, p) => sum + (p.amount || 0), 0)
+    const wechat = payments.filter(p => p.status === 'confirmed' && p.method === 'wechat').reduce((sum, p) => sum + (p.amount || 0), 0)
+    const debt = Math.max(0, actual - confirmed)
+    const recvDates = payments.filter(p => p.status === 'confirmed').map(p => p.confirmed_at || p.paid_at || '').filter(Boolean).sort()
+    const recvDate = recvDates.length ? recvDates[recvDates.length - 1] : ''
+    const pkgs = (o.ship_large || 0) + (o.ship_medium || 0) + (o.ship_small || 0)
+    return { no: i + 1, time: o.created_at ? String(o.created_at).slice(0, 10) : '', region: o.customerRegion || '', customer: o.customerName, zheng, sun, actual, debt, confirmed, cash, wechat, recvDate, pkgs }
+  })
+  const totals = rows.reduce((t, r) => {
+    t.zheng += r.zheng; t.sun += r.sun; t.actual += r.actual; t.debt += r.debt; t.confirmed += r.confirmed; t.cash += r.cash; t.wechat += r.wechat; t.pkgs += r.pkgs
+    return t
+  }, { zheng: 0, sun: 0, actual: 0, debt: 0, confirmed: 0, cash: 0, wechat: 0, pkgs: 0 })
+  return { rows, totals }
+}
+
+function toCSV(rows) {
+  return rows.map(row => {
+    return (row || []).map(c => {
+      if (c === null || c === undefined) return ''
+      const s = String(c)
+      return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+    }).join(',')
+  }).join('\n')
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   switch (action) {
     case 'summary': {
-      const { reportTab, timeTab } = event
+      const __p = await checkPermission('report:view'); if (__p.code !== 0) return __p
+      const { reportTab, timeTab, region } = event
       const now = new Date()
       
       // 时间范围过滤
       let dateFilter = null
       if (timeTab === 'day') {
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        dateFilter = {
+          created_at: db.command.and([
+            db.command.gte(start),
+            db.command.lte(end)
+          ])
+        }
+      } else if (timeTab === 'week') {
+        const day = now.getDay() || 7
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
+        start.setHours(0,0,0,0)
         const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
         dateFilter = {
           created_at: db.command.and([
@@ -30,12 +141,17 @@ exports.main = async (event, context) => {
           ])
         }
       }
+      // 区域过滤
+      const regionFilter = region ? { customerRegion: region } : null
       
       if (reportTab === 'product') {
         // 商品汇总统计
         let query = db.collection('orders')
         if (dateFilter) {
           query = query.where(dateFilter)
+        }
+        if (regionFilter) {
+          query = query.where(regionFilter)
         }
         
         const ordersResult = await query.get()
@@ -96,6 +212,9 @@ exports.main = async (event, context) => {
         if (dateFilter) {
           query = query.where(dateFilter)
         }
+        if (regionFilter) {
+          query = query.where(regionFilter)
+        }
         
         const ordersResult = await query.get()
         const orders = ordersResult.data
@@ -120,7 +239,7 @@ exports.main = async (event, context) => {
           const received = order.received_amount || order.receivedAmount || 0
           customer.totalAmount += order.totalAmount || 0
           customer.paidAmount += received
-          customer.unpaidAmount += Math.max(0, (order.totalAmount || 0) - received)
+          customer.unpaidAmount += Math.max(0, (order.totalAmount || 0) - received - (order.total_discount || order.totalDiscount || 0))
           customer.orderCount += 1
           customer.itemCount += (order.items || []).length
         })
@@ -150,7 +269,20 @@ exports.main = async (event, context) => {
         }
         
         const paymentsResult = await query.orderBy('created_at', 'desc').get()
-        const payments = paymentsResult.data
+        let payments = paymentsResult.data
+        // 区域过滤（收款记录需回查订单区域）
+        if (region) {
+          const filtered = []
+          for (const pay of payments) {
+            try {
+              const oid = pay.orderId || pay.order_id
+              if (!oid) continue
+              const oRes = await db.collection('orders').doc(oid).get()
+              if (oRes.data && oRes.data.customerRegion === region) filtered.push(pay)
+            } catch (e) {}
+          }
+          payments = filtered
+        }
         
         // 按收款方式统计
         const methodMap = {}
@@ -184,6 +316,7 @@ exports.main = async (event, context) => {
     }
     
     case 'trend': {
+      const __p = await checkPermission('report:view'); if (__p.code !== 0) return __p
       // 销售趋势分析
       const { days = 7 } = event
       const now = new Date()
@@ -222,14 +355,16 @@ exports.main = async (event, context) => {
     }
     
     case 'export': {
+      const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
       // 导出报表数据
-      const { reportTab, timeTab, format = 'csv' } = event
+      const { reportTab, timeTab, region, format = 'csv' } = event
       
-      // 获取统计数据
+      // 获取统计数据（透传 region，与报表页筛选一致）
       const summaryResult = await exports.main({
         action: 'summary',
         reportTab,
-        timeTab
+        timeTab,
+        region
       }, context)
       
       const data = summaryResult.data || {}
@@ -245,7 +380,8 @@ exports.main = async (event, context) => {
       } else if (reportTab === 'customer') {
         csvContent = '客户名称，区域，订单数，商品数，采购金额，已收款，欠款\n'
         data.customers?.forEach(c => {
-          csvContent += `"${c.name}","${c.region || ''}",${c.orderCount},${c.itemCount},${c.totalAmount.toFixed(2)},${c.paidAmount.toFixed(2)},${c.unpaidAmount.toFixed(2)}\n`
+          csvContent += `"${c.name}","${c.region || ''}",${c.orderCount},${c.itemCount},${c.totalAmount.toFixed(2)},${c.paidAmount.toFixed(2)},${c.unpaidAmount.toFixed(2)}
+`
         })
       } else if (reportTab === 'payment') {
         csvContent = '收款方式，笔数，金额\n'
@@ -263,7 +399,84 @@ exports.main = async (event, context) => {
       }
     }
     
+    case 'exportDailySummary': {
+      const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
+      // 客户汇总表（外县台账式）导出
+      const { timeTab, region, startDate, endDate } = event
+      const orders = await getFilteredOrdersFull(timeTab, region, startDate, endDate)
+      if (orders.length === 0) return { code: 0, data: { csvContent: '', filename: '' } }
+
+      const byCustomer = {}
+      orders.forEach(o => {
+        const key = o.customerName
+        if (!byCustomer[key]) byCustomer[key] = { customer: o.customerName, region: o.customerRegion || '', rows: [] }
+        const time = o.created_at ? new Date(o.created_at).toTimeString().slice(0, 5) : ''
+        const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : ''
+        ;(o.items || []).forEach(it => {
+          const remark = it.remark || ''
+          const pieceQty = Number(it.piece_qty || 0)
+          const zeroQty = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+          if (pieceQty > 0) {
+            const unitPrice = it.price_piece || 0
+            const amt = pieceQty * unitPrice
+            byCustomer[key].rows.push([date, o.customerRegion || '', o.customerName, it.name, '件', pieceQty, unitPrice.toFixed(2), amt.toFixed(2), remark])
+          }
+          if (zeroQty > 0) {
+            const unitPrice = it.price_unit != null ? it.price_unit : it.price_zero || 0
+            const amt = zeroQty * unitPrice
+            byCustomer[key].rows.push([date, o.customerRegion || '', o.customerName, it.name, '包', zeroQty, unitPrice.toFixed(2), amt.toFixed(2), remark])
+          }
+        })
+      })
+
+      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
+      const csvRows = [[COMPANY_NAME + ' 客户汇总表（' + rangeDesc + '）'], [], ['编号', '时间', '区域', '客户', '商品', '单位', '数量', '单价', '金额', '备注']]
+      let no = 1
+      let grandTotal = 0
+      Object.values(byCustomer).forEach(c => {
+        let subTotal = 0
+        c.rows.forEach((r, idx) => {
+          subTotal += parseFloat(r[7]) || 0
+          csvRows.push([idx === 0 ? no : '', r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]])
+        })
+        csvRows.push(['', '', '', '', '', '', '', '小计', subTotal.toFixed(2), ''])
+        csvRows.push([])
+        grandTotal += subTotal
+        no++
+      })
+      csvRows.push(['', '', '', '', '', '', '', '合计', grandTotal.toFixed(2), ''])
+      return { code: 0, data: { csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_客户汇总表_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
+    }
+
+    case 'exportLedger': {
+      const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
+      // 收款台账（外县格式）导出
+      const { timeTab, region, startDate, endDate } = event
+      const orders = await getFilteredOrdersFull(timeTab, region, startDate, endDate)
+      const { rows, totals } = buildLedgerData(orders)
+      if (rows.length === 0) return { code: 0, data: { csvContent: '', filename: '' } }
+
+      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
+      const title = COMPANY_NAME + rangeDesc + '外县收款台账'
+      const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '件数']
+      const csvRows = [[title], [], header]
+      rows.forEach(r => {
+        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', r.pkgs])
+      })
+      csvRows.push([])
+      csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', totals.pkgs])
+      csvRows.push(['总件数', totals.pkgs])
+      return { code: 0, data: { csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
+    }
+
     default:
       return { code: 1001, message: '未知 action' }
   }
 }
+
+// 今日日期字符串
+function todayTxt() {
+  const d = new Date()
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+}
+

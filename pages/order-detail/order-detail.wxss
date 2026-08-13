@@ -3,7 +3,7 @@
 }
 
 .order-no {
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   color: #666666;
 }
 
@@ -12,11 +12,11 @@
   color: #1a73e8;
   padding: 6rpx 16rpx;
   border-radius: 8rpx;
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
 }
 
 .total-amount {
-  font-size: 40rpx;
+  font-size: calc(40rpx * var(--font-scale));
   color: #1a73e8;
   font-weight: bold;
   margin-top: 12rpx;
@@ -24,14 +24,14 @@
 }
 
 .section-title {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   font-weight: bold;
   margin-bottom: 16rpx;
   display: block;
 }
 
 .info-row {
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   margin-bottom: 8rpx;
   color: #666666;
 }
@@ -41,7 +41,7 @@
 }
 
 .item-spec {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #999999;
 }
 
@@ -59,12 +59,12 @@
 }
 
 .payment-status-text {
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   font-weight: 500;
 }
 
 .text-success {
-  color: #06AD56;
+  color: var(--theme-primary);
 }
 
 .text-warning {
@@ -114,13 +114,13 @@
 }
 
 .modal-title {
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   font-weight: bold;
   color: #333;
 }
 
 .modal-close {
-  font-size: 48rpx;
+  font-size: calc(48rpx * var(--font-scale));
   color: #999;
   line-height: 1;
   padding: 0 8rpx;
@@ -144,7 +144,7 @@
   height: 88rpx;
   line-height: 88rpx;
   border-radius: 8rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   text-align: center;
   border: none;
 }
@@ -155,7 +155,7 @@
 }
 
 .modal-footer .btn-primary {
-  background: linear-gradient(135deg, #06AD56 0%, #06c167 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   color: #fff;
   box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
 }
@@ -166,7 +166,7 @@
 
 .form-label {
   display: block;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
   margin-bottom: 12rpx;
   font-weight: 500;
@@ -182,7 +182,7 @@
 }
 
 .currency-symbol {
-  font-size: 36rpx;
+  font-size: calc(36rpx * var(--font-scale));
   color: #FF3B30;
   font-weight: bold;
   margin-right: 8rpx;
@@ -190,7 +190,7 @@
 
 .form-input {
   flex: 1;
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   color: #333;
   height: 88rpx;
   line-height: 88rpx;
@@ -202,7 +202,7 @@
   background: #f7f7f7;
   border-radius: 8rpx;
   padding: 0 20rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #333;
 }
 
@@ -212,6 +212,92 @@
   background: #f7f7f7;
   border-radius: 8rpx;
   padding: 16rpx 20rpx;
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   line-height: 1.6;
+}
+
+/* 微信转发状态 */
+.wechat-share-info {
+  margin-top: 24rpx;
+}
+
+.share-success {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.share-badge {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  background: #e6f7ff;
+  color: #1890ff;
+  border-radius: 4rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  font-weight: 500;
+}
+
+.share-time {
+  color: #666;
+  font-size: calc(24rpx * var(--font-scale));
+}
+
+.share-pending {
+  color: #999;
+  font-size: calc(24rpx * var(--font-scale));
+}
+
+/* 操作记录（对齐原型：订单修改历史） */
+.logs-card {
+  margin-top: 24rpx;
+}
+
+.logs-empty {
+  font-size: calc(24rpx * var(--font-scale));
+  color: #bbb;
+  padding: 10rpx 0;
+}
+
+.log-list {
+  margin-top: 6rpx;
+}
+
+.log-item {
+  display: flex;
+  gap: 16rpx;
+  padding: 12rpx 0;
+  border-bottom: 1rpx dashed #eee;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #C0C4CC;
+  margin-top: 10rpx;
+  flex-shrink: 0;
+}
+
+.log-dot-create {
+  background: var(--theme-primary);
+}
+
+.log-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.log-desc {
+  font-size: calc(26rpx * var(--font-scale));
+  color: #333;
+}
+
+.log-meta {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #999;
+  margin-top: 4rpx;
 }

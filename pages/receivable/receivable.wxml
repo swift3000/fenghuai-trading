@@ -1,7 +1,8 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <!-- 导出工具栏 -->
   <view class="recv-toolbar" wx:if="{{customers.length > 0}}">
-    <button class="btn-export-recv" bindtap="handleExport">📥 导出</button>
+    <button class="btn-confirm-payment" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✅ 收款确认{{pendingPaymentCount > 0 ? " · " + pendingPaymentCount : ""}}</button>
+    <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="handleExport">📥 导出</button>
   </view>
   <!-- 统计概览 -->
   <view class="overview card">
@@ -56,6 +57,32 @@
     <view class="time-tab {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime">
       <text>本月</text>
     </view>
+    <view class="time-tab {{timeTab==='custom'?'active':''}}" data-key="custom" bindtap="switchTime">
+      <text>自定义</text>
+    </view>
+  </view>
+  
+  <!-- 自定义时间范围选择 -->
+  <view class="custom-date-range" wx:if="{{timeTab === 'custom'}}">
+    <view class="date-inputs">
+      <view class="date-item">
+        <text class="date-label">开始日期</text>
+        <picker mode="date" value="{{startDate}}" start="2020-01-01" end="{{endDate}}" bindchange="onStartDateChange">
+          <view class="picker-date">{{startDate || '请选择'}}</view>
+        </picker>
+      </view>
+      <view class="date-item">
+        <text class="date-label">结束日期</text>
+        <picker mode="date" value="{{endDate}}" start="{{startDate}}" bindchange="onEndDateChange">
+          <view class="picker-date">{{endDate || '请选择'}}</view>
+        </picker>
+      </view>
+    </view>
+    <view class="date-actions">
+      <button class="btn-confirm" bindtap="applyCustomDate" disabled="{{!startDate || !endDate}}">
+        应用筛选
+      </button>
+    </view>
   </view>
 
   <!-- 客户列表 -->
@@ -95,7 +122,7 @@
       </view>
 
       <view class="customer-actions" wx:if="{{item.unpaidAmount > 0}}">
-        <button class="btn-action btn-collect" size="mini" bindtap="handleCollect" data-item="{{item}}">登记收款</button>
+        <button class="btn-action btn-collect" wx:if="{{canCollect}}" size="mini" bindtap="handleCollect" data-item="{{item}}">登记收款</button>
       </view>
     </view>
   </view>
@@ -149,6 +176,15 @@
         <text class="form-hint">最多可收 ¥{{collectUnpaidAmount}}</text>
       </view>
 
+      <view class="form-group" wx:if="{{canDiscount}}">
+        <text class="form-label">折价/货损金额</text>
+        <view class="amount-input">
+          <text class="currency-symbol">¥</text>
+          <input class="form-input amount-input" type="digit" placeholder="折价/货损（可选）" value="{{collectDiscount}}" bindinput="onCollectDiscountChange" />
+        </view>
+        <text class="form-hint">需折价/减免权限</text>
+      </view>
+
       <view class="form-group">
         <text class="form-label">收款方式</text>
         <picker mode="selector" range="{{paymentMethods}}" value="{{paymentMethodIndex}}" bindchange="onPaymentMethodChange">
@@ -166,4 +202,46 @@
       <button class="btn btn-primary" bindtap="confirmCollect" loading="{{collectLoading}}">{{collectLoading ? '提交中...' : '确认收款'}}</button>
     </view>
   </view>
+
+  <!-- 收款确认工作台弹窗 -->
+  <view class="workbench-overlay" wx:if="{{showConfirmWorkbench}}" bindtap="closeConfirmWorkbench">
+    <view class="workbench-modal" catchtap="stopPropagation">
+      <view class="workbench-header">
+        <text class="workbench-title">✅ 收款确认工作台</text>
+        <text class="workbench-close" bindtap="closeConfirmWorkbench">✕</text>
+      </view>
+      
+      <view class="workbench-content">
+        <view wx:if="{{pendingPayments.length === 0}}" class="empty-state">
+          <text class="empty-text">暂无待确认收款</text>
+        </view>
+        
+        <view wx:else class="payment-list">
+          <view class="payment-item card" wx:for="{{pendingPayments}}" wx:key="_id">
+            <view class="payment-header">
+              <text class="payment-order-no">{{item.orderNo}}</text>
+              <text class="payment-amount">¥{{item.amount}}</text>
+            </view>
+            <view class="payment-info">
+              <text class="payment-customer">{{item.customerName}}</text>
+              <text class="payment-method">收款方式：{{item.method === 'cash' ? '现金' : (item.method === 'wechat' ? '微信' : (item.method === 'alipay' ? '支付宝' : (item.method === 'bank' ? '银行转账' : '其他'))}}</text>
+            </view>
+            <view class="payment-footer">
+              <text class="payment-registered-by">登记人：{{item.registeredBy}}</text>
+              <text class="payment-registered-at">{{item.registeredAt}}</text>
+            </view>
+            <view class="payment-actions">
+              <button class="btn-confirm-small" 
+                      bindtap="confirmPayment" 
+                      data-id="{{item._id}}"
+                      disabled="{{confirmingPayment === item._id}}">
+                {{confirmingPayment === item._id ? '确认中...' : '确认收款'}}
+              </button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
 </view>

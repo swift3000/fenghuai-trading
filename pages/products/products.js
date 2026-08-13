@@ -172,10 +172,13 @@ const DEFAULT_PRODUCTS = [
   {material_code:'180', name:"易太蚝油牛柳", spec:'1×25', pricing_mode:'case', unit_piece_qty:25, price_piece:340, price_unit:13.6, unit:'包', pinyin:'', is_adjustable:false},
 ]
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     searchKeyword: '',
     products: [],
+    canEdit: false,
     showForm: false,
     showImportDialog: false,
     editingProduct: null,
@@ -203,9 +206,13 @@ Page({
     if (!guardPageLoad(this)) {
       return
     }
+    const app = getApp()
+    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
+    this.setData({ canEdit: perms.includes('product:edit') })
   },
 
   onShow() {
+    uiStyle.applyUiStyle(this)
     this.loadProducts()
   },
 
@@ -435,17 +442,16 @@ Page({
       wx.showLoading({ title: '正在导入商品数据...', mask: true })
 
       const result = await callCloudRaw('import-data', {
-        type: 'products',
-        data: defaultProducts,
+        action: 'import-products',
         override: importOverride
       })
 
       wx.hideLoading()
 
-      if (result.code === 0) {
+      if (result.success) {
         wx.showModal({
           title: '导入完成',
-          content: `成功导入 ${result.success} 个商品，失败 ${result.failed} 个`,
+          content: `成功导入 ${result.successCount} 个商品，失败 ${result.failCount} 个`,
           showCancel: false,
           success: () => {
             this.hideImportDialog()
@@ -462,5 +468,14 @@ Page({
     } finally {
       this.setData({ importing: false })
     }
+  },
+  onThemeChange(theme) {
+    uiStyle.applyUiStyle(this)
+
+    console.log('主题已切换:', theme.name)
+    // 页面可以在这里添加自定义逻辑
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

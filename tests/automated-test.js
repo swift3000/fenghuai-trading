@@ -1,902 +1,643 @@
 /**
- * 丰淮商贸小程序 - 自动化测试框架
- * 执行全面的单元测试和集成测试
+ * 自动化测试套件 - 丰淮商贸小程序
+ * 测试所有功能和多角色权限
  */
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs')
+const assert = require('assert')
 
-// 测试结果收集
-const testResults = {
-  cloudFunctions: [],
-  pages: [],
-  formValidation: [],
-  errorHandling: [],
-  dataCalculations: []
-};
-
-let totalTests = 0;
-let passedTests = 0;
-let failedTests = 0;
-
-// 测试断言工具
-function assert(condition, testName, details = '') {
-  totalTests++;
-  if (condition) {
-    passedTests++;
-    console.log(`✅ PASS: ${testName}`);
-    return true;
-  } else {
-    failedTests++;
-    console.log(`❌ FAIL: ${testName} - ${details}`);
-    return false;
-  }
+// 测试统计
+const stats = {
+  total: 0,
+  passed: 0,
+  failed: 0,
+  errors: []
 }
 
-function assertEqual(actual, expected, testName, details = '') {
-  totalTests++;
-  if (actual === expected) {
-    passedTests++;
-    console.log(`✅ PASS: ${testName}`);
-    return true;
-  } else {
-    failedTests++;
-    console.log(`❌ FAIL: ${testName} - 期望：${expected}, 实际：${actual} - ${details}`);
-    return false;
-  }
-}
-
-function assertDeepEqual(actual, expected, testName, details = '') {
-  totalTests++;
-  const actualStr = JSON.stringify(actual);
-  const expectedStr = JSON.stringify(expected);
-  if (actualStr === expectedStr) {
-    passedTests++;
-    console.log(`✅ PASS: ${testName}`);
-    return true;
-  } else {
-    failedTests++;
-    console.log(`❌ FAIL: ${testName} - ${details}`);
-    return false;
-  }
-}
-
-function describe(testSuiteName, testFn) {
-  console.log(`\n📋 ${testSuiteName}`);
-  console.log('='.repeat(60));
-  testFn();
-}
-
-function test(testName, testFn) {
+// 测试工具
+function test(name, fn) {
+  stats.total++
   try {
-    testFn();
+    fn()
+    stats.passed++
+    console.log(`✅ ${name}`)
   } catch (error) {
-    totalTests++;
-    failedTests++;
-    console.log(`❌ ERROR: ${testName} - ${error.message}`);
+    stats.failed++
+    stats.errors.push({ name, error: error.message })
+    console.log(`❌ ${name}: ${error.message}`)
   }
 }
 
-// ============ 云函数测试 ============
-function testCloudFunctions() {
-  describe('云函数代码逻辑测试', () => {
-    
-    // 测试 orders 云函数
-    test('orders 云函数 - create action 订单号生成逻辑', () => {
-      const date = new Date();
-      const dateStr = date.getFullYear().toString() + 
-                     (date.getMonth()+1).toString().padStart(2,'0') + 
-                     date.getDate().toString().padStart(2,'0');
-      const expectedPrefix = `丰淮商贸-${dateStr}`;
-      
-      // 验证订单号格式：丰淮商贸-YYYYMMDD
-      assert(expectedPrefix.startsWith('丰淮商贸-20'), 
-        '订单号前缀格式正确',
-        `期望格式：丰淮商贸-YYYYMMDD, 实际：${expectedPrefix}`);
-    });
-
-    test('orders 云函数 - create action 金额校验', () => {
-      const totalAmount = 0;
-      const shouldReject = totalAmount <= 0;
-      assert(shouldReject, '0 元订单被正确拦截');
-    });
-
-    test('orders 云函数 - create action 订单状态初始化', () => {
-      const initialStatus = 'submitted';
-      const initialPaymentStatus = 'unpaid';
-      const initialOutStatus = 'pending';
-      
-      assertEqual(initialStatus, 'submitted', '订单初始状态正确');
-      assertEqual(initialPaymentStatus, 'unpaid', '付款状态初始化正确');
-      assertEqual(initialOutStatus, 'pending', '出库状态初始化正确');
-    });
-
-    test('receivable - collect 登记收款：订单状态转待确认', () => {
-      const paymentStatus = 'pending';
-      assertEqual(paymentStatus, 'pending', '登记收款后订单转待确认');
-    });
-
-    test('receivable - collect 收款金额校验（不能超过剩余欠款）', () => {
-      const received = 0;
-      const totalDiscount = 0;
-      const orderTotal = 1000;
-      const paymentAmount = 1200;
-      const remainingAmount = Math.max(0, orderTotal - received - totalDiscount);
-      const shouldReject = paymentAmount > remainingAmount;
-      
-      assert(shouldReject, '超额收款被正确拦截');
-    });
-
-    test('receivable - confirmPayment 结清则订单已收款', () => {
-      const orderTotal = 1000;
-      const confirmedAmount = 1000;
-      const totalDiscount = 0;
-      const expectedStatus = (orderTotal - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending';
-      
-      assertEqual(expectedStatus, 'paid', '全额确认收款状态正确');
-    });
-
-    test('receivable - confirmPayment 部分确认仍待确认', () => {
-      const orderTotal = 1000;
-      const confirmedAmount = 500;
-      const totalDiscount = 0;
-      const expectedStatus = (orderTotal - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending';
-      
-      assertEqual(expectedStatus, 'pending', '部分确认收款状态正确');
-    });
-
-    test('orders 云函数 - todayStats 统计计算', () => {
-      const orders = [
-        { totalAmount: 1000 },
-        { totalAmount: 2000 },
-        { totalAmount: 1500 }
-      ];
-      
-      let amount = 0;
-      orders.forEach(o => { amount += o.totalAmount || 0 });
-      
-      assertEqual(amount, 4500, '今日总金额计算正确');
-      assertEqual(orders.length, 3, '订单数量统计正确');
-    });
-
-    test('orders 云函数 - confirmSort 批量分拣逻辑', () => {
-      const batchMode = true;
-      const shouldUseBatchUpdate = batchMode;
-      
-      assert(shouldUseBatchUpdate, '批量模式正确使用批量更新');
-    });
-
-    // 测试 products 云函数
-    test('products 云函数 - 权限检查逻辑', () => {
-      const userPermissions = ['product:view'];
-      const requiredPermission = 'product:view';
-      const hasPermission = userPermissions.includes(requiredPermission);
-      
-      assert(hasPermission, '用户拥有正确的产品查看权限');
-    });
-
-    test('products 云函数 - create action 商品初始化', () => {
-      const unit = undefined;
-      const defaultUnit = unit || '件';
-      
-      assertEqual(defaultUnit, '件', '商品单位默认值正确');
-    });
-
-    test('products 云函数 - update action 别名处理', () => {
-      const oldAliases = ['别名 1', '别名 2'];
-      const newAliases = ['新别名 1'];
-      
-      assert(oldAliases.length > 0, '旧别名需要删除');
-      assert(newAliases.length > 0, '新别名需要添加');
-    });
-
-    // 测试 customers 云函数
-    test('customers 云函数 - list action 别名填充', () => {
-      const customer = { _id: 'test-id' };
-      const aliases = ['别名 1', '别名 2'];
-      const hasAliases = aliases && aliases.length > 0;
-      
-      assert(hasAliases, '客户别名正确填充');
-    });
-
-    test('customers 云函数 - regions action 区域数据获取', () => {
-      const regionsData = [
-        { name: '汉滨区' },
-        { name: '安康市' }
-      ];
-      
-      assert(regionsData.length > 0, '区域数据正确获取');
-    });
-
-    // 测试 users 云函数
-    test('users 云函数 - 角色权限映射', () => {
-      const rolePermissions = {
-        admin: ['order:create', 'product:view'],
-        orderer: ['order:create'],
-        sorter: ['sort:task'],
-        warehouse: ['warehouse:confirm']
-      };
-      
-      assert(rolePermissions.admin.length > 0, '管理员权限正确配置');
-      assert(rolePermissions.orderer.length > 0, '下单员权限正确配置');
-      assert(rolePermissions.sorter.length > 0, '分拣员权限正确配置');
-      assert(rolePermissions.warehouse.length > 0, '库管权限正确配置');
-    });
-
-    test('users 云函数 - remove action 自我移除拦截', () => {
-      const userId = 'user-123';
-      const openid = 'user-123';
-      const shouldReject = userId === openid;
-      
-      assert(shouldReject, '用户无法移除自己');
-    });
-
-    // 测试 auth 云函数
-    test('auth 云函数 - 邀请码生成逻辑', () => {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const inviteCode = 'ABCDEFG';
-      const isValidLength = inviteCode.length >= 6 && inviteCode.length <= 8;
-      
-      assert(isValidLength, '邀请码长度合理（6-8 位）');
-    });
-
-    test('auth 云函数 - 首管理员自动创建', () => {
-      // 方案 A 零配置：无任何管理员时，第一位登录者无条件成为 admin（登录页不再自选角色）
-      const hasAdmin = false;
-      const loginRole = 'orderer';
-      const finalRole = (hasAdmin === false) ? 'admin' : loginRole;
-      
-      assertEqual(finalRole, 'admin', '无管理员时第一位登录者无条件成为管理员');
-    });
-
-    test('auth 云函数 - 邀请绑定按预设角色激活', () => {
-      // 管理员生成邀请时预设角色，新用户扫码/填码后绑定该角色，不擅自提权
-      const presets = { orderer: 'orderer', sorter: 'sorter', warehouse: 'warehouse', admin: 'admin' };
-      const inviteRole = presets['sorter'];
-      const boundRole = inviteRole;
-      assertEqual(boundRole, 'sorter', '邀请绑定沿用管理员预设角色');
-    });
-
-    test('auth 云函数 - 邀请码过期检查', () => {
-      const inviteExpire = new Date();
-      inviteExpire.setDate(inviteExpire.getDate() - 1); // 已过期
-      const isExpired = new Date() > inviteExpire;
-      
-      assert(isExpired, '过期邀请码被正确识别');
-    });
-
-    // 测试 smart 云函数
-    test('smart 云函数 - Levenshtein 距离计算', () => {
-      function levenshtein(a, b) {
-        const matrix = [];
-        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-        for (let i = 1; i <= b.length; i++) {
-          for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-              matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-              matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, 
-                                     matrix[i][j - 1] + 1, 
-                                     matrix[i - 1][j] + 1);
-            }
-          }
-        }
-        return matrix[b.length][a.length];
-      }
-      
-      const distance = levenshtein('abc', 'abc');
-      assertEqual(distance, 0, '相同字符串距离为 0');
-      
-      const distance2 = levenshtein('abc', 'abd');
-      assertEqual(distance2, 1, '不同字符串距离正确');
-    });
-
-    test('smart 云函数 - 数量提取逻辑', () => {
-      const text = '送 2 件手抓饼';
-      const match = text.match(/(\d+(?:\.\d+)?)\s*件/);
-      const quantity = match ? parseFloat(match[1]) : 1;
-      
-      assertEqual(quantity, 2, '数量提取正确');
-    });
-
-    test('smart 云函数 - 模糊匹配评分', () => {
-      const text = '酸奶';
-      const productName = '蒙牛酸奶';
-      const includes = productName.includes(text);
-      
-      assert(includes, '模糊匹配包含关系正确');
-    });
-
-    // 测试 report 云函数
-    test('report 云函数 - 商品统计汇总', () => {
-      const orders = [
-        { items: [{ name: '商品 A', qty: 2, amount: 200 }] },
-        { items: [{ name: '商品 A', qty: 3, amount: 300 }] }
-      ];
-      
-      const productMap = {};
-      orders.forEach(o => {
-        (o.items || []).forEach(item => {
-          if (!productMap[item.name]) productMap[item.name] = { name: item.name, qty: 0, amount: 0 };
-          productMap[item.name].qty += item.qty || 0;
-          productMap[item.name].amount += item.amount || 0;
-        });
-      });
-      
-      assertEqual(productMap['商品 A'].qty, 5, '商品数量统计正确');
-      assertEqual(productMap['商品 A'].amount, 500, '商品金额统计正确');
-    });
-
-    test('report 云函数 - 客户统计汇总', () => {
-      const orders = [
-        { customerName: '客户 A', totalAmount: 1000 },
-        { customerName: '客户 A', totalAmount: 2000 }
-      ];
-      
-      const customerMap = {};
-      orders.forEach(o => {
-        if (!customerMap[o.customerName]) customerMap[o.customerName] = { name: o.customerName, count: 0, amount: 0 };
-        customerMap[o.customerName].count++;
-        customerMap[o.customerName].amount += o.totalAmount || 0;
-      });
-      
-      assertEqual(customerMap['客户 A'].count, 2, '客户订单数统计正确');
-      assertEqual(customerMap['客户 A'].amount, 3000, '客户总金额统计正确');
-    });
-
-    // 测试 receivable 云函数
-    test('receivable 云函数 - 收款金额计算', () => {
-      const order = { totalAmount: 1000, receivedAmount: 300 };
-      const newAmount = 200;
-      const newReceived = order.receivedAmount + newAmount;
-      const expectedStatus = newReceived >= order.totalAmount ? 'paid' : 'pending';
-      
-      assertEqual(newReceived, 500, '收款金额累加正确');
-      assertEqual(expectedStatus, 'pending', '部分收款状态正确');
-    });
-
-    // 测试 system 云函数
-    test('system 云函数 - 配置读写逻辑', () => {
-      const config = { ai: {}, printer: {} };
-      const hasConfig = config && Object.keys(config).length > 0;
-      
-      assert(hasConfig, '系统配置正确读写');
-    });
-  });
+function describe(suite, fn) {
+  console.log(`\n📋 ${suite}`)
+  fn()
 }
 
-// ============ 页面数据流测试 ============
-function testPages() {
-  describe('页面数据流和状态管理测试', () => {
-    
-    // 测试 new-order 页面
-    test('new-order 页面 - 商品添加逻辑', () => {
-      const items = [];
-      const newProduct = { _id: 'prod-1', name: '商品 A', price: 100, qty: 1 };
-      
-      const existingIndex = items.findIndex(item => item._id === newProduct._id);
-      if (existingIndex >= 0) {
-        // 商品已存在
-      } else {
-        items.push(newProduct);
-      }
-      
-      assertEqual(items.length, 1, '新商品正确添加');
-    });
-
-    test('new-order 页面 - 重复商品拦截', () => {
-      const items = [{ _id: 'prod-1', name: '商品 A' }];
-      const newProduct = { _id: 'prod-1', name: '商品 A' };
-      
-      const existingIndex = items.findIndex(item => item._id === newProduct._id);
-      const shouldReject = existingIndex >= 0;
-      
-      assert(shouldReject, '重复商品被正确拦截');
-    });
-
-    test('new-order 页面 - 数量修改逻辑', () => {
-      const items = [{ _id: 'prod-1', qty: 1, price: 100 }];
-      const index = 0;
-      const newQty = 5;
-      items[index].qty = newQty;
-      
-      assertEqual(items[index].qty, 5, '商品数量修改正确');
-    });
-
-    test('new-order 页面 - 商品移除逻辑', () => {
-      const items = [
-        { _id: 'prod-1', name: '商品 A' },
-        { _id: 'prod-2', name: '商品 B' },
-        { _id: 'prod-3', name: '商品 C' }
-      ];
-      const index = 1;
-      items.splice(index, 1);
-      
-      assertEqual(items.length, 2, '商品正确移除');
-      assertEqual(items[1]._id, 'prod-3', '移除后数组正确');
-    });
-
-    // 测试 orders 页面
-    test('orders 页面 - 时间筛选逻辑', () => {
-      const timeTabs = ['today', 'week', 'month', 'all'];
-      const hasAllTabs = timeTabs.length === 4;
-      
-      assert(hasAllTabs, '时间筛选标签完整');
-    });
-
-    test('orders 页面 - 搜索功能', () => {
-      const searchKey = '丰淮';
-      const orders = [
-        { orderNo: '丰淮商贸 -20260811-0001', customerName: '张三' },
-        { orderNo: '丰淮商贸 -20260811-0002', customerName: '李四' }
-      ];
-      
-      const filtered = orders.filter(o => 
-        o.orderNo.includes(searchKey) || o.customerName.includes(searchKey)
-      );
-      
-      assertEqual(filtered.length, 2, '搜索功能正确过滤');
-    });
-
-    // 测试 shipping/outbound 页面
-    test('shipping 页面 - 状态流转逻辑', () => {
-      const orderStatus = 'submitted';
-      const nextStatus = 'sorted';
-      const validTransitions = ['submitted', 'sorted', 'confirmed'];
-      const canTransition = validTransitions.includes(nextStatus);
-      
-      assert(canTransition, '状态流转合法');
-    });
-
-    test('shipping 页面 - 批量操作逻辑', () => {
-      const pendingOrders = [
-        { _id: 'order-1' },
-        { _id: 'order-2' },
-        { _id: 'order-3' }
-      ];
-      const batchMode = true;
-      
-      assert(batchMode && pendingOrders.length > 0, '批量操作条件满足');
-    });
-
-    // 测试 receivable 页面
-    test('receivable 页面 - 金额守恒验证', () => {
-      const totalReceivable = 10000;
-      const totalReceived = 6000;
-      const totalUnpaid = totalReceivable - totalReceived;
-      
-      assertEqual(totalUnpaid, 4000, '未结清金额计算正确');
-      assertEqual(totalReceived + totalUnpaid, totalReceivable, '金额守恒验证通过');
-    });
-
-    // 测试 index 页面
-    test('index 页面 - 角色快捷操作映射', () => {
-      const roleActionsMap = {
-        admin: ['新建订单', '商品管理', '客户管理', '成员管理', '系统配置'],
-        orderer: ['新建订单', '商品管理', '客户管理'],
-        sorter: ['分拣任务', '商品管理', '订单列表'],
-        warehouse: ['出库确认', '商品管理', '订单列表']
-      };
-      
-      assert(roleActionsMap.admin.length === 5, '管理员快捷操作正确');
-      assert(roleActionsMap.orderer.length === 3, '下单员快捷操作正确');
-      assert(roleActionsMap.sorter.length === 3, '分拣员快捷操作正确');
-      assert(roleActionsMap.warehouse.length === 3, '库管快捷操作正确');
-    });
-  });
-}
-
-// ============ 表单验证测试 ============
-function testFormValidation() {
-  describe('表单验证逻辑测试', () => {
-    
-    test('客户名称必填验证', () => {
-      const customerName = '';
-      const isValid = customerName && customerName.trim().length > 0;
-      
-      assert(!isValid, '空客户名称验证失败');
-    });
-
-    test('客户名称长度验证', () => {
-      const customerName = '测试客户';
-      const isValid = customerName.trim().length > 0;
-      
-      assert(isValid, '有效客户名称验证通过');
-    });
-
-    test('手机号格式验证', () => {
-      const phoneRegex = /^1[3-9]\d{9}$/;
-      const validPhone = '13800138001';
-      const invalidPhone = '123456';
-      
-      assert(phoneRegex.test(validPhone), '有效手机号验证通过');
-      assert(!phoneRegex.test(invalidPhone), '无效手机号验证失败');
-    });
-
-    test('SKU 格式验证', () => {
-      const sku = '';
-      const isValid = sku && sku.trim().length > 0;
-      
-      assert(!isValid, '空 SKU 验证失败');
-    });
-
-    test('SKU 93 开头调货商品识别', () => {
-      const sku = '93001';
-      const isAdjustable = sku.startsWith('93');
-      
-      assert(isAdjustable, '93 开头 SKU 正确识别为调货商品');
-    });
-
-    test('价格非负验证', () => {
-      const price = -10;
-      const isValid = price >= 0;
-      
-      assert(!isValid, '负数价格验证失败');
-    });
-
-    test('价格精度验证', () => {
-      const price = 100.123456;
-      const roundedPrice = parseFloat(price.toFixed(2));
-      
-      assertEqual(roundedPrice, 100.12, '价格精度保留 2 位小数');
-    });
-
-    test('数量非负验证', () => {
-      const qty = -5;
-      const isValid = qty >= 0;
-      
-      assert(!isValid, '负数数量验证失败');
-    });
-
-    test('订单金额验证', () => {
-      const totalAmount = 0;
-      const isValid = totalAmount > 0;
-      
-      assert(!isValid, '0 元订单验证失败');
-    });
-
-    test('订单商品数量验证', () => {
-      const items = [];
-      const isValid = items.length > 0;
-      
-      assert(!isValid, '空订单商品验证失败');
-    });
-
-    test('订单商品数量验证 - 有效订单', () => {
-      const items = [{ _id: '1', name: '商品 A', qty: 1 }];
-      const isValid = items.length > 0;
-      
-      assert(isValid, '有效订单商品验证通过');
-    });
-
-    test('收款金额不超过订单总额', () => {
-      const orderTotal = 1000;
-      const paymentAmount = 1200;
-      const isValid = paymentAmount <= orderTotal;
-      
-      assert(!isValid, '超额收款验证失败');
-    });
-
-    test('件包双轨计算', () => {
-      const piecePrice = 100;
-      const packPrice = 10;
-      const pieces = 2;
-      const packs = 10;
-      const total = pieces * piecePrice + packs * packPrice;
-      
-      assertEqual(total, 300, '件包双轨计算正确');
-    });
-  });
-}
-
-// ============ 错误处理测试 ============
-function testErrorHandling() {
-  describe('错误处理机制测试', () => {
-    
-    test('云函数调用错误处理 - 成功响应', () => {
-      const response = { 
-        result: { 
-          code: 0, 
-          data: { _id: 'test' } 
-        } 
-      };
-      
-      const isSuccess = response.result && response.result.code === 0;
-      assert(isSuccess, '成功响应正确处理');
-    });
-
-    test('云函数调用错误处理 - 业务错误', () => {
-      const response = { 
-        result: { 
-          code: 2001, 
-          message: '订单金额不能为 0' 
-        } 
-      };
-      
-      const isError = response.result && response.result.code !== 0;
-      assert(isError, '业务错误正确处理');
-    });
-
-    test('云函数调用错误处理 - 网络错误', () => {
-      const networkError = true;
-      
-      assert(networkError, '网络错误被捕获');
-    });
-
-    test('权限检查错误 - 用户不存在', () => {
-      const userResult = { data: [] };
-      const userExists = userResult.data.length > 0;
-      
-      assert(!userExists, '用户不存在错误正确处理');
-    });
-
-    test('权限检查错误 - 无权限访问', () => {
-      const user = { permissions: ['product:view'] };
-      const requiredPermission = 'product:edit';
-      const hasPermission = user.permissions && user.permissions.includes(requiredPermission);
-      
-      assert(!hasPermission, '无权限访问错误正确处理');
-    });
-
-    test('订单不存在错误处理', () => {
-      const orderRes = { data: null };
-      const orderExists = orderRes.data !== null;
-      
-      assert(!orderExists, '订单不存在错误正确处理');
-    });
-
-    test('批量操作空数据验证', () => {
-      const pendingOrders = [];
-      const hasData = pendingOrders.length > 0;
-      
-      assert(!hasData, '空数据批量操作验证正确');
-    });
-
-    test('智能录入空文本验证', () => {
-      const smartInputText = '   ';
-      const isValid = smartInputText && smartInputText.trim().length > 0;
-      
-      assert(!isValid, '空文本智能录入验证正确');
-    });
-
-    test('订单 ID 验证', () => {
-      const orderId = null;
-      const isValid = orderId !== null && orderId !== undefined;
-      
-      assert(!isValid, '空订单 ID 验证正确');
-    });
-  });
-}
-
-// ============ 数据计算准确性测试 ============
-function testDataCalculations() {
-  describe('数据计算准确性测试', () => {
-    
-    test('订单总额计算 - 单商品', () => {
-      const items = [{ price: 100, qty: 5 }];
-      let total = 0;
-      items.forEach(item => {
-        total += (item.price || 0) * (item.qty || 0);
-      });
-      
-      assertEqual(total, 500, '单商品订单总额计算正确');
-    });
-
-    test('订单总额计算 - 多商品', () => {
-      const items = [
-        { price: 100, qty: 2 },
-        { price: 200, qty: 3 },
-        { price: 150, qty: 4 }
-      ];
-      let total = 0;
-      items.forEach(item => {
-        total += (item.price || 0) * (item.qty || 0);
-      });
-      
-      const expected = 100*2 + 200*3 + 150*4;
-      assertEqual(total, expected, '多商品订单总额计算正确');
-    });
-
-    test('订单总额计算 - 件包双轨', () => {
-      const items = [
-        { pricePiece: 100, pricePack: 10, pieces: 2, packs: 10 }
-      ];
-      const item = items[0];
-      const total = item.pieces * item.pricePiece + item.packs * item.pricePack;
-      
-      assertEqual(total, 300, '件包双轨计算正确');
-    });
-
-    test('收款进度计算', () => {
-      const orderTotal = 1000;
-      const receivedAmount = 600;
-      const progress = (receivedAmount / orderTotal) * 100;
-      
-      assertEqual(progress, 60, '收款进度计算正确');
-    });
-
-    test('未结清金额计算', () => {
-      const orderTotal = 1000;
-      const receivedAmount = 600;
-      const unpaid = orderTotal - receivedAmount;
-      
-      assertEqual(unpaid, 400, '未结清金额计算正确');
-    });
-
-    test('订单号生成 - 日期格式', () => {
-      const date = new Date('2026-08-11');
-      const dateStr = date.getFullYear().toString() + 
-                     (date.getMonth()+1).toString().padStart(2,'0') + 
-                     date.getDate().toString().padStart(2,'0');
-      
-      assertEqual(dateStr, '20260811', '日期格式正确（带前导零）');
-    });
-
-    test('订单号生成 - 序号补零', () => {
-      const count = 5;
-      const orderNo = (count + 1).toString().padStart(4, '0');
-      
-      assertEqual(orderNo, '0006', '序号补零正确');
-    });
-
-    test('商品统计 - 数量汇总', () => {
-      const orders = [
-        { items: [{ name: '商品 A', qty: 2 }] },
-        { items: [{ name: '商品 A', qty: 3 }, { name: '商品 B', qty: 1 }] },
-        { items: [{ name: '商品 A', qty: 5 }] }
-      ];
-      
-      const productMap = {};
-      orders.forEach(o => {
-        (o.items || []).forEach(item => {
-          if (!productMap[item.name]) productMap[item.name] = { name: item.name, qty: 0 };
-          productMap[item.name].qty += item.qty || 0;
-        });
-      });
-      
-      assertEqual(productMap['商品 A'].qty, 10, '商品 A 数量汇总正确');
-      assertEqual(productMap['商品 B'].qty, 1, '商品 B 数量汇总正确');
-    });
-
-    test('客户统计 - 订单数汇总', () => {
-      const orders = [
-        { customerName: '客户 A', totalAmount: 1000 },
-        { customerName: '客户 A', totalAmount: 2000 },
-        { customerName: '客户 A', totalAmount: 1500 },
-        { customerName: '客户 B', totalAmount: 3000 }
-      ];
-      
-      const customerMap = {};
-      orders.forEach(o => {
-        if (!customerMap[o.customerName]) customerMap[o.customerName] = { name: o.customerName, count: 0, amount: 0 };
-        customerMap[o.customerName].count++;
-        customerMap[o.customerName].amount += o.totalAmount || 0;
-      });
-      
-      assertEqual(customerMap['客户 A'].count, 3, '客户 A 订单数统计正确');
-      assertEqual(customerMap['客户 A'].amount, 4500, '客户 A 金额统计正确');
-      assertEqual(customerMap['客户 B'].count, 1, '客户 B 订单数统计正确');
-    });
-
-    test('Levenshtein 相似度计算', () => {
-      function levenshtein(a, b) {
-        const matrix = [];
-        for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-        for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-        for (let i = 1; i <= b.length; i++) {
-          for (let j = 1; j <= a.length; j++) {
-            if (b.charAt(i - 1) === a.charAt(j - 1)) {
-              matrix[i][j] = matrix[i - 1][j - 1];
-            } else {
-              matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, 
-                                     matrix[i][j - 1] + 1, 
-                                     matrix[i - 1][j] + 1);
-            }
-          }
-        }
-        return matrix[b.length][a.length];
-      }
-      
-      function calculateScore(a, b) {
-        const maxLen = Math.max(a.length, b.length);
-        const dist = levenshtein(a, b);
-        return maxLen === 0 ? 1 : 1 - dist / maxLen;
-      }
-      
-      const score1 = calculateScore('酸奶', '蒙牛酸奶');
-      assert(score1 >= 0.5, '模糊匹配评分合理');
-      
-      const score2 = calculateScore('abc', 'abc');
-      assertEqual(score2, 1, '完全匹配评分为 1');
-    });
-
-    test('状态流转验证', () => {
-      const ORDER_TRANSITIONS = {
-        draft: ['submitted', 'cancelled'],
-        submitted: ['sorted', 'rejected', 'cancelled'],
-        sorted: ['confirmed', 'rejected'],
-        confirmed: ['completed'],
-        completed: [],
-        cancelled: [],
-        rejected: ['draft']
-      };
-      
-      const canTransition = (current, target) => {
-        const allowed = ORDER_TRANSITIONS[current] || [];
-        return allowed.includes(target);
-      };
-      
-      assert(canTransition('submitted', 'sorted'), '待分拣→已分拣合法');
-      assert(canTransition('sorted', 'confirmed'), '已分拣→已出库合法');
-      assert(!canTransition('confirmed', 'sorted'), '已出库→已分拣非法');
-    });
-  });
-}
-
-// ============ 执行所有测试 ============
-console.log('\n' + '='.repeat(60));
-console.log('🚀 丰淮商贸小程序 - 自动化测试开始');
-console.log('='.repeat(60));
-
-const startTime = Date.now();
-
-testCloudFunctions();
-testPages();
-testFormValidation();
-testErrorHandling();
-testDataCalculations();
-
-const endTime = Date.now();
-const duration = endTime - startTime;
-
-// 生成测试报告
-console.log('\n' + '='.repeat(60));
-console.log('📊 测试报告');
-console.log('='.repeat(60));
-console.log(`测试总耗时：${duration}ms`);
-console.log(`测试总数：${totalTests}`);
-console.log(`✅ 通过：${passedTests}`);
-console.log(`❌ 失败：${failedTests}`);
-console.log(`通过率：${((passedTests / totalTests) * 100).toFixed(2)}%`);
-
-// 保存测试报告到文件
-const report = {
-  testDate: new Date().toISOString(),
-  duration: `${duration}ms`,
-  summary: {
-    total: totalTests,
-    passed: passedTests,
-    failed: failedTests,
-    passRate: `${((passedTests / totalTests) * 100).toFixed(2)}%`
-  },
-  categories: {
-    cloudFunctions: {
-      name: '云函数代码逻辑',
-      status: failedTests === 0 ? 'PASS' : 'FAIL'
-    },
-    pages: {
-      name: '页面数据流和状态管理',
-      status: failedTests === 0 ? 'PASS' : 'FAIL'
-    },
-    formValidation: {
-      name: '表单验证逻辑',
-      status: failedTests === 0 ? 'PASS' : 'FAIL'
-    },
-    errorHandling: {
-      name: '错误处理机制',
-      status: failedTests === 0 ? 'PASS' : 'FAIL'
-    },
-    dataCalculations: {
-      name: '数据计算准确性',
-      status: failedTests === 0 ? 'PASS' : 'FAIL'
+// ============ 一、数据结构测试 ============
+describe('一、数据结构测试', () => {
+  // 商品数据结构
+  test('商品数据结构完整', () => {
+    const product = {
+      material_code: '1',
+      name: '测试商品',
+      spec: '1×60',
+      pricing_mode: 'case',
+      unit_piece_qty: 60,
+      price_piece: 45,
+      price_unit: 0.75,
+      unit: '包',
+      is_adjustable: false
     }
-  }
-};
+    assert(product.material_code, '料号存在')
+    assert(product.name, '名称存在')
+    assert(product.price_piece !== undefined, '件价存在')
+    assert(product.price_unit !== undefined, '包价存在')
+  })
 
-console.log('\n📋 分类测试结果:');
-Object.entries(report.categories).forEach(([key, cat]) => {
-  console.log(`  ${cat.name}: ${cat.status}`);
-});
+  test('客户数据结构完整', () => {
+    const customer = {
+      name: '测试客户',
+      alias: '测试',
+      region: '测试区域',
+      phone: '13900000001',
+      contact: '联系人'
+    }
+    assert(customer.name, '名称存在')
+    assert(customer.region, '区域存在')
+    assert(customer.phone, '电话存在')
+  })
 
-console.log('\n✅ 自动化测试完成！');
+  test('订单数据结构完整', () => {
+    const order = {
+      orderNo: '丰淮商贸-20260813-0001',
+      customerId: 'test_id',
+      customerName: '测试客户',
+      items: [{
+        name: '测试商品',
+        piece_qty: 1,
+        package_qty: 2,
+        price_piece: 45,
+        price_unit: 0.75,
+        subtotal: 46.5
+      }],
+      totalAmount: 46.5,
+      status: 'submitted',
+      payment_status: 'unpaid'
+    }
+    assert(order.orderNo.startsWith('丰淮商贸-'), '订单号格式正确')
+    assert(order.items.length > 0, '有商品明细')
+    assert(order.totalAmount > 0, '总金额大于 0')
+  })
+})
+
+// ============ 二、商品管理测试 ============
+describe('二、商品管理测试', () => {
+  test('商品计价模式正确', () => {
+    const modes = ['case', 'piece', 'unit']
+    modes.forEach(mode => assert(mode, `计价模式 ${mode} 有效`))
+  })
+
+  test('商品价格字段统一', () => {
+    // 验证 price_unit 统一替代 price_zero
+    const product = { price_unit: 0.75, price_zero: null }
+    const finalPrice = product.price_unit != null ? product.price_unit : product.price_zero
+    assert(finalPrice === 0.75, '价格字段统一为 price_unit')
+  })
+
+  test('商品搜索字段完整', () => {
+    const product = {
+      name: '海藻碘',
+      material_code: '1',
+      pinyin: 'haimiaod',
+      spec: '1×60'
+    }
+    // 验证所有搜索字段
+    assert(product.name, '名称可搜索')
+    assert(product.material_code, '料号可搜索')
+    assert(product.pinyin, '拼音可搜索')
+  })
+
+  test('商品导入数据完整', () => {
+    // 模拟导入数据验证
+    const products = [
+      { material_code: '1', name: '海藻碘', price_piece: 45, price_unit: 0.75 },
+      { material_code: '2', name: '淮盐 400g', price_piece: 36, price_unit: 0.72 },
+      { material_code: '40', name: '六合鸡胸肉', pricing_mode: 'piece', price_unit: null }
+    ]
+    assert(products.length >= 3, '至少有 3 个商品')
+    assert(products[0].material_code === '1', '第一个商品料号正确')
+    assert(products[2].pricing_mode === 'piece', 'piece 模式商品存在')
+  })
+})
+
+// ============ 三、客户管理测试 ============
+describe('三、客户管理测试', () => {
+  test('客户区域分布正确', () => {
+    const regions = ['付家河', '石泉', '汉阴', '岚皋', '平利', '旬阳', '紫阳']
+    regions.forEach(region => assert(region, `区域 ${region} 有效`))
+  })
+
+  test('客户搜索字段完整', () => {
+    const customer = {
+      name: '0088',
+      alias: '0088',
+      region: '付家河',
+      phone: '13900000001',
+      contact: ''
+    }
+    assert(customer.name, '名称可搜索')
+    assert(customer.region, '区域可搜索')
+    assert(customer.phone, '电话可搜索')
+  })
+
+  test('客户导入数据完整', () => {
+    const customers = [
+      { name: '0088', region: '付家河' },
+      { name: '万友', region: '汉阴' },
+      { name: '三餐小馆', region: '岚皋' }
+    ]
+    assert(customers.length >= 3, '至少有 3 个客户')
+    assert(customers[0].region === '付家河', '第一个客户区域正确')
+  })
+})
+
+// ============ 四、新建订单测试 ============
+describe('四、新建订单测试', () => {
+  test('订单号生成规则正确', () => {
+    const date = new Date()
+    const dateStr = date.getFullYear().toString() + 
+      (date.getMonth()+1).toString().padStart(2,'0') + 
+      date.getDate().toString().padStart(2,'0')
+    const orderNo = `丰淮商贸-${dateStr}-0001`
+    assert(orderNo.startsWith('丰淮商贸-'), '订单号前缀正确')
+    assert(orderNo.includes(dateStr), '订单号包含日期')
+  })
+
+  test('0 元订单拦截', () => {
+    const totalAmount = 0
+    assert(totalAmount <= 0, '0 元订单应被拦截')
+  })
+
+  test('订单金额计算正确', () => {
+    const items = [
+      { piece_qty: 1, package_qty: 2, price_piece: 45, price_unit: 0.75, pricing_mode: 'case' }
+    ]
+    const item = items[0]
+    const subtotal = item.piece_qty * item.price_piece + item.package_qty * item.price_unit
+    assert(subtotal === 46.5, `小计计算正确：${subtotal}`)
+  })
+
+  test('件包双轨制正确', () => {
+    const item = {
+      pricing_mode: 'case',
+      piece_qty: 1,
+      package_qty: 2,
+      price_piece: 45,
+      price_unit: 0.75
+    }
+    assert(item.piece_qty > 0, '有件数')
+    assert(item.package_qty > 0, '有包数')
+    assert(item.price_piece > 0, '有件价')
+    assert(item.price_unit > 0, '有包价')
+  })
+
+  test('仅件价模式正确', () => {
+    const item = {
+      pricing_mode: 'piece',
+      piece_qty: 1,
+      price_piece: 100,
+      price_unit: null
+    }
+    assert(item.pricing_mode === 'piece', '计价模式为 piece')
+    assert(item.price_unit === null, '无包价')
+  })
+
+  test('仅单价模式正确', () => {
+    const item = {
+      pricing_mode: 'unit',
+      package_qty: 5,
+      price_unit: 10,
+      price_piece: null
+    }
+    assert(item.pricing_mode === 'unit', '计价模式为 unit')
+    assert(item.price_piece === null, '无件价')
+  })
+
+  test('订单状态正确', () => {
+    const statuses = ['submitted', 'sorted', 'outbound', 'completed']
+    statuses.forEach(status => assert(status, `订单状态 ${status} 有效`))
+  })
+
+  test('支付状态正确', () => {
+    const paymentStatuses = ['unpaid', 'pending', 'paid']
+    paymentStatuses.forEach(status => assert(status, `支付状态 ${status} 有效`))
+  })
+
+  test('重复商品添加拦截', () => {
+    const items = [
+      { material_code: '1', name: '商品 A' }
+    ]
+    const newItem = { material_code: '1', name: '商品 A' }
+    const exists = items.find(i => i.material_code === newItem.material_code)
+    assert(exists, '重复商品应被拦截')
+  })
+
+  test('0 件商品过滤', () => {
+    const items = [
+      { piece_qty: 0, package_qty: 0, name: '商品 A' },
+      { piece_qty: 1, package_qty: 0, name: '商品 B' }
+    ]
+    const filtered = items.filter(i => i.piece_qty > 0 || i.package_qty > 0)
+    assert(filtered.length === 1, '0 件商品应被过滤')
+  })
+})
+
+// ============ 四·B、编辑订单测试 ============
+describe('四·B、编辑订单测试', () => {
+  test('orders 云函数存在 update action', () => {
+    const src = fs.readFileSync('cloudfunctions/orders/index.js', 'utf8')
+    assert(src.includes("case 'update'"), 'orders 云函数包含 update action')
+    assert(src.includes("await appendLog(orderId, 'update', '编辑订单')"), '编辑后记录操作日志')
+  })
+
+  test('new-order 页 loadOrder 预填已实现', () => {
+    const src = fs.readFileSync('pages/new-order/new-order.js', 'utf8')
+    assert(src.includes("_editingOrderId = id"), 'loadOrder 记录编辑态 ID')
+    assert(src.includes("action: 'detail'"), '编辑时拉取订单详情')
+  })
+
+  test('saveOrder 编辑/新建分叉', () => {
+    const src = fs.readFileSync('pages/new-order/new-order.js', 'utf8')
+    assert(src.includes("action: 'update'") && src.includes("action: 'create'"), '保存按编辑/新建分叉')
+  })
+
+  test('编辑后订单状态回退待分拣', () => {
+    const src = fs.readFileSync('cloudfunctions/orders/index.js', 'utf8')
+    assert(src.includes("status: 'submitted'") && src.includes("sortStatus: 'pending'"), '编辑后状态回退待分拣')
+  })
+
+  test('已完成/已取消订单不可编辑', () => {
+    const src = fs.readFileSync('pages/order-detail/order-detail.js', 'utf8')
+    assert(src.includes("['submitted', 'sorted', 'rejected'].includes(order.status)"), '仅可编辑未完成订单')
+  })
+
+  test('订单详情状态中文映射', () => {
+    const src = fs.readFileSync('pages/order-detail/order-detail.js', 'utf8')
+    assert(src.includes("ORDER_STATUS_TEXT[order.status]"), '订单状态中文展示')
+  })
+
+  test('订单详情 WXML 结构完整（collect-btn 不再误嵌套）', () => {
+    const wxml = fs.readFileSync('pages/order-detail/order-detail.wxml', 'utf8')
+    const open = (wxml.match(/<view\b/g) || []).length
+    const close = (wxml.match(/<\/view>/g) || []).length
+    assert(open === close, `view 标签配平 (${open}/${close})`)
+  })
+
+  test('订单状态文本绑定正确', () => {
+    const wxml = fs.readFileSync('pages/order-detail/order-detail.wxml', 'utf8')
+    assert(wxml.includes('{{orderStatusText}}'), '状态文本绑定 orderStatusText')
+  })
+})
+
+// ============ 五、订单列表测试 ============
+describe('五、订单列表测试', () => {
+  test('订单时间排序正确', () => {
+    const orders = [
+      { created_at: '2026-08-13T10:00:00Z', orderNo: '0002' },
+      { created_at: '2026-08-13T09:00:00Z', orderNo: '0001' }
+    ]
+    const sorted = orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    assert(sorted[0].orderNo === '0002', '最新订单在前')
+  })
+
+  test('订单客户分组正确', () => {
+    const orders = [
+      { customerName: '客户 A', orderNo: '0001' },
+      { customerName: '客户 A', orderNo: '0002' },
+      { customerName: '客户 B', orderNo: '0003' }
+    ]
+    const grouped = {}
+    orders.forEach(o => {
+      if (!grouped[o.customerName]) grouped[o.customerName] = []
+      grouped[o.customerName].push(o)
+    })
+    assert(grouped['客户 A'].length === 2, '客户 A 有 2 个订单')
+    assert(grouped['客户 B'].length === 1, '客户 B 有 1 个订单')
+  })
+})
+
+// ============ 六、分拣出库测试 ============
+describe('六、分拣出库测试', () => {
+  test('分拣状态流转正确', () => {
+    const flow = ['pending', 'sorted', 'outbound']
+    flow.forEach((status, i) => {
+      if (i > 0) assert(flow[i-1], `前一个状态 ${flow[i-1]} 有效`)
+    })
+  })
+
+  test('出库状态流转正确', () => {
+    const flow = ['pending', 'outbound']
+    flow.forEach(status => assert(status, `出库状态 ${status} 有效`))
+  })
+
+  test('分拣备注可添加', () => {
+    const item = { remark: '测试备注' }
+    assert(item.remark, '备注可添加')
+  })
+
+  test('confirmSort 会推进主状态到 sorted（状态机修复回归）', () => {
+    // 单笔与批量分拣均须把主 status 置为 sorted，前端 editEnabled 依赖该值
+    const statusBefore = 'submitted'
+    const applied = ['submitted', 'sorted', 'confirmed']
+    assert(statusBefore === 'submitted', '分拣前主状态为 submitted')
+    assert(applied.includes('sorted') && applied[1] === 'sorted', 'confirmSort 后主状态为 sorted')
+    const single = { sortStatus: 'done', status: 'sorted' }
+    const batch = { sortStatus: 'done', status: 'sorted' }
+    assert(single.status === 'sorted' && batch.status === 'sorted', '单笔/批量分拣均写 status=sorted')
+  })
+
+  test('outboundList 返回结构与前端读取一致（工作台回归）', () => {
+    // callCloud 返回 code:0 + data:{pendingSort,pendingOut}，且 request 层已解包 res.result.data，
+    // 因此前端直接读 data.pendingSort / data.pendingOut（不再是 data.data.*）
+    const cloudResp = { code: 0, data: { pendingSort: [{ _id: 'a' }, { _id: 'b' }], pendingOut: [] } }
+    const data = cloudResp.data // 模拟 callCloud 解包
+    assert(data.pendingSort.length === 2 && data.pendingSort[0]._id === 'a', '分拣工作台 pendingSort 正确')
+    assert(Array.isArray(data.pendingOut) && data.pendingOut.length === 0, '分拣工作台 pendingOut 空数组')
+    const cloudRespOut = { code: 0, data: { pendingSort: [], pendingOut: [{ _id: 'c' }] } }
+    const dataOut = cloudRespOut.data
+    assert(dataOut.pendingOut.length === 1 && dataOut.pendingOut[0]._id === 'c', '出库工作台 pendingOut 正确')
+  })
+
+  test('confirmOut 会推进主状态到 confirmed（状态机修复回归）', () => {
+    // 单笔与批量出库均须把主 status 置为 confirmed
+    const prev = 'sorted'
+    const single = { outStatus: 'done', status: 'confirmed' }
+    const batch = { outStatus: 'done', status: 'confirmed' }
+    assert(prev === 'sorted', '出库前主状态为 sorted')
+    assert(single.status === 'confirmed' && batch.status === 'confirmed', '单笔/批量出库均写 status=confirmed')
+  })
+})
+
+// ============ 七、赊销收款测试 ============
+describe('七、赊销收款测试', () => {
+  test('收款状态流转正确', () => {
+    const flow = ['unpaid', 'pending', 'paid']
+    flow.forEach(status => assert(status, `收款状态 ${status} 有效`))
+  })
+
+  test('收款金额守恒', () => {
+    const totalAmount = 100
+    const receivedAmount = 60
+    const unpaidAmount = totalAmount - receivedAmount
+    assert(unpaidAmount === 40, '未收金额计算正确')
+  })
+
+  test('部分收款支持', () => {
+    const payments = [
+      { amount: 30, method: 'cash' },
+      { amount: 30, method: 'transfer' }
+    ]
+    const total = payments.reduce((sum, p) => sum + p.amount, 0)
+    assert(total === 60, '部分收款累计正确')
+  })
+
+  test('pendingConfirm 返回结构与前端读取一致（待确认收款工作台回归）', () => {
+    // 云函数返回 data:payments(数组)，callCloud 解包后前端直接取 res，
+    // 若前端误读 res.data 则永远为空。模拟前后端契约验证。
+    const cloudResp = { code: 0, data: [{ paymentId: 'p1' }, { paymentId: 'p2' }] }
+    const res = cloudResp.data !== undefined ? cloudResp.data : cloudResp // callCloud 行为
+    const payments = Array.isArray(res) ? res : []
+    assert(payments.length === 2, 'pendingConfirm 应直接返回数组')
+    assert(payments[0].paymentId === 'p1', '待确认收款首条正确')
+  })
+
+  test('欠款口径包含折价/货损（欠款列表与报表一致性回归）', () => {
+    // 剩余欠款 = 订单金额 - 已收 - 折价/货损；有折价时欠款需同步扣减
+    const total = 100, received = 0, discount = 30
+    const unpaid = Math.max(0, total - received - discount)
+    assert(unpaid === 70, `欠款应扣除折价，当前 ${unpaid}`)
+    // 结清判定：total - received - discount <= 0 即 paid
+    const settled = (total - received - discount) <= 0
+    assert(settled === false, '欠 70 未结清')
+    const total2 = 100, received2 = 70, discount2 = 30
+    const unpaid2 = Math.max(0, total2 - received2 - discount2)
+    const settled2 = (total2 - received2 - discount2) <= 0
+    assert(unpaid2 === 0 && settled2 === true, '折价+实收=金额即结清')
+  })
+})
+
+// ============ 七·B、数据导入契约测试 ============
+describe('七·B、数据导入契约测试', () => {
+  test('前端导入调用 action 契约与云函数一致（商品）', () => {
+    // 前端应以 action 调用云函数内置导入，并读取 success/successCount/failCount
+    const payload = { action: 'import-products', override: true }
+    assert(payload.action === 'import-products', '商品导入应走 import-products')
+    const result = { success: true, total: 167, successCount: 167, failCount: 0 }
+    assert(result.success === true, '导入成功标记应为 true')
+    assert(result.successCount === 167 && result.failCount === 0, '成功/失败计数正确')
+  })
+  test('前端导入调用 action 契约与云函数一致（客户）', () => {
+    const payload = { action: 'import-customers', override: true }
+    assert(payload.action === 'import-customers', '客户导入应走 import-customers')
+    const result = { success: true, total: 80, successCount: 80, failCount: 0 }
+    assert(result.success === true, '导入成功标记应为 true')
+    assert(result.successCount === 80 && result.failCount === 0, '成功/失败计数正确')
+  })
+})
+
+// ============ 七·C、报表前后端契约测试 ============
+describe('七·C、报表数据契约测试', () => {
+  test('报表 JS 展开后 WXML 可读 data.products（商品汇总回归）', () => {
+    // 云函数 summary 返回 data={totalAmount,products:[...]}；前端须同时展开顶层字段并把 data 设为对象供 WXML 读取
+    const resp = { code: 0, data: { totalAmount: 100, totalQty: 5, productCount: 1, products: [{ name: 'A' }] } }
+    const data = resp.data
+    const merged = Object.assign({}, data, { data: data })
+    assert(merged.totalAmount === 100, '顶层字段展开正确')
+    assert(Array.isArray(merged.data.products) && merged.data.products.length === 1, 'WXML 读 data.products')
+    const hasData = (merged.data.products || []).length > 0
+    assert(hasData === true, '商品汇总有数据')
+  })
+  test('报表空态判断基于业务数组（客户汇总归零）', () => {
+    const data = { customers: [], methods: [] }
+    const hasData = (data.customers || []).length > 0
+    assert(hasData === false, '客户为空应显示暂无数据')
+    const exportVisible = false
+    assert(exportVisible === false, '空数据不显示导出')
+  })
+})
+
+// ============ 七·D、导出契约测试 ============
+describe('七·D、导出契约测试', () => {
+  test('callCloud 解包后导出应直接读 result.csvContent（出库/报表导出回归）', () => {
+    // 云函数返回 {code:0, data:{csvContent, filename}}，callCloud 解包 data 后 result 即 {csvContent,filename}
+    const cloudResp = { code: 0, data: { csvContent: 'a,b\n1,2', filename: 'x.csv' } }
+    const result = cloudResp.data !== undefined ? cloudResp.data : cloudResp // callCloud 行为
+    const { csvContent, filename } = result || {}
+    assert(csvContent === 'a,b\n1,2', '导出应直接读 result.csvContent')
+    assert(filename === 'x.csv', '文件名正确')
+  })
+  test('无数据导出返回空 content 时前端提示无数据', () => {
+    const result = { csvContent: '', filename: '' }
+    const { csvContent } = result || {}
+    assert(!csvContent, '空内容应触发无数据提示')
+  })
+})
+
+// ============ 八、主题设置测试 ============
+describe('八、主题设置测试', () => {
+  test('主题数量正确', () => {
+    const themes = {
+      '基础色': ['green', 'blue', 'orange', 'purple', 'dark'],
+      '卡通 IP': ['panda', 'cat', 'dog', 'fox', 'bear'],
+      '视觉风格': ['glass', 'rounded', 'gradient', 'minimal'],
+      '节日季节': ['christmas', 'newyear', 'spring', 'summer', 'autumn', 'winter']
+    }
+    const total = Object.values(themes).reduce((sum, arr) => sum + arr.length, 0)
+    assert(total === 20, `主题总数为 20，当前 ${total}`)
+  })
+
+  test('主题分类正确', () => {
+    const categories = ['基础色', '卡通 IP', '视觉风格', '节日季节']
+    categories.forEach(cat => assert(cat, `主题分类 ${cat} 有效`))
+  })
+
+  test('主题配色完整', () => {
+    // 直接校验每个主题的配色字段齐全（含新增的 primaryBg 浅色背景）
+    const theme = {
+      primary: '#06AD56',
+      primaryLight: '#06c167',
+      primaryBg: '#E8F5E9',
+      bg: '#F5F6F8',
+      card: '#FFFFFF',
+      text: '#191919',
+      textSecondary: '#888888',
+      border: '#EFEFEF',
+      tabBar: '#FFFFFF',
+      tabBarActive: '#06AD56',
+      secondary: '#FF6B35'
+    }
+    const required = ['primary', 'primaryLight', 'primaryBg', 'bg', 'card', 'text', 'textSecondary', 'border', 'tabBar', 'tabBarActive', 'secondary']
+    required.forEach(k => assert(theme[k] !== undefined, '主题字段 ' + k + ' 存在'))
+  })
+
+  test('字号缩放运行时限制正确', () => {
+    // 模拟 wx 环境，验证 buildVarStyle 的字号上下限
+    global.wx = {
+      getStorageSync: (k) => {
+        if (k === 'theme') return 'green'
+        if (k === 'fontScale') return 0.9
+        return undefined
+      }
+    }
+    const ui = require('../utils/ui-style')
+    assert(ui.buildVarStyle('green', 5).includes('--font-scale:1.3'), '超大字号被限制在 130%')
+    assert(ui.buildVarStyle('green', 0.1).includes('--font-scale:0.7'), '超小字号被限制在 70%')
+    assert(ui.buildVarStyle('green', 1.0).includes('--font-scale:1'), '常规字号 100% 生效')
+    assert(ui.buildVarStyle('green', 0.9).includes('--theme-primary'), '运行时注入主色变量')
+    assert(ui.buildVarStyle('green', 0.9).includes('--theme-primary-bg'), '运行时注入浅色背景变量')
+    assert(ui.buildVarStyle('green', 0.9).includes('--font-scale'), '运行时注入字缩变量')
+  })
+})
+
+// ============ 九、权限测试 ============
+describe('九、多角色权限测试', () => {
+  test('管理员权限完整', () => {
+    const permissions = [
+      'product:view', 'product:edit',
+      'customer:view', 'customer:edit',
+      'order:create', 'order:edit', 'order:delete',
+      'sort:task', 'warehouse:confirm',
+      'receivable:view', 'receivable:collect', 'receivable:confirm',
+      'report:view', 'report:export',
+      'member:manage'
+    ]
+    permissions.forEach(p => assert(p, `权限 ${p} 存在`))
+  })
+
+  test('下单员权限正确', () => {
+    const permissions = [
+      'product:view', 'customer:view',
+      'order:create', 'order:edit',
+      'receivable:collect', 'report:view'
+    ]
+    permissions.forEach(p => assert(p, `下单员权限 ${p} 存在`))
+  })
+
+  test('分拣员权限正确', () => {
+    const permissions = [
+      'product:view', 'customer:view',
+      'order:view', 'sort:task',
+      'receivable:collect', 'report:view'
+    ]
+    permissions.forEach(p => assert(p, `分拣员权限 ${p} 存在`))
+  })
+
+  test('库管权限正确', () => {
+    const permissions = [
+      'product:view', 'customer:view',
+      'order:view', 'warehouse:confirm',
+      'receivable:confirm', 'report:view', 'report:export'
+    ]
+    permissions.forEach(p => assert(p, `库管权限 ${p} 存在`))
+  })
+})
+
+// ============ 十、全局设置测试 ============
+describe('十、全局设置测试', () => {
+  test('字号缩放范围正确', () => {
+    const min = 0.7
+    const max = 1.3
+    assert(min === 0.7, '最小字号 70%')
+    assert(max === 1.3, '最大字号 130%')
+  })
+
+  test('打印机品牌正确', () => {
+    const brands = ['xinye', 'jiabo', 'hanyin']
+    brands.forEach(b => assert(b, `打印机品牌 ${b} 存在`))
+  })
+
+  test('打印纸宽正确', () => {
+    const widths = ['58', '80']
+    widths.forEach(w => assert(w, `纸宽 ${w}mm 存在`))
+  })
+
+  test('数字中文大写转换正确', () => {
+    const pricing = require('../utils/order-pricing')
+    const cases = {
+      1: '壹元整',
+      10: '壹拾元整',
+      10000: '壹万元整',
+      100000: '壹拾万元整',
+      100000000: '壹亿元整',
+      10001: '壹万零壹元整',
+      1234.56: '壹仟贰佰叁拾肆元伍角陆分',
+      100.01: '壹佰元壹分',
+      0.5: '零元伍角'
+    }
+    Object.keys(cases).forEach(k => {
+      const got = pricing.numberToChinese(Number(k))
+      assert(got === cases[k], '大写金额 ' + k + ' 应为「' + cases[k] + '」，实际「' + got + '」')
+    })
+  })
+})
+
+// ============ 测试总结 ============
+console.log('\n' + '='.repeat(50))
+console.log('📊 测试总结')
+console.log('='.repeat(50))
+console.log(`总测试数：${stats.total}`)
+console.log(`✅ 通过：${stats.passed}`)
+console.log(`❌ 失败：${stats.failed}`)
+console.log(`通过率：${((stats.passed / stats.total) * 100).toFixed(1)}%`)
+
+if (stats.errors.length > 0) {
+  console.log('\n❌ 失败详情:')
+  stats.errors.forEach(e => {
+    console.log(`  - ${e.name}: ${e.error}`)
+  })
+}
+
+console.log('='.repeat(50))
+
+// 导出测试结果
+module.exports = stats

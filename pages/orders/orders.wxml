@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <view class="time-tabs">
     <view
       class="tab-item {{timeTab === item.key ? 'active' : ''}}"
@@ -15,23 +15,37 @@
     <input placeholder="搜索订单号/客户名称" bindinput="onSearch" />
   </view>
 
-  <view class="order-list">
-    <view class="order-card card" wx:for="{{orders}}" wx:key="_id" data-id="{{item._id}}" bindtap="goToDetail">
-      <view class="flex-between">
-        <text class="customer-name">{{item.customerName}}</text>
-        <text class="order-amount">¥{{item.totalAmount}}</text>
+  <view class="order-list" wx:if="{{orders.length > 0}}">
+    <!-- 客户分组卡片展示 -->
+    <view class="group-card card" wx:for="{{groups}}" wx:key="name" wx:for-item="g">
+      <view class="group-head flex-between" bindtap="goToGroup" data-id="{{g.orders[0]._id}}">
+        <view>
+          <view class="group-customer">
+            <text class="customer-name">{{g.name}}</text>
+            <text class="pay-chip {{g.orders[0].payClass}}">{{g.orders[0].payLabel}}</text>
+          </view>
+          <view class="group-sub">{{g.region}} · {{g.orders.length}} 笔订单</view>
+        </view>
+        <view class="order-amount">¥{{g.totalAmount}}</view>
       </view>
-      <view class="order-meta">
-        <text>{{item.orderNo}}</text>
-        <text class="status-tag">{{item.statusText}}</text>
+      <view class="group-order" wx:for="{{g.orders}}" wx:key="_id" wx:for-item="o" bindtap="goToDetail" data-id="{{o._id}}">
+        <view class="flex-between">
+          <text class="customer-name">{{o.customerName}}</text>
+          <text class="order-amount">¥{{o.totalAmount}}</text>
+        </view>
+        <view class="order-meta">
+          <text>{{o.orderNo}}</text>
+          <text class="pay-chip {{o.payClass}}">{{o.payLabel}}</text>
+          <text class="order-time">{{o.timeText}}</text>
+        </view>
       </view>
-    </view>
-    <view class="empty-tip" wx:if="{{!orders.length}}">
-      <text>暂无订单</text>
     </view>
   </view>
+  <view class="empty-tip" wx:if="{{!orders.length}}">
+    <text>暂无订单</text>
+  </view>
 
-  <view class="fab-btn" bindtap="goToNewOrder">
+  <view class="fab-btn" wx:if="{{canCreateOrder}}" bindtap="goToNewOrder">
     <text>+</text>
   </view>
 </view>

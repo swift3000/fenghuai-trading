@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <view class="customer-bar card" bindtap="selectCustomer">
     <view class="customer-bar-info">
       <text class="customer-bar-name">{{customer ? customer.name : '请选择客户'}}</text>
@@ -25,6 +25,7 @@
             <text wx:if="{{item.pricing_mode === 'piece'}}" class="pmode-tag">件</text>
             <text wx:elif="{{item.pricing_mode === 'unit'}}" class="pmode-tag">单件</text>
             <text wx:if="{{item.is_adjustable}}" class="badge-adjust">可调价</text>
+            <text wx:if="{{item.prefilled}}" class="badge-prefill">预填</text>
           </view>
           <view class="pspec">料号 {{item.material_code || '-'}} · {{item.spec}}</view>
         </view>
@@ -122,7 +123,7 @@
     </view>
   </view>
 
-  <button class="btn-primary save-btn" bindtap="saveOrder">保存订单</button>
+  <button class="btn-primary save-btn" bindtap="saveOrder">{{editMode ? '保存修改' : '保存订单'}}</button>
 
   <!-- 客户选择弹窗 -->
   <view class="modal-mask" wx:if="{{showCustomerModal}}" bindtap="closeCustomerModal"></view>

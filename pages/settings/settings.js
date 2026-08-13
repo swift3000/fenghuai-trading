@@ -1,9 +1,23 @@
 // 系统设置页（仅管理员）
 // 本组件对齐 UI原型 L1303-L1348（系统设置页）
 const { callCloud } = require('../../utils/request')
+const { guardPageLoad } = require('../../utils/router-guard')
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
+    // 用户角色
+    userRole: '',
+    // 当前主题
+    currentTheme: 'green',
+    // 主题图标
+    themeIcons: {
+      green: '🟢', blue: '🔵', orange: '🟠', purple: '🟣', dark: '⚫',
+      panda: '🐼', cat: '🐱', dog: '🐶', fox: '🦊', bear: '🐻',
+      glass: '✨', rounded: '🔲', gradient: '🌈', minimal: '⚪',
+      christmas: '🎄', newyear: '🧧', spring: '🌸', summer: '☀️', autumn: '🍂', winter: '❄️'
+    },
     // 阿里语音配置
     aliyunEnabled: '0',
     aliyunAk: '',
@@ -27,7 +41,13 @@ Page({
   },
 
   onLoad() {
+    uiStyle.applyUiStyle(this)
+    if (!guardPageLoad(this)) {
+      return
+    }
+    this.loadUserRole()
     this.loadConfig()
+    this.loadTheme()
   },
 
   // 加载 AI 配置
@@ -136,5 +156,38 @@ Page({
     cfg.printer = { brand: d.printerBrand, width: d.printerWidth }
     await callCloud('system', { action: 'updateAiConfig', aiConfig: cfg.ai || {}, printer: cfg.printer })
     wx.showToast({ title: '打印机配置已保存', icon: 'success' })
+  },
+
+  // 加载用户角色
+  loadUserRole() {
+    const userRole = wx.getStorageSync('userRole') || ''
+    this.setData({ userRole })
+  },
+
+  // 加载主题
+  loadTheme() {
+    const themeHelper = require('../../utils/theme-helper.js')
+    const currentTheme = themeHelper.getCurrentThemeKey()
+    this.setData({ currentTheme })
+  },
+
+  // 切换主题
+  switchTheme(e) {
+    const theme = e.currentTarget.dataset.theme
+    const themeHelper = require('../../utils/theme-helper.js')
+    themeHelper.setTheme(theme)
+    this.setData({ currentTheme: theme })
+    // 广播给所有页面实时刷新主题样式
+    getApp().setTheme(theme)
+    wx.showToast({ title: `已切换至${themeHelper.getCurrentTheme().name}`, icon: 'success' })
+  },
+  onThemeChange(theme) {
+    uiStyle.applyUiStyle(this)
+
+    console.log('主题已切换:', theme.name)
+    // 页面可以在这里添加自定义逻辑
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

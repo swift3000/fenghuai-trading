@@ -2,7 +2,8 @@ App({
   globalData: {
     userInfo: null,
     userRole: null,
-    fontScale: 0.9
+    fontScale: 0.9,
+    theme: 'green'
   },
 
   onLaunch() {
@@ -18,6 +19,9 @@ App({
       })
     }
 
+    // 初始化主题
+    this.initTheme()
+
     // 从本地缓存加载用户信息
     const userInfo = wx.getStorageSync('userInfo')
     console.log('本地缓存用户信息:', userInfo)
@@ -27,8 +31,8 @@ App({
       this.globalData.userRole = userInfo.role
       console.log('已加载用户信息:', userInfo.name, '角色:', userInfo.role)
       
-      // 根据角色设置 TabBar
-      this.updateTabBarByRole(userInfo.role)
+      // 根据权限设置 TabBar（有权限数组按权限键；否则回退按角色）
+      this.updateTabBarByRole(userInfo.role, userInfo.permissions)
     }
 
     // 加载字号设置
@@ -39,6 +43,35 @@ App({
 
     // 检查是否需要自动登录
     this.checkAutoLogin()
+  },
+
+  /**
+   * 初始化主题
+   */
+  initTheme() {
+    const themeHelper = require('./utils/theme-helper')
+    const savedTheme = wx.getStorageSync('theme') || 'green'
+    this.globalData.theme = savedTheme
+    themeHelper.setTheme(savedTheme)
+    console.log('主题已初始化:', savedTheme)
+  },
+
+  /**
+   * 设置主题
+   * @param {string} themeKey - 主题键值
+   */
+  setTheme(themeKey) {
+    const themeHelper = require('./utils/theme-helper')
+    const theme = themeHelper.setTheme(themeKey)
+    this.globalData.theme = themeKey
+    
+    // 通知所有页面更新
+    const pages = getCurrentPages()
+    pages.forEach(page => {
+      if (page.onThemeChange) {
+        page.onThemeChange(theme)
+      }
+    })
   },
 
   checkAutoLogin() {
@@ -54,13 +87,17 @@ App({
    * 根据角色更新 TabBar
    * @param {string} role - 用户角色
    */
-  updateTabBarByRole(role) {
+  updateTabBarByRole(role, permissions) {
     const tabBarHelper = require('./utils/tabbar-helper')
     
     console.log('updateTabBarByRole 执行，角色:', role)
     
     try {
-      tabBarHelper.setTabBarByRole(role)
+      if (permissions && permissions.length) {
+        tabBarHelper.setTabBarByPerms(permissions)
+      } else {
+        tabBarHelper.setTabBarByRole(role)
+      }
       console.log('TabBar 设置成功')
     } catch (err) {
       console.error('TabBar 设置失败:', err)
@@ -98,12 +135,22 @@ App({
     return this.globalData.userInfo
   },
 
+  // 获取当前主题
+  getTheme() {
+    return this.globalData.theme
+  },
+
   // 更新字号设置
   setFontScale(scale) {
     this.globalData.fontScale = scale
     wx.setStorageSync('fontScale', scale)
-    // 更新全局样式
-    this.updateGlobalStyle()
+    // 实时通知所有页面刷新字号样式
+    const pages = getCurrentPages()
+    pages.forEach(page => {
+      if (page.onFontScaleChange) {
+        page.onFontScaleChange(scale)
+      }
+    })
   },
 
   // 更新全局样式（字号）

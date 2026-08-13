@@ -2,6 +2,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+const pm = require('../perm-matrix-shared.js')
 
 /**
  * 共享角色权限表（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
@@ -15,7 +16,7 @@ const ROLE_PERMISSIONS = {
     'warehouse:confirm',
     'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
     'report:view', 'report:export', 'report:ledger',
-    'member:manage', 'permission:manage'
+    'member:manage'
   ],
   orderer: [
     'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
@@ -150,6 +151,55 @@ exports.main = async (event, context) => {
         }
       })
       return { code: 0, data: {} }
+    }
+
+
+    // 读取各角色实际权限（默认+覆盖）
+    case 'perm-config': {
+      const configs = await db.collection('perm_configs').get()
+      const byRole = {}
+      configs.data.forEach(c => { byRole[c.role] = c.permissions })
+      const result = {}
+      pm.ROLES.forEach(role => {
+        result[role] = pm.mergedPerms(role, byRole[role])
+      })
+      return { code: 0, data: result }
+    }
+
+    // 保存某角色权限覆盖（管理员专用）
+    case 'save-perm': {
+      const { role, permissions } = event
+      if (!pm.ROLES.includes(role)) return { code: 400, message: '角色无效' }
+      // 保护：锁定权限始终开启（员管理防锁死）
+      const list = Array.from(new Set(permissions || [])).filter(k => pm.LOCKED_PERMS[k] ? false : true)
+      Object.keys(pm.LOCKED_PERMS).forEach(k => { if (pm.LOCKED_PERMS[k] && role === 'admin') list.push(k) })
+      // 校验权限 key 合法
+      const allKeys = []
+      pm.PERM_GROUPS.forEach(g => g.keys.forEach(k => allKeys.push(k)))
+      const valid = list.filter(k => allKeys.includes(k))
+      // 锁定权限强制保留：member:manage 仅 admin
+      if (role === 'admin' && !valid.includes('member:manage')) valid.push('member:manage')
+      const existing = await db.collection('perm_configs').where({ role }).get()
+      if (existing.data.length > 0) {
+        await db.collection('perm_configs').doc(existing.data[0]._id).update({
+          data: { permissions: valid, updatedAt: db.serverDate() }
+        })
+      } else {
+        await db.collection('perm_configs').add({
+          data: { role, permissions: valid, createdAt: db.serverDate(), updatedAt: db.serverDate() }
+        })
+      }
+      return { code: 0, data: { role, permissions: valid } }
+    }
+
+    // 恢复默认：清空该角色覆盖（回落到全员开放默认）
+    case 'reset-perm': {
+      const { role } = event
+      const existing = await db.collection('perm_configs').where({ role }).get()
+      if (existing.data.length > 0) {
+        await db.collection('perm_configs').doc(existing.data[0]._id).remove()
+      }
+      return { code: 0, data: { role, permissions: pm.defaultPermsForRole(role) } }
     }
 
     default:

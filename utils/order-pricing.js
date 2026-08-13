@@ -51,5 +51,52 @@ module.exports = {
   calcItemAmount,
   calcOrderAmount,
   formatQtyCombined,
-  fmtMoney
+  fmtMoney,
+  numberToChinese
+}
+
+/**
+ * 数字转中文大写金额（对齐原型 numberToChinese）
+ */
+function numberToChinese(n) {
+  const num = Number(n) || 0
+  if (!num || num === 0) {
+    return '零元整'
+  }
+  const frac = Math.round((num - Math.floor(num)) * 100)
+  const intPart = Math.floor(num)
+  const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
+  const units = ['', '拾', '佰', '仟']
+  const bigUnits = ['', '万', '亿']
+  let s = ''
+  let i = 0
+  let numStr = String(intPart)
+  while (numStr.length > 0) {
+    const chunk = numStr.slice(-4)
+    numStr = numStr.slice(0, -4)
+    let chunkStr = ''
+    let zeroFlag = false
+    for (let j = 0; j < chunk.length; j++) {
+      const d = parseInt(chunk[j])
+      const pos = chunk.length - 1 - j
+      if (d === 0) { zeroFlag = true; continue }
+      if (zeroFlag) { chunkStr += '零'; zeroFlag = false }
+      chunkStr += digits[d] + units[pos]
+    }
+    if (chunkStr) s = chunkStr + bigUnits[i] + s
+    else if (s && !s.startsWith('零')) s = '零' + s
+    i++
+  }
+  if (intPart === 0 && !s) s = ''
+  if (frac > 0) {
+    if (intPart === 0) s = '零'
+    const f1 = Math.floor(frac / 10)
+    const f2 = frac % 10
+    s += '元'
+    if (f1 > 0) s += digits[f1] + '角'
+    if (f2 > 0) s += digits[f2] + '分'
+  } else {
+    s += '元整'
+  }
+  return s || '零元整'
 }

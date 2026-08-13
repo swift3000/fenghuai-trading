@@ -1,7 +1,7 @@
 /* 登录页面容器 - 渐变背景 */
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(180deg, #fff 0%, #F0FFF6 100%);
+  background: linear-gradient(180deg, #fff 0%, var(--theme-primary-bg) 100%);
   padding: 40rpx 32rpx;
   display: flex;
   align-items: center;
@@ -28,26 +28,26 @@
   width: 176rpx;
   height: 176rpx;
   border-radius: 48rpx;
-  background: linear-gradient(135deg, #07C160, #06AD56);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary));
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 44rpx;
+  font-size: calc(44rpx * var(--font-scale));
   font-weight: 700;
   margin-bottom: 16rpx;
   box-shadow: 0 24rpx 64rpx rgba(7, 193, 96, 0.3);
 }
 
 .brand-name {
-  font-size: 56rpx;
+  font-size: calc(56rpx * var(--font-scale));
   font-weight: 700;
   color: #333;
   margin-bottom: 16rpx;
 }
 
 .slogan {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale));
   color: #888;
 }
 
@@ -60,7 +60,7 @@
   background: linear-gradient(135deg, #FFF7E6, #FFF1D6);
   border: 2rpx solid #F5D99B;
   border-radius: 24rpx;
-  font-size: 25rpx;
+  font-size: calc(25rpx * var(--font-scale));
   color: #8B6914;
   line-height: 1.6;
   text-align: left;
@@ -85,7 +85,7 @@
   border: 2rpx solid #DDE7E0;
   border-radius: 20rpx;
   background: #fff;
-  font-size: 26rpx;
+  font-size: calc(26rpx * var(--font-scale));
   color: #333;
   text-align: center;
 }
@@ -98,11 +98,11 @@
   width: 100%;
   max-width: 600rpx;
   height: 96rpx;
-  background: linear-gradient(135deg, #07C160, #06AD56);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary));
   border: none;
   border-radius: 48rpx;
   color: #fff;
-  font-size: 32rpx;
+  font-size: calc(32rpx * var(--font-scale));
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -126,7 +126,7 @@
 /* 底部提示文字 */
 .footer-text {
   margin-top: 32rpx;
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale));
   color: #999;
   text-align: center;
   line-height: 1.6;
@@ -142,15 +142,15 @@
     width: 150rpx;
     height: 150rpx;
     border-radius: 40rpx;
-    font-size: 38rpx;
+    font-size: calc(38rpx * var(--font-scale));
   }
   
   .brand-name {
-    font-size: 48rpx;
+    font-size: calc(48rpx * var(--font-scale));
   }
   
   .slogan {
-    font-size: 24rpx;
+    font-size: calc(24rpx * var(--font-scale));
   }
   
 }
@@ -165,28 +165,28 @@
     width: 130rpx;
     height: 130rpx;
     border-radius: 36rpx;
-    font-size: 34rpx;
+    font-size: calc(34rpx * var(--font-scale));
   }
   
   .brand-name {
-    font-size: 42rpx;
+    font-size: calc(42rpx * var(--font-scale));
   }
   
   .slogan {
-    font-size: 22rpx;
+    font-size: calc(22rpx * var(--font-scale));
   }
   
   .first-admin-banner {
     padding: 20rpx 24rpx;
-    font-size: 23rpx;
+    font-size: calc(23rpx * var(--font-scale));
   }
   
   .wechat-login-btn {
     height: 88rpx;
-    font-size: 28rpx;
+    font-size: calc(28rpx * var(--font-scale));
   }
   
   .footer-text {
-    font-size: 22rpx;
+    font-size: calc(22rpx * var(--font-scale));
   }
 }

@@ -287,10 +287,13 @@ const DEFAULT_CUSTOMERS = [
   {name:'龚记早点', alias:'龚记早点', region:'紫阳', phone:'13900000282', contact:''}
 ]
 
+const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    uiStyle: '',
     searchKeyword: '',
     customers: [],
+    canEdit: false,
     showForm: false,
     showImportDialog: false,
     editingCustomer: null,
@@ -311,9 +314,13 @@ Page({
     if (!guardPageLoad(this)) {
       return
     }
+    const app = getApp()
+    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
+    this.setData({ canEdit: perms.includes('customer:edit') })
   },
 
   onShow() {
+    uiStyle.applyUiStyle(this)
     this.loadCustomers()
   },
 
@@ -480,17 +487,16 @@ Page({
       wx.showLoading({ title: '正在导入客户数据...', mask: true })
 
       const result = await callCloudRaw('import-data', {
-        type: 'customers',
-        data: defaultCustomers,
+        action: 'import-customers',
         override: importOverride
       })
 
       wx.hideLoading()
 
-      if (result.code === 0) {
+      if (result.success) {
         wx.showModal({
           title: '导入完成',
-          content: `成功导入 ${result.success} 个客户，失败 ${result.failed} 个`,
+          content: `成功导入 ${result.successCount} 个客户，失败 ${result.failCount} 个`,
           showCancel: false,
           success: () => {
             this.hideImportDialog()
@@ -507,5 +513,14 @@ Page({
     } finally {
       this.setData({ importing: false })
     }
+  },
+  onThemeChange(theme) {
+    uiStyle.applyUiStyle(this)
+
+    console.log('主题已切换:', theme.name)
+    // 页面可以在这里添加自定义逻辑
+  },
+  onFontScaleChange(scale) {
+    uiStyle.applyUiStyle(this)
   }
 })

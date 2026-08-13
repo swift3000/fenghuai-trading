@@ -1,4 +1,4 @@
-<view class="container">
+<view class="container" style="{{uiStyle}}">
   <!-- 隐私政策横幅 -->
   <view class="privacy-banner">
     <text class="privacy-icon">🔒</text>
@@ -56,19 +56,19 @@
 
   <!-- 快捷操作 -->
   <view class="home-actions">
-    <view class="action" bindtap="goToNewOrder">
+    <view wx:if="{{canCreateOrder}}" class="action" bindtap="goToNewOrder">
       <view class="icon c1">📝</view>
       <text class="lbl">新建订单</text>
     </view>
-    <view class="action" bindtap="goToProducts">
+    <view wx:if="{{canViewProducts}}" class="action" bindtap="goToProducts">
       <view class="icon c2">📦</view>
       <text class="lbl">商品管理</text>
     </view>
-    <view class="action" bindtap="goToCustomers">
+    <view wx:if="{{canViewCustomers}}" class="action" bindtap="goToCustomers">
       <view class="icon c3">🏪</view>
       <text class="lbl">客户管理</text>
     </view>
-    <view class="action" bindtap="goToReports">
+    <view wx:if="{{canViewReports}}" class="action" bindtap="goToReports">
       <view class="icon c4">📊</view>
       <text class="lbl">报表导出</text>
     </view>

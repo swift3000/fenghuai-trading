@@ -2,6 +2,10 @@
  * 全局常量定义
  */
 
+// ============ 系统配置 ============
+// 公司名称：用于打印/销售单模板标题、订单号前缀、报表标题
+const COMPANY_NAME = '丰淮商贸'
+
 const ORDER_STATUS = {
   DRAFT: 'draft',
   SUBMITTED: 'submitted',
@@ -51,6 +55,7 @@ const USER_ROLE_TEXT = {
 const FONT_SIZE_SCALES = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
 
 module.exports = {
+  COMPANY_NAME,
   ORDER_STATUS,
   ORDER_STATUS_TEXT,
   PAYMENT_STATUS,

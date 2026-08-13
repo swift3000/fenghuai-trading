@@ -32,7 +32,8 @@ exports.main = async (event, context) => {
 
   // 校验管理员权限（member:manage 管理员独占）
   async function checkAdmin() {
-    const userRes = await db.collection('users').where({ _openid: OPENID }).get()
+    // 与全项目口径一致：用户表以自定义 openid 字段标识用户（auth 登录写入）
+    const userRes = await db.collection('users').where({ openid: OPENID }).get()
     const user = userRes.data[0]
     if (!user || user.role !== 'admin') {
       return false
