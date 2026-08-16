@@ -3,6 +3,24 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const XLSX = require('xlsx')
 
+// 公司名（用于导出标题；云函数无法 require 前端 constants）
+const COMPANY_NAME = '丰淮商贸'
+
+// 本地数量文案（云函数无法 require 前端 utils，内联精简版）
+function qtyDescLocal(it) {
+  const pieceQty = it.piece_qty || 0
+  const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+  const u = String(it.unit || '').split('/')
+  const zeroUnit = u[0] || '包'
+  const mode = it.pricing_mode || 'case'
+  if (mode === 'piece') return pieceQty > 0 ? pieceQty + '件' : ''
+  if (mode === 'unit') return packageQty > 0 ? packageQty + zeroUnit : ''
+  if (pieceQty > 0 && packageQty > 0) return pieceQty + '件+' + packageQty + zeroUnit
+  if (pieceQty > 0) return pieceQty + '件'
+  if (packageQty > 0) return packageQty + zeroUnit
+  return ''
+}
+
 // 由二维数组生成 xlsx buffer（数字列保持数值，文本保持文本）
 function buildXlsxBuffer(rows, sheetName) {
   const ws = XLSX.utils.aoa_to_sheet(rows || [])
@@ -432,6 +450,220 @@ exports.main = async (event, context) => {
       const baseName = '出库单_' + new Date().toISOString().split('T')[0]
       const out = await buildExport(csvRows, baseName, { format: event.format, sheetName: '出库单' })
       return { code: 0, data: Object.assign({ count: orders.length }, out) }
+    }
+
+    case 'exportSingleOrder': {
+      // 导出单个订单送货单（订单详情/打印页用），支持 excel / csv
+      const __p = await checkPermission('order:export'); if (__p.code !== 0) return __p
+      const orderId = event.orderId || event.id
+      if (!orderId) return { code: 5001, message: '缺少订单 ID 参数' }
+      const res = await db.collection('orders').doc(orderId).get()
+      const o = res.data
+      if (!o) return { code: 5001, message: '订单不存在' }
+      const d = new Date()
+      const p2 = (n) => (n < 10 ? '0' + n : '' + n)
+      const rows = [
+        [COMPANY_NAME + '送货单'],
+        [],
+        ['订单号', o.orderNo],
+        ['客户', o.customerName || ''],
+        ['区域', o.customerRegion || ''],
+        ['联系人', o.customerContact || ''],
+        ['电话', o.customerPhone || ''],
+        ['日期', d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate())]
+      ]
+      if (o.ship_large || o.ship_medium || o.ship_small) {
+        rows.push([])
+        rows.push(['物流件型', '大件' + (o.ship_large || 0) + '/中件' + (o.ship_medium || 0) + '/小件' + (o.ship_small || 0)])
+      }
+      rows.push([])
+      rows.push(['序号', '商品名称', '单价', '数量', '金额', '备注'])
+      let idx = 1
+      let grandTotal = 0
+      ;(o.items || []).forEach(it => {
+        const pq = Number(it.piece_qty || 0)
+        const zq = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+        if (pq <= 0 && zq <= 0) return
+        const amt = Number(it.amount != null ? it.amount : 0)
+        grandTotal += amt
+        rows.push([idx++, it.name || '', Number(it.price != null ? it.price : it.price_piece || 0).toFixed(2), it.qtyDesc || qtyDescLocal(it), amt.toFixed(2), it.remark || ''])
+      })
+      rows.push([])
+      rows.push(['合计', '', '', '', grandTotal.toFixed(2), ''])
+      const baseName = (o.customerName || '客户') + '_送货单_' + o.orderNo
+      const out = await buildExport(rows, baseName, { format: event.format, sheetName: '送货单' })
+      return { code: 0, data: out }
+    }
+
+    case 'printOrder': {
+      // 生成送货单 PDF（纯 JS 排版，内嵌子集中文字体）
+      const __p = await checkPermission('order:export'); if (__p.code !== 0) return __p
+      const orderId = event.orderId || event.id
+      if (!orderId) return { code: 5001, message: '缺少订单 ID 参数' }
+
+      // 1) 拉取订单 + 客户 + 欠款（与 detail 相同逻辑）
+      const res = await db.collection('orders').doc(orderId).get()
+      const o = res.data
+      if (!o) return { code: 5001, message: '订单不存在' }
+      if (o.customerId) {
+        try {
+          const cRes = await db.collection('customers').doc(o.customerId).get()
+          const c = cRes.data
+          if (c) {
+            o.customerPhone = c.phone || ''
+            o.customerRegion = c.region || ''
+            o.customerContact = c.contact || ''
+            o.customerAddress = c.address || c.region || ''
+          }
+        } catch (e) {}
+        try {
+          const unpaid = await db.collection('orders')
+            .where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending', 'partial']) })
+            .get()
+          o.totalDebt = unpaid.data.reduce((s, x) => s + Math.max(0, (x.totalAmount || 0) - (x.received_amount || x.receivedAmount || 0) - (x.total_discount || x.totalDiscount || 0)), 0)
+        } catch (e) { o.totalDebt = 0 }
+      }
+
+      // 2) 收集所有文本用于字体子集化
+      const allTextParts = [COMPANY_NAME + '食品销售单', o.orderNo || '', o.customerName || '', o.customerPhone || '', o.customerRegion || '', o.customerContact || '', o.customerAddress || '']
+      let totalQty = 0
+      let grandTotal = 0
+      const items = (o.items || []).map(it => {
+        const pq = Number(it.piece_qty || 0)
+        const zq = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+        if (pq <= 0 && zq <= 0) return null
+        const amt = Number(it.amount != null ? it.amount : 0)
+        totalQty += pq + zq
+        grandTotal += amt
+        return {
+          name: it.name || '', spec: it.spec || '',
+          qtyDesc: it.qtyDesc || qtyDescLocal(it),
+          price: it.price != null ? it.price : (it.price_piece != null ? it.price_piece : ''),
+          amount: amt.toFixed(2), remark: it.remark || ''
+        }
+      }).filter(Boolean)
+      items.forEach(it => allTextParts.push(it.name, it.spec, String(it.qtyDesc), String(it.price), it.amount, it.remark))
+      allTextParts.push(String(totalQty), grandTotal.toFixed(2), o.totalDebt != null ? String(o.totalDebt) : '0', '合计', '编号', '产品', '规格型号', '单位', '总数量', '单价', '金额', '备注', '累计欠款：', '订货电话：', '订货地址：', '主营业务：速冻面点，火锅丸子，单位团餐，酒店食材', '收货人(签字)：______________', '制单人：', '注：收到货后，请仔细查看储存说明，冷冻食品属特殊商品，如非产品本身质量问题、日期问题，一经售出，概不退换，谢谢合作！', '销售日期：', '单号：', '产品合计：', '送货金额：', '客户：', '（）', '件', '包', '¥.-0123456789，%！：')
+      const d = new Date()
+      const p2 = (n) => (n < 10 ? '0' + n : '' + n)
+      allTextParts.push(d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()))
+
+      // 3) 字体子集化 + 生成 PDF
+      const fs = require('fs')
+      const path = require('path')
+      const { PDFDocument } = require('pdf-lib')
+      const fontkit = require('@pdf-lib/fontkit')
+      const subset = require('subset-font')
+      const fullFont = fs.readFileSync(path.join(__dirname, 'fonts', 'NotoSansSC.ttf'))
+      const subFont = await subset(fullFont, allTextParts.join(''))
+      const doc = await PDFDocument.create()
+      doc.registerFontkit(fontkit)
+      const font = await doc.embedFont(subFont)
+
+      const page = doc.addPage([595.28, 841.89]) // A4
+      const M = 40 // 页边距
+      const CW = 595.28 - M * 2 // 内容宽度
+      let y = 800
+
+      const drawText = (txt, opts) => {
+        page.drawText(txt, { x: opts.x || M, y, size: opts.size || 11, font, color: opts.color, maxWidth: opts.maxW || CW, align: opts.align })
+      }
+      const lineGap = (h) => { y -= (h || 18) }
+
+      // 标题（居中）
+      const title = COMPANY_NAME + '食品销售单'
+      const titleX = (595.28 - font.widthOfTextAtSize(title, 18)) / 2
+      page.drawText(title, { x: titleX, y, size: 18, font, color: require('pdf-lib').rgb(0.15, 0.15, 0.15) })
+      y -= 30
+      // 单号 + 日期
+      const dateStr = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate())
+      drawText('单号：' + (o.orderNo || ''), { size: 11 })
+      lineGap(18)
+      drawText('销售日期：' + dateStr, { size: 11 })
+      lineGap(20)
+      // 客户
+      drawText('客户：' + (o.customerName || '') + (o.customerPhone ? '（' + o.customerPhone + '）' : ''), { size: 12 })
+      lineGap(22)
+
+      // 表格
+      const cols = [24, 80, 60, 28, 52, 44, 44, 60] // 各列宽
+      const colLabels = ['编号', '产品', '规格型号', '单位', '总数量', '单价', '金额', '备注']
+      const colTotal = cols.reduce((a, b) => a + b, 0)
+      const colX = []
+      let cx = M
+      cols.forEach((w) => { colX.push(cx); cx += w })
+
+      // 表头背景
+      const tableTop = y + 12
+      const tableH = 18
+      page.drawRectangle({ x: M, y: tableTop - tableH, width: CW, height: tableH, color: require('pdf-lib').rgb(0.96, 0.96, 0.96), borderColor: require('pdf-lib').rgb(0.3, 0.3, 0.3), borderWidth: 0.5 })
+      colLabels.forEach((label, i) => {
+        page.drawText(label, { x: colX[i] + 4, y: y - 4, size: 10, font })
+      })
+      lineGap(tableH + 4)
+
+      // 数据行
+      items.forEach((it, idx) => {
+        const rowTop = y + 4
+        page.drawRectangle({ x: M, y: rowTop - 14, width: CW, height: 16, borderColor: require('pdf-lib').rgb(0.3, 0.3, 0.3), borderWidth: 0.5 })
+        const cells = [String(idx + 1), it.name, it.spec, '件', it.qtyDesc, String(it.price), it.amount, it.remark]
+        cells.forEach((c, i) => {
+          const maxW = cols[i] - 6
+          let txt = c
+          if (font.widthOfTextAtSize(c, 10) > maxW) {
+            while (txt.length > 1 && font.widthOfTextAtSize(txt + '…', 10) > maxW) txt = txt.slice(0, -1)
+            txt += '…'
+          }
+          let align = ''
+          if (i >= 4) align = 'right'
+          page.drawText(txt, { x: align === 'right' ? colX[i] + cols[i] - 6 - font.widthOfTextAtSize(txt, 10) : colX[i] + 4, y: rowTop - 4, size: 10, font })
+        })
+        lineGap(16)
+      })
+
+      // 合计行
+      const totalRowTop = y + 4
+      page.drawRectangle({ x: M, y: totalRowTop - 14, width: CW, height: 16, color: require('pdf-lib').rgb(0.95, 0.95, 0.95), borderColor: require('pdf-lib').rgb(0.3, 0.3, 0.3), borderWidth: 0.5 })
+      page.drawText('合计', { x: colX[1] + 4, y: totalRowTop - 4, size: 10, font })
+      page.drawText(String(totalQty), { x: colX[4] + cols[4] - 6 - font.widthOfTextAtSize(String(totalQty), 10), y: totalRowTop - 4, size: 10, font })
+      const amtStr = grandTotal.toFixed(2)
+      page.drawText('¥' + amtStr, { x: colX[6] + cols[6] - 6 - font.widthOfTextAtSize('¥' + amtStr, 10), y: totalRowTop - 4, size: 10, font })
+      lineGap(24)
+
+      // 产品合计 / 送货金额
+      drawText('产品合计：¥' + grandTotal.toFixed(2) + '    送货金额：¥' + grandTotal.toFixed(2), { size: 11 })
+      lineGap(18)
+
+      // 累计欠款
+      const debt = o.totalDebt != null ? o.totalDebt : 0
+      drawText('累计欠款：¥' + Number(debt).toFixed(2), { size: 11, color: require('pdf-lib').rgb(0.75, 0.1, 0.1) })
+      lineGap(28)
+
+      // 底部信息
+      const { rgb } = require('pdf-lib')
+      page.drawLine({ start: { x: M, y }, end: { x: 595.28 - M, y }, thickness: 0.5, color: rgb(0.85, 0.85, 0.85) })
+      lineGap(16)
+      drawText('订货电话：' + (o.customerPhone || ''), { size: 10 })
+      lineGap(16)
+      drawText('订货地址：' + (o.customerAddress || ''), { size: 10 })
+      lineGap(16)
+      drawText('主营业务：速冻面点，火锅丸子，单位团餐，酒店食材', { size: 10 })
+      lineGap(20)
+      drawText('收货人(签字)：______________', { size: 10 })
+      lineGap(24)
+
+      // 备注
+      page.drawLine({ start: { x: M, y }, end: { x: 595.28 - M, y }, thickness: 0.3, color: rgb(0.85, 0.85, 0.85) })
+      lineGap(14)
+      drawText('注：收到货后，请仔细查看储存说明，冷冻食品属特殊商品，如非产品本身质量问题、日期问题，一经售出，概不退换，谢谢合作！', { size: 9 })
+
+      const pdfBuf = Buffer.from(await doc.save())
+
+      // 4) 上传云存储
+      const safeName = ((o.customerName || '客户') + '_送货单_' + (o.orderNo || 'no')).replace(/\//g, '')
+      const cloudPath = 'exports/' + safeName + '_' + Date.now() + '.pdf'
+      const up = await cloud.uploadFile({ cloudPath, fileContent: pdfBuf })
+      return { code: 0, data: { fileID: up.fileID, filename: safeName + '.pdf' } }
     }
 
     default:

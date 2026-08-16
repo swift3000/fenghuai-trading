@@ -90,18 +90,8 @@
     <view class="modal-body">
       <view class="preview-content">
         <view class="preview-item">
-          <text class="preview-label">纸张尺寸:</text>
-          <text class="preview-value">{{paperSize}}</text>
-        </view>
-        <view class="preview-item">
-          <text class="preview-label">打印份数:</text>
-          <input class="preview-input" type="number" value="{{printCopies}}" bindinput="onPrintCopiesChange" />
-        </view>
-        <view class="preview-item">
-          <text class="preview-label">打印机:</text>
-          <picker mode="selector" range="{{printers}}" value="{{printerIndex}}" bindchange="onPrinterChange">
-            <view class="preview-picker">{{printers[printerIndex]}}</view>
-          </picker>
+          <text class="preview-label">打印方式:</text>
+          <text class="preview-value">PDF 送货单（打开后右上角可打印/转发/保存）</text>
         </view>
       </view>
     </view>

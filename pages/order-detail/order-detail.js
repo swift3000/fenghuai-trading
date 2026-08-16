@@ -40,9 +40,9 @@ Page({
   },
 
   onLoad(options) {
-    uiStyle.applyUiStyle(this)
-    const app = getApp()
-    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
+    uiStyle.applyUiStyle(this);
+    const app = getApp();
+    const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || [];
     this.setData({
       canPrint: perms.includes('order:print'),
       canEdit: perms.includes('order:edit'),
@@ -50,16 +50,63 @@ Page({
       canCollect: perms.includes('receivable:collect'),
       canExport: perms.includes('order:export'),
       canDiscount: perms.includes('receivable:discount')
-    })
+    });
     if (options.id) {
-      this.loadOrderDetail(options.id)
+      this.loadOrderDetail(options.id);
     }
   },
 
   async loadOrderDetail(id) {
     try {
+      console.log('========================================');
+      console.log('🔍 开始加载订单详情');
+      console.log('   订单 ID:', id);
+      console.log('========================================');
+      wx.showLoading({ title: '加载中...', mask: true });
+      
       const { callCloud } = require('../../utils/request')
-      const order = await callCloud('orders', { action: 'detail', orderId: id })
+      const res = await callCloud('orders', { action: 'detail', orderId: id, id })
+      console.log('📡 云函数调用完成');
+      console.log('📦 原始返回数据:', JSON.stringify(res, null, 2));
+      console.log('res.result:', res.result);
+      console.log('res.data:', res.data);
+      
+      // 处理返回数据
+      
+      // callCloud 已经解包了数据，res 就是订单数据本身
+      const order = res || {};
+      
+      console.log('📋 处理后的 order 对象:');
+      console.log('   order._id:', order ? order._id : 'NULL');
+      console.log('   order.id:', order ? order.id : 'NULL');
+      console.log('   order.orderNo:', order ? order.orderNo : 'NULL');
+      console.log('   order.items:', order && order.items ? order.items.length : 'NULL');
+      console.log('   order.customerName:', order ? order.customerName : 'NULL');
+      
+      console.log('🔎 验证订单数据...');
+      console.log('   order 对象:', order);
+      console.log('   order._id:', order ? order._id : 'undefined');
+      
+      if (!order) {
+        console.error('❌ 订单数据为空');
+        wx.hideLoading();
+        wx.showToast({ title: '订单数据为空', icon: 'none' });
+        return;
+      }
+      
+      if (!order._id && !order.id) {
+        console.error('❌ 订单 ID 缺失:', order);
+        wx.hideLoading();
+        wx.showToast({ title: '订单 ID 缺失，数据格式错误', icon: 'none' });
+        console.log('   完整数据:', JSON.stringify(order, null, 2));
+        return;
+      }
+      
+      console.log('✅ 订单数据验证通过');
+      console.log('   订单号:', order.orderNo);
+      console.log('   客户:', order.customerName);
+      console.log('   金额:', order.totalAmount);
+      
       const paymentStatus = order.payment_status || order.paymentStatus || 'unpaid'
       const rawItems = (order.items || []).map(it => Object.assign({}, it, {
         qtyDesc: qtyDesc(it)
@@ -83,14 +130,23 @@ Page({
       }
       // 倒序展示（最新在上）
       logs = logs.slice().reverse()
+      // 转发时间文案（WXML 不支持 new Date 表达式）
+      const sharedAtText = order.shared_at ? new Date(order.shared_at).toLocaleString('zh-CN') : ''
       // 收款三行：已收金额 / 折价货损 / 剩余欠款（对齐原型 detailPaySection）
       const totalAmount = Number(order.totalAmount || order.total_amount || 0)
       const received = Number(order.received_amount != null ? order.received_amount : (order.receivedAmount || 0))
       const discount = Number(order.total_discount != null ? order.total_discount : (order.totalDiscount || 0))
       const remaining = Math.max(0, totalAmount - received - discount)
       const creatorText = '下单员：' + (order.createdByName || order.created_by_name || '未知')
+      const orderTimeText = order.created_at ? new Date(order.created_at).toLocaleString('zh-CN') : '—'
+      console.log('💾 准备设置页面数据...');
+      console.log('   订单:', order.orderNo);
+      console.log('   商品数量:', rawItems.length);
+      console.log('   客户:', order.customerName);
+      
       this.setData({
         order,
+        sharedAtText,
         items: rawItems,
         customer: order.customer || {},
         paymentStatus,
@@ -100,12 +156,24 @@ Page({
         totalDiscount: discount,
         remainingDebt: remaining,
         creatorText,
+        orderTimeText,
         logs,
         editEnabled: ['submitted', 'sorted', 'rejected'].includes(order.status)
       })
     } catch (e) {
-      console.error('加载失败', e)
-      wx.showToast({ title: '加载失败', icon: 'none' })
+      console.error('❌ 加载订单详情失败:', e);
+      console.error('   错误堆栈:', e.stack);
+      wx.hideLoading();
+      wx.showToast({ 
+        title: '加载失败：' + (e.message || '未知错误'), 
+        icon: 'none',
+        duration: 3000
+      });
+    } finally {
+      wx.hideLoading();
+      console.log('========================================');
+      console.log('🏁 加载订单详情结束');
+      console.log('========================================');
     }
   },
 
@@ -325,59 +393,80 @@ Page({
     }
   },
 
-  // 导出订单 Excel（对齐原型 exportSingleOrder：送货单格式）
-  handleExportExcel() {
+  // 选择导出格式（默认 Excel）
+  pickExportFormat() {
+    return new Promise(resolve => {
+      wx.showActionSheet({
+        itemList: ['Excel 表格（推荐）', 'CSV 文本'],
+        success: res => resolve(res.tapIndex === 0 ? 'excel' : 'csv'),
+        fail: () => resolve('excel')
+      })
+    })
+  },
+
+  // 保存导出文件：excel 下载云文件并打开（右上角可转发/保存），csv 写本地文件
+  saveExportFile(result, fmt) {
+    if (fmt === 'excel' && result && result.fileID) {
+      return new Promise((resolve, reject) => {
+        wx.downloadFile({
+          url: result.fileID,
+          success: d => {
+            if (d.statusCode !== 200) return reject(new Error('download fail'))
+            wx.openDocument({
+              filePath: d.tempFilePath,
+              showMenu: true,
+              fileName: result.filename || 'export.xlsx',
+              success: () => resolve(true),
+              fail: () => resolve(d.tempFilePath)
+            })
+          },
+          fail: reject
+        })
+      })
+    }
+    if (result && result.csvContent) {
+      const fn = result.filename || ('export_' + Date.now() + '.csv')
+      const filePath = wx.env.USER_DATA_PATH + '/' + fn
+      wx.getFileSystemManager().writeFileSync(filePath, result.csvContent, 'utf8')
+      return Promise.resolve(filePath)
+    }
+    return Promise.resolve(null)
+  },
+
+  // 导出订单送货单（对齐原型 exportSingleOrder），支持 Excel / CSV
+  async handleExportExcel() {
     const order = this.data.order || {}
-    const items = this.data.items || []
     if (!order.orderNo) {
       wx.showToast({ title: '暂无订单数据', icon: 'none' })
       return
     }
+    const fmt = await this.pickExportFormat()
     try {
       wx.showLoading({ title: '导出中...' })
-      const esc = (v) => {
-        let s = (v === null || v === undefined) ? '' : String(v)
-        // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头单元格前缀 ' 转文本
-        if (/^[=+\-@]/.test(s)) s = "'" + s
-        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
-      }
-      const dateStr = () => {
-        const d = new Date()
-        const p = (n) => (n < 10 ? '0' + n : '' + n)
-        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
-      }
-      const rows = []
-      rows.push([COMPANY_NAME + '送货单'])
-      rows.push([])
-      rows.push(['订单号', order.orderNo])
-      rows.push(['客户', order.customerName || ''])
-      rows.push(['区域', order.customerRegion || ''])
-      rows.push(['联系人', order.customerContact || ''])
-      rows.push(['电话', order.customerPhone || ''])
-      rows.push(['日期', dateStr()])
-      rows.push([])
-      const pkgText = (order.ship_large || order.ship_medium || order.ship_small) ? `大件${order.ship_large||0}/中件${order.ship_medium||0}/小件${order.ship_small||0}` : '未填写'
-      rows.push(['物流件型', pkgText])
-      rows.push(['序号', '商品名称', '单价', '数量', '金额', '备注'])
-      let idx = 1
-      let grandTotal = 0
-      items.forEach(it => {
-        const pq = Number(it.piece_qty || 0)
-        const zq = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
-        if (pq <= 0 && zq <= 0) return
-        const amt = Number(it.amount != null ? it.amount : 0)
-        grandTotal += amt
-        rows.push([idx++, it.name || '', Number(it.price || it.price_piece || 0).toFixed(2), it.qtyDesc || '', amt.toFixed(2), it.remark || ''])
+      const { callCloud } = require('../../utils/request')
+      const result = await callCloud('orders', {
+        action: 'exportSingleOrder',
+        orderId: order._id || order.id,
+        format: fmt
       })
-      rows.push([])
-      rows.push(['合计', '', '', '', grandTotal.toFixed(2), ''])
-
-      const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
-      const filename = (order.customerName || '客户') + '_送货单_' + order.orderNo + '.csv'
-      const filePath = wx.env.USER_DATA_PATH + '/' + filename
-      wx.getFileSystemManager().writeFileSync(filePath, csvContent, 'utf8')
-      wx.stopPullDownRefresh && wx.stopPullDownRefresh()
+      const hasData = fmt === 'excel' ? !!(result && result.fileID) : !!(result && result.csvContent)
+      if (!hasData) {
+        wx.hideLoading()
+        wx.showToast({ title: '导出失败', icon: 'none' })
+        return
+      }
+      wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
+      if (fmt === 'excel') {
+        wx.hideLoading()
+        wx.showLoading({ title: '打开 Excel...' })
+        await this.saveExportFile(result, 'excel')
+        wx.hideLoading()
+        wx.showToast({ title: '已打开 Excel，可转发', icon: 'success' })
+        return
+      }
+      const filePath = await this.saveExportFile(result, 'csv')
       wx.hideLoading()
+      wx.showToast({ title: '已导出 CSV', icon: 'success' })
       wx.showModal({
         title: '导出成功',
         content: '文件已保存到:\n' + filePath,
@@ -389,6 +478,7 @@ Page({
       wx.showToast({ title: '导出失败', icon: 'none' })
     }
   },
+
 
   // 复制订单（对齐原型 copyOrder：复制订单信息到剪贴板）
   handleCopyOrder() {
