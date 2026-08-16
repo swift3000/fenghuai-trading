@@ -27,3 +27,6 @@ ui-test.log
 
 # loop 技能本地状态（内部迭代日志）
 loop_project/
+
+# miniprogram-ci 上传私钥(切勿提交)
+scripts/miniprogram-ci-key/*.key
