@@ -483,59 +483,21 @@ describe('七·D、导出契约测试', () => {
   })
 })
 
-// ============ 八、主题设置测试 ============
-describe('八、主题设置测试', () => {
-  test('主题数量正确', () => {
-    const themes = {
-      '基础色': ['green', 'blue', 'orange', 'purple', 'dark'],
-      '卡通 IP': ['panda', 'cat', 'dog', 'fox', 'bear'],
-      '视觉风格': ['glass', 'rounded', 'gradient', 'minimal'],
-      '节日季节': ['christmas', 'newyear', 'spring', 'summer', 'autumn', 'winter']
-    }
-    const total = Object.values(themes).reduce((sum, arr) => sum + arr.length, 0)
-    assert(total === 20, `主题总数为 20，当前 ${total}`)
-  })
-
-  test('主题分类正确', () => {
-    const categories = ['基础色', '卡通 IP', '视觉风格', '节日季节']
-    categories.forEach(cat => assert(cat, `主题分类 ${cat} 有效`))
-  })
-
-  test('主题配色完整', () => {
-    // 直接校验每个主题的配色字段齐全（含新增的 primaryBg 浅色背景）
-    const theme = {
-      primary: '#06AD56',
-      primaryLight: '#06c167',
-      primaryBg: '#E8F5E9',
-      bg: '#F5F6F8',
-      card: '#FFFFFF',
-      text: '#191919',
-      textSecondary: '#888888',
-      border: '#EFEFEF',
-      tabBar: '#FFFFFF',
-      tabBarActive: '#06AD56',
-      secondary: '#FF6B35'
-    }
-    const required = ['primary', 'primaryLight', 'primaryBg', 'bg', 'card', 'text', 'textSecondary', 'border', 'tabBar', 'tabBarActive', 'secondary']
-    required.forEach(k => assert(theme[k] !== undefined, '主题字段 ' + k + ' 存在'))
-  })
-
+// ============ 八、UI 字号缩放测试（主题功能已移除，仅保留字号缩放） ============
+describe('八、UI 字号缩放测试', () => {
   test('字号缩放运行时限制正确', () => {
     // 模拟 wx 环境，验证 buildVarStyle 的字号上下限
     global.wx = {
       getStorageSync: (k) => {
-        if (k === 'theme') return 'green'
         if (k === 'fontScale') return 0.9
         return undefined
       }
     }
     const ui = require('../utils/ui-style')
-    assert(ui.buildVarStyle('green', 5).includes('--font-scale:1.3'), '超大字号被限制在 130%')
-    assert(ui.buildVarStyle('green', 0.1).includes('--font-scale:0.7'), '超小字号被限制在 70%')
-    assert(ui.buildVarStyle('green', 1.0).includes('--font-scale:1'), '常规字号 100% 生效')
-    assert(ui.buildVarStyle('green', 0.9).includes('--theme-primary'), '运行时注入主色变量')
-    assert(ui.buildVarStyle('green', 0.9).includes('--theme-primary-bg'), '运行时注入浅色背景变量')
-    assert(ui.buildVarStyle('green', 0.9).includes('--font-scale'), '运行时注入字缩变量')
+    assert(ui.buildVarStyle('', 5).includes('--font-scale:1.3'), '超大字号被限制在 130%')
+    assert(ui.buildVarStyle('', 0.1).includes('--font-scale:0.7'), '超小字号被限制在 70%')
+    assert(ui.buildVarStyle('', 1.0).includes('--font-scale:1'), '常规字号 100% 生效')
+    assert(ui.buildVarStyle('', 0.9).includes('--font-scale'), '运行时注入字缩变量')
   })
 })
 

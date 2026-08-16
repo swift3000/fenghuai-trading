@@ -7,6 +7,15 @@ function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// 金额统一按「分」取整，规避浮点误差（0.1+0.2 之类）导致的状态/校验偏差
+function toCents(n) {
+  return Math.round((Number(n) || 0) * 100)
+}
+// 剩余欠款（分）= 订单金额 − 累计实收 − 累计折价
+function remainingCents(total, received, discount) {
+  return Math.max(0, toCents(total) - toCents(received) - toCents(discount))
+}
+
 
 // 权限校验
 async function checkPermission(permission) {
@@ -154,11 +163,11 @@ exports.main = async (event, context) => {
         const customer = customerMap[customerId]
         const total = order.totalAmount || 0
         const received = order.received_amount || order.receivedAmount || 0
-        customer.totalAmount += total
-        customer.receivedAmount += received
-        customer.paidAmount += received
         const discount1 = order.total_discount || order.totalDiscount || 0
-        customer.unpaidAmount += Math.max(0, total - received - discount1)
+        // 以「分」为单位整数累加，避免浮点误差（0.1+0.2 类问题）
+        customer.totalCents = (customer.totalCents || 0) + toCents(total)
+        customer.receivedCents = (customer.receivedCents || 0) + toCents(received)
+        customer.unpaidCents = (customer.unpaidCents || 0) + remainingCents(total, received, discount1)
         customer.orderCount += 1
         customer.orders.push({
           _id: order._id,
@@ -173,7 +182,14 @@ exports.main = async (event, context) => {
         })
       })
       
-      let customers = Object.values(customerMap)
+      // 聚合值由「分」还原为元（四舍五入到分的数字，保持 number 供前端 toFixed/排序/求和）
+      let customers = Object.values(customerMap).map(c => ({
+        ...c,
+        totalAmount: Math.round(c.totalCents) / 100,
+        receivedAmount: Math.round(c.receivedCents) / 100,
+        paidAmount: Math.round(c.receivedCents) / 100,
+        unpaidAmount: Math.round(c.unpaidCents) / 100
+      }))
       
       // 根据视图标签过滤客户
       if (viewTab === 'unpaid') {
@@ -259,9 +275,22 @@ exports.main = async (event, context) => {
       // 剩余欠款 = 订单金额 − 累计实收 − 累计折价/货损
       const received = order.received_amount || order.receivedAmount || 0
       const totalDiscount = order.total_discount || order.totalDiscount || 0
-      const remainingAmount = Math.max(0, (order.totalAmount || 0) - received - totalDiscount)
-      if (amount > remainingAmount) {
-        return { code: 4002, message: `收款金额不能超过剩余欠款 ¥${remainingAmount.toFixed(2)}` }
+      // 已登记未确认的 pending 收款也占额：否则多笔待确认收款可累计超出剩余欠款
+      // 用两个单字段等值查询分别取 orderId / order_id 再按 _id 去重，避免 or 链式 where 覆盖导致跨订单误统计
+      let pendingCents = 0
+      try {
+        const q1 = await db.collection('payments').where({ orderId: orderId, status: 'pending' }).limit(100).get()
+        const q2 = await db.collection('payments').where({ order_id: orderId, status: 'pending' }).limit(100).get()
+        const seen = {}
+        for (const p of [].concat(q1.data || [], q2.data || [])) {
+          if (seen[p._id]) continue
+          seen[p._id] = true
+          pendingCents += toCents(p.amount)
+        }
+      } catch (e) { console.error('统计待确认收款失败', e) }
+      const remainingC = Math.max(0, remainingCents(order.totalAmount || 0, received, totalDiscount) - pendingCents)
+      if (toCents(amount) > remainingC) {
+        return { code: 4002, message: `收款金额不能超过剩余欠款 ¥${(remainingC / 100).toFixed(2)}` }
       }
       
       // 登记收款：写入 payments（status=pending，待库管确认）；订单 unpaid→pending；实收在确认时才累加
@@ -358,7 +387,7 @@ exports.main = async (event, context) => {
         const confirmedAmount = confirmedList.data.reduce((sum, p) => sum + (p.amount || 0), 0)
         const totalDiscount = order.total_discount || order.totalDiscount || 0
         const total = order.totalAmount || 0
-        const newStatus = (total - confirmedAmount - totalDiscount) <= 0 ? 'paid' : 'pending'
+        const newStatus = remainingCents(total, confirmedAmount, totalDiscount) <= 0 ? 'paid' : 'pending'
         await db.collection('orders').doc(targetOrderId).update({
           data: {
             received_amount: confirmedAmount,
