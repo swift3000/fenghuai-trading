@@ -12,26 +12,46 @@
     <button class="btn-primary" bindtap="handleAllSort">全部分拣</button>
   </view>
   <view wx:if="{{subTab==='out'}}">
-    <view class="section-title">待出库</view>
-    <!-- 待出库列表 - 点击弹出输入框 -->
-    <view class="order-card card" wx:for="{{pendingOut}}" wx:key="_id">
-      <text>{{item.customerName}}</text>
-      <view class="order-info">
-        <text class="order-no">{{item.orderNo}}</text>
-        <text class="order-amount">¥{{item.totalAmount}}</text>
-      </view>
-      <view class="order-items">
-        <view class="item-row" wx:for="{{item.items}}" wx:key="product_id" wx:for-item="it">
-          <text class="item-name">{{it.productName}}</text>
-          <text class="item-qty">{{it.piece_qty || 0}}件 + {{it.package_qty || 0}}包</text>
+    <view class="out-subtabs">
+      <view class="out-subtab {{outTab==='pending'?'active':''}}" data-tab="pending" bindtap="switchOutTab">待出库 {{pendingOut.length}}</view>
+      <view class="out-subtab {{outTab==='done'?'active':''}}" data-tab="done" bindtap="switchOutTab">已出库 {{doneOut.length}}</view>
+    </view>
+
+    <button wx:if="{{outTab==='pending' && pendingOut.length}}" class="btn-all-confirm" bindtap="handleAllOut">✓ 全部确认</button>
+
+    <block wx:for="{{outTab==='pending' ? pendingOut : doneOut}}" wx:key="_id">
+      <view class="wh-item {{item.outStatus==='done'?'confirmed':''}}">
+        <view class="wh-main">
+          <view class="wh-header">
+            <text class="wh-no">{{item.orderNo}}</text>
+            <view class="wh-status {{item.outStatus==='done'?'st-done':'st-pending'}}">{{item.outStatus==='done'?'已出库':'待出库'}}</view>
+          </view>
+          <view class="wh-customer">{{item.customerName}}</view>
+          <view class="wh-meta">
+            <text>📍 {{item.customerRegion || '-'}}</text>
+            <text>⏰ {{item.timeText}}</text>
+          </view>
+          <view class="wh-footer">
+            <text class="wh-confirmed" wx:if="{{item.outStatus==='done'}}">✓ 已确认</text>
+            <text class="wh-amount">¥{{item.totalAmount}}</text>
+          </view>
+        </view>
+        <view class="wh-products">
+          <view class="wh-line" wx:for="{{item.items}}" wx:for-item="it" wx:if="{{it.show}}">
+            <text>{{it.name}} × {{it.qtyText}}</text>
+          </view>
+          <view class="wh-pkg-row" wx:if="{{item.pkgText}}">
+            <text class="pkg-vals">{{item.pkgText}}</text>
+            <text class="pkg-edit" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick">修改</text>
+          </view>
+          <view class="wh-pkg-row empty" wx:else>
+            <text class="pkg-fill" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick">＋填写件数</text>
+          </view>
         </view>
       </view>
-      <view class="order-actions">
-        <button size="mini" type="primary" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick">出库确认</button>
-      </view>
-    </view>
-    <button class="btn-primary" bindtap="handleAllOut">全部出库</button>
-    <button class="btn-secondary" wx:if="{{canExport}}" bindtap="handleExportOutbound">📦 导出库单(不含价格)</button>
+    </block>
+    <view class="out-empty" wx:if="{{(outTab==='pending' ? !pendingOut.length : !doneOut.length)}}">暂无订单</view>
+    <button class="btn-export" wx:if="{{canExport}}" bindtap="handleExportOutbound">📦 导出库单(不含价格)</button>
   </view>
   
   <!-- 出库确认弹窗 -->

@@ -1,5 +1,6 @@
 const { guardPageLoad } = require('../../utils/router-guard')
 
+const tabbarHelper = require('../../utils/tabbar-helper')
 const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
@@ -11,6 +12,7 @@ Page({
     doneSort: [], 
     pendingOut: [], 
     doneOut: [],
+    outTab: 'pending',
     loading: false,
     canExport: false,
     // 出库确认弹窗
@@ -23,6 +25,34 @@ Page({
       medium: '',
       small: ''
     }
+  },
+
+  // 订单 -> 展示对象（商品行合并数量、0不显示；内联物流 大件×n·中件×n·小件×n，0不显示）
+  formatOrder(o) {
+    const items = (o.items || []).map(it => {
+      const pq = Number(it.piece_qty || 0)
+      const zq = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+      let qtyText = ''
+      if (pq > 0 && zq > 0) qtyText = pq + '件+' + zq + (it.zero_unit || '包')
+      else if (pq > 0) qtyText = pq + '件'
+      else if (zq > 0) qtyText = zq + (it.zero_unit || '包')
+      return { name: it.name, qtyText, show: pq > 0 || zq > 0, remark: it.remark }
+    }).filter(x => x.show)
+    const big = Number(o.ship_large || 0), mid = Number(o.ship_medium || 0), sm = Number(o.ship_small || 0)
+    const parts = []
+    if (big > 0) parts.push('大件×' + big)
+    if (mid > 0) parts.push('中件×' + mid)
+    if (sm > 0) parts.push('小件×' + sm)
+    const raw = o.created_at || 0
+    const ms = raw && raw.$date ? raw.$date : (raw || Date.now())
+    const d = new Date(ms)
+    const pad = n => String(n).padStart(2, '0')
+    return Object.assign({}, o, {
+      items,
+      pkgText: parts.join(' · '),
+      _pkg: { big, mid, sm },
+      timeText: pad(d.getHours()) + ':' + pad(d.getMinutes())
+    })
   },
   
   onLoad() {
@@ -42,6 +72,7 @@ Page({
   },
   
   onShow() {
+    tabbarHelper.refreshCustomTabBar('workbench')
     uiStyle.applyUiStyle(this) 
     this.loadData() 
   },
@@ -49,6 +80,10 @@ Page({
   switchSub(e) { 
     this.setData({ subTab: e.currentTarget.dataset.tab })
     this.loadData() 
+  },
+
+  switchOutTab(e) {
+    this.setData({ outTab: e.currentTarget.dataset.tab })
   },
   
   async loadData() {
@@ -59,10 +94,14 @@ Page({
         action: 'outboundList', 
         subTab: this.data.subTab 
       })
+      const pendingSort = (data.pendingSort || []).map(o => this.formatOrder(o))
+      const pendingOut = (data.pendingOut || []).map(o => this.formatOrder(o))
+      const doneOut = (data.doneOut || []).map(o => this.formatOrder(o))
       this.setData({ 
-        // callCloud 已解包 res.result.data，data 即 {pendingSort,pendingOut}
-        pendingSort: data.pendingSort || [],
-        pendingOut: data.pendingOut || [],
+        // callCloud 已解包 res.result.data
+        pendingSort,
+        pendingOut,
+        doneOut,
         loading: false
       })
     } catch (e) {
@@ -98,16 +137,19 @@ Page({
     const items = e.currentTarget.dataset.items || []
     
     if (!orderId) return
-    
+    // 修改场景：回填当前订单已填件数
+    const list = this.data.pendingOut.concat(this.data.doneOut)
+    const cur = list.find(o => o._id === orderId)
+    const pkg = (cur && cur._pkg) || { big: 0, mid: 0, sm: 0 }
     this.setData({
       showOutModal: true,
       outModalOrderId: orderId,
       outModalCustomer: customer,
       outModalItems: items,
       outForm: {
-        large: '',
-        medium: '',
-        small: ''
+        large: pkg.big > 0 ? String(pkg.big) : '',
+        medium: pkg.mid > 0 ? String(pkg.mid) : '',
+        small: pkg.sm > 0 ? String(pkg.sm) : ''
       }
     })
   },

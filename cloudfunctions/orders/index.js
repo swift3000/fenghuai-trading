@@ -95,10 +95,19 @@ exports.main = async (event, context) => {
   if (!permissionMap[action]) {
     console.log(`⚠️ action "${action}" 无权限映射，跳过权限校验`)
   } else {
-    const permission = permissionMap[action]
-    const authResult = await checkPermission(permission)
-    if (authResult.code !== 0) {
-      return authResult
+    // outboundList 为分拣/出库共用列表接口，按前端页面守卫口径：sort:task 或 warehouse:confirm 任一即可
+    if (action === 'outboundList') {
+      const r1 = await checkPermission('sort:task')
+      if (r1.code !== 0) {
+        const r2 = await checkPermission('warehouse:confirm')
+        if (r2.code !== 0) return r2
+      }
+    } else {
+      const permission = permissionMap[action]
+      const authResult = await checkPermission(permission)
+      if (authResult.code !== 0) {
+        return authResult
+      }
     }
   }
   
@@ -181,7 +190,12 @@ exports.main = async (event, context) => {
       return { code: 0, data: res.data }
     }
     case 'detail': {
-      const res = await db.collection('orders').doc(event.orderId).get()
+      // 兼容 id 和 orderId 两种参数
+      const orderId = event.orderId || event.id
+      if (!orderId) {
+        return { code: 5001, message: '缺少订单 ID 参数' }
+      }
+      const res = await db.collection('orders').doc(orderId).get()
       const order = res.data
       // 关联客户资料（电话/地址/联系人）+ 累计欠款，供打印/送货单模板使用
       if (order && order.customerId) {
@@ -281,49 +295,36 @@ exports.main = async (event, context) => {
     }
     case 'outboundList': {
       const { subTab } = event
-      let query = db.collection('orders')
-      
       if (subTab === 'sort') {
-        query = query.where({ sortStatus: 'pending' })
-      } else if (subTab === 'out') {
-        query = query.where({ 
-          sortStatus: 'done',
-          outStatus: 'pending'
-        })
+        const res = await db.collection('orders').where({ sortStatus: 'pending' }).orderBy('created_at', 'desc').limit(100).get()
+        return { code: 0, data: { pendingSort: res.data, pendingOut: [] } }
       }
-      
-      const res = await query.orderBy('created_at', 'desc').limit(100).get()
-      const list = res.data
-      // 前端按 workbench 分别读取 pendingSort / pendingOut
-      return {
-        code: 0,
-        data: subTab === 'out'
-          ? { pendingSort: [], pendingOut: list }
-          : { pendingSort: list, pendingOut: [] }
-      }
+      // 出库工作台：库管不等分拣完成，所有未出库订单都可见（与分拣并行）
+      const pendingRes = await db.collection('orders').where({ outStatus: 'pending' }).orderBy('created_at', 'desc').limit(100).get()
+      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const doneRes = await db.collection('orders')
+        .where({ outStatus: 'done', created_at: db.command.gte(today) })
+        .orderBy('created_at', 'desc').limit(100).get()
+      return { code: 0, data: { pendingOut: pendingRes.data, doneOut: doneRes.data } }
     }
     case 'confirmSort': {
       const { orderId, batchMode } = event
-      
+      // status 由 分拣+出库 双状态派生：出库已完成=confirmed，否则=sorted（并行下避免把已出库订单降级）
+      const deriveStatusAfterSort = (o) => (o && o.outStatus === 'done') ? 'confirmed' : 'sorted'
       if (batchMode) {
-        await db.collection('orders').where({ sortStatus: 'pending' }).update({
-          data: { 
-            sortStatus: 'done',
-            sortTime: db.serverDate(),
-            status: 'sorted'
-          }
-        })
+        const list = await db.collection('orders').where({ sortStatus: 'pending' }).get()
+        for (const it of list.data) {
+          await db.collection('orders').doc(it._id).update({
+            data: { sortStatus: 'done', sortTime: db.serverDate(), status: deriveStatusAfterSort(it) }
+          })
+        }
       } else {
+        const cur = await db.collection('orders').doc(orderId).get()
         await db.collection('orders').doc(orderId).update({
-          data: { 
-            sortStatus: 'done',
-            sortTime: db.serverDate(),
-            status: 'sorted'
-          }
+          data: { sortStatus: 'done', sortTime: db.serverDate(), status: deriveStatusAfterSort(cur.data) }
         })
         await appendLog(orderId, 'sort', '完成分拣')
       }
-      
       return { code: 0, data: {} }
     }
     case 'markShared': {
@@ -340,35 +341,25 @@ exports.main = async (event, context) => {
     }
     case 'confirmOut': {
       const { orderId, batchMode, ship_large, ship_medium, ship_small } = event
-      
+      const sl = typeof ship_large === 'number' ? ship_large : 0
+      const sm = typeof ship_medium === 'number' ? ship_medium : 0
+      const ss = typeof ship_small === 'number' ? ship_small : 0
+      // 库管出库不依赖分拣完成；status 由 分拣+出库 双状态派生：分拣已完成=confirmed，否则=sorted
+      const deriveStatusAfterOut = (o) => (o && o.sortStatus === 'done') ? 'confirmed' : 'sorted'
       if (batchMode) {
-        await db.collection('orders').where({ 
-          sortStatus: 'done',
-          outStatus: 'pending'
-        }).update({
-          data: { 
-            outStatus: 'done',
-            ship_large: typeof ship_large === 'number' ? ship_large : 0,
-            ship_medium: typeof ship_medium === 'number' ? ship_medium : 0,
-            ship_small: typeof ship_small === 'number' ? ship_small : 0,
-            outTime: db.serverDate(),
-            status: 'confirmed'
-          }
-        })
+        const list = await db.collection('orders').where({ outStatus: 'pending' }).get()
+        for (const it of list.data) {
+          await db.collection('orders').doc(it._id).update({
+            data: { outStatus: 'done', ship_large: sl, ship_medium: sm, ship_small: ss, outTime: db.serverDate(), status: deriveStatusAfterOut(it) }
+          })
+        }
       } else {
+        const cur = await db.collection('orders').doc(orderId).get()
         await db.collection('orders').doc(orderId).update({
-          data: { 
-            outStatus: 'done',
-            ship_large: typeof ship_large === 'number' ? ship_large : 0,
-            ship_medium: typeof ship_medium === 'number' ? ship_medium : 0,
-            ship_small: typeof ship_small === 'number' ? ship_small : 0,
-            outTime: db.serverDate(),
-            status: 'confirmed'
-          }
+          data: { outStatus: 'done', ship_large: sl, ship_medium: sm, ship_small: ss, outTime: db.serverDate(), status: deriveStatusAfterOut(cur.data) }
         })
         await appendLog(orderId, 'out', '确认出库')
       }
-      
       return { code: 0, data: {} }
     }
     case 'exportOutbound': {

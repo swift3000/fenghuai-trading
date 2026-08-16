@@ -301,3 +301,8 @@
   color: #999;
   margin-top: 4rpx;
 }
+/* 物流包裹（对齐原型：大/中/小件，0不显示） */
+.shipping-info { margin-top: 24rpx; }
+.shipping-tags { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.shipping-tag { background: #FFF7F7; border: 1rpx solid #FBDCDC; color: #DC2626; padding: 8rpx 20rpx; border-radius: 8rpx; font-size: calc(24rpx * var(--font-scale)); font-weight: 500; }
+.shipping-empty { color: #bbb; font-size: calc(24rpx * var(--font-scale)); }

@@ -14,11 +14,12 @@
     <view class="info-row"><text>联系人：</text><text>{{customer.contact}}</text></view>
     <view class="info-row"><text>电话：</text><text>{{customer.phone}}</text></view>
     <view class="info-row"><text>下单员：</text><text>{{order.createdByName || '未知'}}</text></view>
+    <view class="info-row"><text>下单时间：</text><text>{{orderTimeText}}</text></view>
   </view>
 
   <view class="card items-info">
     <text class="section-title">商品明细</text>
-    <view class="item-row" wx:for="{{items}}" wx:key="index">
+    <view class="item-row" wx:for="{{items}}" wx:key="_id">
       <view class="flex-between">
         <text>{{item.name}}</text>
         <text>¥{{item.amount}}</text>
@@ -53,26 +54,28 @@
     <view wx:if="{{paymentStatus !== 'paid'}}" class="collect-btn">
       <button wx:if="{{canCollect}}" class="btn-primary" bindtap="handleCollect">登记收款</button>
     </view>
+  </view>
 
   <!-- 微信转发状态 -->
   <view class="card wechat-share-info">
     <text class="section-title">微信转发</text>
     <view wx:if="{{order.shared_to_wechat}}" class="share-success">
       <text class="share-badge">✓ 已转发</text>
-      <text class="share-time">{{order.shared_at ? new Date(order.shared_at).toLocaleString('zh-CN') : ''}}</text>
+      <text class="share-time">{{sharedAtText}}</text>
     </view>
     <view wx:else class="share-pending">
       <text>未转发</text>
     </view>
   </view>
   
-  <view wx:if="{{order.outStatus === 'done' && (order.ship_large || order.ship_medium || order.ship_small)}}" class="card shipping-info">
+  <view wx:if="{{order.outStatus === 'done'}}" class="card shipping-info">
     <text class="section-title">物流包裹</text>
-    <view class="shipping-tags">
-      <view class="shipping-tag">大件：{{order.ship_large || 0}}</view>
-      <view class="shipping-tag">中件：{{order.ship_medium || 0}}</view>
-      <view class="shipping-tag">小件：{{order.ship_small || 0}}</view>
+    <view wx:if="{{order.ship_large || order.ship_medium || order.ship_small}}" class="shipping-tags">
+      <view class="shipping-tag">大件 {{order.ship_large || 0}}</view>
+      <view class="shipping-tag">中件 {{order.ship_medium || 0}}</view>
+      <view class="shipping-tag">小件 {{order.ship_small || 0}}</view>
     </view>
+    <view wx:else class="shipping-empty">未填写</view>
   </view>
 
   <!-- 操作记录（订单修改历史，对齐原型） -->
@@ -88,7 +91,6 @@
         </view>
       </view>
     </view>
-  </view>
   </view>
 
   <view class="action-buttons">

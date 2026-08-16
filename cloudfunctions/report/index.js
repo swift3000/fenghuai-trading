@@ -105,13 +105,14 @@ function buildLedgerData(orders) {
     const debt = Math.max(0, actual - confirmed - discount)
     const recvDates = payments.filter(p => p.status === 'confirmed').map(p => p.confirmed_at || p.paid_at || '').filter(Boolean).sort()
     const recvDate = recvDates.length ? recvDates[recvDates.length - 1] : ''
-    const pkgs = (o.ship_large || 0) + (o.ship_medium || 0) + (o.ship_small || 0)
-    return { no: i + 1, time: o.created_at ? String(o.created_at).slice(0, 10) : '', region: o.customerRegion || '', customer: o.customerName, zheng, sun, actual, debt, confirmed, cash, wechat, recvDate, pkgs }
+    const big = o.ship_large || 0, medium = o.ship_medium || 0, small = o.ship_small || 0
+    const pkgs = big + medium + small
+    return { no: i + 1, time: o.created_at ? String(o.created_at).slice(0, 10) : '', region: o.customerRegion || '', customer: o.customerName, zheng, sun, actual, debt, confirmed, cash, wechat, recvDate, pkgs, big, medium, small }
   })
   const totals = rows.reduce((t, r) => {
-    t.zheng += r.zheng; t.sun += r.sun; t.actual += r.actual; t.debt += r.debt; t.confirmed += r.confirmed; t.cash += r.cash; t.wechat += r.wechat; t.pkgs += r.pkgs
+    t.zheng += r.zheng; t.sun += r.sun; t.actual += r.actual; t.debt += r.debt; t.confirmed += r.confirmed; t.cash += r.cash; t.wechat += r.wechat; t.pkgs += r.pkgs; t.big += r.big; t.medium += r.medium; t.small += r.small
     return t
-  }, { zheng: 0, sun: 0, actual: 0, debt: 0, confirmed: 0, cash: 0, wechat: 0, pkgs: 0 })
+  }, { zheng: 0, sun: 0, actual: 0, debt: 0, confirmed: 0, cash: 0, wechat: 0, pkgs: 0, big: 0, medium: 0, small: 0 })
   return { rows, totals }
 }
 
@@ -487,13 +488,13 @@ exports.main = async (event, context) => {
 
       let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
       const title = COMPANY_NAME + rangeDesc + '外县收款台账'
-      const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '件数']
+      const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '大件', '中件', '小件', '件数']
       const csvRows = [[title], [], header]
       rows.forEach(r => {
-        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', r.pkgs])
+        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', r.big, r.medium, r.small, r.pkgs])
       })
       csvRows.push([])
-      csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', totals.pkgs])
+      csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', totals.big, totals.medium, totals.small, totals.pkgs])
       csvRows.push(['总件数', totals.pkgs])
       return { code: 0, data: { csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
     }

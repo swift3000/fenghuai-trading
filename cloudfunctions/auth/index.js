@@ -2,11 +2,15 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
-/**
- * 权限配置常量
- * 定义各角色的默认权限（20 个权限 key）
- */
-const pmShared = require('../perm-matrix-shared.js')
+// 引入权限矩阵
+let pmShared
+try {
+  pmShared = require('./perm-matrix-shared.js')
+} catch (e) {
+  // 单一来源加载失败必须报错：禁止静默使用降级权限（旧降级表与真实矩阵不一致，会给出错误权限集）
+  console.error('perm-matrix-shared.js 加载失败，auth 无法确定权限，终止', e)
+  throw e
+}
 
 /**
  * 读取某角色在 perm_configs 中的覆盖，合并默认得到有效权限
@@ -17,55 +21,8 @@ async function effectivePermsForRole(role) {
     const overrides = (cfg.data && cfg.data[0] && cfg.data[0].permissions) || []
     return pmShared.mergedPerms(role, overrides)
   } catch (e) {
+    console.log('获取角色权限失败，使用默认权限:', e.message)
     return pmShared.defaultPermsForRole(role)
-  }
-}
-
-const DEFAULT_ROLE_PERMISSIONS = {
-  admin: {
-    permissions: [
-      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-      'product:view', 'product:edit',
-      'customer:view', 'customer:edit',
-      'sort:task',
-      'warehouse:confirm',
-      'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
-      'report:view', 'report:export', 'report:ledger',
-      'member:manage'
-    ]
-  },
-  orderer: {
-    permissions: [
-      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-      'product:view', 'product:edit',
-      'customer:view', 'customer:edit',
-      'sort:task',
-      'warehouse:confirm',
-      'receivable:view', 'receivable:collect', 'receivable:discount',
-      'report:view', 'report:export', 'report:ledger'
-    ]
-  },
-  sorter: {
-    permissions: [
-      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-      'product:view', 'product:edit',
-      'customer:view', 'customer:edit',
-      'sort:task',
-      'warehouse:confirm',
-      'receivable:view', 'receivable:collect', 'receivable:discount',
-      'report:view', 'report:export', 'report:ledger'
-    ]
-  },
-  warehouse: {
-    permissions: [
-      'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-      'product:view', 'product:edit',
-      'customer:view', 'customer:edit',
-      'sort:task',
-      'warehouse:confirm',
-      'receivable:view', 'receivable:confirm', 'receivable:discount',
-      'report:view', 'report:export', 'report:ledger'
-    ]
   }
 }
 
@@ -82,13 +39,12 @@ function generateInviteCode() {
 }
 
 /**
- * 生成邀请小程序码（scene 携带邀请码），上传云存储返回 fileID
- * 扫码后进入小程序（登录页 onLoad 读取 options.scene 解析），自动带出邀请码完成绑定
+ * 生成邀请小程序码
  */
 async function generateInviteQR(inviteCode) {
   try {
     const result = await cloud.openapi.wxacode.getUnlimited({
-      scene: 'invite=' + inviteCode, // 场景值（扫码进入后的 options.scene）
+      scene: 'invite=' + inviteCode,
       page: 'pages/login/login',
       checkPath: false,
       width: 280,
@@ -108,34 +64,27 @@ async function generateInviteQR(inviteCode) {
 
 /**
  * auth 云函数入口
- * Actions:
- * - login: 微信登录 + 首管理员自动创建
- * - getInviteCode: 生成邀请码
- * - activateByInvite: 通过邀请码激活
- * - checkAuth: 检查用户权限
  */
 exports.main = async (event, context) => {
   const { action } = event
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
 
+  console.log('auth 云函数调用，action:', action, 'openid:', openid)
+
+  if (!openid) {
+    return { code: 500, message: '无法获取 OPENID，请检查云函数配置' }
+  }
+
   switch (action) {
-    case 'login': {
+    case 'login':
       return await handleLogin(openid, event)
-    }
-    
-    case 'getInviteCode': {
+    case 'getInviteCode':
       return await handleGetInviteCode(openid, event)
-    }
-    
-    case 'activateByInvite': {
+    case 'activateByInvite':
       return await handleActivateByInvite(openid, event)
-    }
-    
-    case 'checkAuth': {
+    case 'checkAuth':
       return await handleCheckAuth(openid, event)
-    }
-    
     default:
       return { code: 1001, message: '未知 action' }
   }
@@ -143,33 +92,42 @@ exports.main = async (event, context) => {
 
 /**
  * 处理登录
- * 1. 检查用户是否存在
- * 2. 不存在则创建新用户
- * 3. 如果是第一个用户且角色为 admin，自动设为管理员（方案 A 零配置）
- * 4. 返回用户信息
  */
 async function handleLogin(openid, event) {
   try {
     const { role = 'orderer', name, phone, region, inviteCode } = event
 
+    console.log('handleLogin 开始，openid:', openid, 'inviteCode:', inviteCode)
+
     // 查询用户是否存在
-    let userResult = await db.collection('users').where({ openid }).get()
-    
+    const userResult = await db.collection('users').where({ openid }).get()
+
     if (userResult.data.length === 0) {
       // 用户不存在
-      console.log('新用户登录，openid:', openid, 'inviteCode:', inviteCode || '无')
+      console.log('新用户登录')
 
-      // 邀请绑定：携带邀请码且存在待激活用户 → 绑定 openid，并按管理员预设角色激活
+      // 邀请绑定
       if (inviteCode) {
-        const inviteResult = await db.collection('users').where({ inviteCode, inviteStatus: 'pending' }).get()
+        let inviteResult
+        try {
+          inviteResult = await db.collection('users').where({ inviteCode, inviteStatus: 'pending' }).get()
+        } catch (err) {
+          console.error('查询邀请码失败:', err)
+          inviteResult = { data: [] }
+        }
+
         if (inviteResult.data.length === 0) {
           return { code: 401, message: '邀请码无效或已过期' }
         }
+
         const pre = inviteResult.data[0]
         if (pre.inviteExpire && new Date() > new Date(pre.inviteExpire)) {
           return { code: 400, message: '邀请码已过期' }
         }
+
         const finalRole = pre.role || 'orderer'
+        const permissions = await effectivePermsForRole(finalRole)
+
         await db.collection('users').doc(pre._id).update({
           data: {
             openid,
@@ -181,12 +139,14 @@ async function handleLogin(openid, event) {
             fontScale: 0.9,
             inviteStatus: 'activated',
             activatedAt: db.serverDate(),
-            permissions: await effectivePermsForRole(finalRole),
+            permissions,
             updatedAt: db.serverDate()
           }
         })
+
         const activated = await db.collection('users').doc(pre._id).get()
-        console.log('邀请绑定激活成功，role:', finalRole)
+        console.log('邀请绑定激活成功')
+
         return {
           code: 0,
           message: '登录成功（邀请绑定）',
@@ -197,16 +157,22 @@ async function handleLogin(openid, event) {
         }
       }
 
-      // 非邀请：检查是否已有管理员（方案 A 零配置）
-      const adminResult = await db.collection('users').where({ role: 'admin' }).count()
+      // 检查是否已有管理员
+      let adminResult
+      try {
+        adminResult = await db.collection('users').where({ role: 'admin' }).count()
+      } catch (err) {
+        console.error('查询管理员失败:', err)
+        adminResult = { total: 0 }
+      }
+
       const hasAdmin = adminResult.total > 0
-      
-      // 首管理员（方案 A 零配置）：系统尚无任何管理员时，第一位登录者无条件成为管理员
-      // 非邀请新用户一律为 orderer：角色只能由管理员通过邀请码分配，绝不信任前端传入 role（防任意提权）
-      const finalRole = (hasAdmin === false) ? 'admin' : 'orderer'
-      
-      console.log('创建新用户，role:', finalRole, 'hasAdmin:', hasAdmin)
-      
+      const finalRole = hasAdmin ? 'orderer' : 'admin'
+
+      console.log('创建新用户，role:', finalRole)
+
+      const permissions = await effectivePermsForRole(finalRole)
+
       const newUser = {
         openid,
         name: name || ('用户' + openid.slice(-4)),
@@ -215,20 +181,20 @@ async function handleLogin(openid, event) {
         role: finalRole,
         status: 'active',
         fontScale: 0.9,
-        permissions: await effectivePermsForRole(finalRole),
+        permissions,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
       }
-      
+
       await db.collection('users').add({ data: newUser })
-      
+
       return {
         code: 0,
-        message: '登录成功（新用户）',
+        message: '登录成功' + (finalRole === 'admin' ? '（首位管理员）' : '（新用户）'),
         data: {
           userInfo: {
             ...newUser,
-            _id: openid // openid 作为唯一标识
+            _id: openid
           },
           isNewUser: true
         }
@@ -237,19 +203,23 @@ async function handleLogin(openid, event) {
       // 用户已存在
       const user = userResult.data[0]
       console.log('老用户登录，role:', user.role)
-      
-      // 同步权限：管理员改权限开关(perm_configs)后，老用户每次登录都刷新覆盖后权限
-      const currentPermissions = await effectivePermsForRole(user.role)
-      if (!user.permissions || JSON.stringify(user.permissions) !== JSON.stringify(currentPermissions)) {
-        await db.collection('users').doc(user._id).update({
-          data: {
-            permissions: currentPermissions,
-            updatedAt: db.serverDate()
-          }
-        })
-        user.permissions = currentPermissions
+
+      // 同步权限
+      try {
+        const currentPermissions = await effectivePermsForRole(user.role)
+        if (!user.permissions || JSON.stringify(user.permissions) !== JSON.stringify(currentPermissions)) {
+          await db.collection('users').doc(user._id).update({
+            data: {
+              permissions: currentPermissions,
+              updatedAt: db.serverDate()
+            }
+          })
+          user.permissions = currentPermissions
+        }
+      } catch (err) {
+        console.error('同步权限失败:', err)
       }
-      
+
       return {
         code: 0,
         message: '登录成功',
@@ -269,171 +239,122 @@ async function handleLogin(openid, event) {
 }
 
 /**
- * 生成邀请码（管理员专用）
+ * 生成邀请码
  */
-async function handleGetInviteCode(opening, event) {
+async function handleGetInviteCode(openid, event) {
   try {
     const { name, phone, region, role = 'orderer' } = event
-    
-    // 检查权限：仅管理员
-    const userResult = await db.collection('users').where({ openid: opening }).get()
+
+    const userResult = await db.collection('users').where({ openid }).get()
     if (userResult.data.length === 0 || userResult.data[0].role !== 'admin') {
-      return {
-        code: 403,
-        message: '无权生成邀请码'
-      }
+      return { code: 403, message: '仅管理员可生成邀请码' }
     }
-    
-    // 生成邀请码（6 位，7 天有效）
+
     const inviteCode = generateInviteCode()
-    const expireTime = new Date()
-    expireTime.setDate(expireTime.getDate() + 7) // 7 天有效
-    
-    // 创建一个「待激活」用户，邀请码作为其注册凭据
-    const preUser = {
-      name: name || '',
+    const inviteQr = await generateInviteQR(inviteCode)
+
+    // 邀请 7 天有效
+    const inviteExpire = new Date()
+    inviteExpire.setDate(inviteExpire.getDate() + 7)
+
+    const inviteCodeDoc = {
+      inviteCode,
+      name,
       phone: phone || '',
       region: region || '',
-      role: role,
+      role,
       status: 'pending',
-      fontScale: 0.9,
-      permissions: [],
-      inviteCode,
-      inviteExpire: expireTime,
+      inviteExpire,
       inviteStatus: 'pending',
-      createdBy: opening,
-      createdAt: db.serverDate(),
-      updatedAt: db.serverDate()
+      inviteQr,
+      createdBy: openid,
+      createdAt: db.serverDate()
     }
-    const res = await db.collection('users').add({ data: preUser })
-    
-    // 生成邀请小程序码（scene 携带邀请码）：扫码进入登录页自动带出邀请码并绑定
-    const qrFileID = await generateInviteQR(inviteCode)
-    
-    // 回写小程序码 fileID
-    if (qrFileID) {
-      await db.collection('users').doc(res._id).update({ data: { inviteQr: qrFileID } })
-    }
-    
+
+    const result = await db.collection('users').add({ data: inviteCodeDoc })
+
     return {
       code: 0,
+      message: '邀请码生成成功',
       data: {
-        userId: res._id,
         inviteCode,
-        expireTime,
-        role,
-        qrFileID
+        inviteQr,
+        _id: result._id
       }
     }
   } catch (err) {
     console.error('生成邀请码失败:', err)
-    return {
-      code: 500,
-      message: '生成邀请码失败：' + err.message
-    }
+    return { code: 500, message: '生成邀请码失败：' + err.message }
   }
 }
 
 /**
- * 通过邀请码激活用户
+ * 通过邀请码激活
  */
 async function handleActivateByInvite(openid, event) {
   try {
-    const { inviteCode, role, name, phone, region } = event
-    
-    // 查找使用邀请码的用户
-    const userResult = await db.collection('users').where({
-      inviteCode,
-      inviteStatus: 'pending'
-    }).get()
-    
-    if (userResult.data.length === 0) {
-      return {
-        code: 404,
-        message: '邀请码无效或已过期'
-      }
+    const { inviteCode } = event
+
+    const inviteResult = await db.collection('users').where({ inviteCode, inviteStatus: 'pending' }).get()
+    if (inviteResult.data.length === 0) {
+      return { code: 404, message: '邀请码无效或已使用' }
     }
-    
-    const user = userResult.data[0]
-    
-    // 检查邀请是否过期
-    if (user.inviteExpire && new Date() > new Date(user.inviteExpire)) {
-      return {
-        code: 400,
-        message: '邀请码已过期'
-      }
+
+    const pre = inviteResult.data[0]
+    if (pre.inviteExpire && new Date() > new Date(pre.inviteExpire)) {
+      return { code: 400, message: '邀请码已过期' }
     }
-    
-    // 更新用户信息并激活（角色取管理员预设的 user.role，绝不信任事件传入 role，防持邀请码者自提权）
-    const finalRole = user.role || 'orderer'
-    await db.collection('users').doc(user._id).update({
+
+    const finalRole = pre.role || 'orderer'
+    const permissions = await effectivePermsForRole(finalRole)
+
+    await db.collection('users').doc(pre._id).update({
       data: {
-        openid, // 绑定微信 openid
-        role: finalRole,
-        name: name || user.name,
-        phone: phone || user.phone,
-        region: region || user.region,
-        status: 'active',
-        permissions: await effectivePermsForRole(finalRole),
+        openid,
         inviteStatus: 'activated',
         activatedAt: db.serverDate(),
+        permissions,
         updatedAt: db.serverDate()
       }
     })
-    
+
+    const activated = await db.collection('users').doc(pre._id).get()
+
     return {
       code: 0,
       message: '激活成功',
       data: {
-        userInfo: {
-          _id: user._id,
-          openid,
-          name: user.name,
-          role: finalRole,
-          phone: user.phone,
-          region: user.region,
-          status: 'active',
-          permissions: await effectivePermsForRole(finalRole)
-        }
+        userInfo: activated.data
       }
     }
   } catch (err) {
-    console.error('邀请码激活失败:', err)
-    return {
-      code: 500,
-      message: '激活失败：' + err.message
-    }
+    console.error('激活失败:', err)
+    return { code: 500, message: '激活失败：' + err.message }
   }
 }
 
 /**
- * 检查用户权限
+ * 检查权限
  */
 async function handleCheckAuth(openid, event) {
   try {
     const { requiredPermission } = event
-    
+
     const userResult = await db.collection('users').where({ openid }).get()
     if (userResult.data.length === 0) {
-      return {
-        code: 401,
-        message: '用户不存在'
-      }
+      return { code: 401, message: '用户不存在' }
     }
-    
+
     const user = userResult.data[0]
-    
+
     // 检查用户是否被禁用
     if (user.status === 'disabled') {
-      return {
-        code: 403,
-        message: '账号已被禁用'
-      }
+      return { code: 403, message: '账号已被禁用' }
     }
-    
-    // 检查权限
-    const hasPermission = user.permissions?.includes(requiredPermission)
-    
+
+    const hasPermission = user.role === 'admin'
+      || (user.permissions || []).includes(requiredPermission)
+
     return {
       code: 0,
       data: {
@@ -443,10 +364,7 @@ async function handleCheckAuth(openid, event) {
       }
     }
   } catch (err) {
-    console.error('权限检查失败:', err)
-    return {
-      code: 500,
-      message: '权限检查失败：' + err.message
-    }
+    console.error('检查权限失败:', err)
+    return { code: 500, message: '检查权限失败：' + err.message }
   }
 }
