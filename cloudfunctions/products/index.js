@@ -77,6 +77,7 @@ exports.main = async (event, context) => {
       if (authResult.code !== 0) return authResult
 
       const { name, material_code, spec, pricing_mode, unit_piece_qty, price_piece, price_unit, unit, pinyin, is_adjustable } = event
+      if (!name || !String(name).trim()) return { code: 4001, message: '商品名称不能为空' }
       
       const newProduct = {
         name,

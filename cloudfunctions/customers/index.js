@@ -54,6 +54,7 @@ exports.main = async (event, context) => {
       if (authResult.code !== 0) return authResult
 
       const { name, alias, region, phone, contact } = event
+      if (!name || !String(name).trim()) return { code: 4001, message: '客户名称不能为空' }
       
       const newCustomer = {
         name,

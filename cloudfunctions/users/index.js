@@ -2,7 +2,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
-const pm = require('../perm-matrix-shared.js')
+const pm = require('./perm-matrix-shared.js')
 
 /**
  * 共享角色权限表（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
@@ -51,6 +51,11 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
   const openid = wxContext.OPENID
   const { action } = event
+
+  // 防御: 无微信上下文时直接拒绝, 避免 where({openid:undefined}) 抛异常
+  if (!openid) {
+    return { code: 401, message: '无法获取用户身份，请在小程序内访问' }
+  }
 
   // 权限校验：只有管理员可以访问
   async function checkAdmin(userOpenid) {
