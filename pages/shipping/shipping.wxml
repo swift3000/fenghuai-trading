@@ -76,7 +76,7 @@
   <!-- 操作按钮 -->
   <view class="action-buttons">
     <button class="btn btn-primary" bindtap="handlePrint">🖨 打印送货单</button>
-    <button class="btn btn-secondary" bindtap="handlePreview">👁 打印预览</button>
+    <button class="btn btn-secondary" bindtap="handlePreview">🖨 打印送货单</button>
     <button class="btn btn-tertiary" bindtap="handleBack">← 返回列表</button>
   </view>
   
@@ -84,7 +84,7 @@
   <view class="modal-mask" wx:if="{{showPreviewModal}}" bindtap="closePreviewModal"></view>
   <view class="modal-content preview-modal" wx:if="{{showPreviewModal}}">
     <view class="modal-header">
-      <text class="modal-title">打印预览</text>
+      <text class="modal-title">打印送货单</text>
       <text class="modal-close" bindtap="closePreviewModal">×</text>
     </view>
     <view class="modal-body">
