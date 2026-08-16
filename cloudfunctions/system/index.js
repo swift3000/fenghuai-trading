@@ -32,6 +32,8 @@ exports.main = async (event, context) => {
 
   // 校验管理员权限（member:manage 管理员独占）
   async function checkAdmin() {
+    // 后台调用（无微信上下文）时 OPENID 为空，直接拒绝，避免 where({openid: undefined}) 崩溃
+    if (!OPENID) return false
     // 与全项目口径一致：用户表以自定义 openid 字段标识用户（auth 登录写入）
     const userRes = await db.collection('users').where({ openid: OPENID }).get()
     const user = userRes.data[0]
