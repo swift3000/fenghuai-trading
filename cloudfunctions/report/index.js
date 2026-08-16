@@ -1,7 +1,33 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const XLSX = require('xlsx')
 
+// 由二维数组生成 xlsx buffer（数字列保持数值，文本保持文本）
+function buildXlsxBuffer(rows, sheetName) {
+  const ws = XLSX.utils.aoa_to_sheet(rows || [])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1')
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+}
+
+// 导出内容统一出口：format=excel 时生成 xlsx 上传云存储返回 fileID；否则返回 csvContent
+async function buildExport(rows, baseName, opts) {
+  const fmt = opts.format === 'excel' ? 'excel' : 'csv'
+  if (fmt === 'excel') {
+    const buffer = buildXlsxBuffer(rows, opts.sheetName || 'Sheet1')
+    const safeName = String(baseName || 'export').replace(/[\/\/]+/g, '')
+    const cloudPath = 'exports/' + safeName + '_' + Date.now() + '.xlsx'
+    const up = await cloud.uploadFile({ cloudPath, fileContent: buffer })
+    return { format: 'excel', fileID: up.fileID, filename: safeName + '.xlsx' }
+  }
+  const csvContent = (rows || []).map(row => (row || []).map(c => {
+    let v = c === null || c === undefined ? '' : String(c)
+    if (/^[=+\-@]/.test(v)) v = "'" + v
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v
+  }).join(',')).join('\n')
+  return { format: 'csv', csvContent, filename: baseName + '.csv' }
+}
 
 // 权限校验
 async function checkPermission(permission) {
@@ -420,9 +446,15 @@ exports.main = async (event, context) => {
       }
       const csvContent = csvRows.length ? toCSV(csvRows) : ''
 
+      if (!csvRows.length) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
+      if (format === 'excel') {
+        const out = await buildExport(csvRows, '报表_' + reportTab + '_' + timeTab, { format, sheetName: '报表' })
+        return { code: 0, data: out }
+      }
       return {
         code: 0,
         data: {
+          format: 'csv',
           csvContent,
           filename: '报表_' + reportTab + '_' + timeTab + '_' + Date.now() + '.csv'
         }
@@ -432,9 +464,9 @@ exports.main = async (event, context) => {
     case 'exportDailySummary': {
       const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
       // 客户汇总表（外县台账式）导出
-      const { timeTab, region, startDate, endDate } = event
+      const { timeTab, region, startDate, endDate, format = 'csv' } = event
       const orders = await getFilteredOrdersFull(timeTab, region, startDate, endDate)
-      if (orders.length === 0) return { code: 0, data: { csvContent: '', filename: '' } }
+      if (orders.length === 0) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
 
       const byCustomer = {}
       orders.forEach(o => {
@@ -475,16 +507,20 @@ exports.main = async (event, context) => {
         no++
       })
       csvRows.push(['', '', '', '', '', '', '', '合计', grandTotal.toFixed(2), ''])
-      return { code: 0, data: { csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_客户汇总表_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
+      if (format === 'excel') {
+        const out = await buildExport(csvRows, COMPANY_NAME + '_客户汇总表_' + String(rangeDesc).replace(/\//g, ''), { format, sheetName: '客户汇总表' })
+        return { code: 0, data: out }
+      }
+      return { code: 0, data: { format: 'csv', csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_客户汇总表_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
     }
 
     case 'exportLedger': {
       const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
       // 收款台账（外县格式）导出
-      const { timeTab, region, startDate, endDate } = event
+      const { timeTab, region, startDate, endDate, format = 'csv' } = event
       const orders = await getFilteredOrdersFull(timeTab, region, startDate, endDate)
       const { rows, totals } = buildLedgerData(orders)
-      if (rows.length === 0) return { code: 0, data: { csvContent: '', filename: '' } }
+      if (rows.length === 0) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
 
       let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
       const title = COMPANY_NAME + rangeDesc + '外县收款台账'
@@ -496,7 +532,11 @@ exports.main = async (event, context) => {
       csvRows.push([])
       csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', totals.big, totals.medium, totals.small, totals.pkgs])
       csvRows.push(['总件数', totals.pkgs])
-      return { code: 0, data: { csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
+      if (format === 'excel') {
+        const out = await buildExport(csvRows, COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, ''), { format, sheetName: '收款台账' })
+        return { code: 0, data: out }
+      }
+      return { code: 0, data: { format: 'csv', csvContent: toCSV(csvRows), filename: COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, '') + '.csv' } }
     }
 
     default:

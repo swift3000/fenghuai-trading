@@ -1,6 +1,33 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+const XLSX = require('xlsx')
+
+// 由二维数组生成 xlsx buffer（数字列保持数值，文本保持文本）
+function buildXlsxBuffer(rows, sheetName) {
+  const ws = XLSX.utils.aoa_to_sheet(rows || [])
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1')
+  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+}
+
+// 导出内容统一出口：format=excel 时生成 xlsx 上传云存储返回 fileID；否则返回 csvContent
+async function buildExport(rows, baseName, opts) {
+  const fmt = opts.format === 'excel' ? 'excel' : 'csv'
+  if (fmt === 'excel') {
+    const buffer = buildXlsxBuffer(rows, opts.sheetName || 'Sheet1')
+    const safeName = String(baseName || 'export').replace(/\//g, '')
+    const cloudPath = 'exports/' + safeName + '_' + Date.now() + '.xlsx'
+    const up = await cloud.uploadFile({ cloudPath, fileContent: buffer })
+    return { format: 'excel', fileID: up.fileID, filename: safeName + '.xlsx' }
+  }
+  const csvContent = (rows || []).map(row => (row || []).map(c => {
+    let v = c === null || c === undefined ? '' : String(c)
+    if (/^[=+\-@]/.test(v)) v = "'" + v
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v
+  }).join(',')).join('\n')
+  return { format: 'csv', csvContent, filename: baseName + '.csv' }
+}
 
 // 转义搜索词中的正则特殊字符，避免 db.RegExp 构造抛异常（用户输入含 ( [ * ? 等会 500）
 function escapeRegExp(str) {
@@ -401,17 +428,10 @@ exports.main = async (event, context) => {
         })
       })
       const header = ['编号','时间','区域','订单号','客户','商品','单位','数量','备注','大件数','中件数','小件数']
-      // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头单元格前缀 ' 转文本
-      const sanitizeCell = (v) => {
-        if (v === null || v === undefined) return ''
-        let s = String(v)
-        if (/^[=+\-@]/.test(s)) s = "'" + s
-        return s
-      }
       const csvRows = [header, ...rows]
-      const csvContent = csvRows.map(r => (r||[]).map(sanitizeCell).join(',')).join('\n')
-      const filename = '出库单_' + new Date().toISOString().split('T')[0] + '.csv'
-      return { code: 0, data: { csvContent, filename, count: orders.length } }
+      const baseName = '出库单_' + new Date().toISOString().split('T')[0]
+      const out = await buildExport(csvRows, baseName, { format: event.format, sheetName: '出库单' })
+      return { code: 0, data: Object.assign({ count: orders.length }, out) }
     }
 
     default:

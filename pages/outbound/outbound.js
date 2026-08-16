@@ -262,32 +262,83 @@ Page({
     })
   },
   
-  // 导出库单（不含价格，含大/中/小件）— 对标原型 exportWarehouseOut
+  // 选择导出格式（默认 Excel）
+  pickExportFormat() {
+    return new Promise(resolve => {
+      wx.showActionSheet({
+        itemList: ['Excel 表格（推荐）', 'CSV 文本'],
+        success: res => resolve(res.tapIndex === 0 ? 'excel' : 'csv'),
+        fail: () => resolve('excel')
+      })
+    })
+  },
+  // 保存导出文件：excel 下载云文件并打开（右上角可转发/保存），csv 写本地文件
+  saveExportFile(result, fmt) {
+    if (fmt === 'excel' && result && result.fileID) {
+      return new Promise((resolve, reject) => {
+        wx.downloadFile({
+          url: result.fileID,
+          success: d => {
+            if (d.statusCode !== 200) return reject(new Error('download fail'))
+            wx.openDocument({
+              filePath: d.tempFilePath,
+              showMenu: true,
+              fileName: result.filename || 'export.xlsx',
+              success: () => resolve(true),
+              fail: () => resolve(d.tempFilePath)
+            })
+          },
+          fail: reject
+        })
+      })
+    }
+    if (result && result.csvContent) {
+      const fn = result.filename || ('export_' + Date.now() + '.csv')
+      const filePath = wx.env.USER_DATA_PATH + '/' + fn
+      wx.getFileSystemManager().writeFileSync(filePath, result.csvContent, 'utf8')
+      return Promise.resolve(filePath)
+    }
+    return Promise.resolve(null)
+  },
+
+
+  // 导出库单（不含价格，含大/中/小件）— 支持 Excel / CSV
   async handleExportOutbound() {
+    const fmt = await this.pickExportFormat()
     try {
       wx.showLoading({ title: '导出中...' })
       const { callCloud } = require('../../utils/request')
-      const result = await callCloud('orders', { action: 'exportOutbound' })
-      const { csvContent, filename } = result || {}
-      if (!csvContent) {
+      const result = await callCloud('orders', { action: 'exportOutbound', format: fmt })
+      const hasData = fmt === 'excel' ? !!(result && result.fileID) : !!(result && result.csvContent)
+      if (!hasData) {
+        wx.hideLoading()
         wx.showToast({ title: '今日暂无已出库订单', icon: 'none' })
         return
       }
-      const filePath = `${wx.env.USER_DATA_PATH}/${filename}`
-      wx.getFileSystemManager().writeFileSync(filePath, csvContent, 'utf8')
       wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
+      if (fmt === 'excel') {
+        wx.hideLoading()
+        wx.showLoading({ title: '打开 Excel...' })
+        await this.saveExportFile(result, 'excel')
+        wx.hideLoading()
+        wx.showToast({ title: '已打开 Excel，可转发', icon: 'success' })
+        return
+      }
+      const filePath = await this.saveExportFile(result, 'csv')
       wx.hideLoading()
+      wx.showToast({ title: '已导出 CSV', icon: 'success' })
       wx.showModal({
-        title: '导出台单成功',
-        content: `库单已保存到:\n${filePath}`,
+        title: '导出台账成功',
+        content: '库单已保存到:\n' + filePath,
         showCancel: false
       })
     } catch (e) {
-      console.error('导出台单失败', e)
+      console.error('导出台账失败', e)
       wx.hideLoading()
       wx.showToast({ title: '导出失败', icon: 'none' })
     }
   },
+
 
   async handleAllOut() {
     if (this.data.pendingOut.length === 0) {
