@@ -5,6 +5,7 @@ const XLSX = require('xlsx')
 
 // 公司名（用于导出标题；云函数无法 require 前端 constants）
 const COMPANY_NAME = '丰淮商贸'
+function salesTitle(o){ return (o && (o.customerName || o.customer) || COMPANY_NAME) + '食品销售单' }
 
 // 本地数量文案（云函数无法 require 前端 utils，内联精简版）
 function qtyDescLocal(it) {
@@ -463,7 +464,7 @@ exports.main = async (event, context) => {
       const d = new Date()
       const p2 = (n) => (n < 10 ? '0' + n : '' + n)
       const rows = [
-        [COMPANY_NAME + '送货单'],
+        [(o.customerName || COMPANY_NAME) + '送货单'],
         [],
         ['订单号', o.orderNo],
         ['客户', o.customerName || ''],
@@ -525,7 +526,7 @@ exports.main = async (event, context) => {
       }
 
       // 2) 收集所有文本用于字体子集化
-      const allTextParts = [COMPANY_NAME + '食品销售单', o.orderNo || '', o.customerName || '', o.customerPhone || '', o.customerRegion || '', o.customerContact || '', o.customerAddress || '']
+      const allTextParts = [salesTitle(o), o.orderNo || '', o.customerName || '', o.customerPhone || '', o.customerRegion || '', o.customerContact || '', o.customerAddress || '']
       let totalQty = 0
       let grandTotal = 0
       const items = (o.items || []).map(it => {
@@ -571,7 +572,7 @@ exports.main = async (event, context) => {
       const lineGap = (h) => { y -= (h || 18) }
 
       // 标题（居中）
-      const title = COMPANY_NAME + '食品销售单'
+      const title = salesTitle(o)
       const titleX = (595.28 - font.widthOfTextAtSize(title, 18)) / 2
       page.drawText(title, { x: titleX, y, size: 18, font, color: require('pdf-lib').rgb(0.15, 0.15, 0.15) })
       y -= 30

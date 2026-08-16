@@ -287,7 +287,7 @@ Page({
     ctx.setFillStyle('#222')
     ctx.setFontSize(24)
     ctx.setTextAlign('center')
-    ctx.fillText(`${COMPANY_NAME}食品销售单`, W / 2, 44)
+    ctx.fillText(`${order.customerName || COMPANY_NAME}食品销售单`, W / 2, 44)
     ctx.setFontSize(13)
     ctx.setFillStyle('#888')
     ctx.fillText(`${order.orderNo || ''}`, W / 2, 66)
@@ -387,7 +387,7 @@ Page({
     }
 
     return {
-      title: `「${COMPANY_NAME}食品销售单」${order.customerName || ''} ${order.orderNo || ''} · ¥${order.totalAmount || ''}`,
+      title: `「${order.customerName || COMPANY_NAME}食品销售单」${order.orderNo || ''} · ¥${order.totalAmount || ''}`,
       path: orderId ? `/pages/order-detail/order-detail?id=${orderId}` : '/pages/orders/orders',
       imageUrl: imageUrl || undefined
     }
