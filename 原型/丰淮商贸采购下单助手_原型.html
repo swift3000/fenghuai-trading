@@ -2116,9 +2116,6 @@ let state = {
   quickTab: 'freq'
 };
 
-// ============ UTILITIES ============
-function $(id){ return document.getElementById(id); }
-function fmtMoney(n){ return '¥' + Number(n || 0).toFixed(2); }
 function getUnitByMode(item, mode){
   const u = item.unit || '';
   const parts = u.split('/');
