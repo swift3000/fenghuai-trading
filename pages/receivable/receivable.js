@@ -24,6 +24,8 @@ Page({
     collectAmount: '',
     collectDiscount: '',
     collectNote: '',
+    collectOrders: [],
+    collectOrderIndex: 0,
     collectLoading: false,
     paymentMethods: ['现金', '微信', '支付宝', '银行转账', '其他'],
     paymentMethodIndex: 0,
@@ -41,7 +43,18 @@ Page({
     pendingPaymentCount: 0,
     showConfirmWorkbench: false,
     pendingPayments: [],
-    confirmingPayment: null 
+    confirmingPayment: null,
+
+    // 导出预览弹窗（对齐原型 v4.4）
+    showExportPreview: false,
+    exportPeriod: 'all',
+    exportStartDate: '',
+    exportEndDate: '',
+    previewTotal: 0,
+    previewReceived: 0,
+    previewUnpaid: 0,
+    previewCount: 0,
+    exporting: false
   },
 
   onLoad() {
@@ -124,22 +137,48 @@ Page({
     })
   },
 
-  // 处理收款
+  // 处理收款（按订单收款，与该客户剩余欠款对齐）
   handleCollect(e) {
     const item = e.currentTarget.dataset.item
+    const unpaidOrders = (item.orders || []).filter(o => Number(o.unpaidAmount) > 0)
+    const target = unpaidOrders[0] || (item.orders || [])[0]
     this.setData({
       showCollectModal: true,
       collectCustomerName: item.name,
-      collectOrderNo: item.orders && item.orders.length > 0 ? item.orders[0].orderNo : '多个订单',
-      collectTotalAmount: item.totalAmount,
-      collectPaidAmount: item.paidAmount,
-      collectUnpaidAmount: item.unpaidAmount,
-      collectAmount: '',
+      collectOrders: unpaidOrders.length > 0 ? unpaidOrders : (item.orders || []),
+      collectOrderIndex: 0,
+      collectOrderNo: target ? target.orderNo : '',
+      collectTotalAmount: target ? target.totalAmount : 0,
+      collectPaidAmount: target ? target.receivedAmount : 0,
+      collectUnpaidAmount: target ? target.unpaidAmount : 0,
+      collectAmount: target ? String(Number(target.unpaidAmount).toFixed(2)) : '',
       collectDiscount: '',
       collectNote: '',
       paymentMethodIndex: 0,
       currentCollectItem: item
     })
+  },
+
+  // 收款弹窗切换订单
+  onCollectOrderChange(e) {
+    const idx = Number(e.detail.value)
+    const target = this.data.collectOrders[idx]
+    if (!target) return
+    this.setData({
+      collectOrderIndex: idx,
+      collectOrderNo: target.orderNo || '',
+      collectTotalAmount: target.totalAmount || 0,
+      collectPaidAmount: target.receivedAmount || 0,
+      collectUnpaidAmount: target.unpaidAmount || 0,
+      collectAmount: String(Number(target.unpaidAmount || 0).toFixed(2))
+    })
+  },
+
+  // 按所选订单待收金额全额收款
+  fillCollectAll() {
+    const target = this.data.collectOrders[this.data.collectOrderIndex]
+    if (!target) return
+    this.setData({ collectAmount: String(Number(target.unpaidAmount || 0).toFixed(2)) })
   },
 
   // 关闭收款弹窗
@@ -193,9 +232,10 @@ Page({
       return
     }
     
-    if (amount + discount > this.data.collectUnpaidAmount) {
+    const unpaidCents = Math.round(Number(this.data.collectUnpaidAmount || 0) * 100)
+    if (Math.round(amount * 100) + Math.round(discount * 100) > unpaidCents) {
       wx.showToast({ 
-        title: `收款+折价不能超过欠款 ¥${this.data.collectUnpaidAmount}`, 
+        title: '收款+折价不能超过该订单欠款 ¥' + (unpaidCents / 100).toFixed(2), 
         icon: 'none' 
       })
       return
@@ -205,9 +245,8 @@ Page({
     this.setData({ collectLoading: true })
 
     try {
-      // 获取当前选中的订单（如果有多个订单，先收第一个）
-      const orders = this.data.currentCollectItem.orders || []
-      const targetOrder = orders.find(o => o.unpaidAmount > 0) || orders[0]
+      // 收款按所选订单（客户多订单时逐单收款，避免跨单超收）
+      const targetOrder = this.data.collectOrders[this.data.collectOrderIndex]
       
       if (!targetOrder) {
         wx.showToast({ title: '没有可收款的订单', icon: 'none' })
@@ -235,15 +274,125 @@ Page({
     }
   },
 
-  // 导出赊销报表 CSV（复用页面已聚合数据）
-  handleExport() {
-    const customers = this.data.customers || []
+  // ===== 导出预览弹窗（对齐原型 v4.4：先选周期看汇总，再确认导出）=====
+  noop() {},
+
+  openExportPreview() {
+    if (!this.data.canExport) {
+      wx.showToast({ title: '当前角色无导出权限', icon: 'none' })
+      return
+    }
+    // 自定义周期默认近 30 天
+    const d = new Date()
+    const p = (n) => (n < 10 ? '0' + n : '' + n)
+    const endStr = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
+    const sd = new Date(d); sd.setDate(d.getDate() - 30)
+    const startStr = sd.getFullYear() + '-' + p(sd.getMonth() + 1) + '-' + p(sd.getDate())
+    this.setData({
+      showExportPreview: true,
+      exportPeriod: 'all',
+      exportStartDate: startStr,
+      exportEndDate: endStr
+    })
+    this.refreshExportPreview()
+  },
+
+  closeExportPreview() {
+    if (this.data.exporting) return
+    this.setData({ showExportPreview: false })
+  },
+
+  onExportPeriod(e) {
+    this.setData({ exportPeriod: e.currentTarget.dataset.period }, () => {
+      this.refreshExportPreview()
+    })
+  },
+
+  onExportStartDateChange(e) {
+    this.setData({ exportStartDate: e.detail.value }, () => {
+      if (this.data.exportPeriod === 'custom') this.refreshExportPreview()
+    })
+  },
+
+  onExportEndDateChange(e) {
+    this.setData({ exportEndDate: e.detail.value }, () => {
+      if (this.data.exportPeriod === 'custom') this.refreshExportPreview()
+    })
+  },
+
+  // 拉取所选周期的聚合数据用于预览汇总
+  async refreshExportPreview() {
+    const { period, start, end } = this.exportRangeParams()
+    if (period === 'custom' && (!start || !end)) return
+    try {
+      const { callCloud } = require('../../utils/request')
+      const data = await callCloud('receivable', {
+        action: 'dashboard',
+        viewTab: this.data.viewTab,
+        timeTab: period,
+        searchKey: '',
+        startDate: start,
+        endDate: end
+      })
+      this.setData({
+        previewTotal: Number(data.totalReceivable || 0).toFixed(2),
+        previewReceived: Number(data.totalReceived || 0).toFixed(2),
+        previewUnpaid: Number(data.totalUnpaid || 0).toFixed(2),
+        previewCount: data.customerCount || 0
+      })
+    } catch (e) {
+      console.error('预览汇总失败', e)
+      wx.showToast({ title: '预览汇总失败', icon: 'none' })
+    }
+  },
+
+  // 解析当前选中的导出周期参数
+  exportRangeParams() {
+    const period = this.data.exportPeriod
+    let start = '', end = ''
+    if (period === 'custom') {
+      start = this.data.exportStartDate
+      end = this.data.exportEndDate
+    }
+    return { period, start, end }
+  },
+
+  // 确认导出：按预览弹窗所选周期重新取数生成 CSV，保证与预览一致
+  async confirmExport() {
+    if (this.data.exporting) return
+    const { period, start, end } = this.exportRangeParams()
+    if (period === 'custom' && (!start || !end)) {
+      wx.showToast({ title: '请选择完整日期范围', icon: 'none' })
+      return
+    }
+    this.setData({ exporting: true })
+    try {
+      const { callCloud } = require('../../utils/request')
+      const data = await callCloud('receivable', {
+        action: 'dashboard',
+        viewTab: this.data.viewTab,
+        timeTab: period,
+        searchKey: '',
+        startDate: start,
+        endDate: end
+      })
+      this.buildExportCsv(data.customers || [], period, start, end)
+    } catch (e) {
+      console.error('导出失败', e)
+      wx.showToast({ title: '导出失败', icon: 'none' })
+    } finally {
+      this.setData({ exporting: false })
+    }
+  },
+
+  // 生成并保存赊销报表 CSV（周期参数显式传入，与预览保持一致）
+  buildExportCsv(customers, period, start, end) {
+    customers = customers || []
     if (!customers.length) {
       wx.showToast({ title: '没有可导出的数据', icon: 'none' })
       return
     }
     try {
-      wx.showLoading({ title: '导出中...' })
       const esc = (v) => {
         let s = (v === null || v === undefined) ? '' : String(v)
         // 防 CSV 公式注入：Excel 打开时将 = + - @ 开头单元格前缀 ' 转文本
@@ -259,11 +408,11 @@ Page({
       // 时间标签（包含自定义）
       let timeLabel = {
         all: '全部', today: '今日', week: '本周', month: '本月', custom: '自定义'
-      }[this.data.timeTab] || this.data.timeTab
+      }[period] || period
       
       // 如果是自定义时间，显示具体日期范围
-      if (this.data.timeTab === 'custom' && this.data.startDate && this.data.endDate) {
-        timeLabel = `自定义 (${this.data.startDate} ~ ${this.data.endDate})`
+      if (period === 'custom' && start && end) {
+        timeLabel = `自定义 (${start} ~ ${end})`
       }
       
       const viewLabel = {
@@ -273,7 +422,7 @@ Page({
       const rows = []
       rows.push(['丰淮商贸赊销报表'])
       rows.push(['导出时间：' + new Date().toLocaleString()])
-      rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel + (this.data.searchKey ? ' · 搜索:' + this.data.searchKey : '')])
+      rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel])
       rows.push([])
       
       const totalReceivable = customers.reduce((s, c) => s + (c.totalAmount || 0), 0)
@@ -326,7 +475,7 @@ Page({
       fs.writeFileSync(filePath, csvContent, 'utf8')
 
       wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
-      wx.showToast({ title: '已导出到临时目录', icon: 'success' })
+      this.setData({ showExportPreview: false })
       wx.showModal({
         title: '导出成功',
         content: '文件已保存到:\n' + filePath + '\n\n共导出 ' + customers.length + ' 家客户赊销数据，您可通过文件管理工具获取 CSV 文件',
@@ -335,8 +484,6 @@ Page({
     } catch (e) {
       console.error('导出失败', e)
       wx.showToast({ title: '导出失败', icon: 'none' })
-    } finally {
-      wx.hideLoading()
     }
   },
   // 自定义日期处理
@@ -409,6 +556,8 @@ Page({
   },
 
   // 关闭工作台
+  // 阻止点击弹窗内部冒泡（wxml catchtap 引用）
+  stopPropagation() {},
   closeConfirmWorkbench() {
     this.setData({ showConfirmWorkbench: false })
   },
@@ -446,5 +595,15 @@ Page({
 ,
   onFontScaleChange(scale) {
     uiStyle.applyUiStyle(this)
+  },
+  // 获取收款方式文本
+  getMethodText(method) {
+    const map = {
+      'cash': '现金',
+      'wechat': '微信',
+      'alipay': '支付宝',
+      'bank': '银行转账'
+    }
+    return map[method] || '其他'
   }
 })
