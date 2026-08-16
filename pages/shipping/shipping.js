@@ -101,11 +101,6 @@ Page({
     this.setData({ showPreviewModal: true })
   },
 
-  // 打印预览
-  handlePreview() {
-    this.setData({ showPreviewModal: true })
-  },
-
   // 返回列表
   handleBack() {
     wx.navigateBack({ delta: 1 })

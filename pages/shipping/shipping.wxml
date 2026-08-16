@@ -76,7 +76,6 @@
   <!-- 操作按钮 -->
   <view class="action-buttons">
     <button class="btn btn-primary" bindtap="handlePrint">🖨 打印送货单</button>
-    <button class="btn btn-secondary" bindtap="handlePreview">🖨 打印送货单</button>
     <button class="btn btn-tertiary" bindtap="handleBack">← 返回列表</button>
   </view>
   
