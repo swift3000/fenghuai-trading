@@ -110,6 +110,11 @@ Page({
         timeTab: this.data.timeTab,
         searchKey: this.data.searchKey
       })
+      // 账龄分色（对齐原型 AGING_COLOR）：≤30绿 ≤60黄 ≤90橙 >90红
+      data.customers = (data.customers || []).map(c => ({
+        ...c,
+        agingColor: c.maxAge > 90 ? '#DC2626' : c.maxAge > 60 ? '#EA580C' : c.maxAge > 30 ? '#F59E0B' : '#16A34A'
+      }))
       this.setData({ ...data, loading: false })
     } catch (e) {
       console.error('加载数据失败', e)
@@ -434,7 +439,7 @@ Page({
       rows.push([])
       
       // 表头：客户、区域、订单数、应收、已收、未结清
-      rows.push(['客户', '区域', '订单数', '应收(¥)', '已收(¥)', '未结清(¥)', '收款状态'])
+      rows.push(['客户', '区域', '订单数', '应收(¥)', '已收(¥)', '未结清(¥)', '最长欠款(天)', '收款状态'])
 
       customers.forEach(c => {
         rows.push([
@@ -444,6 +449,7 @@ Page({
           (c.totalAmount || 0).toFixed(2),
           (c.paidAmount || 0).toFixed(2),
           (c.unpaidAmount || 0).toFixed(2),
+          c.maxAge > 0 ? c.maxAge : '',
           ''
         ])
         ;(c.orders || []).forEach(o => {
@@ -459,6 +465,7 @@ Page({
             (o.totalAmount || 0).toFixed(2),
             (o.receivedAmount || 0).toFixed(2),
             (o.unpaidAmount || 0).toFixed(2),
+            o.unpaidAmount > 0 ? (o.debtAgeDays || 0) : '',
             paymentStatusText
           ])
         })
@@ -466,7 +473,7 @@ Page({
 
       rows.push([])
       // 合计行
-      rows.push(['合计', '', customers.length, totalReceivable.toFixed(2), totalReceived.toFixed(2), totalUnpaid.toFixed(2), ''])
+      rows.push(['合计', '', customers.length, totalReceivable.toFixed(2), totalReceived.toFixed(2), totalUnpaid.toFixed(2), '', ''])
 
       const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
       const filename = '丰淮商贸赊销报表_' + dateStr() + '.csv'

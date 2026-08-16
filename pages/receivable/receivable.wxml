@@ -1,8 +1,10 @@
 <view class="container" style="{{uiStyle}}">
   <!-- 导出工具栏 -->
   <view class="recv-toolbar" wx:if="{{customers.length > 0}}">
-    <button class="btn-confirm-payment" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✅ 收款确认{{pendingPaymentCount > 0 ? " · " + pendingPaymentCount : ""}}</button>
-    <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="handleExport">📥 导出</button>
+    <view class="flex-between">
+      <button class="btn-confirm-payment" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✅ 收款确认{{pendingPaymentCount > 0 ? " · " + pendingPaymentCount : ""}}</button>
+      <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="openExportPreview">📥 导出</button>
+    </view>
   </view>
   <!-- 统计概览 -->
   <view class="overview card">
@@ -108,6 +110,10 @@
           <text class="detail-label">订单数:</text>
           <text class="detail-value">{{item.orderCount}} 单</text>
         </view>
+        <view class="detail-row dc-aging" wx:if="{{item.unpaidAmount > 0 && item.maxAge > 0}}">
+          <view class="aging-dot" style="background: {{item.agingColor}}"></view>
+          <text class="aging-text">最长欠款 {{item.maxAge}} 天</text>
+        </view>
       </view>
 
       <view class="customer-stats">
@@ -136,6 +142,41 @@
     <text class="empty-hint" wx:if="{{viewTab === 'ledger'}}">暂无客户订单数据</text>
   </view>
 
+  <!-- 导出预览弹窗（对齐原型 v4.4：先选周期看汇总，再确认导出） -->
+  <view class="epp-overlay" wx:if="{{showExportPreview}}" bindtap="closeExportPreview">
+    <view class="epp-panel" catchtap="noop">
+      <view class="epp-header">
+        <text class="epp-title">📥 导出赊销报表</text>
+        <text class="epp-close" bindtap="closeExportPreview">×</text>
+      </view>
+      <view class="epp-label">选择时间周期</view>
+      <view class="epp-chips">
+        <view class="epp-chip {{exportPeriod==='all'?'active':''}}" data-period="all" bindtap="onExportPeriod">全部</view>
+        <view class="epp-chip {{exportPeriod==='today'?'active':''}}" data-period="today" bindtap="onExportPeriod">今日</view>
+        <view class="epp-chip {{exportPeriod==='week'?'active':''}}" data-period="week" bindtap="onExportPeriod">本周</view>
+        <view class="epp-chip {{exportPeriod==='month'?'active':''}}" data-period="month" bindtap="onExportPeriod">本月</view>
+        <view class="epp-chip {{exportPeriod==='custom'?'active':''}}" data-period="custom" bindtap="onExportPeriod">自定义</view>
+      </view>
+      <view class="epp-custom" wx:if="{{exportPeriod==='custom'}}">
+        <picker mode="date" value="{{exportStartDate}}" bindchange="onExportStartDateChange">
+          <view class="epp-date">{{exportStartDate || '开始日期'}}</view>
+        </picker>
+        <text class="epp-dash">～</text>
+        <picker mode="date" value="{{exportEndDate}}" start="{{exportStartDate}}" bindchange="onExportEndDateChange">
+          <view class="epp-date">{{exportEndDate || '结束日期'}}</view>
+        </picker>
+      </view>
+      <view class="epp-summary">
+        <view class="epp-s-row"><text class="epp-s-label">应收总额</text><text class="epp-s-val">¥{{previewTotal}}</text></view>
+        <view class="epp-s-row green"><text class="epp-s-label">已收</text><text class="epp-s-val">¥{{previewReceived}}</text></view>
+        <view class="epp-s-row red"><text class="epp-s-label">未结清</text><text class="epp-s-val">¥{{previewUnpaid}}</text></view>
+        <view class="epp-s-row muted"><text class="epp-s-label">客户数</text><text class="epp-s-val">{{previewCount}}</text></view>
+      </view>
+      <view class="epp-hint">按当前视图（{{viewTab==='ledger'?'客户台账':(viewTab==='unpaid'?'未结清':'已结清')}}）导出 CSV</view>
+      <button class="epp-btn" bindtap="confirmExport" loading="{{exporting}}">{{exporting ? '导出中...' : '确认导出 CSV'}}</button>
+    </view>
+  </view>
+
   <!-- 收款弹窗 -->
   <view class="modal-mask" wx:if="{{showCollectModal}}" bindtap="closeCollectModal"></view>
   <view class="modal-content collect-modal" wx:if="{{showCollectModal}}">
@@ -149,7 +190,13 @@
           <text class="info-label">客户:</text>
           <text class="info-value">{{collectCustomerName}}</text>
         </view>
-        <view class="info-row">
+        <view class="info-row" wx:if="{{collectOrders.length > 1}}">
+          <text class="info-label">订单:</text>
+          <picker class="collect-order-picker" mode="selector" range="{{collectOrders}}" range-key="orderNo" value="{{collectOrderIndex}}" bindchange="onCollectOrderChange">
+            <view class="picker">{{collectOrderNo}} ▾（共{{collectOrders.length}}单）</view>
+          </picker>
+        </view>
+        <view class="info-row" wx:else>
           <text class="info-label">订单号:</text>
           <text class="info-value">{{collectOrderNo}}</text>
         </view>
@@ -173,7 +220,7 @@
           <text class="currency-symbol">¥</text>
           <input class="form-input amount-input" type="digit" placeholder="请输入收款金额" value="{{collectAmount}}" bindinput="onCollectAmountChange" />
         </view>
-        <text class="form-hint">最多可收 ¥{{collectUnpaidAmount}}</text>
+        <text class="form-hint">该订单最多可收 ¥{{collectUnpaidAmount}}<text class="quick-fill" bindtap="fillCollectAll"> 全部收</text></text>
       </view>
 
       <view class="form-group" wx:if="{{canDiscount}}">
@@ -224,7 +271,7 @@
             </view>
             <view class="payment-info">
               <text class="payment-customer">{{item.customerName}}</text>
-              <text class="payment-method">收款方式：{{item.method === 'cash' ? '现金' : (item.method === 'wechat' ? '微信' : (item.method === 'alipay' ? '支付宝' : (item.method === 'bank' ? '银行转账' : '其他'))}}</text>
+              <text class="payment-method">收款方式：{{item.method === 'cash' ? '现金' : (item.method === 'wechat' ? '微信' : (item.method === 'alipay' ? '支付宝' : (item.method === 'bank' ? '银行转账' : '其他')))}}</text>
             </view>
             <view class="payment-footer">
               <text class="payment-registered-by">登记人：{{item.registeredBy}}</text>

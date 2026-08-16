@@ -15,6 +15,12 @@ function toCents(n) {
 function remainingCents(total, received, discount) {
   return Math.max(0, toCents(total) - toCents(received) - toCents(discount))
 }
+// 账龄（天）：订单创建时间到现在的整天数（对齐原型 debtAgeDays）
+function debtAgeDays(order) {
+  const t = new Date(order.created_at).getTime()
+  if (isNaN(t)) return 0
+  return Math.max(0, Math.floor((Date.now() - t) / 86400000))
+}
 
 
 // 权限校验
@@ -156,6 +162,7 @@ exports.main = async (event, context) => {
             paidAmount: 0,
             unpaidAmount: 0,
             orderCount: 0,
+            maxAge: 0,
             orders: []
           }
         }
@@ -169,6 +176,9 @@ exports.main = async (event, context) => {
         customer.receivedCents = (customer.receivedCents || 0) + toCents(received)
         customer.unpaidCents = (customer.unpaidCents || 0) + remainingCents(total, received, discount1)
         customer.orderCount += 1
+        // 最长欠款账龄：仅统计未结清订单（剩余欠款>0），对齐原型 maxAge
+        const unpaidNow = remainingCents(total, received, discount1)
+        if (unpaidNow > 0) customer.maxAge = Math.max(customer.maxAge, debtAgeDays(order))
         customer.orders.push({
           _id: order._id,
           orderNo: order.orderNo,
@@ -178,7 +188,8 @@ exports.main = async (event, context) => {
           unpaidAmount: Math.max(0, total - received - (order.total_discount || order.totalDiscount || 0)),
           status: order.status,
           paymentStatus: order.paymentStatus,
-          createdAt: order.created_at
+          createdAt: order.created_at,
+          debtAgeDays: debtAgeDays(order)
         })
       })
       
