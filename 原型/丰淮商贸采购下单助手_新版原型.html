@@ -676,6 +676,21 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .wh-tabs .tab.active::after{content:"";position:absolute;bottom:0;left:20%;right:20%;height:3px;background:var(--green);border-radius:2px}
 .wh-tabs .badge{display:inline-block;min-width:20px;height:20px;line-height:20px;padding:0 6px;border-radius:10px;background:var(--orange);color:#fff;font-size:calc(11px * var(--font-scale));margin-left:4px}
 .wh-tabs .badge.blue{background:#2563EB}
+.ac-notice{margin:10px 12px 0;padding:8px 12px;border-radius:10px;font-size:calc(12px * var(--font-scale));line-height:1.5;border:1px solid #BFDBFE;background:#F5F9FF;color:#2563EB}
+.ac-notice.overdue{background:#FEF3F2;border-color:#FECACA;color:#DC2626}
+.overdue-badge{display:inline-block;background:#DC2626;color:#fff;font-size:calc(10px * var(--font-scale));padding:1px 8px;border-radius:10px;margin-left:8px;vertical-align:middle}
+.wh-order-item.overdue{border-left-color:#DC2626}
+.auto-cfg-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.auto-cfg-row + .auto-cfg-row{border-top:1px solid #F1F5F9}
+.auto-cfg-row label{font-size:calc(13px * var(--font-scale));color:var(--text-1);font-weight:500}
+.auto-cfg-hint{font-size:calc(11px * var(--font-scale));color:var(--text-3);line-height:1.6;margin-top:2px}
+.auto-cfg-row input[type=time]{border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:calc(13px * var(--font-scale));color:var(--text-1);background:#fff}
+.switch{position:relative;width:46px;height:26px;flex:none}
+.switch input{display:none}
+.switch i{position:absolute;inset:0;background:#CBD5E1;border-radius:13px;transition:.2s;cursor:pointer}
+.switch i:before{content:'';position:absolute;width:22px;height:22px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked + i{background:var(--green)}
+.switch input:checked + i:before{left:22px}
 .wh-toolbar{display:flex;gap:10px;padding:0 12px}
 .wh-toolbar button{flex:1;padding:10px;border-radius:10px;font-size:calc(13px * var(--font-scale));font-weight:500;cursor:pointer;border:none}
 .wh-toolbar .btn-confirm-all{background:var(--green);color:#fff}
@@ -1777,8 +1792,7 @@ body{padding:18px 0}
       </div>
       <div class="wh-toolbar" id="whToolbar">
         <button class="btn-confirm-all" onclick="confirmAllPending()"><svg class="ri" aria-hidden="true"><use href="#ri-checkbox-circle-line"></use></svg> 全部确认</button>
-        <button class="btn-auto" onclick="simulateAutoConfirm()"><svg class="ri" aria-hidden="true"><use href="#ri-time-line"></use></svg> 模拟16:00通过</button>
-      </div>
+              </div>
       <div class="wh-list" id="whList"></div>
       <div class="wh-export">
         <button class="btn btn-orange" onclick="exportWarehouseOut()"><svg class="ri" aria-hidden="true"><use href="#ri-download-line"></use></svg> 导出库单(不含价格)</button>
@@ -1874,6 +1888,7 @@ body{padding:18px 0}
         <div class="menu-item" id="menuCustomers" onclick="navigateTo('customers')"><div class="left"><div class="icon m2"><svg class="ri" aria-hidden="true"><use href="#ri-store-2-line"></use></svg></div><span class="lbl">客户管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuReports" onclick="navigateTo('reports')"><div class="left"><div class="icon m3"><svg class="ri" aria-hidden="true"><use href="#ri-bar-chart-2-line"></use></svg></div><span class="lbl">报表统计</span></div><span class="arrow">›</span></div>
         <div class="menu-item" onclick="toggleFontZoomPanel()"><div class="left"><div class="icon" style="background:var(--blue-soft);color:var(--blue)"><svg class="ri" aria-hidden="true"><use href="#ri-a-b"></use></svg></div><span class="lbl">字体大小</span></div><span style="font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-right:8px" id="profileFontScale">90%</span><span class="arrow">›</span></div>
+        <div class="menu-item" onclick="openAutoConfirmModal()"><div class="left"><div class="icon" style="background:#FDF3DC;color:#D97706"><svg class="ri" aria-hidden="true"><use href="#ri-time-line"></use></svg></div><span class="lbl">定时自动确认<span id="autoCfgTag" style="margin-left:6px"></span></span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuMembers" onclick="openMembers()"><div class="left"><div class="icon" style="background:var(--violet-soft);color:var(--violet)"><svg class="ri" aria-hidden="true"><use href="#ri-team-line"></use></svg></div><span class="lbl">成员管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" onclick="resetDemoData()"><div class="left"><div class="icon m4"><svg class="ri" aria-hidden="true"><use href="#ri-refresh-line"></use></svg></div><span class="lbl">重置演示数据</span></div><span class="arrow">›</span></div>
       </div>
@@ -1974,6 +1989,28 @@ body{padding:18px 0}
       <div class="mf-row"><label>微信 openid / 微信号（选填）</label><input id="mfOpenid" type="text" placeholder="填写则直接激活，留空为待确认（邀请扫码绑定）"></div>
       <div class="mf-row"><label>手机号（选填）</label><input id="mfPhone" type="tel" placeholder="如：13800000000"></div>
       <button class="btn primary" style="width:100%" onclick="submitMemberForm()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 定时自动确认设置弹窗 -->
+<div class="modal-mask" id="autoConfirmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title">定时自动确认（分拣/出库）</div>
+      <div class="close" onclick="closeAutoConfirmModal()"><svg class="ri" aria-hidden="true"><use href="#ri-close-line"></use></svg></div>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <div class="auto-cfg-row">
+        <label>开启定时自动确认</label>
+        <span class="switch"><input type="checkbox" id="acEnabled" onchange="onAcEnabledChange()"><i></i></span>
+      </div>
+      <div class="auto-cfg-row" id="acTimeRow">
+        <label>自动确认时间</label>
+        <input type="time" id="acTime" value="16:00">
+      </div>
+      <div class="auto-cfg-hint">开启后，每天到达所选时间，仍未确认的分拣/出库订单将全部自动确认（每日一次），防止订单跨天堆积；分拣员与库管工作台会显示定时提示，超时未确认订单标红。关闭则不限时，不显示任何定时提示，需人工确认。</div>
+      <button class="btn primary" style="width:100%;margin-top:14px" onclick="saveAutoConfirm()">保存</button>
     </div>
   </div>
 </div>
@@ -2596,7 +2633,76 @@ function resetDemoData(){
   try{ navigateTo('home'); }catch(e){}
 }
 
-let data = loadData();
+let data = loadData();// ===== 定时自动确认（管理员可控，默认关闭）=====
+let autoConfirm = { enabled: false, time: '16:00' };
+try {
+  const _acRaw = localStorage.getItem(STORAGE_KEY + '_autoConfirm');
+  if (_acRaw) autoConfirm = Object.assign(autoConfirm, JSON.parse(_acRaw));
+} catch(e) {}
+function acDuePassed(){
+  if(!autoConfirm.enabled) return false;
+  const p = (autoConfirm.time || '16:00').split(':');
+  const now = new Date();
+  return (now.getHours() * 60 + now.getMinutes()) >= (parseInt(p[0],10) * 60 + parseInt(p[1],10));
+}
+function renderAcTag(){
+  const el = $('autoCfgTag');
+  if(!el) return;
+  el.innerHTML = autoConfirm.enabled ? '<span style="color:#16A34A">· 已开 ' + (autoConfirm.time||'16:00') + '</span>' : '<span style="color:var(--text-3)">· 关闭</span>';
+}
+function applyAcNotices(){
+  const on = autoConfirm.enabled, od = on && acDuePassed();
+  [['whList','whAcNotice'],['sortList','sortAcNotice']].forEach(pair => {
+    const list = $(pair[0]);
+    if(!list) return;
+    let n = $(pair[1]);
+    if(!n){
+      n = document.createElement('div');
+      n.id = pair[1];
+      n.className = 'ac-notice';
+      list.parentNode.insertBefore(n, list);
+    }
+    if(!on){ n.style.display = 'none'; }
+    else {
+      n.style.display = '';
+      n.className = 'ac-notice' + (od ? ' overdue' : '');
+      n.innerHTML = od
+        ? '⏰ 已过定时确认时间（' + (autoConfirm.time||'16:00') + '），以下未确认订单已超时，请尽快处理'
+        : '🕐 定时自动确认已开启：每天 ' + (autoConfirm.time||'16:00') + ' 自动确认未处理订单';
+    }
+    list.querySelectorAll('.wh-order-item').forEach(card => {
+      const pending = card.querySelector('.status-pending');
+      if(pending){
+        card.classList.toggle('overdue', !!od);
+        let b = card.querySelector('.overdue-badge');
+        if(od && !b){ b = document.createElement('span'); b.className = 'overdue-badge'; b.textContent = '超时'; pending.insertAdjacentElement('afterend', b); }
+        if(!od && b){ b.remove(); }
+      }
+    });
+  });
+  renderAcTag();
+}
+function saveAutoConfirmState(){
+  try { localStorage.setItem(STORAGE_KEY + '_autoConfirm', JSON.stringify(autoConfirm)); } catch(e) {}
+}
+function openAutoConfirmModal(){
+  $('acEnabled').checked = !!autoConfirm.enabled;
+  $('acTime').value = autoConfirm.time || '16:00';
+  $('acTimeRow').style.opacity = autoConfirm.enabled ? '1' : '0.4';
+  openModal('autoConfirmModal');
+}
+function closeAutoConfirmModal(){ closeModal('autoConfirmModal'); }
+function onAcEnabledChange(){ $('acTimeRow').style.opacity = $('acEnabled').checked ? '1' : '0.4'; }
+function saveAutoConfirm(){
+  autoConfirm.enabled = !!$('acEnabled').checked;
+  const t = $('acTime').value;
+  if(t) autoConfirm.time = t;
+  saveAutoConfirmState();
+  applyAcNotices();
+  closeAutoConfirmModal();
+  showToast(autoConfirm.enabled ? '定时自动确认已开启（每天 ' + autoConfirm.time + '）' : '定时自动确认已关闭（不限时）');
+}
+
 let state = {
   currentCustomer: null,
   currentItems: [],
@@ -2655,6 +2761,7 @@ function switchWhTab(tab){
 }
 
 function renderWhList(){
+  applyAcNotices();
   const today = new Date().toDateString();
   // 库管看全部订单（所有下单员的），管理员也看全部
   const orders = data.orders.filter(o => {
@@ -2763,27 +2870,6 @@ function confirmAllPending(){
   renderWhList();
 }
 
-function simulateAutoConfirm(){
-  const role = data.currentRole || 'orderer';
-  if(!getPerm('warehouse:confirm', role)){ showToast('无「出库确认」权限（可在成员管理-权限配置中调整）'); return; }
-  const today = new Date().toDateString();
-  const pending = data.orders.filter(o => {
-    return new Date(o.time).toDateString() === today && o.status === 'sorted';
-  });
-  if(pending.length === 0){
-    showToast('暂无待出库订单');
-    return;
-  }
-  pending.forEach(o => {
-    o.status = 'confirmed';
-    o.warehouse_confirmed = true;
-    o.confirmed_by = 'system_auto';
-    o.confirmed_at = new Date().toISOString();
-    o.auto_confirmed = true;
-  });
-  showToast(`16:00自动通过 ${pending.length} 笔`);
-  renderWhList();
-}
 
 // ============ SORTING (分拣作业) ============
 let sortTab = 'pending';
@@ -2795,6 +2881,7 @@ function switchSortTab(tab){
 
 // 待分拣 / 已分拣 两类订单（一键分拣：submitted → sorted）
 function renderSortList(){
+  applyAcNotices();
   const today = new Date().toDateString();
   const orders = data.orders.filter(o => new Date(o.time).toDateString() === today && (o.amount || 0) > 0);
   const pending = orders.filter(o => o.status === 'submitted');
@@ -3248,6 +3335,7 @@ function doLogin(){
   saveData();
   // 更新顶部用户信息
   updateUserInfo();
+  renderAcTag();
   // 开放权限模型（v4.3.7）：4角色全功能开放，所有功能Tab（订单/赊销/库管/报表/我的）全部可见，不做角色隔离
   // 「成员管理」作为独占能力，仍仅在「我的」页对管理员展示（见 updateUserInfo）
   // 默认落地页差异（所有 Tab 仍均可自由切换）：分拣员→分拣作业；库管→库管出库；其余→首页
