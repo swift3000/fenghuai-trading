@@ -322,7 +322,7 @@ exports.main = async (event, context) => {
           const unpaid = await db.collection('orders')
             .where({
               customerId: order.customerId,
-              paymentStatus: db.command.in(['unpaid', 'pending', 'partial'])
+              paymentStatus: db.command.in(['unpaid', 'pending'])
             })
             .get()
           const totalDebt = unpaid.data.reduce((sum, o) => {
@@ -579,7 +579,7 @@ exports.main = async (event, context) => {
         } catch (e) {}
         try {
           const unpaid = await db.collection('orders')
-            .where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending', 'partial']) })
+            .where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending']) })
             .get()
           o.totalDebt = unpaid.data.reduce((s, x) => s + Math.max(0, (x.totalAmount || 0) - (x.received_amount || x.receivedAmount || 0) - (x.total_discount || x.totalDiscount || 0)), 0)
         } catch (e) { o.totalDebt = 0 }

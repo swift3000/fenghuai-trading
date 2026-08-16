@@ -430,50 +430,51 @@ Page({
       rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel])
       rows.push([])
       
-      const totalReceivable = customers.reduce((s, c) => s + (c.totalAmount || 0), 0)
-      const totalReceived = customers.reduce((s, c) => s + (c.paidAmount || 0), 0)
-      const totalUnpaid = customers.reduce((s, c) => s + (c.unpaidAmount || 0), 0)
-      
-      // 汇总行：应收 / 已收 / 未结清 三项
-      rows.push(['汇总：应收=' + totalReceivable.toFixed(2) + ' | 已收=' + totalReceived.toFixed(2) + ' | 未结清=' + totalUnpaid.toFixed(2)])
-      rows.push([])
-      
-      // 表头：客户、区域、订单数、应收、已收、未结清
-      rows.push(['客户', '区域', '订单数', '应收(¥)', '已收(¥)', '未结清(¥)', '最长欠款(天)', '收款状态'])
+      // 口径对齐新版原型 doExportReceivable：欠款=应收-已收(含折价)，客户状态 已结清/部分结清·待确认/未结清
+      const custDebt = (c) => (c.orders || []).reduce((s, o) => s + (o.unpaidAmount || 0), 0)
+      const custConfirmed = (c) => (c.orders || []).reduce((s, o) => s + (o.receivedAmount || 0), 0)
+      const payText = (ps) => ps === 'paid' ? '已结清' : (ps === 'pending' ? '未结清' : '未付款')
 
+      // 表头：客户、区域、订单数、总欠款、状态、最长欠款(天)、已确认收款、未收余额
+      rows.push(['客户', '区域', '订单数', '总欠款(¥)', '状态', '最长欠款(天)', '已确认收款(¥)', '未收余额(¥)'])
+
+      let grandTotal = 0
+      let grandConfirmed = 0
       customers.forEach(c => {
+        const debt = custDebt(c)
+        const confirmed = custConfirmed(c)
+        const hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending')
+        const status = debt <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清')
+        grandTotal += debt
+        grandConfirmed += confirmed
         rows.push([
           c.name,
           c.region || '',
           c.orderCount,
-          (c.totalAmount || 0).toFixed(2),
-          (c.paidAmount || 0).toFixed(2),
-          (c.unpaidAmount || 0).toFixed(2),
+          debt.toFixed(2),
+          status,
           c.maxAge > 0 ? c.maxAge : '',
-          ''
+          confirmed.toFixed(2),
+          (debt - confirmed).toFixed(2)
         ])
         ;(c.orders || []).forEach(o => {
-          // 收款状态映射
-          let paymentStatusText = '未收款'
-          if (o.paymentStatus === 'pending') paymentStatusText = '待确认'
-          else if (o.paymentStatus === 'paid') paymentStatusText = '已收款'
-          
+          const oDebt = o.unpaidAmount || 0
           rows.push([
             '  └ ' + o.orderNo,
             '',
             '',
-            (o.totalAmount || 0).toFixed(2),
+            oDebt.toFixed(2),
+            payText(o.paymentStatus),
+            oDebt > 0.001 ? (o.debtAgeDays || 0) : '',
             (o.receivedAmount || 0).toFixed(2),
-            (o.unpaidAmount || 0).toFixed(2),
-            o.unpaidAmount > 0 ? (o.debtAgeDays || 0) : '',
-            paymentStatusText
+            (oDebt - (o.receivedAmount || 0)).toFixed(2)
           ])
         })
       })
 
       rows.push([])
       // 合计行
-      rows.push(['合计', '', customers.length, totalReceivable.toFixed(2), totalReceived.toFixed(2), totalUnpaid.toFixed(2), '', ''])
+      rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), (grandTotal - grandConfirmed).toFixed(2)])
 
       const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
       const filename = '丰淮商贸赊销报表_' + dateStr() + '.csv'
