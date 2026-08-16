@@ -176,3 +176,8 @@
     width: 200rpx;
   }
 }
+
+/* 自定义底部 TabBar 占位，防止内容被遮挡 */
+.container {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom)) !important;
+}

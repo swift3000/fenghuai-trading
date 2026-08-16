@@ -3,7 +3,6 @@ App({
     userInfo: null,
     userRole: null,
     fontScale: 0.9,
-    theme: 'green'
   },
 
   onLaunch() {
@@ -19,8 +18,6 @@ App({
       })
     }
 
-    // 初始化主题
-    this.initTheme()
 
     // 从本地缓存加载用户信息
     const userInfo = wx.getStorageSync('userInfo')
@@ -45,34 +42,6 @@ App({
     this.checkAutoLogin()
   },
 
-  /**
-   * 初始化主题
-   */
-  initTheme() {
-    const themeHelper = require('./utils/theme-helper')
-    const savedTheme = wx.getStorageSync('theme') || 'green'
-    this.globalData.theme = savedTheme
-    themeHelper.setTheme(savedTheme)
-    console.log('主题已初始化:', savedTheme)
-  },
-
-  /**
-   * 设置主题
-   * @param {string} themeKey - 主题键值
-   */
-  setTheme(themeKey) {
-    const themeHelper = require('./utils/theme-helper')
-    const theme = themeHelper.setTheme(themeKey)
-    this.globalData.theme = themeKey
-    
-    // 通知所有页面更新
-    const pages = getCurrentPages()
-    pages.forEach(page => {
-      if (page.onThemeChange) {
-        page.onThemeChange(theme)
-      }
-    })
-  },
 
   checkAutoLogin() {
     if (this.globalData.userInfo && this.globalData.userRole) {
@@ -95,12 +64,15 @@ App({
     try {
       if (permissions && permissions.length) {
         tabBarHelper.setTabBarByPerms(permissions)
+        console.log('✅ TabBar 设置成功（基于权限）')
       } else {
         tabBarHelper.setTabBarByRole(role)
+        console.log('✅ TabBar 设置成功（基于角色）')
       }
-      console.log('TabBar 设置成功')
+      return { success: true, message: 'TabBar 设置成功' }
     } catch (err) {
-      console.error('TabBar 设置失败:', err)
+      console.error('❌ TabBar 设置失败:', err)
+      return { success: false, error: err.message }
     }
   },
 
@@ -133,11 +105,6 @@ App({
   // 获取当前用户信息
   getUserInfo() {
     return this.globalData.userInfo
-  },
-
-  // 获取当前主题
-  getTheme() {
-    return this.globalData.theme
   },
 
   // 更新字号设置

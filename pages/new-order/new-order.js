@@ -16,7 +16,9 @@ Page({
     displayCustomers: [],
     displayProducts: [],
     customerSearchKeyword: '',
+    customerDebounceTimer: null,
     productSearchKeyword: '',
+    productDebounceTimer: null,
     smartInputText: '',
     smartInputLoading: false,
     smartPreviewItems: [],
@@ -41,23 +43,36 @@ Page({
 
   async loadCustomers() {
     try {
+      wx.showLoading({ title: '加载中...', mask: true });
       const { callCloud } = require('../../utils/request')
       const res = await callCloud('customers', { action: 'list' })
-      this.setData({ customerList: res || [] })
+      const customerList = res && res.data ? res.data : (res || [])
+      this.setData({ customerList, displayCustomers: customerList })
       this.refreshCustomers()
+      console.log('✅ 客户列表加载完成:', customerList.length, '个')
+      wx.hideLoading();
     } catch (e) {
       console.error('加载客户失败', e)
+      wx.hideLoading();
+      wx.showToast({ title: '加载客户失败', icon: 'none' })
+      this.setData({ customerList: [], displayCustomers: [] })
     }
   },
 
   async loadProducts() {
     try {
+      wx.showLoading({ title: '加载中...', mask: true });
       const { callCloud } = require('../../utils/request')
       const res = await callCloud('products', { action: 'list' })
-      this.setData({ productList: res || [] })
+      const productList = res && res.data ? res.data : (res || [])
+      this.setData({ productList })
       this.refreshProducts()
+      wx.hideLoading();
     } catch (e) {
       console.error('加载商品失败', e)
+      wx.hideLoading();
+      wx.showToast({ title: '加载商品失败', icon: 'none' })
+      this.setData({ productList: [], displayProducts: [] })
     }
   },
 
@@ -73,7 +88,9 @@ Page({
         (customer.contact || '').toLowerCase().includes(keyword)
       )
     }
+    // 确保 displayCustomers 总是有值
     this.setData({ displayCustomers: list })
+    console.log('📋 刷新客户列表:', list.length, '个，关键词:', keyword)
   },
 
   // 根据搜索关键词计算当前展示商品（无关键词仅前 8 个，附价格文案）
@@ -146,15 +163,22 @@ Page({
     this.setData({ showCustomerModal: false })
   },
 
-  onCustomerSearch(e) {
-    this.setData({ customerSearchKeyword: e.detail.value })
-    this.refreshCustomers()
-  },
-
+  
   async selectCustomerItem(e) {
     const customer = e.currentTarget.dataset.item
-    this.setData({ customer, showCustomerModal: false })
+    if (!customer) {
+      console.error('❌ 客户数据为空')
+      return
+    }
+    
+    this.setData({
+      customer: customer,
+      showCustomerModal: false,
+      customerSearchKeyword: ''
+    })
+
     // 1.0：选择客户后自动带出上次订单的商品与数量（对齐原型 prefillFromLastOrder）
+    this._lastOrderItems = []
     try {
       const { callCloud } = require('../../utils/request')
       const lastItems = await callCloud('orders', { action: 'lastOrder', customerId: customer._id })
@@ -167,6 +191,23 @@ Page({
       console.error('加载上次订单失败', err)
       this._lastOrderItems = []
     }
+  },
+
+onCustomerSearch(e) {
+    const keyword = e.detail.value || ''
+    
+    // 清除之前的定时器
+    if (this.data.customerDebounceTimer) {
+      clearTimeout(this.data.customerDebounceTimer)
+    }
+    
+    // 设置新的防抖定时器（200ms）
+    const timer = setTimeout(() => {
+      this.setData({ customerSearchKeyword: keyword })
+      this.refreshCustomers()
+    }, 200)
+    
+    this.setData({ customerDebounceTimer: timer })
   },
 
   // 1.0：把该客户上次订单的商品+数量直接带出到当前订单（编辑模式不覆盖已有明细）
@@ -210,8 +251,20 @@ Page({
   },
 
   onProductSearch(e) {
-    this.setData({ productSearchKeyword: e.detail.value })
-    this.refreshProducts()
+    const keyword = e.detail.value || ''
+    
+    // 清除之前的定时器
+    if (this.data.productDebounceTimer) {
+      clearTimeout(this.data.productDebounceTimer)
+    }
+    
+    // 设置新的防抖定时器（200ms）
+    const timer = setTimeout(() => {
+      this.setData({ productSearchKeyword: keyword })
+      this.refreshProducts()
+    }, 200)
+    
+    this.setData({ productDebounceTimer: timer })
   },
 
   // 包价归一化：统一取 price_unit（唯一包价字段）
@@ -547,12 +600,6 @@ Page({
       console.error('创建订单失败', e)
       wx.showToast({ title: '创建失败', icon: 'none' })
     }
-  },
-  onThemeChange(theme) {
-    uiStyle.applyUiStyle(this)
-
-    console.log('主题已切换:', theme.name)
-    // 页面可以在这里添加自定义逻辑
   },
   onFontScaleChange(scale) {
     uiStyle.applyUiStyle(this)

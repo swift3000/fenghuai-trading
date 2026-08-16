@@ -246,11 +246,6 @@ Page({
     tabbarHelper.refreshCustomTabBar('home')
   },
 
-  onThemeChange(theme) {
-    uiStyle.applyUiStyle(this)
-
-    console.log('主题已切换:', theme.name)
-  },
   onFontScaleChange(scale) {
     uiStyle.applyUiStyle(this)
   }
