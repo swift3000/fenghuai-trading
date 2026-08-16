@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "wx.cloud.callContainer": {},
+    "wx.cloud.callAPI": {}
+  },
+  "triggers": [
+    {
+      "name": "autoConfirm",
+      "type": "timer",
+      "config": "0 */5 * * * * *"
+    }
+  ]
+}

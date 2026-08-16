@@ -72,6 +72,23 @@ exports.main = async (event, context) => {
       await setConfig(cfg)
       return { code: 0, data: {} }
     }
+    case 'getAutoConfirm': {
+      // 定时自动确认配置（仅管理员可读）：{ enabled, time: '16:00' }
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
+      const cfg = await getConfig()
+      const ac = cfg.autoConfirm || {}
+      return { code: 0, data: { enabled: !!ac.enabled, time: ac.time || '16:00' } }
+    }
+    case 'updateAutoConfirm': {
+      // 保存定时自动确认配置（仅管理员）。enabled=false 表示不限时（纯人工确认）
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
+      const { enabled, time } = event
+      const cfg = await getConfig()
+      cfg.autoConfirm = { enabled: !!enabled, time: time || '16:00' }
+      cfg.updatedAt = db.serverDate()
+      await setConfig(cfg)
+      return { code: 0, data: {} }
+    }
     default:
       return { code: 1001, message: '未知 action' }
   }

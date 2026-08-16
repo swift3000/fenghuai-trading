@@ -117,6 +117,66 @@ async function appendLog(orderId, action, desc) {
   }
 }
 
+// ============ 定时自动确认（管理员可控） ============
+// 读 system_config 的 autoConfirm { enabled, time }（后台调用无 OPENID，直接读）
+async function getAutoConfirmCfg() {
+  try {
+    const res = await db.collection('system_config').doc('global').get()
+    const ac = (res.data && res.data.autoConfirm) || {}
+    return { enabled: !!ac.enabled, time: ac.time || '16:00' }
+  } catch (e) {
+    return { enabled: false, time: '16:00' }
+  }
+}
+// 今天是否已跑过（幂等：一天只触发一次，改时间不重复确认）
+async function todayAutoMark() {
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  try {
+    const res = await db.collection('auto_confirm_log').where({ runDate: t.getTime() }).limit(1).get()
+    return res.data && res.data[0]
+  } catch (e) {
+    return null // 集合尚未创建时视为未跑过
+  }
+}
+// 确保日志集合存在（首次运行自动创建；失败静默）
+async function ensureLogCollection() {
+  try { await db.createCollection('auto_confirm_log') } catch (e) { /* 已存在则忽略 */ }
+}
+async function markAutoRan(type, detail) {
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const rec = { runDate: t.getTime(), time: Date.now(), type: type, detail: detail || {} }
+  await ensureLogCollection()
+  try {
+    const cur = await todayAutoMark()
+    if (cur) await db.collection('auto_confirm_log').doc(cur._id).update({ data: rec })
+    else await db.collection('auto_confirm_log').add({ data: rec })
+  } catch (e) { /* 记录失败不阻断 */ }
+}
+// 把当天未人工确认的分拣/出库订单全部置 done（status 双状态派生；库管不依赖分拣）
+async function runAutoConfirm() {
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  let sortN = 0, outN = 0
+  const sortRes = await db.collection('orders')
+    .where({ sortStatus: 'pending', created_at: db.command.gte(t) }).limit(500).get()
+  for (const it of sortRes.data) {
+    const derive = (it.outStatus === 'done') ? 'confirmed' : 'sorted'
+    await db.collection('orders').doc(it._id).update({
+      data: { sortStatus: 'done', sortTime: db.serverDate(), autoConfirmed: true, status: derive }
+    })
+    sortN++
+  }
+  const outRes = await db.collection('orders')
+    .where({ outStatus: 'pending', created_at: db.command.gte(t) }).limit(500).get()
+  for (const it of outRes.data) {
+    const derive = (it.sortStatus === 'done') ? 'confirmed' : 'sorted'
+    await db.collection('orders').doc(it._id).update({
+      data: { outStatus: 'done', outTime: db.serverDate(), autoConfirmed: true, status: derive }
+    })
+    outN++
+  }
+  return { sortN, outN }
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   
@@ -665,6 +725,38 @@ exports.main = async (event, context) => {
       const cloudPath = 'exports/' + safeName + '_' + Date.now() + '.pdf'
       const up = await cloud.uploadFile({ cloudPath, fileContent: pdfBuf })
       return { code: 0, data: { fileID: up.fileID, filename: safeName + '.pdf' } }
+    }
+
+    case 'autoConfirmTrigger': {
+      // 定时触发器入口（每5分钟轮询）：到点且当天未跑过 → 批量确认当天未处理订单（幂等）
+      const cfg = await getAutoConfirmCfg()
+      const now = new Date()
+      if (!cfg.enabled) {
+        return { code: 0, data: { skipped: true, reason: 'disabled' } }
+      }
+      const [hh, mm] = String(cfg.time).split(':').map(Number)
+      if (now.getHours() * 60 + now.getMinutes() < hh * 60 + mm) {
+        return { code: 0, data: { skipped: true, reason: 'not_yet' } }
+      }
+      const t0 = new Date(); t0.setHours(0, 0, 0, 0)
+      const already = await todayAutoMark()
+      if (already && already.type === 'auto_confirm') {
+        return { code: 0, data: { skipped: true, reason: 'already_ran' } }
+      }
+      await ensureLogCollection()
+      const res = await runAutoConfirm()
+      await markAutoRan('auto_confirm', { time: cfg.time, sort: res.sortN, out: res.outN })
+      return { code: 0, data: { ran: true, sort: res.sortN, out: res.outN } }
+    }
+    case 'getAutoConfirmPolicy': {
+      // 工作台超时高亮策略：返回当前是否到点、今天是否已自动确认
+      const cfg = await getAutoConfirmCfg()
+      const now = new Date()
+      const [hh, mm] = String(cfg.time).split(':').map(Number)
+      const duePassed = cfg.enabled && (now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm)
+      const mark = await todayAutoMark()
+      const alreadyRan = !!(mark && mark.type === 'auto_confirm')
+      return { code: 0, data: { enabled: cfg.enabled, time: cfg.time, duePassed: duePassed, alreadyRan: alreadyRan } }
     }
 
     default:

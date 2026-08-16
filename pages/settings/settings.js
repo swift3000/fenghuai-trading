@@ -28,12 +28,9 @@ Page({
     relayBaseUrl: 'https://api.qiyuanapi.cc/v1',
     relayKey: 'sk-opc-ie0JPeJwbnSv7NZZZ6NIuIj2BJSR2RZN',
     relayModel: 'qwen-0810',
-    // 打印机配置
-    printerBrand: 'xinye',
-    printerBrandIndex: 0,
-    printerBrandText: '芯烨（Xprinter）',
-    printerWidth: '58',
-    printerWidthIndex: 0
+    // 定时自动确认（管理员可控）
+    acEnabled: '0',
+    acTime: '16:00',
   },
 
   onLoad() {
@@ -43,6 +40,9 @@ Page({
     }
     this.loadUserRole()
     this.loadConfig()
+    if (this.data.userRole === 'admin' || wx.getStorageSync('userRole') === 'admin') {
+      this.loadAutoConfirm()
+    }
   },
 
   // 加载 AI 配置
@@ -53,7 +53,6 @@ Page({
       const aliyun = ai.aliyun || {}
       const qwen = ai.qwen || {}
       const relay = ai.relay || {}
-      const printer = cfg.printer || {}
       this.setData({
         aliyunEnabled: aliyun.enabled ? '1' : '0',
         aliyunAk: aliyun.accessKeyId || '',
@@ -71,11 +70,6 @@ Page({
         relayBaseUrl: relay.baseUrl || '',
         relayKey: relay.apiKey || '',
         relayModel: relay.model || '',
-        printerBrand: printer.brand || 'xinye',
-        printerBrandIndex: ['xinye','jiabo','hanyin'].indexOf(printer.brand || 'xinye'),
-        printerBrandText: {xinye:'芯烨（Xprinter）',jiabo:'佳博（Gprinter）',hanyin:'汉印（HPRT）'}[printer.brand || 'xinye'],
-        printerWidth: printer.width || '58',
-        printerWidthIndex: printer.width === '80' ? 1 : 0
       })
     } catch (e) {
       console.log('加载配置失败', e)
@@ -110,19 +104,6 @@ Page({
   onRelayKey(e) { this.setData({ relayKey: e.detail.value }) },
   onRelayModel(e) { this.setData({ relayModel: e.detail.value }) },
 
-  // 打印机配置事件
-  onPrinterBrand(e) {
-    const idx = Number(e.detail.value)
-    this.setData({
-      printerBrandIndex: idx,
-      printerBrand: ['xinye','jiabo','hanyin'][idx],
-      printerBrandText: ['芯烨（Xprinter）','佳博（Gprinter）','汉印（HPRT）'][idx]
-    })
-  },
-  onPrinterWidth(e) {
-    const idx = Number(e.detail.value)
-    this.setData({ printerWidthIndex: idx, printerWidth: idx === 1 ? '80' : '58' })
-  },
 
   // 保存阿里语音配置
   async saveAliyun() {
@@ -170,19 +151,44 @@ Page({
     wx.showToast({ title: '中转站 AI 配置已保存', icon: 'success' })
   },
 
-  // 保存打印机配置
-  async savePrinter() {
-    const d = this.data
-    const cfg = await callCloud('system', { action: 'getAiConfig' })
-    cfg.printer = { brand: d.printerBrand, width: d.printerWidth }
-    await callCloud('system', { action: 'updateAiConfig', aiConfig: cfg.ai || {}, printer: cfg.printer })
-    wx.showToast({ title: '打印机配置已保存', icon: 'success' })
-  },
-
   // 加载用户角色
   loadUserRole() {
     const userRole = wx.getStorageSync('userRole') || ''
     this.setData({ userRole })
+    // 角色确定后补加载定时确认配置
+    if (userRole === 'admin') this.loadAutoConfirm()
+  },
+
+  // 加载定时自动确认配置
+  async loadAutoConfirm() {
+    try {
+      const cfg = await callCloud('system', { action: 'getAutoConfirm' })
+      this.setData({
+        acEnabled: cfg.enabled ? '1' : '0',
+        acTime: cfg.time || '16:00'
+      })
+    } catch (e) {
+      console.log('加载定时确认配置失败', e)
+    }
+  },
+  onAcEnabled(e) {
+    this.setData({ acEnabled: e.detail.value })
+  },
+  onAcTime(e) {
+    this.setData({ acTime: e.detail.value })
+  },
+  // 保存定时自动确认配置
+  async saveAutoConfirm() {
+    try {
+      await callCloud('system', {
+        action: 'updateAutoConfirm',
+        enabled: this.data.acEnabled === '1',
+        time: this.data.acTime
+      })
+      wx.showToast({ title: '定时确认已保存', icon: 'success' })
+    } catch (e) {
+      wx.showToast({ title: '保存失败', icon: 'none' })
+    }
   },
 
   onFontScaleChange(scale) {

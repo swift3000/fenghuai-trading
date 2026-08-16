@@ -39,3 +39,9 @@
 .wh-pkg-row .pkg-vals{flex:1;min-width:0;word-break:break-all}
 .wh-pkg-row .pkg-edit{color:#2563EB;cursor:pointer;font-weight:500;flex-shrink:0}
 .wh-pkg-row.empty .pkg-fill{color:#FF5E3A;font-weight:500;cursor:pointer}
+
+/* ===== 定时自动确认：提示条 + 超时角标 ===== */
+.ac-notice{background:#FEF3F2;border:2rpx solid #FECACA;color:#DC2626;border-radius:12rpx;padding:14rpx 18rpx;font-size:calc(22rpx * var(--font-scale));margin-bottom:14rpx;line-height:1.5}
+.ac-notice-off{background:#F5F9FF;border-color:#BFDBFE;color:#2563EB}
+.overdue-card{border-left:6rpx solid #DC2626}
+.overdue-badge{display:inline-block;background:#DC2626;color:#fff;font-size:calc(20rpx * var(--font-scale));padding:2rpx 12rpx;border-radius:16rpx;margin-left:12rpx;vertical-align:middle;font-weight:500}

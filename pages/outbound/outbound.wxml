@@ -5,8 +5,10 @@
   </view>
   <view wx:if="{{subTab==='sort'}}">
     <view class="section-title">待分拣</view>
-    <view class="order-card card" wx:for="{{pendingSort}}" wx:key="_id">
-      <text>{{item.customerName}}</text>
+    <view class="ac-notice" wx:if="{{autoPolicy.enabled && autoPolicy.duePassed && !autoPolicy.alreadyRan}}">⏰ 已过定时确认时间（{{autoPolicy.time}}），以下未确认订单已超时，请尽快处理</view>
+    <view class="ac-notice ac-notice-off" wx:elif="{{autoPolicy.enabled}}">🕐 定时自动确认已开启：每天 {{autoPolicy.time}} 自动确认未处理订单</view>
+    <view class="order-card card {{item.overdue ? 'overdue-card' : ''}}" wx:for="{{pendingSort}}" wx:key="_id">
+      <text>{{item.customerName}}<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></text>
       <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleSort">分拣确认</button></view>
     </view>
     <button class="btn-primary" bindtap="handleAllSort">全部分拣</button>
@@ -17,6 +19,9 @@
       <view class="out-subtab {{outTab==='done'?'active':''}}" data-tab="done" bindtap="switchOutTab">已出库 {{doneOut.length}}</view>
     </view>
 
+    <view class="ac-notice" wx:if="{{autoPolicy.enabled && autoPolicy.duePassed && !autoPolicy.alreadyRan}}">⏰ 已过定时确认时间（{{autoPolicy.time}}），以下未出库订单已超时，请尽快处理</view>
+    <view class="ac-notice ac-notice-off" wx:elif="{{autoPolicy.enabled}}">🕐 定时自动确认已开启：每天 {{autoPolicy.time}} 自动确认未处理订单</view>
+
     <button wx:if="{{outTab==='pending' && pendingOut.length}}" class="btn-all-confirm" bindtap="handleAllOut">✓ 全部确认</button>
 
     <block wx:for="{{outTab==='pending' ? pendingOut : doneOut}}" wx:key="_id">
@@ -24,7 +29,7 @@
         <view class="wh-main">
           <view class="wh-header">
             <text class="wh-no">{{item.orderNo}}</text>
-            <view class="wh-status {{item.outStatus==='done'?'st-done':'st-pending'}}">{{item.outStatus==='done'?'已出库':'待出库'}}</view>
+            <view class="wh-status {{item.outStatus==='done'?'st-done':'st-pending'}}">{{item.outStatus==='done'?'已出库':'待出库'}}<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></view>
           </view>
           <view class="wh-customer">{{item.customerName}}</view>
           <view class="wh-meta">

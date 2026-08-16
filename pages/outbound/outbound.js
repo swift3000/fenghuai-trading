@@ -15,6 +15,8 @@ Page({
     outTab: 'pending',
     loading: false,
     canExport: false,
+    // 定时确认策略（用于超时高亮）：enabled/time/duePassed/alreadyRan
+    autoPolicy: { enabled: false, time: '16:00', duePassed: false, alreadyRan: false },
     // 出库确认弹窗
     showOutModal: false,
     outModalOrderId: null,
@@ -90,18 +92,27 @@ Page({
     this.setData({ loading: true })
     try {
       const { callCloud } = require('../../utils/request')
-      const data = await callCloud('orders', { 
-        action: 'outboundList', 
-        subTab: this.data.subTab 
-      })
-      const pendingSort = (data.pendingSort || []).map(o => this.formatOrder(o))
-      const pendingOut = (data.pendingOut || []).map(o => this.formatOrder(o))
+      const [data, policy] = await Promise.all([
+        callCloud('orders', { action: 'outboundList', subTab: this.data.subTab }),
+        callCloud('orders', { action: 'getAutoConfirmPolicy' })
+      ])
+      // 超时判定：定时已开启 + 已过点 + 今天尚未自动确认 → 仍待人工确认的订单视为超时
+      const overdue = !!(policy && policy.enabled && policy.duePassed && !policy.alreadyRan)
+      const mark = (o, field) => { const x = this.formatOrder(o); x.overdue = !!(overdue && o[field] === 'pending'); return x }
+      const pendingSort = (data.pendingSort || []).map(o => mark(o, 'sortStatus'))
+      const pendingOut = (data.pendingOut || []).map(o => mark(o, 'outStatus'))
       const doneOut = (data.doneOut || []).map(o => this.formatOrder(o))
       this.setData({ 
         // callCloud 已解包 res.result.data
         pendingSort,
         pendingOut,
         doneOut,
+        autoPolicy: {
+          enabled: !!(policy && policy.enabled),
+          time: (policy && policy.time) || '16:00',
+          duePassed: !!(policy && policy.duePassed),
+          alreadyRan: !!(policy && policy.alreadyRan)
+        },
         loading: false
       })
     } catch (e) {
