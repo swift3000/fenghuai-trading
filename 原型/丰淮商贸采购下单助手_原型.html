@@ -5394,20 +5394,20 @@ function getReportFilteredOrders(){
   if(mode === 'day'){
     const d = $('rptDate')?.value || todayStr();
     orders = orders.filter(o => {
-      const od = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+      const od = o.time ? formatDateISO(new Date(o.time)) : '';
       return od === d;
     });
   } else if(mode === 'month'){
     const m = $('rptMonth')?.value || todayStr().slice(0,7);
     orders = orders.filter(o => {
-      const om = o.time ? new Date(o.time).toISOString().slice(0,7) : '';
+      const om = o.time ? formatDateISO(new Date(o.time)).slice(0,7) : '';
       return om === m;
     });
   } else if(mode === 'custom'){
     const s = $('rptStart')?.value || todayStr();
     const e = $('rptEnd')?.value || todayStr();
     orders = orders.filter(o => {
-      const od = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+      const od = o.time ? formatDateISO(new Date(o.time)) : '';
       return od >= s && od <= e;
     });
   }
@@ -5579,7 +5579,7 @@ function exportDailySummary(){
     const key = o.customer;
     if(!byCustomer[key]) byCustomer[key] = { customer:o.customer, region:o.region, rows:[] };
     const time = o.time ? new Date(o.time).toTimeString().slice(0,5) : '';
-    const date = o.time ? new Date(o.time).toISOString().slice(0,10) : '';
+    const date = o.time ? formatDateISO(new Date(o.time)) : '';
     o.items.forEach(it => {
       const remark = it.remark || '';
       const pieceQty = it.piece_qty || 0;
