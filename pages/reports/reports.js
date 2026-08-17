@@ -76,6 +76,7 @@ Page({
         region
       })
       
+      const reportTab = this.data.reportTab
       const hasData = reportTab === 'product'
         ? (data.products || []).length > 0
         : reportTab === 'customer'
