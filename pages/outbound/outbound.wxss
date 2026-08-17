@@ -45,3 +45,28 @@
 .ac-notice-off{background:#F5F9FF;border-color:#BFDBFE;color:#2563EB}
 .overdue-card{border-left:6rpx solid #DC2626}
 .overdue-badge{display:inline-block;background:#DC2626;color:#fff;font-size:calc(20rpx * var(--font-scale));padding:2rpx 12rpx;border-radius:16rpx;margin-left:12rpx;vertical-align:middle;font-weight:500}
+
+/* 自定义时间区间（与赊销页一致） */
+.custom-date-range {
+  padding: 20rpx;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  margin: 20rpx 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.date-inputs { display: flex; gap: 20rpx; margin-bottom: 20rpx; }
+.date-item { flex: 1; }
+.date-label { display: block; font-size: calc(24rpx * var(--font-scale)); color: #666666; margin-bottom: 10rpx; }
+.picker-date { padding: 16rpx; background: #F5F6F8; border-radius: 8rpx; font-size: calc(28rpx * var(--font-scale)); color: var(--theme-text); }
+.date-actions { display: flex; justify-content: center; }
+.btn-confirm { background: #1890FF; color: #FFFFFF; padding: 16rpx 48rpx; border-radius: 16rpx; font-size: calc(28rpx * var(--font-scale)); border: none; }
+.btn-confirm[disabled] { background: #D9D9D9; color: #999999; }
+
+/* 库单导出时间范围 */
+.export-time { margin: 20rpx 24rpx 0; }
+.export-time-tabs { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
+.export-time-tab {
+  flex: 1; text-align: center; padding: 14rpx 0; border-radius: 12rpx;
+  background: #F5F6F8; font-size: calc(26rpx * var(--font-scale)); color: #666;
+}
+.export-time-tab.active { background: var(--theme-primary, #16A34A); color: #fff; }

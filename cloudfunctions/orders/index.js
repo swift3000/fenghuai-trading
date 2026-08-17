@@ -470,14 +470,21 @@ exports.main = async (event, context) => {
     }
     case 'exportOutbound': {
       // 导出库单（不含价格，含大/中/小件）— 对标原型 exportWarehouseOut
-      const today = new Date(); today.setHours(0,0,0,0)
-      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0)
-      const { exportAll = false } = event
+      const { timeTab = 'today', startDate: customStart, endDate: customEnd } = event
+      const where = { outStatus: 'done' }
+      if (timeTab === 'custom' && customStart && customEnd) {
+        const start = new Date(customStart); start.setHours(0,0,0,0)
+        const end = new Date(customEnd); end.setHours(23,59,59,999)
+        where.created_at = db.command.and([db.command.gte(start), db.command.lte(end)])
+      } else if (timeTab === 'all') {
+        // 全部：不限时间
+      } else {
+        const today = new Date(); today.setHours(0,0,0,0)
+        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0)
+        where.created_at = db.command.and([db.command.gte(today), db.command.lt(tomorrow)])
+      }
       const res = await db.collection('orders')
-        .where({
-          outStatus: 'done',
-          created_at: db.command.gte(today).and(db.command.lt(tomorrow))
-        })
+        .where(where)
         .orderBy('created_at', 'desc')
         .get()
       const orders = res.data
@@ -508,7 +515,8 @@ exports.main = async (event, context) => {
       })
       const header = ['编号','时间','区域','订单号','客户','商品','单位','数量','备注','大件数','中件数','小件数']
       const csvRows = [header, ...rows]
-      const baseName = '出库单_' + new Date().toISOString().split('T')[0]
+      const rangeTxt = (timeTab === 'custom' && customStart && customEnd) ? (customStart + '_' + customEnd) : (timeTab === 'all' ? '全部' : '今日')
+      const baseName = '出库单_' + rangeTxt + '_' + new Date().toISOString().split('T')[0]
       const out = await buildExport(csvRows, baseName, { format: event.format, sheetName: '出库单' })
       return { code: 0, data: Object.assign({ count: orders.length }, out) }
     }

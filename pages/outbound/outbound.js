@@ -15,6 +15,10 @@ Page({
     outTab: 'pending',
     loading: false,
     canExport: false,
+    // 库单导出时间范围：today / all / custom
+    exportTimeTab: 'today',
+    startDate: '',
+    endDate: '',
     // 定时确认策略（用于超时高亮）：enabled/time/duePassed/alreadyRan
     autoPolicy: { enabled: false, time: '16:00', duePassed: false, alreadyRan: false },
     // 出库确认弹窗
@@ -313,17 +317,41 @@ Page({
   },
 
 
-  // 导出库单（不含价格，含大/中/小件）— 支持 Excel / CSV
+  // 切换库单导出时间范围
+  switchExportTime(e) {
+    this.setData({ exportTimeTab: e.currentTarget.dataset.key })
+  },
+  onStartDateChange(e) {
+    this.setData({ startDate: e.detail.value })
+  },
+  onEndDateChange(e) {
+    this.setData({ endDate: e.detail.value })
+  },
+  applyCustomDate() {
+    if (!this.data.startDate || !this.data.endDate) return
+    wx.showToast({ title: '已选择时间区间', icon: 'success' })
+  },
+
+  // 导出库单（不含价格，含大/中/小件）— 支持 Excel / CSV + 时间范围
   async handleExportOutbound() {
+    if (this.data.exportTimeTab === 'custom' && (!this.data.startDate || !this.data.endDate)) {
+      wx.showToast({ title: '请先选择时间区间', icon: 'none' })
+      return
+    }
     const fmt = await this.pickExportFormat()
     try {
       wx.showLoading({ title: '导出中...' })
       const { callCloud } = require('../../utils/request')
-      const result = await callCloud('orders', { action: 'exportOutbound', format: fmt })
+      const params = { action: 'exportOutbound', format: fmt, timeTab: this.data.exportTimeTab }
+      if (this.data.exportTimeTab === 'custom') {
+        params.startDate = this.data.startDate
+        params.endDate = this.data.endDate
+      }
+      const result = await callCloud('orders', params)
       const hasData = fmt === 'excel' ? !!(result && result.fileID) : !!(result && result.csvContent)
       if (!hasData) {
         wx.hideLoading()
-        wx.showToast({ title: '今日暂无已出库订单', icon: 'none' })
+        wx.showToast({ title: '该时间范围内暂无已出库订单', icon: 'none' })
         return
       }
       wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })

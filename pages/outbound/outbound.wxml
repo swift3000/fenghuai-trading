@@ -56,7 +56,34 @@
       </view>
     </block>
     <view class="out-empty" wx:if="{{(outTab==='pending' ? !pendingOut.length : !doneOut.length)}}">暂无订单</view>
-    <button class="btn-export" wx:if="{{canExport}}" bindtap="handleExportOutbound">📦 导出库单(不含价格)</button>
+    <!-- 库单导出时间范围 -->
+    <view class="export-time" wx:if="{{canExport}}">
+      <view class="export-time-tabs">
+        <view class="export-time-tab {{exportTimeTab==='today'?'active':''}}" data-key="today" bindtap="switchExportTime">今日</view>
+        <view class="export-time-tab {{exportTimeTab==='all'?'active':''}}" data-key="all" bindtap="switchExportTime">全部</view>
+        <view class="export-time-tab {{exportTimeTab==='custom'?'active':''}}" data-key="custom" bindtap="switchExportTime">自定义</view>
+      </view>
+      <view class="custom-date-range" wx:if="{{exportTimeTab === 'custom'}}">
+        <view class="date-inputs">
+          <view class="date-item">
+            <text class="date-label">开始日期</text>
+            <picker mode="date" value="{{startDate}}" start="2020-01-01" end="{{endDate}}" bindchange="onStartDateChange">
+              <view class="picker-date">{{startDate || '请选择'}}</view>
+            </picker>
+          </view>
+          <view class="date-item">
+            <text class="date-label">结束日期</text>
+            <picker mode="date" value="{{endDate}}" start="{{startDate}}" bindchange="onEndDateChange">
+              <view class="picker-date">{{endDate || '请选择'}}</view>
+            </picker>
+          </view>
+        </view>
+        <view class="date-actions">
+          <button class="btn-confirm" bindtap="applyCustomDate" disabled="{{!startDate || !endDate}}">应用</button>
+        </view>
+      </view>
+      <button class="btn-export" bindtap="handleExportOutbound">📦 导出库单(不含价格)</button>
+    </view>
   </view>
   
   <!-- 出库确认弹窗 -->

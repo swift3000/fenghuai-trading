@@ -163,12 +163,16 @@ exports.main = async (event, context) => {
   switch (action) {
     case 'summary': {
       const __p = await checkPermission('report:view'); if (__p.code !== 0) return __p
-      const { reportTab, timeTab, region } = event
+      const { reportTab, timeTab, region, startDate: customStart, endDate: customEnd } = event
       const now = new Date()
       
       // 时间范围过滤
       let dateFilter = null
-      if (timeTab === 'day') {
+      if (timeTab === 'custom' && customStart && customEnd) {
+        const start = new Date(customStart); start.setHours(0,0,0,0)
+        const end = new Date(customEnd); end.setHours(23,59,59,999)
+        dateFilter = { created_at: db.command.and([db.command.gte(start), db.command.lte(end)]) }
+      } else if (timeTab === 'day') {
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
         const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
         dateFilter = {
@@ -415,17 +419,20 @@ exports.main = async (event, context) => {
     case 'export': {
       const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
       // 导出报表数据
-      const { reportTab, timeTab, region, format = 'csv' } = event
+      const { reportTab, timeTab, region, startDate, endDate, format = 'csv' } = event
 
-      // 获取统计数据（透传 region，与报表页筛选一致）
+      // 获取统计数据（透传 region + 自定义时间区间，与报表页筛选一致）
       const summaryResult = await exports.main({
         action: 'summary',
         reportTab,
         timeTab,
-        region
+        region,
+        startDate,
+        endDate
       }, context)
 
       const data = summaryResult.data || {}
+      const rangeTag = (timeTab === 'custom' && startDate && endDate) ? (startDate + '_' + endDate) : timeTab
 
       // 生成 CSV 内容（统一走 toCSV，防 = + - @ 公式注入 + 引号转义）
       let csvRows = []
@@ -449,7 +456,7 @@ exports.main = async (event, context) => {
 
       if (!csvRows.length) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
       if (format === 'excel') {
-        const out = await buildExport(csvRows, '报表_' + reportTab + '_' + timeTab, { format, sheetName: '报表' })
+        const out = await buildExport(csvRows, '报表_' + reportTab + '_' + rangeTag, { format, sheetName: '报表' })
         return { code: 0, data: out }
       }
       return {
@@ -457,7 +464,7 @@ exports.main = async (event, context) => {
         data: {
           format: 'csv',
           csvContent,
-          filename: '报表_' + reportTab + '_' + timeTab + '_' + Date.now() + '.csv'
+          filename: '报表_' + reportTab + '_' + rangeTag + '_' + Date.now() + '.csv'
         }
       }
     }

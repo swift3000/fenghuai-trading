@@ -15,7 +15,10 @@ Page({
     data: [],
     canExport: false,
     regionOptions: ['全部'],
-    regionIndex: 0
+    regionIndex: 0,
+    // 自定义时间区间
+    startDate: '',
+    endDate: ''
   },
 
   onShow() {
@@ -60,6 +63,18 @@ Page({
   switchTime(e) {
     const timeTab = e.currentTarget.dataset.key
     this.setData({ timeTab })
+    if (timeTab !== 'custom') this.loadData()
+  },
+
+  // 自定义时间区间
+  onStartDateChange(e) {
+    this.setData({ startDate: e.detail.value })
+  },
+  onEndDateChange(e) {
+    this.setData({ endDate: e.detail.value })
+  },
+  applyCustomDate() {
+    if (!this.data.startDate || !this.data.endDate) return
     this.loadData()
   },
 
@@ -69,12 +84,18 @@ Page({
       this.setData({ loading: true })
       const { callCloud } = require('../../utils/request')
       const region = this.data.regionIndex > 0 ? this.data.regionOptions[this.data.regionIndex] : ''
-      const data = await callCloud('report', {
+      const params = {
         action: 'summary',
         reportTab: this.data.reportTab,
         timeTab: this.data.timeTab,
         region
-      })
+      }
+      if (this.data.timeTab === 'custom') {
+        if (!this.data.startDate || !this.data.endDate) { this.setData({ loading: false }); return }
+        params.startDate = this.data.startDate
+        params.endDate = this.data.endDate
+      }
+      const data = await callCloud('report', params)
       
       const reportTab = this.data.reportTab
       const hasData = reportTab === 'product'
@@ -142,13 +163,23 @@ Page({
       wx.showLoading({ title: '导出中...' })
       const { callCloud } = require('../../utils/request')
       const region = this.data.regionIndex > 0 ? this.data.regionOptions[this.data.regionIndex] : ''
-      const result = await callCloud('report', {
+      if (this.data.timeTab === 'custom' && (!this.data.startDate || !this.data.endDate)) {
+        wx.hideLoading()
+        wx.showToast({ title: '请先选择时间区间', icon: 'none' })
+        return
+      }
+      const expParams = {
         action,
         reportTab: this.data.reportTab,
         timeTab: this.data.timeTab,
         region,
         format: fmt
-      })
+      }
+      if (this.data.timeTab === 'custom') {
+        expParams.startDate = this.data.startDate
+        expParams.endDate = this.data.endDate
+      }
+      const result = await callCloud('report', expParams)
       const hasData = fmt === 'excel' ? !!(result && result.fileID) : !!(result && result.csvContent)
       if (!hasData) {
         wx.hideLoading()

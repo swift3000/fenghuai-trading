@@ -1794,7 +1794,18 @@ body{padding:18px 0}
         <button class="btn-confirm-all" onclick="confirmAllPending()"><svg class="ri" aria-hidden="true"><use href="#ri-checkbox-circle-line"></use></svg> 全部确认</button>
               </div>
       <div class="wh-list" id="whList"></div>
-      <div class="wh-export">
+      <div class="wh-export" id="whExportBox">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn btn-sm" id="whExpToday" style="flex:1;padding:6px" onclick="setWhExportRange('today')">今日</button>
+          <button class="btn btn-sm" id="whExpAll" style="flex:1;padding:6px" onclick="setWhExportRange('all')">全部</button>
+          <button class="btn btn-sm" id="whExpCustom" style="flex:1;padding:6px" onclick="setWhExportRange('custom')">自定义</button>
+        </div>
+        <div id="whExpCustomPicker" style="display:none;margin-bottom:8px">
+          <label style="color:#666">起：</label>
+          <input type="date" id="whExpStart" style="width:50%;padding:4px;border:1px solid #ddd;border-radius:6px">
+          <label style="color:#666;margin-left:6px">止：</label>
+          <input type="date" id="whExpEnd" style="width:50%;padding:4px;border:1px solid #ddd;border-radius:6px">
+        </div>
         <button class="btn btn-orange" onclick="exportWarehouseOut()"><svg class="ri" aria-hidden="true"><use href="#ri-download-line"></use></svg> 导出库单(不含价格)</button>
       </div>
       <div style="height:20px"></div>
@@ -1826,8 +1837,9 @@ body{padding:18px 0}
       </div>
       <div class="report-filter" style="background:#f5f7fa;padding:10px;margin:10px;border-radius:8px;font-size:calc(13px * var(--font-scale))">
         <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button class="btn btn-sm" id="rptModeDay" style="flex:1;padding:6px" onclick="setReportMode('day')">日</button>
-          <button class="btn btn-sm" id="rptModeMonth" style="flex:1;padding:6px" onclick="setReportMode('month')">月</button>
+          <button class="btn btn-sm" id="rptModeDay" style="flex:1;padding:6px" onclick="setReportMode('day')">今日</button>
+          <button class="btn btn-sm" id="rptModeWeek" style="flex:1;padding:6px" onclick="setReportMode('week')">本周</button>
+          <button class="btn btn-sm" id="rptModeMonth" style="flex:1;padding:6px" onclick="setReportMode('month')">本月</button>
           <button class="btn btn-sm" id="rptModeCustom" style="flex:1;padding:6px" onclick="setReportMode('custom')">自定义</button>
         </div>
         <div id="rptDayPicker" style="display:none">
@@ -3023,17 +3035,40 @@ function submitPackage(){
   showToast('已确认并填写件型');
 }
 
+// 库单导出时间范围：today / all / custom
+function setWhExportRange(r){
+  state.whExportRange = r;
+  ['Today','All','Custom'].forEach(m => {
+    const btn = $('whExp' + m);
+    if(!btn) return;
+    const on = (r === m.toLowerCase());
+    btn.style.background = on ? '#2563EB' : '#fff';
+    btn.style.color = on ? '#fff' : '#333';
+  });
+  $('whExpCustomPicker').style.display = r === 'custom' ? '' : 'none';
+  if(r === 'custom' && !$('whExpStart').value){ $('whExpStart').value = todayStr(); $('whExpEnd').value = todayStr(); }
+}
+
 function exportWarehouseOut(){
   const today = new Date().toISOString().split('T')[0];
+  const range = state.whExportRange || 'today';
+  const s = $('whExpStart') ? $('whExpStart').value : '';
+  const e = $('whExpEnd') ? $('whExpEnd').value : '';
+  if(range === 'custom' && (!s || !e)){ showToast('请先选择时间区间'); return; }
   // 库管导出全部已确认，下单员/管理员导出自己可见的已确认
   const orders = getVisibleOrders().filter(o => {
-    return new Date(o.time).toDateString() === new Date().toDateString() && o.status === 'confirmed';
+    if(o.status !== 'confirmed') return false;
+    const od = o.time ? formatDateISO(new Date(o.time)) : '';
+    if(range === 'all') return true;
+    if(range === 'custom') return od >= s && od <= e;
+    return od === todayStr();
   });
   
   if(orders.length === 0){
-    showToast('今日暂无已确认订单');
+    showToast(range === 'all' ? '暂无已出库订单' : (range === 'custom' ? '该时间范围内暂无已出库订单' : '今日暂无已出库订单'));
     return;
   }
+  const rangeTxt = range === 'all' ? '全部' : (range === 'custom' ? (s + '_' + e) : '今日');
   
   const csvRows = [];
   let no = 1;
@@ -3068,7 +3103,7 @@ function exportWarehouseOut(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `出库单_${today}.csv`;
+  a.download = `出库单_${rangeTxt}_${today}.csv`;
   a.click();
   URL.revokeObjectURL(url);
   showToast('出库单已导出（含大/中/小件）');
@@ -5895,7 +5930,7 @@ function switchReportTab(tab){
 // 时间段筛选模式切换
 function setReportMode(mode){
   state.reportMode = mode;
-  ['Day','Month','Custom'].forEach(m => {
+  ['Day','Week','Month','Custom'].forEach(m => {
     const btn = $('rptMode' + m);
     if(btn) btn.style.background = (mode === m.toLowerCase()) ? '#2563EB' : '#fff';
     if(btn) btn.style.color = (mode === m.toLowerCase()) ? '#fff' : '#333';
@@ -5933,6 +5968,15 @@ function getReportFilteredOrders(){
     orders = orders.filter(o => {
       const om = o.time ? formatDateISO(new Date(o.time)).slice(0,7) : '';
       return om === m;
+    });
+  } else if(mode === 'week'){
+    const now = new Date();
+    const day = now.getDay() || 7;
+    const ws = new Date(now); ws.setDate(now.getDate() - day + 1);
+    const wsStr = formatDateISO(ws);
+    orders = orders.filter(o => {
+      const od = o.time ? formatDateISO(new Date(o.time)) : '';
+      return od >= wsStr;
     });
   } else if(mode === 'custom'){
     const s = $('rptStart')?.value || todayStr();
@@ -6101,6 +6145,7 @@ function exportDailySummary(){
   // 生成时间段描述
   let rangeDesc = '';
   if(state.reportMode === 'day') rangeDesc = $('rptDate').value;
+  else if(state.reportMode === 'week') rangeDesc = '本周';
   else if(state.reportMode === 'month') rangeDesc = $('rptMonth').value;
   else rangeDesc = $('rptStart').value + ' 至 ' + $('rptEnd').value;
 
@@ -6163,6 +6208,7 @@ function exportLedger(){
 
   let rangeDesc = '';
   if(state.reportMode === 'day') rangeDesc = $('rptDate').value;
+  else if(state.reportMode === 'week') rangeDesc = '本周';
   else if(state.reportMode === 'month') rangeDesc = $('rptMonth').value;
   else rangeDesc = $('rptStart').value + ' 至 ' + $('rptEnd').value;
   const title = '丰淮商贸' + rangeDesc + '外县收款台账';
