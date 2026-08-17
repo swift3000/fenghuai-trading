@@ -186,6 +186,11 @@ Page({
   isAdmin: false,
     showForm: false,
     showImportDialog: false,
+    showPriceModal: false,
+    priceItem: null,
+    priceMode: 'case',
+    priceForm: { pricePiece: '', priceUnit: '' },
+    savingPrice: false,
     editingProduct: null,
     saving: false,
     importing: false,
@@ -251,17 +256,96 @@ const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) |
         searchKey: this.data.searchKeyword
       })
       console.log('✅ 商品数据加载成功:', res ? res.length : 0, '条')
-      this.setData({ products: res || [] })
+      this.setData({ products: this.decorateProducts(res || []) })
     } catch (e) {
       console.error('❌ 加载商品失败:', e)
       console.error('错误详情:', JSON.stringify(e))
       wx.showToast({ title: '加载失败：' + (e.message || '未知错误'), icon: 'none', duration: 3000 })
       // 降级：显示默认商品
       console.log('📦 使用默认商品数据')
-      this.setData({ products: DEFAULT_PRODUCTS })
+      this.setData({ products: this.decorateProducts(DEFAULT_PRODUCTS) })
     } finally {
       wx.hideLoading()
       this.setData({ isSearching: false })
+    }
+  },
+
+  decorateProducts(list) {
+    return (list || []).map(it => {
+      const mode = it.pricing_mode || 'case'
+      const base = (it.unit || '').split('/')[0] || '包'
+      let priceMain = '', priceSub = ''
+      if (mode === 'case' && it.price_piece != null) {
+        priceMain = '¥' + it.price_piece
+        priceSub = it.price_unit != null ? '售价 · ' + it.price_unit + '/' + base : '售价'
+      } else if (mode === 'piece' && it.price_piece != null) {
+        priceMain = '¥' + it.price_piece
+        priceSub = '售价'
+      } else if (mode === 'unit' && it.price_unit != null) {
+        priceMain = '¥' + it.price_unit
+        priceSub = '售价/' + base
+      } else {
+        priceMain = '—'
+        priceSub = '下单时自填'
+      }
+      return Object.assign({}, it, { priceMain, priceSub })
+    })
+  },
+
+  openPriceModal(e) {
+    const item = e.currentTarget.dataset.item
+    const mode = item.pricing_mode || 'case'
+    this.setData({
+      showPriceModal: true,
+      priceItem: item,
+      priceMode: mode,
+      priceForm: {
+        pricePiece: item.price_piece != null ? String(item.price_piece) : '',
+        priceUnit: item.price_unit != null ? String(item.price_unit) : ''
+      }
+    })
+  },
+
+  closePriceModal() {
+    this.setData({ showPriceModal: false })
+  },
+
+  onPriceInput(e) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ ['priceForm.' + field]: e.detail.value })
+  },
+
+  async savePrice() {
+    const { priceItem, priceMode, priceForm } = this.data
+    if (!priceItem) return
+    let pp = null, pz = null
+    if (priceMode === 'case') {
+      pp = parseFloat(priceForm.pricePiece)
+      pz = priceForm.priceUnit === '' ? 0 : parseFloat(priceForm.priceUnit)
+      if (isNaN(pp) || pp < 0) { wx.showToast({ title: '件价不能为空或负数', icon: 'none' }); return }
+      if (pz == null || isNaN(pz) || pz < 0) pz = 0
+    } else if (priceMode === 'piece') {
+      pp = parseFloat(priceForm.pricePiece)
+      if (isNaN(pp) || pp < 0) { wx.showToast({ title: '件价不能为空或负数', icon: 'none' }); return }
+    } else if (priceMode === 'unit') {
+      pz = parseFloat(priceForm.priceUnit)
+      if (isNaN(pz) || pz < 0) { wx.showToast({ title: '单价不能为空或负数', icon: 'none' }); return }
+    }
+    this.setData({ savingPrice: true })
+    try {
+      await callCloud('products', {
+        action: 'update',
+        productId: priceItem._id,
+        price_piece: pp,
+        price_unit: pz
+      })
+      wx.showToast({ title: priceItem.name + ' 价格已更新' })
+      this.setData({ showPriceModal: false })
+      this.loadProducts()
+    } catch (e) {
+      wx.showToast({ title: '保存失败', icon: 'none' })
+    } finally {
+      this.setData({ savingPrice: false })
     }
   },
 

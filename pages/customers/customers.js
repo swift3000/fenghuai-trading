@@ -293,6 +293,7 @@ Page({
     uiStyle: '',
     searchKeyword: '',
     customers: [],
+    customerGroups: [],
     canEdit: false,
   isAdmin: false,
     showForm: false,
@@ -338,13 +339,25 @@ Page({
         action: 'list',
         searchKey: this.data.searchKeyword
       })
-      this.setData({ customers: customers || [] })
+      this.setData({ customers: customers || [], customerGroups: this.groupByRegion(customers || []) })
     } catch (e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
     } finally {
       wx.hideLoading()
     }
   },
+
+  groupByRegion(list) {
+    const map = {}
+    const order = []
+    ;(list || []).forEach(c => {
+      const r = c.region || '未分籋'
+      if (!map[r]) { map[r] = []; order.push(r) }
+      map[r].push(c)
+    })
+    return order.map(r => ({ region: r, items: map[r] }))
+  },
+
 
   goToAdd() {
     this.setData({

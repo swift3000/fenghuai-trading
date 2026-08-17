@@ -463,3 +463,91 @@
   color: #fff;
   border-color: #07c160;
 }
+
+/* ===== 新增商品按钮 ===== */
+.add-product-bar { margin-bottom: 24rpx; }
+.btn-add-product {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  background: var(--orange, #FF7A1A);
+  color: #fff;
+  border: none;
+  border-radius: 16rpx;
+  font-size: calc(30rpx * var(--font-scale));
+  font-weight: 600;
+  text-align: center;
+}
+.btn-add-product::after { border: none; }
+.btn-add-product:active { opacity: .9; transform: scale(0.99); }
+
+/* ===== 商品卡片（左信息右价格+操作） ===== */
+.product-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+.prod-main { flex: 1; min-width: 0; }
+.prod-name {
+  display: block;
+  font-size: calc(28rpx * var(--font-scale));
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.adj-badge {
+  display: inline-block;
+  margin-left: 10rpx;
+  padding: 2rpx 10rpx;
+  font-size: calc(20rpx * var(--font-scale));
+  font-weight: 500;
+  color: #D97706;
+  background: #FDF3DC;
+  border-radius: 8rpx;
+  vertical-align: middle;
+}
+.prod-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  color: #8A8A8A;
+  line-height: 1.4;
+}
+.prod-side { display: flex; align-items: center; gap: 16rpx; flex-shrink: 0; }
+.prod-price { display: flex; flex-direction: column; align-items: flex-end; }
+.price-main {
+  font-size: calc(28rpx * var(--font-scale));
+  font-weight: 700;
+  color: var(--orange, #FF7A1A);
+}
+.price-sub {
+  margin-top: 2rpx;
+  font-size: calc(22rpx * var(--font-scale));
+  color: #8A8A8A;
+}
+.prod-btns { display: flex; align-items: center; gap: 12rpx; }
+.prod-btns text {
+  flex-shrink: 0;
+  padding: 10rpx 20rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  border-radius: 12rpx;
+  white-space: nowrap;
+}
+.btn-price { background: #07C160; color: #fff; }
+.btn-edit { border: 1rpx solid #E0E0E0; background: #fff; color: #333; }
+.btn-del { border: 1rpx solid #F56C6C; background: #fff; color: #F56C6C; }
+
+/* ===== 改价弹窗头 ===== */
+.price-modal-head { margin-bottom: 20rpx; }
+.pm-name {
+  display: block;
+  font-size: calc(30rpx * var(--font-scale));
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.pm-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  color: #8A8A8A;
+}

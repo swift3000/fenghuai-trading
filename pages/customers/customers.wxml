@@ -1,7 +1,7 @@
 <view class="container" style="{{uiStyle}}">
-  <!-- 顶部操作栏 -->
-  <view class="action-bar">
-    <button class="btn-import" wx:if="{{isAdmin}}" bindtap="showImportDialog">导入原型数据</button>
+  <!-- 新增客户 -->
+  <view class="add-customer-bar" wx:if="{{canEdit}}">
+    <button class="btn-add-customer" bindtap="goToAdd">+ 新增客户</button>
   </view>
   
   <!-- 搜索栏 -->
@@ -9,25 +9,25 @@
     <input placeholder="搜索客户名称/简称/联系人/区域" value="{{searchKeyword}}" bindinput="onSearch" />
   </view>
 
-  <!-- 客户列表 -->
+  <!-- 客户列表（按区域分组） -->
   <view class="customer-list">
-    <view class="customer-item card" wx:for="{{customers}}" wx:key="_id">
-      <view class="flex-between">
-        <text class="customer-name">{{item.name}}</text>
-        <text class="text-muted">{{item.region}}</text>
-      </view>
-      <text class="customer-contact">{{item.contact}} | {{item.phone}}</text>
-      <view class="customer-actions" wx:if="{{canEdit}}">
-        <text data-item="{{item}}" bindtap="goEdit">编辑</text>
-        <text class="text-danger" data-id="{{item._id}}" bindtap="onDelete">删除</text>
+    <view class="region-group" wx:for="{{customerGroups}}" wx:for-item="group" wx:for-index="gi" wx:key="region">
+      <view class="region-title">{{group.region}}</view>
+      <view class="cust-row" wx:for="{{group.items}}" wx:for-item="item" wx:key="_id">
+        <view class="cust-main">
+          <text class="cust-name">{{item.name}}<text class="cust-alias" wx:if="{{item.alias}}">{{item.alias}}</text></text>
+          <text class="cust-contact">{{item.phone}}{{item.contact ? ' · ' + item.contact : ''}}</text>
+        </view>
+        <view class="cust-side">
+          <text class="cust-region-badge">{{item.region}}</text>
+          <view class="cust-btns" wx:if="{{canEdit}}">
+            <text class="btn-edit-c" data-item="{{item}}" bindtap="goEdit">编辑</text>
+            <text class="btn-del-c" data-id="{{item._id}}" data-name="{{item.name}}" bindtap="onDelete">删除</text>
+          </view>
+        </view>
       </view>
     </view>
-    <view class="empty-tip" wx:if="{{customers.length === 0}}">暂无客户</view>
-  </view>
-
-  <!-- 添加按钮 -->
-  <view class="fab-btn" wx:if="{{canEdit}}" bindtap="goToAdd">
-    <text>+</text>
+    <view class="empty-tip" wx:if="{{customerGroups.length === 0}}">暂无客户</view>
   </view>
 
   <!-- 导入弹窗 -->
