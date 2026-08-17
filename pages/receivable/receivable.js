@@ -430,51 +430,61 @@ Page({
       rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel])
       rows.push([])
       
-      // 口径对齐新版原型 doExportReceivable：欠款=应收-已收(含折价)，客户状态 已结清/部分结清·待确认/未结清
-      const custDebt = (c) => (c.orders || []).reduce((s, o) => s + (o.unpaidAmount || 0), 0)
+      // 口径（A 方案，与看板汇总同口径，折价已正确扣除）：
+      //   总欠款(¥)=赊销总额(Σ应收 totalAmount)
+      //   已确认收款(¥)=已到账实收(Σ receivedAmount，不含折价)
+      //   未收余额(¥)=Σ unpaidAmount，云端已按 max(0, 应收-实收-折价) 计算，折价/减免已扣除，永不出现负数
+      //   差额 = 折价/减免（应收 = 实收 + 折价 + 未收余额）
+      const custReceivable = (c) => (c.orders || []).reduce((s, o) => s + (o.totalAmount || 0), 0)
       const custConfirmed = (c) => (c.orders || []).reduce((s, o) => s + (o.receivedAmount || 0), 0)
+      const custBalance = (c) => (c.orders || []).reduce((s, o) => s + (o.unpaidAmount || 0), 0)
       const payText = (ps) => ps === 'paid' ? '已结清' : (ps === 'pending' ? '未结清' : '未付款')
 
-      // 表头：客户、区域、订单数、总欠款、状态、最长欠款(天)、已确认收款、未收余额
+      // 表头：客户、区域、订单数、总欠款(赊销总额)、状态、最长欠款(天)、已确认收款、未收余额
       rows.push(['客户', '区域', '订单数', '总欠款(¥)', '状态', '最长欠款(天)', '已确认收款(¥)', '未收余额(¥)'])
 
       let grandTotal = 0
       let grandConfirmed = 0
+      let grandBalance = 0
       customers.forEach(c => {
-        const debt = custDebt(c)
+        const receivable = custReceivable(c)
         const confirmed = custConfirmed(c)
+        const balance = custBalance(c)
         const hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending')
-        const status = debt <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清')
-        grandTotal += debt
+        const status = balance <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清')
+        grandTotal += receivable
         grandConfirmed += confirmed
+        grandBalance += balance
         rows.push([
           c.name,
           c.region || '',
           c.orderCount,
-          debt.toFixed(2),
+          receivable.toFixed(2),
           status,
           c.maxAge > 0 ? c.maxAge : '',
           confirmed.toFixed(2),
-          (debt - confirmed).toFixed(2)
+          balance.toFixed(2)
         ])
         ;(c.orders || []).forEach(o => {
-          const oDebt = o.unpaidAmount || 0
+          const oTotal = o.totalAmount || 0
+          const oConfirmed = o.receivedAmount || 0
+          const oBalance = o.unpaidAmount || 0
           rows.push([
             '  └ ' + o.orderNo,
             '',
             '',
-            oDebt.toFixed(2),
+            oTotal.toFixed(2),
             payText(o.paymentStatus),
-            oDebt > 0.001 ? (o.debtAgeDays || 0) : '',
-            (o.receivedAmount || 0).toFixed(2),
-            (oDebt - (o.receivedAmount || 0)).toFixed(2)
+            oBalance > 0.001 ? (o.debtAgeDays || 0) : '',
+            oConfirmed.toFixed(2),
+            oBalance.toFixed(2)
           ])
         })
       })
 
       rows.push([])
       // 合计行
-      rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), (grandTotal - grandConfirmed).toFixed(2)])
+      rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), grandBalance.toFixed(2)])
 
       const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
       const filename = '丰淮商贸赊销报表_' + dateStr() + '.csv'

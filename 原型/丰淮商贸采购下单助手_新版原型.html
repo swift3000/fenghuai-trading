@@ -6273,25 +6273,30 @@ function doExportReceivable(){
   let grandTotal = 0, grandConfirmed = 0;
   customers.forEach(c => {
     c.orders.sort((a,b) => new Date(b.time) - new Date(a.time));
-    const total = c.orders.reduce((s,o) => s + remainingDebt(o), 0);
-    const confirmedAmt = c.orders.reduce((s,o) => s + (o.payments||[]).filter(p=>p.status==='confirmed').reduce((ps,p)=>ps+(p.amount||0)+(p.discount||0),0), 0);
+    // 口径（A 方案，与看板/小程序同源）：总欠款=赊销总额(Σ应收)，已确认收款=已到账实收(不含折价)，未收余额=ΣremainingDebt(已扣折价)
+    const receivable = c.orders.reduce((s,o) => s + (o.amount||0), 0);
+    const confirmedAmt = c.orders.reduce((s,o) => s + orderPaidAmount(o), 0);
+    const balance = c.orders.reduce((s,o) => s + remainingDebt(o), 0);
     const maxAge = c.orders.reduce((m,o) => Math.max(m, debtAgeDays(o)), 0);
     const hasPending = c.orders.some(o => orderPayStatus(o) === 'pending');
-    let status = total <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清');
-    grandTotal += total;
+    let status = balance <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清');
+    grandTotal += receivable;
     grandConfirmed += confirmedAmt;
-    rows.push([c.customer, c.region, c.orders.length, total.toFixed(2), status, maxAge, confirmedAmt.toFixed(2), (total - confirmedAmt).toFixed(2)]);
+    rows.push([c.customer, c.region, c.orders.length, receivable.toFixed(2), status, maxAge, confirmedAmt.toFixed(2), balance.toFixed(2)]);
 
     // 每笔订单明细
     c.orders.forEach(o => {
-      const debt = remainingDebt(o);
-      const oConfirmed = (o.payments||[]).filter(p=>p.status==='confirmed').reduce((s,p)=>s+(p.amount||0)+(p.discount||0),0);
-      rows.push(['  └ '+o.orderNo, '', '', debt.toFixed(2), payStatusText(o), debtAgeDays(o), oConfirmed.toFixed(2), (debt - oConfirmed).toFixed(2)]);
+      const oTotal = (o.amount||0);
+      const oConfirmed = orderPaidAmount(o);
+      const oBalance = remainingDebt(o);
+      rows.push(['  └ '+o.orderNo, '', '', oTotal.toFixed(2), payStatusText(o), oBalance>0.001?debtAgeDays(o):'', oConfirmed.toFixed(2), oBalance.toFixed(2)]);
     });
   });
 
   rows.push([]);
-  rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), (grandTotal - grandConfirmed).toFixed(2)]);
+  let grandBalance = 0;
+  customers.forEach(c => { grandBalance += c.orders.reduce((s,o) => s + remainingDebt(o), 0); });
+  rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), grandBalance.toFixed(2)]);
 
   downloadCSV(`丰淮商贸赊销报表_${todayStr()}.csv`, rows);
   closeExportPreview();
