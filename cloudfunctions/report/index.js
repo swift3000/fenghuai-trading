@@ -280,6 +280,7 @@ exports.main = async (event, context) => {
         const customerMap = {}
         orders.forEach(order => {
           const customerId = order.customerId
+          if (!customerId) return  // 脏数据防护：无 customerId 的孤儿订单不参与客户聚合
           if (!customerMap[customerId]) {
             customerMap[customerId] = {
               _id: customerId,
