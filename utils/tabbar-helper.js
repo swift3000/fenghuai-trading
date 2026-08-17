@@ -3,181 +3,23 @@
  * 根据用户角色动态显示/隐藏 TabBar
  */
 
-const app = getApp()
-
-// 角色对应的 TabBar 配置
-const ROLE_TABBAR_CONFIG = {
-  admin: [
-    {
-      pagePath: 'pages/index/index',
-      text: '首页',
-      iconPath: 'assets/icons/home.png',
-      selectedIconPath: 'assets/icons/home-active.png'
-    },
-    {
-      pagePath: 'pages/orders/orders',
-      text: '订单',
-      iconPath: 'assets/icons/order.png',
-      selectedIconPath: 'assets/icons/order-active.png'
-    },
-    {
-      pagePath: 'pages/receivable/receivable',
-      text: '赊销',
-      iconPath: 'assets/icons/money.png',
-      selectedIconPath: 'assets/icons/money-active.png'
-    },
-    {
-      pagePath: 'pages/outbound/outbound',
-      text: '分拣出库',
-      iconPath: 'assets/icons/outbound.png',
-      selectedIconPath: 'assets/icons/outbound-active.png'
-    },
-    {
-      pagePath: 'pages/profile/profile',
-      text: '我的',
-      iconPath: 'assets/icons/profile.png',
-      selectedIconPath: 'assets/icons/profile-active.png'
-    }
-  ],
-  orderer: [
-    {
-      pagePath: 'pages/index/index',
-      text: '首页',
-      iconPath: 'assets/icons/home.png',
-      selectedIconPath: 'assets/icons/home-active.png'
-    },
-    {
-      pagePath: 'pages/orders/orders',
-      text: '订单',
-      iconPath: 'assets/icons/order.png',
-      selectedIconPath: 'assets/icons/order-active.png'
-    },
-    {
-      pagePath: 'pages/profile/profile',
-      text: '我的',
-      iconPath: 'assets/icons/profile.png',
-      selectedIconPath: 'assets/icons/profile-active.png'
-    }
-  ],
-  sorter: [
-    {
-      pagePath: 'pages/index/index',
-      text: '首页',
-      iconPath: 'assets/icons/home.png',
-      selectedIconPath: 'assets/icons/home-active.png'
-    },
-    {
-      pagePath: 'pages/outbound/outbound',
-      text: '分拣出库',
-      iconPath: 'assets/icons/outbound.png',
-      selectedIconPath: 'assets/icons/outbound-active.png'
-    },
-    {
-      pagePath: 'pages/profile/profile',
-      text: '我的',
-      iconPath: 'assets/icons/profile.png',
-      selectedIconPath: 'assets/icons/profile-active.png'
-    }
-  ],
-  warehouse: [
-    {
-      pagePath: 'pages/index/index',
-      text: '首页',
-      iconPath: 'assets/icons/home.png',
-      selectedIconPath: 'assets/icons/home-active.png'
-    },
-    {
-      pagePath: 'pages/outbound/outbound',
-      text: '分拣出库',
-      iconPath: 'assets/icons/outbound.png',
-      selectedIconPath: 'assets/icons/outbound-active.png'
-    },
-    {
-      pagePath: 'pages/profile/profile',
-      text: '我的',
-      iconPath: 'assets/icons/profile.png',
-      selectedIconPath: 'assets/icons/profile-active.png'
-    }
-  ]
-}
-
-/**
- * 微信小程序 tabBar 的全部条目（顺序与 app.json 保持一致，索引即下标）
- * 用于把「角色可见的 tab 列表」映射回固定索引，配合 setTabBarItem / showTabBarItem / hideTabBarItem
- */
-const ALL_TAB_ITEMS = [
-  { index: 0, pagePath: 'pages/index/index' },
-  { index: 1, pagePath: 'pages/orders/orders' },
-  { index: 2, pagePath: 'pages/receivable/receivable' },
-  { index: 3, pagePath: 'pages/outbound/outbound' },
-  { index: 4, pagePath: 'pages/profile/profile' }
-]
-
-
 /**
  * 根据权限键动态设置 TabBar（对齐原型：赊销=receivable:view；分拣出库=sort:task||warehouse:confirm）
  * 订单 tab 默认始终显示（order:view 默认全员开放）。
  * @param {string[]} permissions - 当前用户权限数组
  */
 function setTabBarByPerms(permissions) {
-  const perms = permissions || []
-  const canReceivable = perms.includes('receivable:view')
-  const canOutbound = perms.includes('sort:task') || perms.includes('warehouse:confirm')
-
-  ALL_TAB_ITEMS.forEach(item => {
-    let visible = true
-    if (item.index === 2) {           // 赊销
-      visible = canReceivable
-    } else if (item.index === 3) {    // 分拣出库
-      visible = canOutbound
-    }
-    // index 0 首页 / 1 订单 / 4 我的 默认可见
-    if (visible) {
-      wx.showTabBarItem({ index: item.index })
-    } else {
-      wx.hideTabBarItem({ index: item.index })
-    }
-  })
-  console.log('TabBar 已按权限更新: 赊销=' + canReceivable + ' 分拣出库=' + canOutbound)
+  // 使用自定义 TabBar 后，原生 tabBar 已隐藏，无需显隐原生条目。
+  // 这里仅刷新自定义栏（权限/主题），保持旧调用签名兼容。
+  refreshCustomTabBar()
+  console.log('TabBar 已按实际权限更新（自定义栏）: 赊销/工作台由自定义栏按权限路由')
 }
 
-/**
- * 根据角色设置 TabBar
- * 用标准 API wx.setTabBarItem（设置 icon/text）+ wx.showTabBarItem / wx.hideTabBarItem（按角色显隐）
- * 替代非标准、真机上静默失败的 wx.setTabBarList
- * @param {string} role - 用户角色
- */
 function setTabBarByRole(role) {
-  const tabBarConfig = ROLE_TABBAR_CONFIG[role]
-  if (!tabBarConfig) {
-    console.error('未知的角色:', role)
-    return
-  }
-
-  try {
-    // 该角色可见的 pagePath 集合
-    const visiblePaths = tabBarConfig.map(item => item.pagePath)
-
-    ALL_TAB_ITEMS.forEach(item => {
-      const config = tabBarConfig.find(c => c.pagePath === item.pagePath)
-      if (config) {
-        // 设置图标与文案（index 为固定下标，notSet 之外的字段会更新）
-        wx.setTabBarItem({
-          index: item.index,
-          text: config.text,
-          iconPath: config.iconPath,
-          selectedIconPath: config.selectedIconPath
-        })
-        wx.showTabBarItem({ index: item.index })
-      } else {
-        wx.hideTabBarItem({ index: item.index })
-      }
-    })
-
-    console.log('TabBar 已更新为:', role, '可见 tab:', visiblePaths.join(','))
-  } catch (err) {
-    console.error('设置 TabBar 失败:', err)
-  }
+  // 使用自定义 TabBar 后，按角色显隐原生条目已无意义。
+  // 仅刷新自定义栏，保持旧调用签名兼容。
+  refreshCustomTabBar()
+  console.log('TabBar 已更新为自定义栏, 角色:', role)
 }
 
 /**
@@ -185,14 +27,8 @@ function setTabBarByRole(role) {
  * @param {boolean} show - 是否显示
  */
 function showTabBar(show) {
-  try {
-    wx.showTabBar()
-    if (show === false) {
-      wx.hideTabBar()
-    }
-  } catch (err) {
-    console.error('控制 TabBar 显示失败:', err)
-  }
+  // 自定义 TabBar 由页面渲染，无需原生 show/hide；保留签名兼容。
+  console.log('showTabBar（自定义栏，无操作）:', show)
 }
 
 /**
@@ -225,12 +61,34 @@ function removeTabBarBadge(index) {
   }
 }
 
+
+/**
+ * 刷新自定义底部 TabBar（custom-tab-bar）
+ * 由真实 Tab 页在 onShow 时调用：标记当前高亮并刷新权限/主题。
+ * @param {string} active - 当前高亮的 key: home/orders/workbench/profile
+ */
+function refreshCustomTabBar(active) {
+  const pages = getCurrentPages()
+  if (!pages || !pages.length) return
+  const page = pages[pages.length - 1]
+  if (typeof page.getTabBar === 'function') {
+    const bar = page.getTabBar()
+    if (bar) {
+      if (active && typeof bar.setData === 'function') {
+        bar.setData({ active: active })
+      }
+      if (typeof bar.refresh === 'function') {
+        bar.refresh()
+      }
+    }
+  }
+}
+
 module.exports = {
   setTabBarByRole,
   setTabBarByPerms,
   showTabBar,
   setTabBarBadge,
   removeTabBarBadge,
-  ROLE_TABBAR_CONFIG,
-  ALL_TAB_ITEMS
+  refreshCustomTabBar
 }

@@ -1,91 +1,228 @@
-.order-header {
+/* ===== 绿色 hero 头（对齐原型 .detail-header） ===== */
+.detail-hero {
+  position: relative;
+  background: linear-gradient(160deg, #35b06a 0%, #1f8a4c 100%);
+  padding: 40rpx 32rpx 44rpx;
+  color: #fff;
+  text-align: center;
+  border-radius: 0 0 28rpx 28rpx;
+  overflow: hidden;
+}
+.detail-hero::before {
+  content: "";
+  position: absolute;
+  top: -120rpx;
+  right: -100rpx;
+  width: 380rpx;
+  height: 380rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.22), rgba(255,255,255,0) 70%);
+}
+.hero-order-no {
+  font-size: calc(24rpx * var(--font-scale));
+  opacity: .9;
+  font-family: ui-monospace, Menlo, monospace;
+  letter-spacing: .5px;
+}
+.hero-amount {
+  font-size: calc(60rpx * var(--font-scale));
+  font-weight: 800;
+  margin: 16rpx 0;
+  font-variant-numeric: tabular-nums;
+}
+.hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 8rpx 26rpx;
+  background: rgba(255,255,255,.22);
+  border: 1rpx solid rgba(255,255,255,.32);
+  border-radius: 999rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  font-weight: 600;
+  color: #fff;
+}
+.hero-status-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* ===== 分节卡片（对齐原型 .detail-section） ===== */
+.detail-card {
+  background: #fff;
+  border-radius: 20rpx;
   padding: 24rpx;
+  margin: 20rpx 20rpx 0;
+  box-shadow: 0 2rpx 12rpx rgba(31,41,55,.04);
 }
-
-.order-no {
-  font-size: calc(26rpx * var(--font-scale));
-  color: #666666;
-}
-
-.status-tag {
-  background: #e8f0fe;
-  color: #1a73e8;
-  padding: 6rpx 16rpx;
-  border-radius: 8rpx;
-  font-size: calc(24rpx * var(--font-scale));
-}
-
-.total-amount {
-  font-size: calc(40rpx * var(--font-scale));
-  color: #1a73e8;
-  font-weight: bold;
-  margin-top: 12rpx;
-  display: block;
-}
-
-.section-title {
+.sec-title {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
   font-size: calc(28rpx * var(--font-scale));
-  font-weight: bold;
-  margin-bottom: 16rpx;
-  display: block;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 20rpx;
 }
-
-.info-row {
+.sec-bar {
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 4rpx;
+  background: var(--theme-primary, #06ad56);
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+.dr-lbl {
   font-size: calc(26rpx * var(--font-scale));
-  margin-bottom: 8rpx;
-  color: #666666;
+  color: #6b7280;
+}
+.dr-val {
+  font-size: calc(26rpx * var(--font-scale));
+  color: #111827;
+  font-weight: 600;
+  max-width: 60%;
+  text-align: right;
 }
 
-.item-row {
-  padding: 12rpx 0;
+/* ===== 商品明细行（对齐原型 .detail-item） ===== */
+.di-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
 }
-
-.item-spec {
+.di-item:last-of-type {
+  border-bottom: none;
+}
+.di-idx {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 12rpx;
+  background: var(--theme-primary, #06ad56);
+  color: #fff;
   font-size: calc(24rpx * var(--font-scale));
-  color: #999999;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-
-.total-row {
-  padding-top: 16rpx;
+.di-body {
+  flex: 1;
+  min-width: 0;
 }
-
-.action-buttons {
-  margin-top: 30rpx;
-  padding-bottom: 40rpx;
+.di-name {
+  font-size: calc(27rpx * var(--font-scale));
+  font-weight: 600;
+  color: #111827;
 }
-
-.action-buttons button {
-  margin-bottom: 16rpx;
+.di-meta {
+  margin-top: 6rpx;
+  font-size: calc(23rpx * var(--font-scale));
+  color: #9ca3af;
 }
-
-.payment-status-text {
-  font-size: calc(26rpx * var(--font-scale));
-  font-weight: 500;
+.di-amount {
+  font-size: calc(27rpx * var(--font-scale));
+  font-weight: 700;
+  color: #FF8A2B;
+  flex-shrink: 0;
 }
-
-.text-success {
-  color: var(--theme-primary);
+.di-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f3f4f6;
 }
-
-.text-warning {
+.di-total-lbl {
+  font-size: calc(27rpx * var(--font-scale));
+  color: #6b7280;
+}
+.di-total-val {
+  font-size: calc(32rpx * var(--font-scale));
+  font-weight: 800;
   color: #FF8A2B;
 }
 
-.collect-btn {
+.collect-btn-wrap {
   margin-top: 20rpx;
 }
+
+/* ===== 操作按钮（对齐原型 .detail-actions 2列网格） ===== */
+.detail-actions {
+  margin: 24rpx 20rpx 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.act-btn {
+  flex: 1 1 46%;
+  min-width: 46%;
+  margin: 0 !important;
+  height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 14rpx;
+  font-size: calc(26rpx * var(--font-scale));
+  font-weight: 600;
+  color: #fff;
+  background: #fff;
+  box-sizing: border-box;
+}
+.act-btn::after {
+  border: none;
+}
+.act-print {
+  background: var(--theme-primary, #06ad56);
+  color: #fff;
+}
+.act-edit {
+  background: #3b82f6;
+  color: #fff;
+}
+.act-export {
+  background: #8b5cf6;
+  color: #fff;
+}
+.act-copy {
+  background: #fff;
+  color: #374151;
+  border: 1rpx solid #d1d5db;
+}
+.act-forward {
+  background: #fff;
+  color: #374151;
+  border: 1rpx solid #d1d5db;
+}
+.act-delete {
+  background: #fff;
+  color: #ef4444;
+  border: 1rpx solid #ef4444;
+}
+
+/* ===== 通用保留 ===== */
+.text-success { color: var(--theme-primary); }
+.text-warning { color: #FF8A2B; }
+.text-danger { color: #ef4444; }
 
 /* 收款弹窗样式 */
 .modal-mask {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 998;
 }
-
 .modal-content {
   position: fixed;
   left: 50%;
@@ -100,11 +237,7 @@
   flex-direction: column;
   overflow: hidden;
 }
-
-.collect-modal {
-  max-height: 70vh;
-}
-
+.collect-modal { max-height: 70vh; }
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -112,33 +245,15 @@
   padding: 24rpx 32rpx;
   border-bottom: 1rpx solid #eee;
 }
-
-.modal-title {
-  font-size: calc(32rpx * var(--font-scale));
-  font-weight: bold;
-  color: #333;
-}
-
-.modal-close {
-  font-size: calc(48rpx * var(--font-scale));
-  color: #999;
-  line-height: 1;
-  padding: 0 8rpx;
-}
-
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24rpx;
-}
-
+.modal-title { font-size: calc(32rpx * var(--font-scale)); font-weight: bold; color: #333; }
+.modal-close { font-size: calc(48rpx * var(--font-scale)); color: #999; line-height: 1; padding: 0 8rpx; }
+.modal-body { flex: 1; overflow-y: auto; padding: 24rpx; }
 .modal-footer {
   display: flex;
   gap: 20rpx;
   padding: 24rpx 32rpx;
   border-top: 1rpx solid #eee;
 }
-
 .modal-footer .btn {
   flex: 1;
   height: 88rpx;
@@ -148,22 +263,13 @@
   text-align: center;
   border: none;
 }
-
-.modal-footer .btn-cancel {
-  background: #f7f7f7;
-  color: #666;
-}
-
+.modal-footer .btn-cancel { background: #f7f7f7; color: #666; }
 .modal-footer .btn-primary {
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   color: #fff;
   box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
 }
-
-.form-group {
-  margin-bottom: 24rpx;
-}
-
+.form-group { margin-bottom: 24rpx; }
 .form-label {
   display: block;
   font-size: calc(28rpx * var(--font-scale));
@@ -171,7 +277,6 @@
   margin-bottom: 12rpx;
   font-weight: 500;
 }
-
 .amount-input {
   display: flex;
   align-items: center;
@@ -180,22 +285,8 @@
   padding: 0 20rpx;
   height: 88rpx;
 }
-
-.currency-symbol {
-  font-size: calc(36rpx * var(--font-scale));
-  color: #FF3B30;
-  font-weight: bold;
-  margin-right: 8rpx;
-}
-
-.form-input {
-  flex: 1;
-  font-size: calc(32rpx * var(--font-scale));
-  color: #333;
-  height: 88rpx;
-  line-height: 88rpx;
-}
-
+.currency-symbol { font-size: calc(36rpx * var(--font-scale)); color: #FF3B30; font-weight: bold; margin-right: 8rpx; }
+.form-input { flex: 1; font-size: calc(32rpx * var(--font-scale)); color: #333; height: 88rpx; line-height: 88rpx; }
 .picker {
   height: 88rpx;
   line-height: 88rpx;
@@ -205,74 +296,28 @@
   font-size: calc(28rpx * var(--font-scale));
   color: #333;
 }
-
 .form-textarea {
   width: 100%;
   height: 160rpx;
+  box-sizing: border-box;
   background: #f7f7f7;
   border-radius: 8rpx;
   padding: 16rpx 20rpx;
   font-size: calc(28rpx * var(--font-scale));
   line-height: 1.6;
 }
+.form-hint { font-size: calc(22rpx * var(--font-scale)); color: #999; margin-top: 8rpx; }
 
-/* 微信转发状态 */
-.wechat-share-info {
-  margin-top: 24rpx;
-}
-
-.share-success {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
-.share-badge {
-  display: inline-block;
-  padding: 4rpx 16rpx;
-  background: #e6f7ff;
-  color: #1890ff;
-  border-radius: 4rpx;
-  font-size: calc(24rpx * var(--font-scale));
-  font-weight: 500;
-}
-
-.share-time {
-  color: #666;
-  font-size: calc(24rpx * var(--font-scale));
-}
-
-.share-pending {
-  color: #999;
-  font-size: calc(24rpx * var(--font-scale));
-}
-
-/* 操作记录（对齐原型：订单修改历史） */
-.logs-card {
-  margin-top: 24rpx;
-}
-
-.logs-empty {
-  font-size: calc(24rpx * var(--font-scale));
-  color: #bbb;
-  padding: 10rpx 0;
-}
-
-.log-list {
-  margin-top: 6rpx;
-}
-
+/* 操作记录 */
+.logs-empty { font-size: calc(24rpx * var(--font-scale)); color: #bbb; padding: 10rpx 0; }
+.log-list { margin-top: 6rpx; }
 .log-item {
   display: flex;
   gap: 16rpx;
   padding: 12rpx 0;
   border-bottom: 1rpx dashed #eee;
 }
-
-.log-item:last-child {
-  border-bottom: none;
-}
-
+.log-item:last-child { border-bottom: none; }
 .log-dot {
   width: 14rpx;
   height: 14rpx;
@@ -281,28 +326,7 @@
   margin-top: 10rpx;
   flex-shrink: 0;
 }
-
-.log-dot-create {
-  background: var(--theme-primary);
-}
-
-.log-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.log-desc {
-  font-size: calc(26rpx * var(--font-scale));
-  color: #333;
-}
-
-.log-meta {
-  font-size: calc(22rpx * var(--font-scale));
-  color: #999;
-  margin-top: 4rpx;
-}
-/* 物流包裹（对齐原型：大/中/小件，0不显示） */
-.shipping-info { margin-top: 24rpx; }
-.shipping-tags { display: flex; flex-wrap: wrap; gap: 12rpx; }
-.shipping-tag { background: #FFF7F7; border: 1rpx solid #FBDCDC; color: #DC2626; padding: 8rpx 20rpx; border-radius: 8rpx; font-size: calc(24rpx * var(--font-scale)); font-weight: 500; }
-.shipping-empty { color: #bbb; font-size: calc(24rpx * var(--font-scale)); }
+.log-dot-create { background: var(--theme-primary); }
+.log-body { flex: 1; min-width: 0; }
+.log-desc { font-size: calc(26rpx * var(--font-scale)); color: #333; }
+.log-meta { font-size: calc(22rpx * var(--font-scale)); color: #999; margin-top: 4rpx; }

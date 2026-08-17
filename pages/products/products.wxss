@@ -412,3 +412,54 @@
   color: #FA8C16;
   line-height: 1.6;
 }
+
+/* 分类筛选和排序样式 */
+.filter-bar {
+  padding: 20rpx;
+  background: #fff;
+  margin: 20rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.05);
+}
+
+.filter-group,
+.sort-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.filter-group:last-child,
+.sort-group:last-child {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  font-size: 28rpx;
+  color: #666;
+  margin-right: 16rpx;
+}
+
+.filter-options,
+.sort-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.filter-btn,
+.sort-btn {
+  padding: 8rpx 20rpx;
+  background: #f5f5f5;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+}
+
+.filter-btn.active,
+.sort-btn.active {
+  background: #07c160;
+  color: #fff;
+  border-color: #07c160;
+}

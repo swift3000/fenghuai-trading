@@ -14,26 +14,16 @@ const PAGE_PERMISSIONS = {
   'pages/products/products': ['product:view'],
   'pages/customers/customers': ['customer:view'],
   'pages/receivable/receivable': ['receivable:view'],
-  'pages/outbound/outbound': ['warehouse:confirm', 'sort:task'], // ANY
-  'pages/shipping/shipping': ['order:print'], // 打印送货单页
+  'pages/outbound/outbound': ['warehouse:confirm', 'sort:task'],
+  'pages/shipping/shipping': ['order:print'],
   'pages/reports/reports': ['report:view'],
   'pages/members/members': ['member:manage'],
   'pages/settings/settings': ['member:manage'],
-  'pages/profile/profile': [] // 所有人都可以访问
-}
-
-// 角色对应的 TabBar 配置
-const ROLE_TABBAR = {
-  admin: [0, 1, 2, 3, 4], // 首页、订单、赊销、分拣出库、我的
-  orderer: [0, 1, 4],     // 首页、订单、我的
-  sorter: [0, 3, 4],      // 首页、分拣出库、我的
-  warehouse: [0, 3, 4]    // 首页、分拣出库、我的
+  'pages/profile/profile': []
 }
 
 /**
  * 检查页面访问权限
- * @param {string} pagePath - 页面路径
- * @returns {object} { allowed: boolean, message: string }
  */
 function checkPageAccess(pagePath) {
   console.log('[路由守卫] 检查页面访问:', pagePath)
@@ -61,21 +51,21 @@ function checkPageAccess(pagePath) {
   // 检查权限 - 使用角色直接判断
   const role = app.globalData.userRole
   const userPermissions = app.globalData.userInfo.permissions || []
-  
+
   console.log('[路由守卫] 用户角色:', role)
   console.log('[路由守卫] 用户权限:', userPermissions)
   console.log('[路由守卫] 需要权限:', requiredPermissions[0])
-  
+
   // 管理员拥有所有权限
   if (role === 'admin') {
     console.log('[路由守卫] 管理员，允许访问')
     return { allowed: true }
   }
-  
+
   // 检查是否有所需权限（任一即可，匹配原型 outbound=sort:task||warehouse:confirm）
   const hasPermission = requiredPermissions.some(p => userPermissions.includes(p))
   console.log('[路由守卫] 权限检查结果:', hasPermission)
-  
+
   if (!hasPermission) {
     return {
       allowed: false,
@@ -90,7 +80,6 @@ function checkPageAccess(pagePath) {
 
 /**
  * 在页面 onLoad 时调用
- * @param {object} page - 页面实例
  */
 function guardPageLoad(page) {
   const pagePath = page.route
@@ -115,30 +104,8 @@ function guardPageLoad(page) {
   return true
 }
 
-/**
- * 获取当前角色可访问的 TabBar 索引
- * @param {string} role - 用户角色
- * @returns {number[]} TabBar 索引数组
- */
-function getRoleTabBar(role) {
-  return ROLE_TABBAR[role] || [0, 4] // 默认只显示首页和我的
-}
-
-/**
- * 检查是否可以访问某个 Tab
- * @param {string} role - 用户角色
- * @param {number} tabIndex - Tab 索引
- * @returns {boolean}
- */
-function canAccessTab(role, tabIndex) {
-  const allowedTabs = getRoleTabBar(role)
-  return allowedTabs.includes(tabIndex)
-}
-
 module.exports = {
   checkPageAccess,
   guardPageLoad,
-  getRoleTabBar,
-  canAccessTab,
   PAGE_PERMISSIONS
 }

@@ -256,6 +256,18 @@
 }
 
 /* 统计进度条 */
+.aging-dist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  padding: 14rpx 0 4rpx;
+}
+.aging-dist .ad-month { display: flex; align-items: center; gap: 8rpx; }
+.aging-dist .ad-label { font-size: 22rpx; color: #8a8f99; }
+.aging-dist .ad-bar { width: 90rpx; height: 12rpx; border-radius: 6rpx; background: #eef0f3; overflow: hidden; }
+.aging-dist .ad-fill { height: 100%; border-radius: 6rpx; }
+.aging-dist .ad-amt { font-size: 22rpx; color: #555b66; }
+
 .customer-stats {
   margin-bottom: 16rpx;
 }
@@ -912,3 +924,163 @@
   border: none;
 }
 .epp-btn::after { border: none; }
+
+/* ===== 赊销页新版 hero（对齐原型 1123+ 绿色 hero） ===== */
+.recv-hero {
+  position: relative;
+  overflow: hidden;
+  margin: 12px 12px 0;
+  padding: 18px 18px 16px;
+  text-align: left;
+  background: linear-gradient(135deg, #CDEEDA 0%, #E2F6E9 46%, #F3FBF5 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(36, 173, 82, 0.10);
+}
+.recv-hero::before {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -36px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(69, 208, 111, 0.16);
+}
+.recv-hero .rh-label {
+  position: relative;
+  font-size: 12px;
+  color: #5B7A68;
+  font-weight: 600;
+}
+.recv-hero .rh-amount {
+  position: relative;
+  font-size: 34px;
+  font-weight: 800;
+  margin: 5px 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--orange-bright, #EA580C);
+}
+.recv-hero .rh-summary-row {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 4px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.recv-hero .rh-s-item {
+  flex: 1;
+  background: #fff;
+  border: 1px solid rgba(36, 173, 82, 0.14);
+  border-radius: 12px;
+  padding: 7px 10px;
+  font-weight: 500;
+  color: var(--text-2, #64748B);
+}
+.recv-hero .rh-s-item .rh-s-lbl {
+  display: block;
+  font-size: 11px;
+  color: var(--text-2, #64748B);
+}
+.recv-hero .rh-s-item .rh-s-val {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text, #1F2937);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.recv-hero .rh-s-item.green .rh-s-val { color: var(--brand, #24AD52); }
+.recv-hero .rh-s-item.red .rh-s-val { color: var(--orange-bright, #EA580C); }
+.recv-hero .rh-sub {
+  position: relative;
+  font-size: 12px;
+  color: #7A948A;
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+.recv-hero .rh-sub-num { color: var(--text, #1F2937); font-weight: 700; }
+
+.recv-body { padding: 10px 12px; }
+
+/* 搜索 */
+.recv-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border, #E5E7EB);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.recv-search .rs-icon { font-size: 13px; opacity: 0.6; }
+.recv-search input { flex: 1; font-size: 13px; }
+
+/* 时间 chips */
+.recv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.recv-chip {
+  font-size: 12px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border, #E5E7EB);
+  color: var(--text-2, #64748B);
+  font-weight: 600;
+}
+.recv-chip.active {
+  background: var(--orange, #F97316);
+  color: #fff;
+  border-color: var(--orange-bright, #EA580C);
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.26);
+}
+.recv-chip .drp-icon { margin-right: 4px; font-size: 11px; }
+
+/* 三栏视图 Tab */
+.recv-view-tabs {
+  display: flex;
+  margin-top: 10px;
+  background: #ECEEF1;
+  border-radius: 12px;
+  padding: 3px;
+}
+.rvt-tab {
+  font-size: 12px;
+  padding: 8px 0;
+  border-radius: 10px;
+  color: var(--text-2, #64748B);
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+.rvt-tab.active {
+  background: #fff;
+  color: var(--orange-dark, #C2410C);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* 新版操作按钮行（原型：橙色描边 + 蓝色导出） */
+.recv-action-row {
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+}
+.recv-confirm-btn {
+  border-radius: 999px;
+  border: 1px solid var(--orange, #F97316);
+  color: var(--orange-dark, #C2410C);
+}
+.recv-confirm-btn:active {
+  background: var(--orange, #F97316);
+  color: #fff;
+}
+.btn-export-recv {
+  margin-left: 0;
+  background: var(--blue, #2563EB) !important;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.24);
+}
+

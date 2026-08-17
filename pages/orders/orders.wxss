@@ -1,3 +1,4 @@
+/* 时间标签栏 */
 .time-tabs {
   display: flex;
   background: #ffffff;
@@ -29,6 +30,7 @@
   transform: scale(0.96);
 }
 
+/* 搜索栏 */
 .search-bar {
   background: #ffffff;
   border-radius: 16rpx;
@@ -42,52 +44,189 @@
   font-size: calc(28rpx * var(--font-scale));
 }
 
+/* 订单卡片 */
 .order-card {
-  padding: 24rpx;
-  background: #fff;
+  background: #ffffff;
   border-radius: 16rpx;
-  margin-bottom: 20rpx;
+  padding: 14px;
+  margin-bottom: 12px;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
   border: 1rpx solid rgba(6, 173, 86, 0.08);
-  transition: all 0.3s;
+  transition: all 0.15s;
+  position: relative;
 }
 
 .order-card:active {
   transform: scale(0.98);
-  box-shadow: 0 8rpx 20rpx rgba(6, 173, 86, 0.12);
+}
+
+/* 订单头部 */
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.order-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .customer-name {
-  font-size: calc(32rpx * var(--font-scale));
-  font-weight: bold;
-  color: #333;
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 600;
+  color: #333333;
+}
+
+.status-chip {
+  font-size: calc(11px * var(--font-scale));
+  padding: 2rpx 8rpx;
+  border-radius: 10rpx;
+  display: inline-block;
+}
+
+.status-chip.pending {
+  background: rgba(255, 107, 53, 0.1);
+  color: #FF6B35;
+}
+
+.status-chip.processing {
+  background: rgba(33, 150, 243, 0.1);
+  color: #2196F3;
+}
+
+.status-chip.completed {
+  background: rgba(7, 193, 96, 0.1);
+  color: #07C160;
 }
 
 .order-amount {
-  font-size: calc(32rpx * var(--font-scale));
-  color: var(--theme-primary);
-  font-weight: bold;
-  text-shadow: 0 2rpx 4rpx rgba(6, 173, 86, 0.1);
+  font-size: calc(15px * var(--font-scale));
+  font-weight: 700;
+  color: #FF6B35;
+  white-space: nowrap;
 }
 
+/* 订单元信息 */
 .order-meta {
   display: flex;
-  justify-content: space-between;
-  margin-top: 16rpx;
-  font-size: calc(24rpx * var(--font-scale));
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.order-no {
+  font-size: calc(12px * var(--font-scale));
+  color: #999999;
+  font-family: monospace;
+}
+
+.order-info {
+  font-size: calc(11px * var(--font-scale));
   color: #999999;
 }
 
-.status-tag {
-  background: linear-gradient(135deg, var(--theme-primary-bg) 0%, var(--theme-primary-bg) 100%);
-  color: var(--theme-primary);
-  padding: 6rpx 14rpx;
-  border-radius: 8rpx;
-  font-size: calc(24rpx * var(--font-scale));
-  font-weight: 500;
-  border: 1rpx solid rgba(6, 173, 86, 0.2);
+.order-time {
+  font-size: calc(11px * var(--font-scale));
+  color: #999999;
 }
 
+/* 商品列表 */
+.order-items {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1rpx dashed #e0e0e0;
+}
+
+.item-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 6px 10px;
+  padding: 5px 0;
+  font-size: calc(12px * var(--font-scale));
+  line-height: 1.5;
+}
+
+.item-row:last-child {
+  padding-bottom: 0;
+}
+
+.item-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.item-name {
+  color: #333333;
+  font-weight: 500;
+}
+
+.item-spec {
+  color: #999999;
+  font-size: calc(11px * var(--font-scale));
+}
+
+.item-qty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.qty-text {
+  color: #666666;
+  font-size: calc(11px * var(--font-scale));
+}
+
+.item-remark {
+  font-style: normal;
+  color: #999999;
+  font-size: calc(10px * var(--font-scale));
+  word-break: break-all;
+  margin-left: 0.4em;
+  line-height: 1.6;
+}
+
+.item-amount {
+  color: #07C160;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: right;
+  font-size: calc(13px * var(--font-scale));
+}
+
+/* 支付状态标签 */
+.pay-chip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: calc(11px * var(--font-scale));
+  padding: 2rpx 8rpx;
+  border-radius: 8rpx;
+  font-weight: 500;
+}
+
+.pay-chip.unpaid {
+  background: rgba(255, 107, 53, 0.1);
+  color: #FF6B35;
+}
+
+.pay-chip.partial {
+  background: rgba(230, 162, 60, 0.12);
+  color: #B8860B;
+}
+
+.pay-chip.paid {
+  background: rgba(7, 193, 96, 0.1);
+  color: #07C160;
+}
+
+/* 空状态 */
 .empty-tip {
   text-align: center;
   padding: 80rpx 0;
@@ -98,61 +237,34 @@
   border: 1rpx dashed #e0e0e0;
 }
 
+/* FAB 按钮 */
 .fab-btn {
   position: fixed;
-  right: 40rpx;
-  bottom: 120rpx;
-  width: 112rpx;
-  height: 112rpx;
+  right: 32rpx;
+  bottom: 200rpx;
+  width: 100rpx;
+  height: 100rpx;
   background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   border-radius: 50%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  color: #ffffff;
-  font-size: calc(56rpx * var(--font-scale));
-  font-weight: bold;
-  box-shadow: 0 8rpx 24rpx rgba(6, 173, 86, 0.35);
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(6, 173, 86, 0.3);
   transition: all 0.3s;
 }
 
 .fab-btn:active {
-  transform: scale(0.92);
-  box-shadow: 0 4rpx 16rpx rgba(6, 173, 86, 0.25);
+  transform: scale(0.9);
+  box-shadow: 0 4rpx 16rpx rgba(6, 173, 86, 0.2);
 }
 
-/* 付款状态标签（对齐原型 payChip） */
-.pay-chip {
-  display: inline-block;
-  margin-left: 12rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-  font-size: calc(22rpx * var(--font-scale));
-  vertical-align: middle;
+.fab-btn text {
+  font-size: 56rpx;
+  color: #ffffff;
+  font-weight: 300;
 }
-.pay-chip.uc { background:#FEF0F0; color:#F56C6C; border:1rpx solid #FBC4C4; }
-.pay-chip.pg { background:#ECF5FF; color:#409EFF; border:1rpx solid #B3D8FF; }
-.pay-chip.pd { background:#F0F9EB; color:#67C23A; border:1rpx solid #C2E7B0; }
 
-/* 客户分组卡片 */
-.group-card {
-  padding: 24rpx;
-  background: #fff;
-  border-radius: 16rpx;
-  margin-bottom: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.04);
-  border: 1rpx solid rgba(6,173,86,0.08);
+/* 自定义底部 TabBar 占位，防止内容被遮挡 */
+.container {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom)) !important;
 }
-.group-head { cursor: pointer; }
-.group-customer { display:flex; align-items:center; }
-.group-sub {
-  font-size: calc(24rpx * var(--font-scale));
-  color: #999999;
-  margin-top: 6rpx;
-}
-.group-order {
-  margin-top: 20rpx;
-  padding-top: 20rpx;
-  border-top: 1rpx solid #F2F2F2;
-}
-.order-time { font-size: calc(22rpx * var(--font-scale)); color:#BBB; }

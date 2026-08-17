@@ -111,10 +111,38 @@ Page({
         searchKey: this.data.searchKey
       })
       // 账龄分色（对齐原型 AGING_COLOR）：≤30绿 ≤60黄 ≤90橙 >90红
-      data.customers = (data.customers || []).map(c => ({
-        ...c,
-        agingColor: c.maxAge > 90 ? '#DC2626' : c.maxAge > 60 ? '#EA580C' : c.maxAge > 30 ? '#F59E0B' : '#16A34A'
-      }))
+      data.customers = (data.customers || []).map(c => {
+        const customer = {
+          ...c,
+          agingColor: c.maxAge > 90 ? '#DC2626' : c.maxAge >= 90 ? '#EA580C' : c.maxAge >= 60 ? '#F59E0B' : '#16A34A'
+        }
+        // 账期分布（对齐原型 buildDebtCards 按月欠款柱状）：按欠款订单的月份分桶
+        const monthMap = {}
+        ;(c.orders || []).forEach(o => {
+          const bal = Number(o.unpaidAmount) || 0
+          if (bal <= 0.001 || !o.createdAt) return
+          const d = new Date(o.createdAt)
+          const key = d.getFullYear() + '-' + (d.getMonth() + 1 < 10 ? '0' : '') + (d.getMonth() + 1)
+          monthMap[key] = { amt: monthMap[key] ? monthMap[key].amt + bal : bal, maxAge: 0, pending: false }
+          if (Number(o.debtAgeDays) > monthMap[key].maxAge) monthMap[key].maxAge = Number(o.debtAgeDays)
+          if (o.paymentStatus === 'pending') monthMap[key].pending = true
+        })
+        const months = Object.keys(monthMap).sort().map(k => {
+          const m = monthMap[k]
+          // 颜色：pending 蓝，否则按该月最长账龄分色（对齐原型 agingSeverity）
+          let color
+          if (m.pending) color = '#2563EB'
+          else if (m.maxAge > 90) color = '#DC2626'
+          else if (m.maxAge >= 90) color = '#EA580C'
+          else if (m.maxAge >= 60) color = '#F59E0B'
+          else color = '#16A34A'
+          return { key: k, amt: m.amt.toFixed(2), color, _amt: m.amt }
+        })
+        const maxAmt = Math.max(1, ...months.map(m => m._amt))
+        months.forEach(m => { m.pct = Math.max(8, Math.round(m._amt / maxAmt * 100)); delete m._amt })
+        customer.months = months
+        return customer
+      })
       this.setData({ ...data, loading: false })
     } catch (e) {
       console.error('加载数据失败', e)
@@ -427,7 +455,7 @@ Page({
       const rows = []
       rows.push(['丰淮商贸赊销报表'])
       rows.push(['导出时间：' + new Date().toLocaleString()])
-      rows.push(['视图：' + viewLabel + ' · 周期：' + timeLabel])
+      rows.push(['筛选周期：' + timeLabel + ' · 视图：' + viewLabel])
       rows.push([])
       
       // 口径（A 方案，与看板汇总同口径，折价已正确扣除）：
@@ -485,6 +513,9 @@ Page({
       rows.push([])
       // 合计行
       rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), grandBalance.toFixed(2)])
+      // 周期汇总（对齐原型：应收总额/已收/未结清，与合计行同源 grand 值）
+      rows.push([])
+      rows.push(['周期汇总  应收总额：¥' + grandTotal.toFixed(2) + ' | 已收：¥' + grandConfirmed.toFixed(2) + ' | 未结清：¥' + grandBalance.toFixed(2)])
 
       const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
       const filename = '丰淮商贸赊销报表_' + dateStr() + '.csv'

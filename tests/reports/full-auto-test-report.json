@@ -1,0 +1,515 @@
+{
+  "startTime": "2026-08-13T10:25:54.752Z",
+  "totalRounds": 100,
+  "passedTests": 2600,
+  "failedTests": 0,
+  "issues": [
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    },
+    {
+      "type": "missing_cloud_function",
+      "function": "outbound",
+      "message": "云函数 outbound 的 index.js 不存在"
+    }
+  ],
+  "fixes": [],
+  "endTime": "2026-08-13T10:25:54.792Z",
+  "duration": "0.04秒",
+  "summary": {
+    "totalTests": 2600,
+    "passRate": "100.0%"
+  }
+}

@@ -86,8 +86,9 @@ exports.main = async (event, context) => {
           ])
         }
       } else if (timeTab === 'week') {
-        const day = now.getDay()
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day)
+        // 周一为一周起点（getDay() 周日=0，需转为 7，否则周日查"本周"返回空集）
+        const day = now.getDay() || 7
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
         const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 6, 23, 59, 59)
         dateFilter = {
           created_at: db.command.and([

@@ -74,6 +74,7 @@ Page({
 
       this.setData({
         order,
+        companyName: order.customerName || COMPANY_NAME,
         items,
         orderDate,
         totalQty,

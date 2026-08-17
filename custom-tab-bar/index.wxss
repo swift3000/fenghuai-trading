@@ -1,0 +1,116 @@
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  height: 110rpx;
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #ffffff;
+  border-top: 1rpx solid #EFEFEF;
+  box-shadow: 0 -4rpx 20rpx rgba(16, 24, 40, 0.05);
+}
+
+.tab-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  color: #98A2B3;
+  transition: color 0.12s;
+}
+
+.tab-item:active {
+  transform: scale(0.94);
+}
+
+.tab-icon {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+.tab-label {
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.tab-item.active {
+  color: var(--active-color);
+}
+
+/* 中间悬浮「新建」按钮 */
+.tab-new-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.tab-new {
+  position: relative;
+  top: -40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rpx;
+  color: #98A2B3;
+}
+
+.tab-new:active {
+  transform: scale(0.94);
+}
+
+.tab-new.disabled {
+  opacity: 0.55;
+}
+
+.tab-new-icon {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #45D06F, #1E9E4B);
+  border: 8rpx solid #ffffff;
+  box-shadow: 0 16rpx 36rpx rgba(36, 173, 82, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.plus {
+  position: relative;
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.plus-h,
+.plus-v {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 4rpx;
+}
+
+.plus-h {
+  left: 0;
+  top: 18rpx;
+  width: 40rpx;
+  height: 4rpx;
+}
+
+.plus-v {
+  top: 0;
+  left: 18rpx;
+  width: 4rpx;
+  height: 40rpx;
+}
+
+.tab-new-label {
+  margin-top: 2rpx;
+  font-size: 20rpx;
+  color: #98A2B3;
+}

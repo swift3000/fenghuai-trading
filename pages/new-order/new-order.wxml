@@ -17,7 +17,7 @@
       <text class="add-btn" bindtap="addProduct">+ 添加商品</text>
     </view>
 
-    <view class="prow-card card" wx:for="{{items}}" wx:key="index">
+    <view class="prow-card card" wx:for="{{items}}" wx:key="_id">
       <view class="prow-head">
         <view>
           <view class="pname-box">
@@ -179,6 +179,14 @@
       <text class="modal-close" bindtap="closeSmartModal">×</text>
     </view>
     <view class="modal-body">
+      <!-- 语音录入提示（功能开发中） -->
+      <view class="smart-voice-notice">
+        <text class="notice-icon">🔊</text>
+        <text class="notice-text">语音录入功能开发中</text>
+        <text class="notice-sub">请暂时使用文字录入</text>
+      </view>
+      <view class="smart-divider">或</view>
+      
       <view class="smart-hint">
         <text>📝 输入商品清单，系统自动识别</text>
         <text class="hint-example">示例：手抓饼 2 件，老酸奶 10 包</text>

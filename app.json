@@ -24,31 +24,36 @@
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#06AD56",
+    "selectedColor": "#07C160",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "assets/icons/home.png",
+        "selectedIconPath": "assets/icons/home-active.png"
       },
       {
         "pagePath": "pages/orders/orders",
-        "text": "订单"
-      },
-      {
-        "pagePath": "pages/receivable/receivable",
-        "text": "赊销"
+        "text": "订单",
+        "iconPath": "assets/icons/order.png",
+        "selectedIconPath": "assets/icons/order-active.png"
       },
       {
         "pagePath": "pages/outbound/outbound",
-        "text": "分拣出库"
+        "text": "工作台",
+        "iconPath": "assets/icons/workbench.png",
+        "selectedIconPath": "assets/icons/workbench-active.png"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "assets/icons/profile.png",
+        "selectedIconPath": "assets/icons/profile-active.png"
       }
-    ]
+    ],
+    "custom": true
   },
   "sitemapLocation": "sitemap.json",
   "cloud": true

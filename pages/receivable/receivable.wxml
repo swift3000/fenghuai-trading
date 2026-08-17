@@ -1,91 +1,49 @@
 <view class="container" style="{{uiStyle}}">
-  <!-- 导出工具栏 -->
-  <view class="recv-toolbar" wx:if="{{customers.length > 0}}">
-    <view class="flex-between">
-      <button class="btn-confirm-payment" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✅ 收款确认{{pendingPaymentCount > 0 ? " · " + pendingPaymentCount : ""}}</button>
-      <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="openExportPreview">📥 导出</button>
+  <!-- 绿色 hero 区（对齐原型 .receivable-hero） -->
+  <view class="recv-hero">
+    <view class="rh-label">{{timeTab === 'all' ? '全部客户总欠款' : '所选周期汇总'}}</view>
+    <view class="rh-amount">¥{{totalUnpaid}}</view>
+    <view class="rh-summary-row">
+      <view class="rh-s-item"><text class="rh-s-val">¥{{totalReceivable}}</text><text class="rh-s-lbl">应收总额</text></view>
+      <view class="rh-s-item green"><text class="rh-s-val">¥{{totalReceived}}</text><text class="rh-s-lbl">已收</text></view>
+      <view class="rh-s-item red"><text class="rh-s-val">¥{{totalUnpaid}}</text><text class="rh-s-lbl">未结清</text></view>
     </view>
-  </view>
-  <!-- 统计概览 -->
-  <view class="overview card">
-    <view class="stat-item">
-      <text class="stat-label">总欠款</text>
-      <text class="stat-value text-primary text-bold">¥{{totalUnpaid}}</text>
-    </view>
-    <view class="stat-item">
-      <text class="stat-label">已收款</text>
-      <text class="stat-value text-success">¥{{totalReceived}}</text>
-    </view>
-    <view class="stat-item">
-      <text class="stat-label">客户数</text>
-      <text class="stat-value">{{customerCount}}</text>
-    </view>
-    <view class="stat-item" wx:if="{{viewTab === 'settled'}}">
-      <text class="stat-label">已结清</text>
-      <text class="stat-value text-muted">{{settledCount}}</text>
+    <view class="rh-sub">
+      <text>欠款客户 <text class="rh-sub-num">{{customerCount - settledCount}}</text> 家</text>
+      <text>已结清 <text class="rh-sub-num">{{settledCount}}</text> 家</text>
     </view>
   </view>
 
-  <!-- 搜索栏 -->
-  <view class="search-bar">
-    <text class="search-icon">🔍</text>
-    <input placeholder="搜索客户名称/区域/联系人" value="{{searchKey}}" bindinput="onSearch" confirm-type="search" />
-  </view>
+  <view class="recv-body">
+    <!-- 搜索 -->
+    <view class="recv-search">
+      <text class="rs-icon">🔍</text>
+      <input placeholder="搜索客户名称或区域" value="{{searchKey}}" bindinput="onSearch" confirm-type="search" />
+    </view>
 
-  <!-- 视图切换 -->
-  <view class="view-tabs">
-    <view class="tab {{viewTab==='ledger'?'active':''}}" data-tab="ledger" bindtap="switchView">
-      <text>📋 客户台账</text>
-    </view>
-    <view class="tab {{viewTab==='unpaid'?'active':''}}" data-tab="unpaid" bindtap="switchView">
-      <text>⏳ 未结清</text>
-    </view>
-    <view class="tab {{viewTab==='settled'?'active':''}}" data-tab="settled" bindtap="switchView">
-      <text>✅ 已结清</text>
-    </view>
-  </view>
-
-  <!-- 时间筛选 -->
-  <view class="time-tabs" wx:if="{{viewTab === 'ledger'}}">
-    <view class="time-tab {{timeTab==='all'?'active':''}}" data-key="all" bindtap="switchTime">
-      <text>全部</text>
-    </view>
-    <view class="time-tab {{timeTab==='today'?'active':''}}" data-key="today" bindtap="switchTime">
-      <text>今日</text>
-    </view>
-    <view class="time-tab {{timeTab==='week'?'active':''}}" data-key="week" bindtap="switchTime">
-      <text>本周</text>
-    </view>
-    <view class="time-tab {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime">
-      <text>本月</text>
-    </view>
-    <view class="time-tab {{timeTab==='custom'?'active':''}}" data-key="custom" bindtap="switchTime">
-      <text>自定义</text>
-    </view>
-  </view>
-  
-  <!-- 自定义时间范围选择 -->
-  <view class="custom-date-range" wx:if="{{timeTab === 'custom'}}">
-    <view class="date-inputs">
-      <view class="date-item">
-        <text class="date-label">开始日期</text>
-        <picker mode="date" value="{{startDate}}" start="2020-01-01" end="{{endDate}}" bindchange="onStartDateChange">
-          <view class="picker-date">{{startDate || '请选择'}}</view>
-        </picker>
-      </view>
-      <view class="date-item">
-        <text class="date-label">结束日期</text>
-        <picker mode="date" value="{{endDate}}" start="{{startDate}}" bindchange="onEndDateChange">
-          <view class="picker-date">{{endDate || '请选择'}}</view>
-        </picker>
+    <!-- 时间 chips -->
+    <view class="recv-chips">
+      <view class="recv-chip {{timeTab==='all'?'active':''}}" data-key="all" bindtap="switchTime">全部</view>
+      <view class="recv-chip {{timeTab==='today'?'active':''}}" data-key="today" bindtap="switchTime">今日</view>
+      <view class="recv-chip {{timeTab==='week'?'active':''}}" data-key="week" bindtap="switchTime">本周</view>
+      <view class="recv-chip {{timeTab==='month'?'active':''}}" data-key="month" bindtap="switchTime">本月</view>
+      <view class="recv-chip drp {{timeTab==='custom'?'active':''}}" data-key="custom" bindtap="switchTime">
+        <text class="drp-icon">📅</text>{{timeTab==='custom' && startDate && endDate ? startDate.slice(5)+'~'+endDate.slice(5) : '选择时间区间'}}
       </view>
     </view>
-    <view class="date-actions">
-      <button class="btn-confirm" bindtap="applyCustomDate" disabled="{{!startDate || !endDate}}">
-        应用筛选
-      </button>
+
+    <!-- 三栏视图 Tab -->
+    <view class="recv-view-tabs">
+      <view class="rvt-tab {{viewTab==='ledger'?'active':''}}" data-tab="ledger" bindtap="switchView"><text>📋 客户台账</text></view>
+      <view class="rvt-tab {{viewTab==='unpaid'?'active':''}}" data-tab="unpaid" bindtap="switchView"><text>⏳ 未结清</text></view>
+      <view class="rvt-tab {{viewTab==='settled'?'active':''}}" data-tab="settled" bindtap="switchView"><text>✅ 已结清</text></view>
     </view>
-  </view>
+
+    <!-- 操作按钮行 -->
+    <view class="recv-action-row">
+      <button class="recv-confirm-btn" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✓ 收款确认{{pendingPaymentCount > 0 ? ' · ' + pendingPaymentCount : ''}}</button>
+      <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="openExportPreview">⬇ 导出</button>
+    </view>
 
   <!-- 客户列表 -->
   <view class="customer-list" wx:if="{{customers.length > 0}}">
@@ -132,6 +90,7 @@
       </view>
     </view>
   </view>
+  </view> <!-- /recv-body -->
 
   <!-- 空状态 -->
   <view class="empty-state" wx:if="{{customers.length === 0}}">

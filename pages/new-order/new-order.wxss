@@ -368,3 +368,51 @@
 .prow-total { display: flex; justify-content: space-between; align-items: center; margin-top: 14rpx; padding-top: 14rpx; border-top: 1rpx dashed #eee; }
 .row-subtotal-label { font-size: calc(24rpx * var(--font-scale)); color: #666; }
 .row-subtotal { font-size: calc(34rpx * var(--font-scale)); font-weight: bold; color: #FF3B30; }
+
+/* 语音录入提示样式 */
+.smart-voice-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30rpx;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 12rpx;
+  margin-bottom: 20rpx;
+  border: 2rpx dashed #3b82f6;
+}
+
+.smart-voice-notice .notice-icon {
+  font-size: 48rpx;
+  margin-bottom: 10rpx;
+}
+
+.smart-voice-notice .notice-text {
+  font-size: 28rpx;
+  color: #2563eb;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.smart-voice-notice .notice-sub {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+.smart-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 20rpx 0;
+  color: #9ca3af;
+  font-size: 24rpx;
+}
+
+.smart-divider::before,
+.smart-divider::after {
+  content: '';
+  flex: 1;
+  height: 1rpx;
+  background: #e5e7eb;
+  margin: 0 20rpx;
+}

@@ -1,86 +1,76 @@
 <view class="container" wx:if="{{order}}" style="{{uiStyle}}">
-  <view class="card order-header">
-    <view class="flex-between">
-      <text class="order-no">{{order.orderNo}}</text>
-      <text class="status-tag">{{orderStatusText}}</text>
+  <!-- 绿色 hero 头 -->
+  <view class="detail-hero">
+    <view class="hero-order-no">订单号：{{order.orderNo}}</view>
+    <view class="hero-amount">¥{{order.totalAmount}}</view>
+    <view class="hero-status">
+      <view class="hero-status-dot"></view>
+      <text>{{orderStatusText}}</text>
     </view>
-    <text class="total-amount">¥{{order.totalAmount}}</text>
   </view>
 
-  <view class="card customer-info">
-    <text class="section-title">客户信息</text>
-    <view class="info-row"><text>客户：</text><text>{{customer.name}}</text></view>
-    <view class="info-row"><text>区域：</text><text>{{customer.region}}</text></view>
-    <view class="info-row"><text>联系人：</text><text>{{customer.contact}}</text></view>
-    <view class="info-row"><text>电话：</text><text>{{customer.phone}}</text></view>
-    <view class="info-row"><text>下单员：</text><text>{{order.createdByName || '未知'}}</text></view>
-    <view class="info-row"><text>下单时间：</text><text>{{orderTimeText}}</text></view>
+  <!-- 客户信息 -->
+  <view class="detail-card">
+    <view class="sec-title"><view class="sec-bar"></view><text>客户信息</text></view>
+    <view class="detail-row"><text class="dr-lbl">客户名称</text><text class="dr-val">{{customer.name}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">所在区域</text><text class="dr-val">{{customer.region}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">联系人</text><text class="dr-val">{{customer.contact || '—'}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">联系电话</text><text class="dr-val">{{customer.phone || '—'}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">下单员</text><text class="dr-val">{{order.createdByName || '未知'}}</text></view>
   </view>
 
-  <view class="card items-info">
-    <text class="section-title">商品明细</text>
-    <view class="item-row" wx:for="{{items}}" wx:key="_id">
-      <view class="flex-between">
-        <text>{{item.name}}</text>
-        <text wx:if="{{item.amountText}}">¥{{item.amountText}}</text>
+  <!-- 商品明细 -->
+  <view class="detail-card">
+    <view class="sec-title"><view class="sec-bar"></view><text>商品明细</text></view>
+    <view class="di-item" wx:for="{{items}}" wx:key="_id">
+      <view class="di-idx">{{index + 1}}</view>
+      <view class="di-body">
+        <view class="di-name">{{item.name}}<text wx:if="{{item.qtyDesc}}"> · {{item.qtyDesc}}</text></view>
+        <view class="di-meta"><text>单价 {{item.priceText}}</text></view>
       </view>
-      <text class="item-spec">{{item.spec}} · 数量 {{item.qtyDesc}}</text>
+      <view class="di-amount" wx:if="{{item.amountText}}">¥{{item.amountText}}</view>
     </view>
-    <view class="divider"></view>
-    <view class="flex-between total-row">
-      <text class="text-bold">合计</text>
-      <text class="total-amount">¥{{order.totalAmount}}</text>
+    <view class="di-total-row">
+      <text class="di-total-lbl">合计</text>
+      <text class="di-total-val">¥{{order.totalAmount}}</text>
     </view>
   </view>
 
-  <view class="card payment-info">
-    <text class="section-title">收款状态</text>
-    <view class="info-row flex-between">
-      <text>状态：</text>
-      <text class="payment-status-text {{paymentStatus === 'paid' ? 'text-success' : 'text-warning'}}">{{paymentStatusText}}</text>
+  <!-- 收款状态 -->
+  <view class="detail-card">
+    <view class="sec-title"><view class="sec-bar"></view><text>收款状态</text></view>
+    <view class="detail-row flex-between">
+      <text class="dr-lbl">付款状态</text>
+      <text class="dr-val {{paymentStatus === 'paid' ? 'text-success' : 'text-warning'}}">{{paymentStatusText}}</text>
     </view>
-    <view class="info-row flex-between">
-      <text>已收金额：</text>
-      <text class="text-success">¥{{receivedAmount}}</text>
+    <view class="detail-row flex-between">
+      <text class="dr-lbl">已收金额</text>
+      <text class="dr-val text-success">¥{{receivedAmount}}</text>
     </view>
-    <view class="info-row flex-between">
-      <text>折价/货损：</text>
-      <text class="{{totalDiscount > 0 ? 'text-warning' : ''}}">¥{{totalDiscount}}</text>
+    <view class="detail-row flex-between">
+      <text class="dr-lbl">折价/货损</text>
+      <text class="dr-val {{totalDiscount > 0 ? 'text-warning' : ''}}">¥{{totalDiscount}}</text>
     </view>
-    <view class="info-row flex-between">
-      <text>剩余欠款：</text>
-      <text class="text-danger">¥{{remainingDebt}}</text>
+    <view class="detail-row flex-between">
+      <text class="dr-lbl">剩余欠款</text>
+      <text class="dr-val text-danger">¥{{remainingDebt}}</text>
     </view>
-    <view wx:if="{{paymentStatus !== 'paid'}}" class="collect-btn">
+    <view wx:if="{{paymentStatus !== 'paid'}}" class="collect-btn-wrap">
       <button wx:if="{{canCollect}}" class="btn-primary" bindtap="handleCollect">登记收款</button>
     </view>
   </view>
 
-  <!-- 微信转发状态 -->
-  <view class="card wechat-share-info">
-    <text class="section-title">微信转发</text>
-    <view wx:if="{{order.shared_to_wechat}}" class="share-success">
-      <text class="share-badge">✓ 已转发</text>
-      <text class="share-time">{{sharedAtText}}</text>
-    </view>
-    <view wx:else class="share-pending">
-      <text>未转发</text>
-    </view>
-  </view>
-  
-  <view wx:if="{{order.outStatus === 'done'}}" class="card shipping-info">
-    <text class="section-title">物流包裹</text>
-    <view wx:if="{{order.ship_large || order.ship_medium || order.ship_small}}" class="shipping-tags">
-      <view class="shipping-tag" wx:if="{{order.ship_large}}">大件 {{order.ship_large}}</view>
-      <view class="shipping-tag" wx:if="{{order.ship_medium}}">中件 {{order.ship_medium}}</view>
-      <view class="shipping-tag" wx:if="{{order.ship_small}}">小件 {{order.ship_small}}</view>
-    </view>
-    <view wx:else class="shipping-empty">未填写</view>
+  <!-- 订单信息（对齐原型：下单时间+微信转发+物流件型） -->
+  <view class="detail-card">
+    <view class="sec-title"><view class="sec-bar"></view><text>订单信息</text></view>
+    <view class="detail-row"><text class="dr-lbl">下单时间</text><text class="dr-val">{{orderTimeText}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">微信转发</text><text class="dr-val">{{order.shared_to_wechat ? '已转发' : '未转发'}}</text></view>
+    <view class="detail-row"><text class="dr-lbl">物流件型</text><text class="dr-val">{{shipText}}</text></view>
   </view>
 
-  <!-- 操作记录（订单修改历史，对齐原型） -->
-  <view class="card logs-card">
-    <text class="section-title">操作记录</text>
+  <!-- 操作记录 -->
+  <view class="detail-card">
+    <view class="sec-title"><view class="sec-bar"></view><text>操作记录</text></view>
     <view wx:if="{{logs.length === 0}}" class="logs-empty">暂无操作记录</view>
     <view class="log-list">
       <view class="log-item" wx:for="{{logs}}" wx:key="index">
@@ -93,16 +83,19 @@
     </view>
   </view>
 
-  <view class="action-buttons">
-    <button wx:if="{{canPrint}}" class="btn-primary" bindtap="handlePrint">打印送货单</button>
-    <button wx:if="{{canEdit && editEnabled}}" class="btn-secondary" bindtap="handleEdit">编辑订单</button>
-    <button wx:if="{{canExport}}" class="btn-secondary" bindtap="handleExportExcel">导出Excel</button>
-    <button class="btn-secondary" bindtap="handleCopyOrder">复制订单</button>
-    <button wx:if="{{canPrint}}" class="btn-secondary" bindtap="onForwardTap">转发客户微信</button>
-    <button wx:if="{{canDelete}}" class="btn-danger" bindtap="handleDelete">删除订单</button>
+  <!-- 操作按钮 -->
+  <view class="detail-actions">
+    <button wx:if="{{canPrint}}" class="act-btn act-print" bindtap="handlePrint">🖨 打印送货单</button>
+    <button wx:if="{{canEdit && editEnabled}}" class="act-btn act-edit" bindtap="handleEdit">✏ 编辑订单</button>
+    <button wx:if="{{canExport}}" class="act-btn act-export" bindtap="handleExportExcel">⬇ 导出Excel</button>
+    <button class="act-btn act-copy" bindtap="handleCopyOrder">⧉ 复制订单</button>
+    <button wx:if="{{canPrint}}" class="act-btn act-forward" bindtap="onForwardTap">📤 转发客户微信</button>
+    <button wx:if="{{canDelete}}" class="act-btn act-delete" bindtap="handleDelete">🗑 删除订单</button>
   </view>
 
-  <!-- 转发销售单卡片画布（隐藏，用于生成转发封面图） -->
+  <view style="height:20px"></view>
+
+  <!-- 转发销售单卡片画布 -->
   <canvas canvas-id="salesCardCanvas" id="salesCardCanvas" style="position:fixed;left:-9999px;top:0;width:500px;height:2400px;" />
 
   <!-- 收款弹窗 -->

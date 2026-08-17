@@ -207,6 +207,11 @@ Page({
     wx.navigateTo({ url: '/pages/new-order/new-order' });
   },
 
+  // 智能录入悬浮球：进入新建订单并自动弹出智能录入
+  goToSmartInput() {
+    wx.navigateTo({ url: '/pages/new-order/new-order?smart=1' });
+  },
+
   // 跳转到赊销看板
   goToReceivable() {
     wx.navigateTo({ url: '/pages/receivable/receivable' });

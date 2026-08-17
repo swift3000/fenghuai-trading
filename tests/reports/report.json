@@ -1,0 +1,409 @@
+{
+  "artifactDir": "/Users/god/Desktop/项目/github/fenghuai-trading/tests/reports",
+  "artifacts": [
+    {
+      "kind": "page",
+      "path": "/Users/god/Desktop/项目/github/fenghuai-trading/tests/reports/test_products_20260814_141950.png"
+    }
+  ],
+  "cliPath": "/Applications/wechatwebdevtools.app/Contents/MacOS/cli",
+  "currentPage": "pages/index/index",
+  "guiScreenshot": null,
+  "method": "reLaunch",
+  "miniprogramRoot": "/Users/god/Desktop/项目/github/fenghuai-trading",
+  "performedActions": [],
+  "pageScreenshots": [
+    {
+      "path": "/Users/god/Desktop/项目/github/fenghuai-trading/tests/reports/test_products_20260814_141950.png",
+      "scrollTop": null
+    }
+  ],
+  "projectRoot": "/Users/god/Desktop/项目/github/fenghuai-trading",
+  "reportPath": "/Users/god/Desktop/项目/github/fenghuai-trading/tests/reports/report.json",
+  "route": "pages/products/products",
+  "consoleEvents": [
+    {
+      "index": 0,
+      "kind": "exception",
+      "message": "module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'",
+      "stack": "Error: module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'\n    at J (http://127.0.0.1:52002/appservice/__dev__/WASubContext.js?t=wechat&v=3.17.1:1:517493)\n    at ide:///package/__APP__/appservice.js:2632:7\n    at doWhenAllScriptLoaded (ide:///getmainpackage.js:2793:21)\n    at Object.scriptLoaded (ide:///getmainpackage.js:2828:5)\n    at Object.<anonymous> (ide:///getmainpackage.js:2886:22)",
+      "raw": {
+        "message": "module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'",
+        "stack": "Error: module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'\n    at J (http://127.0.0.1:52002/appservice/__dev__/WASubContext.js?t=wechat&v=3.17.1:1:517493)\n    at ide:///package/__APP__/appservice.js:2632:7\n    at doWhenAllScriptLoaded (ide:///getmainpackage.js:2793:21)\n    at Object.scriptLoaded (ide:///getmainpackage.js:2828:5)\n    at Object.<anonymous> (ide:///getmainpackage.js:2886:22)"
+      }
+    },
+    {
+      "index": 1,
+      "kind": "exception",
+      "message": "module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'",
+      "stack": "Error: module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'\n    at J (http://127.0.0.1:52002/appservice/__dev__/WASubContext.js?t=wechat&v=3.17.1:1:517493)\n    at ide:///package/__APP__/appservice.js:2632:7\n    at doWhenAllScriptLoaded (ide:///getmainpackage.js:2793:21)\n    at Object.scriptLoaded (ide:///getmainpackage.js:2828:5)\n    at Object.<anonymous> (ide:///getmainpackage.js:2886:22)",
+      "raw": {
+        "message": "module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'",
+        "stack": "Error: module 'pages/products/products.js' is not defined, require args is 'pages/products/products.js'\n    at J (http://127.0.0.1:52002/appservice/__dev__/WASubContext.js?t=wechat&v=3.17.1:1:517493)\n    at ide:///package/__APP__/appservice.js:2632:7\n    at doWhenAllScriptLoaded (ide:///getmainpackage.js:2793:21)\n    at Object.scriptLoaded (ide:///getmainpackage.js:2828:5)\n    at Object.<anonymous> (ide:///getmainpackage.js:2886:22)"
+      }
+    },
+    {
+      "index": 2,
+      "kind": "console",
+      "level": "log",
+      "message": "当前 cloudVersion: undefined",
+      "raw": {
+        "type": "log",
+        "args": [
+          "当前 cloudVersion: undefined"
+        ]
+      }
+    },
+    {
+      "index": 3,
+      "kind": "console",
+      "level": "log",
+      "message": "cloud sdk (build ts 1670494204239) injection skipped for sdk version 3.17.1",
+      "raw": {
+        "type": "log",
+        "args": [
+          "cloud sdk (build ts 1670494204239) injection skipped for sdk version",
+          "3.17.1"
+        ]
+      }
+    },
+    {
+      "index": 4,
+      "kind": "console",
+      "level": "log",
+      "message": "=== App 启动 ===",
+      "raw": {
+        "type": "log",
+        "args": [
+          "=== App 启动 ==="
+        ]
+      }
+    },
+    {
+      "index": 5,
+      "kind": "console",
+      "level": "log",
+      "message": "初始化云开发环境: cloud1-d6g75loi673b1e039",
+      "raw": {
+        "type": "log",
+        "args": [
+          "初始化云开发环境:",
+          "cloud1-d6g75loi673b1e039"
+        ]
+      }
+    },
+    {
+      "index": 6,
+      "kind": "console",
+      "level": "log",
+      "message": "主题已切换为: 清新绿",
+      "raw": {
+        "type": "log",
+        "args": [
+          "主题已切换为:",
+          "清新绿"
+        ]
+      }
+    },
+    {
+      "index": 7,
+      "kind": "console",
+      "level": "log",
+      "message": "主题已初始化: green",
+      "raw": {
+        "type": "log",
+        "args": [
+          "主题已初始化:",
+          "green"
+        ]
+      }
+    },
+    {
+      "index": 8,
+      "kind": "console",
+      "level": "log",
+      "message": "已加载用户信息: 测试 角色: admin",
+      "raw": {
+        "type": "log",
+        "args": [
+          "已加载用户信息:",
+          "测试",
+          "角色:",
+          "admin"
+        ]
+      }
+    },
+    {
+      "index": 9,
+      "kind": "console",
+      "level": "log",
+      "message": "updateTabBarByRole 执行，角色: admin",
+      "raw": {
+        "type": "log",
+        "args": [
+          "updateTabBarByRole 执行，角色:",
+          "admin"
+        ]
+      }
+    },
+    {
+      "index": 10,
+      "kind": "console",
+      "level": "log",
+      "message": "检测到已登录，自动跳转",
+      "raw": {
+        "type": "log",
+        "args": [
+          "检测到已登录，自动跳转"
+        ]
+      }
+    },
+    {
+      "index": 11,
+      "kind": "console",
+      "level": "log",
+      "message": "updateTabBarByRole 执行，角色: admin",
+      "raw": {
+        "type": "log",
+        "args": [
+          "updateTabBarByRole 执行，角色:",
+          "admin"
+        ]
+      }
+    },
+    {
+      "index": 12,
+      "kind": "console",
+      "level": "log",
+      "message": "✅ TabBar 设置成功（基于角色）",
+      "raw": {
+        "type": "log",
+        "args": [
+          "✅ TabBar 设置成功（基于角色）"
+        ]
+      }
+    },
+    {
+      "index": 13,
+      "kind": "console",
+      "level": "log",
+      "message": "本地缓存用户信息: {\"_id\":\"f57953266a7a93bc00415299055b0b73\",\"openid\":\"oo0s93SW9A4V4iO1ANyA3eqzxVIA\",\"name\":\"测试\",\"phone\":\"18691826001\",\"region\":\"汉滨\",\"role\":\"admin\",\"status\":\"active\",\"fontScale\":0.9,\"permissions\":[\"order:view\",\"order:create\",\"order:edit\",\"order:delete\",\"order:print\",\"order:export\",\"product:view\",\"product:edit\",\"customer:view\",\"customer:edit\",\"sort:task\",\"warehouse:confirm\",\"receivable:view\",\"receivable:collect\",\"receivable:confirm\",\"receivable:discount\",\"report:view\",\"report:export\",\"report:ledger\",\"member:manage\"],\"createdAt\":\"2026-08-11T03:15:08.971Z\",\"updatedAt\":\"2026-08-13T09:55:27.218Z\"}",
+      "raw": {
+        "type": "log",
+        "args": [
+          "本地缓存用户信息:",
+          {
+            "_id": "f57953266a7a93bc00415299055b0b73",
+            "openid": "oo0s93SW9A4V4iO1ANyA3eqzxVIA",
+            "name": "测试",
+            "phone": "18691826001",
+            "region": "汉滨",
+            "role": "admin",
+            "status": "active",
+            "fontScale": 0.9,
+            "permissions": [
+              "order:view",
+              "order:create",
+              "order:edit",
+              "order:delete",
+              "order:print",
+              "order:export",
+              "product:view",
+              "product:edit",
+              "customer:view",
+              "customer:edit",
+              "sort:task",
+              "warehouse:confirm",
+              "receivable:view",
+              "receivable:collect",
+              "receivable:confirm",
+              "receivable:discount",
+              "report:view",
+              "report:export",
+              "report:ledger",
+              "member:manage"
+            ],
+            "createdAt": "2026-08-11T03:15:08.971Z",
+            "updatedAt": "2026-08-13T09:55:27.218Z"
+          }
+        ]
+      }
+    },
+    {
+      "index": 14,
+      "kind": "console",
+      "level": "error",
+      "message": "❌ TabBar 设置失败: {}",
+      "raw": {
+        "type": "error",
+        "args": [
+          "❌ TabBar 设置失败:",
+          {}
+        ]
+      }
+    },
+    {
+      "index": 15,
+      "kind": "console",
+      "level": "error",
+      "message": "设置 TabBar 失败: {}",
+      "raw": {
+        "type": "error",
+        "args": [
+          "设置 TabBar 失败:",
+          {}
+        ]
+      }
+    },
+    {
+      "index": 16,
+      "kind": "console",
+      "level": "error",
+      "message": "页面【pages/products/products]错误:\n {}",
+      "raw": {
+        "type": "error",
+        "args": [
+          "页面【pages/products/products]错误:\n",
+          {}
+        ]
+      }
+    },
+    {
+      "index": 17,
+      "kind": "console",
+      "level": "error",
+      "message": "{}",
+      "raw": {
+        "type": "error",
+        "args": [
+          {}
+        ]
+      }
+    },
+    {
+      "index": 18,
+      "kind": "console",
+      "level": "error",
+      "message": "{}",
+      "raw": {
+        "type": "error",
+        "args": [
+          {}
+        ]
+      }
+    },
+    {
+      "index": 19,
+      "kind": "console",
+      "level": "error",
+      "message": "页面【pages/products/products]错误:\n {}",
+      "raw": {
+        "type": "error",
+        "args": [
+          "页面【pages/products/products]错误:\n",
+          {}
+        ]
+      }
+    },
+    {
+      "index": 20,
+      "kind": "console",
+      "level": "error",
+      "message": "{}",
+      "raw": {
+        "type": "error",
+        "args": [
+          {}
+        ]
+      }
+    },
+    {
+      "index": 21,
+      "kind": "console",
+      "level": "error",
+      "message": "{}",
+      "raw": {
+        "type": "error",
+        "args": [
+          {}
+        ]
+      }
+    },
+    {
+      "index": 22,
+      "kind": "console",
+      "level": "log",
+      "message": "📡 调用云函数: orders 参数: {\"action\":\"todayStats\"}",
+      "raw": {
+        "type": "log",
+        "args": [
+          "📡 调用云函数:",
+          "orders",
+          "参数:",
+          {
+            "action": "todayStats"
+          }
+        ]
+      }
+    },
+    {
+      "index": 23,
+      "kind": "console",
+      "level": "log",
+      "message": "📡 调用云函数: orders 参数: {\"action\":\"list\",\"timeTab\":\"today\"}",
+      "raw": {
+        "type": "log",
+        "args": [
+          "📡 调用云函数:",
+          "orders",
+          "参数:",
+          {
+            "action": "list",
+            "timeTab": "today"
+          }
+        ]
+      }
+    },
+    {
+      "index": 24,
+      "kind": "console",
+      "level": "log",
+      "message": "✅ 云函数成功: orders 返回: {\"code\":0,\"data\":[]}",
+      "raw": {
+        "type": "log",
+        "args": [
+          "✅ 云函数成功:",
+          "orders",
+          "返回:",
+          {
+            "code": 0,
+            "data": []
+          }
+        ]
+      }
+    },
+    {
+      "index": 25,
+      "kind": "console",
+      "level": "log",
+      "message": "✅ 云函数成功: orders 返回: {\"code\":0,\"data\":{\"count\":0,\"amount\":0}}",
+      "raw": {
+        "type": "log",
+        "args": [
+          "✅ 云函数成功:",
+          "orders",
+          "返回:",
+          {
+            "code": 0,
+            "data": {
+              "count": 0,
+              "amount": 0
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "scrollController": null,
+  "url": "/pages/products/products"
+}

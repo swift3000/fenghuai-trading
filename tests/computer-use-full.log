@@ -1,0 +1,42 @@
+========================================
+Computer Use 完整 UI 测试
+开始时间: 2026-08-13T09:15:59.911Z
+========================================
+
+=== 测试登录页 ===
+截图已保存：login-page
+✅ 登录页有微信登录按钮
+
+=== 测试首页 ===
+截图已保存：home-page
+✅ TabBar 有 5 个图标
+  ✅ 首页: assets/icons/home.png
+  ✅ 订单: assets/icons/order.png
+  ✅ 赊销: assets/icons/money.png
+  ✅ 分拣出库: assets/icons/outbound.png
+  ✅ 我的: assets/icons/profile.png
+✅ 首页有主要功能入口
+
+=== 测试新建订单 ===
+截图已保存：new-order
+✅ 有客户搜索功能
+❌ 缺少商品添加功能
+❌ 缺少订单提交功能
+
+=== 性能检查 ===
+⚠️  orders: 大数据列表建议添加分页
+⚠️  customers: 大数据列表建议添加分页
+⚠️  products: 大数据列表建议添加分页
+⚠️  receivable: 大数据列表建议添加分页
+
+=== 样式检查 ===
+✅ 主色调正确
+✅ 有圆角样式
+✅ 有阴影效果
+
+========================================
+测试完成
+结束时间: 2026-08-13T09:16:01.380Z
+========================================
+日志：/Users/god/Desktop/项目/github/fenghuai-trading/tests/computer-use-full.log
+截图：/Users/god/Desktop/项目/github/fenghuai-trading/tests/screenshots

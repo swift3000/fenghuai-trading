@@ -1,0 +1,22 @@
+{
+  "passed": 13,
+  "failed": 2,
+  "warnings": 0,
+  "errors": [
+    {
+      "category": "运行时",
+      "name": "云函数可被调用（模拟）",
+      "detail": "云函数语法错误：await is only valid in async functions and the top level bodies of modules"
+    },
+    {
+      "category": "原型对比",
+      "name": "登录页无角色卡片（产品形态）",
+      "detail": "发现角色卡片选择（演示残留）"
+    }
+  ],
+  "screenshots": [],
+  "startTime": "2026-08-13T09:06:12.475Z",
+  "endTime": "2026-08-13T09:06:12.497Z",
+  "duration": 22,
+  "summary": "NEEDS_FIXING"
+}

@@ -1,12 +1,12 @@
 /* ==================== 全局基础样式 ==================== */
 page {
   /* 颜色系统 - 与原型一致 */
-  --theme-primary: #06AD56;
-  --theme-primary-light: #07C160;
+  --theme-primary: #07C160;
+  --theme-primary-light: #06AD56;
   --theme-primary-bg: linear-gradient(135deg, #E8F5E9 0%, #fff 100%);
   --theme-secondary: #FF6B35;
   --theme-secondary-light: #FF8A65;
-  --theme-bg: #F2F3F5;
+  --theme-bg: #F5F6F8;
   --theme-card: #FFFFFF;
   --theme-text: #191919;
   --theme-text-1: #333333;
@@ -40,7 +40,7 @@ page {
 /* 通用卡片 */
 .card {
   background: var(--theme-card);
-  border-radius: 16rpx;
+  border-radius: 32rpx;
   padding: 24rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);

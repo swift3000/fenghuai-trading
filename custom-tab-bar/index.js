@@ -11,7 +11,7 @@ function getAppRef() {
 Component({
   data: {
     active: '',
-    activeColor: '#06AD56',
+    activeColor: '#07C160',
     canCreate: false
   },
 
@@ -28,7 +28,7 @@ Component({
       const perms = userInfo.permissions || []
       this.setData({
         canCreate: perms.includes('order:create'),
-        activeColor: '#06AD56'
+        activeColor: '#07C160'
       })
     },
 

@@ -1353,6 +1353,32 @@ body{padding:18px 0}
 .rvt-tab .ri,.recv-confirm-btn .ri,.btn-export-recv .ri,.btn-invite .ri,.member-del .ri,.perm-reset .ri{vertical-align:-0.15em}
 .dc-debt .ri{color:var(--brand)}
 .qp-copy-icon .ri{width:20px;height:20px}
+
+/* 智能录入悬浮球（首页右下角，与小程序一致） */
+.smart-fab{position:absolute;right:14px;bottom:calc(76px + var(--safe-bottom));z-index:60;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.smart-fab-bubble{background:linear-gradient(135deg,#45D06F,#1E9E4B);color:#fff;font-size:calc(11px * var(--font-scale));font-weight:600;padding:4px 10px;border-radius:999px;box-shadow:0 4px 10px rgba(36,173,82,.35);white-space:nowrap}
+.smart-fab-ball{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#45D06F,#1E9E4B);border:3px solid #fff;box-shadow:0 8px 18px rgba(36,173,82,.4);display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .15s}
+.smart-fab:hover .smart-fab-ball{transform:scale(1.08)}
+.smart-fab:active .smart-fab-ball{transform:scale(.94)}
+/* 智能录入弹窗 */
+.smart-modal{max-height:82%}
+.smart-voice-notice{margin:14px 16px 0;padding:18px 12px;border:1.5px dashed #7FB2F0;border-radius:14px;background:#F2F7FF;display:flex;flex-direction:column;align-items:center;gap:4px}
+.smart-voice-notice .svn-icon{font-size:26px}
+.smart-voice-notice .svn-title{color:#2E6FE0;font-weight:600;font-size:calc(15px * var(--font-scale))}
+.smart-voice-notice .svn-sub{color:#98A2B3;font-size:calc(12px * var(--font-scale))}
+.smart-divider{display:flex;align-items:center;gap:10px;color:#C4CBD6;font-size:calc(12px * var(--font-scale));margin:12px 16px}
+.smart-divider::before,.smart-divider::after{content:'';flex:1;height:1px;background:#E5E9F0}
+.smart-hint{margin:0 16px;color:#475467;font-size:calc(13px * var(--font-scale));line-height:1.5}
+.smart-textarea{display:block;width:calc(100% - 32px);margin:10px 16px 0;height:110px;border:1.5px solid #E5E9F0;border-radius:12px;padding:10px 12px;font-size:calc(14px * var(--font-scale));outline:none;resize:none;background:#F9FAFB}
+.smart-textarea:focus{border-color:var(--green);box-shadow:0 0 0 2px rgba(7,193,96,.1);background:#fff}
+.smart-preview{margin:10px 16px 0;display:flex;flex-direction:column;gap:6px}
+.smart-preview-item{display:flex;justify-content:space-between;align-items:center;background:#F3FBF5;border:1px solid #CDEED8;border-radius:10px;padding:7px 10px;font-size:calc(13px * var(--font-scale));color:#16543A}
+.smart-preview-item .sp-qty{color:#1E9E4B;font-weight:600}
+.smart-footer{display:flex;gap:10px;padding:14px 16px calc(14px + var(--safe-bottom))}
+.smart-footer button{flex:1;height:44px;border-radius:12px;font-size:calc(15px * var(--font-scale));font-weight:600;cursor:pointer;border:none}
+.smart-footer .btn-cancel{background:#F2F4F7;color:#475467}
+.smart-footer .btn-primary{background:var(--green);color:#fff}
+.smart-footer .btn-primary:disabled{opacity:.6}
 </style>
 </head>
 <body>
@@ -1601,6 +1627,12 @@ body{padding:18px 0}
       </div>
       <div class="section-title">今日订单<span class="more" onclick="navigateTo('orders')">查看全部 ›</span></div>
       <div class="card" id="homeOrderList" style="padding:4px 16px"></div>
+
+      <!-- 智能录入悬浮球（右下角，与小程序一致，避开底部TabBar的+号） -->
+      <div class="smart-fab" id="homeSmartFab" onclick="openSmartInput()">
+        <div class="smart-fab-bubble">智能录入</div>
+        <div class="smart-fab-ball">🤖</div>
+      </div>
     </div>
 
     <!-- New Order Page -->
@@ -2048,6 +2080,29 @@ body{padding:18px 0}
     </div>
     <div class="modal-search"><input type="text" id="customerModalSearch" placeholder="搜索客户名称/简称/联系人/区域" oninput="renderCustomerModalList()"></div>
     <div class="modal-body" id="customerModalList"></div>
+  </div>
+</div>
+
+<!-- Smart Input Modal（智能录入：文字/语音，与小程序一致） -->
+<div class="modal-mask" id="smartModal">
+  <div class="modal smart-modal">
+    <div class="modal-header">
+      <div class="title">智能录入</div>
+      <div class="close" onclick="closeSmartModal()"><svg class="ri" aria-hidden="true"><use href="#ri-close-line"></use></svg></div>
+    </div>
+    <div class="smart-voice-notice">
+      <div class="svn-icon">📢</div>
+      <div class="svn-title">语音录入功能开发中</div>
+      <div class="svn-sub">请暂时使用文字录入</div>
+    </div>
+    <div class="smart-divider">或</div>
+    <div class="smart-hint">📝 输入商品清单，系统自动识别示例：手抓饼 2 件，老酸奶 10 包</div>
+    <textarea class="smart-textarea" id="smartInputText" placeholder="请输入商品清单，每行一个" oninput="smartInputPreview()"></textarea>
+    <div class="smart-preview" id="smartPreviewList"></div>
+    <div class="smart-footer">
+      <button class="btn-cancel" onclick="closeSmartModal()">取消</button>
+      <button class="btn-primary" id="smartConfirmBtn" onclick="confirmSmartInput()">确认添加</button>
+    </div>
   </div>
 </div>
 
@@ -3160,7 +3215,7 @@ function navigateTo(page, params){
 
   // Page-specific init
   if(page === 'home') initHome();
-  if(page === 'newOrder') initNewOrder();
+  if(page === 'newOrder'){ initNewOrder(); if(params && params.smart) openSmartModal(); }
   if(page === 'orders') renderOrderList();
   if(page === 'products') renderProductList();
   if(page === 'customers') renderCustomerList();
@@ -3712,6 +3767,102 @@ function setLastOrderInfo(){
   if(tip) tip.style.display = 'none';
 }
 
+// ============ 智能录入（悬浮球 → 新建订单页弹窗，与小程序一致） ============
+function openSmartInput(){
+  navigateTo('newOrder');
+  openSmartModal();
+}
+function openSmartModal(){
+  $('smartInputText').value = '';
+  $('smartPreviewList').innerHTML = '';
+  openModal('smartModal');
+}
+function closeSmartModal(){
+  closeModal('smartModal');
+  $('smartInputText').value = '';
+  $('smartPreviewList').innerHTML = '';
+}
+function smartInputPreview(){
+  const text = $('smartInputText').value;
+  const box = $('smartPreviewList');
+  if(!text.trim()){ box.innerHTML = ''; return; }
+  const lines = text.split(String.fromCharCode(10)).filter(l => l.trim());
+  box.innerHTML = lines.map(line => {
+    const txt = line.trim();
+    return `<div class="smart-preview-item"><span>${txt}</span><span class="sp-qty">✓</span></div>`;
+  }).join('');
+}
+function matchProductByName(name){
+  return data.products.find(p =>
+    (p.name && (p.name.includes(name) || name.includes(p.name))) ||
+    (p.material_code && String(p.material_code) === name.trim())
+  ) || null;
+}
+function confirmSmartInput(){
+  const text = $('smartInputText').value;
+  if(!text.trim()){ showToast('请输入内容'); return; }
+  const lines = text.split(String.fromCharCode(10)).filter(l => l.trim());
+  const added = [];
+  lines.forEach(line => {
+    const txt = line.trim();
+    // 解析“X件+Y包 / X件 / Y包 / 名称 数字单位”等写法
+    let name = txt, piece = 0, zero = 0, matched = false;
+    const comb = txt.match(/^(.+?)\s*(\d+)\s*件\s*[+＋、,，]?\s*(?:(\d+)\s*(包|个|箱))?\s*$/);
+    const comb2 = txt.match(/^(.+?)\s*(\d+)\s*(包|个|箱)\s*$/);
+    const num = txt.match(/^(.+?)\s*(\d+)\s*件\s*$/);
+    if(comb){ name = comb[1].trim(); piece = parseInt(comb[2]); if(comb[3]) zero = parseInt(comb[3]); matched = true; }
+    else if(comb2){ name = comb2[1].trim(); zero = parseInt(comb2[2]); matched = true; }
+    else if(num){ name = num[1].trim(); piece = parseInt(num[2]); matched = true; }
+    const qty = matched ? (piece || zero) : 1;
+    const unitWord = matched ? (piece ? '件' : (zero ? '包' : '')) : '';
+    const product = matchProductByName(name);
+    if(product){
+      const existing = state.currentItems.find(it => it.material_code === product.material_code);
+      if(existing){
+        if(existing.pricing_mode === 'unit'){ existing.zero_qty += (zero || piece); }
+        else { existing.piece_qty += piece; existing.zero_qty += zero; }
+        added.push(product.name);
+      } else {
+        const it = {
+          material_code: product.material_code,
+          name: product.name,
+          spec: product.spec || '',
+          unit: product.unit || '包',
+          pricing_mode: product.pricing_mode || 'case',
+          is_adjustable: product.is_adjustable || false,
+          price_piece: product.price_piece || 0,
+          price_zero: product.price_zero || 0,
+          piece_qty: 0,
+          zero_qty: 0,
+          remark: ''
+        };
+        if(it.pricing_mode === 'unit'){ it.zero_qty = (zero || piece); }
+        else { it.piece_qty = piece; it.zero_qty = zero; }
+        if(piece === 0 && zero === 0){ it.zero_qty = 1; }  // 无数量时默认1
+        state.currentItems.push(it);
+        added.push(product.name);
+      }
+    } else {
+      state.currentItems.push({
+        material_code: '',
+        name: name,
+        spec: '',
+        unit: '包',
+        pricing_mode: 'unit',
+        is_adjustable: true,
+        price_piece: 0,
+        price_zero: 0,
+        piece_qty: 0,
+        zero_qty: (zero || piece || 1),
+        remark: ''
+      });
+      added.push(name);
+    }
+  });
+  renderProductRows();
+  closeSmartModal();
+  showToast('已添加 ' + added.length + ' 项');
+}
 function initNewOrder(){
   // 编辑模式：已有currentOrderId时不重置数据
   if(state.currentOrderId){
@@ -5586,6 +5737,7 @@ function applyPermGates(){
   hide('#homeGridCustomers', getPerm('customer:view', role));
   hide('#homeGridReceivable', getPerm('receivable:view', role));
   hide('#homeGridReports', getPerm('report:view', role));
+  hide('#homeSmartFab', getPerm('order:create', role));
   // 赊销页导出按钮
   hide('#btnExportReceivable', getPerm('report:export', role));
 }

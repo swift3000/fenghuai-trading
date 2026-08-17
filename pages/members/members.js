@@ -54,12 +54,13 @@ Page({
     wx.showLoading({ title: '加载中...' })
     try {
       const members = await callCloud('users', { action: 'list' })
-      this.setData({ 
+      this.setData({
         members: members || [],
         roleIndex: this.data.roleOptions.findIndex(r => r.value === this.data.inviteRole)
       })
     } catch (e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
+      this.setData({ members: [] })
     } finally {
       wx.hideLoading()
     }
@@ -102,8 +103,8 @@ Page({
       const { inviteRole, inviteRoleLabel } = this.data
       const data = await callCloud('auth', { action: 'getInviteCode', role: inviteRole })
       const inviteCode = data && data.inviteCode
-      const qrFileID = data && data.qrFileID
-      const expireTime = data && data.expireTime
+      const qrFileID = data && data.inviteQr
+      const expireTime = data && data.inviteExpire
       if (!inviteCode) {
         throw new Error('未返回邀请码')
       }

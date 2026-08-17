@@ -106,7 +106,20 @@ const PAGES = (ORDER_ID) => {
         try { wx[m]({ url: u, fail: (e) => res('FAIL') }); setTimeout(() => res('ok'), 2500); } catch (e) { res('THROW'); }
       }), spec.method, spec.url);
     } catch (e) { nav = 'ERR:' + e.message; }
-    await delay(4200);
+    await delay(2500);
+    // 慢加载页（如 receivable 冷启动调云函数）：轮询当前页 loading 直到加载完成，上限 ~12s，避免探针抢跑读到初始空值
+    try {
+      const started = Date.now();
+      while (Date.now() - started < 12000) {
+        const st = await session.evaluate(() => {
+          const p = getCurrentPages()[getCurrentPages().length - 1];
+          return p && p.data && typeof p.data.loading === 'boolean' ? p.data.loading : null;
+        });
+        if (st === false || st === null) break;
+        await delay(700);
+      }
+      await delay(300);
+    } catch (e) { /* 读 loading 失败不阻断，继续按原逻辑 */ }
 
     const cur = await session.currentPage();
     let data = {};

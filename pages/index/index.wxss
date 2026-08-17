@@ -3,6 +3,7 @@
   min-height: 100vh;
   background: #F5F6F8;
   padding-bottom: 40rpx;
+  padding-top: 12px;
 }
 
 /* 隐私政策横幅 */
@@ -39,11 +40,16 @@
   line-height: 1;
 }
 
-/* Hero 区域 */
+/* Hero 服务卡（对齐新版原型：浅色渐变圆角卡）*/
 .home-hero {
-  background: linear-gradient(180deg, var(--theme-primary) 0%, var(--theme-primary) 100%);
-  padding: 16px 16px 60px;
-  color: #fff;
+  position: relative;
+  overflow: hidden;
+  margin: 0 12px 12px;
+  border-radius: 20px;
+  padding: 16px 16px 18px;
+  background: linear-gradient(135deg, #CDEEDA 0%, #E2F6E9 46%, #F3FBF5 100%);
+  box-shadow: 0 10px 26px rgba(36, 173, 82, 0.10);
+  color: #1A3A27;
 }
 
 .home-hero .user-row {
@@ -56,12 +62,14 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
+  color: #275239;
+  box-shadow: 0 2px 8px rgba(36, 173, 82, 0.15);
 }
 
 .home-hero .user-info {
@@ -69,25 +77,31 @@
 }
 
 .home-hero .greeting {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  color: #275239;
+  line-height: 1.3;
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .home-hero .date {
-  font-size: 12px;
-  opacity: 0.85;
+  font-size: 11px;
+  color: #7A948A;
   display: block;
 }
 
 .home-hero .role-badge {
   margin-left: auto;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  background: rgba(255, 255, 255, 0.25);
-  color: #fff;
+  padding: 5px 11px;
+  border: 1px solid rgba(36, 173, 82, 0.28);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fff;
+  color: #1E7A43;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(36, 173, 82, 0.10);
 }
 
 /* 公告栏 */
@@ -96,7 +110,7 @@
   align-items: center;
   gap: 8px;
   background: #fff;
-  margin: -44px 12px 12px;
+  margin: 0 12px 12px;
   position: relative;
   z-index: 2;
   border-radius: 16px;
@@ -173,115 +187,6 @@
   color: #666;
   margin-top: 4px;
   display: block;
-}
-
-/* 智能录入卡片 */
-.smart-home-card {
-  background: linear-gradient(135deg, #FFF7ED, #FFF3E6);
-  border: 1px solid #F5A623;
-  border-radius: 16px;
-  padding: 16px;
-  margin: 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(245, 166, 35, 0.15);
-}
-
-.smart-home-card:active {
-  background: #FFF0E0;
-  transform: scale(0.98);
-}
-
-.smart-home-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-}
-
-.smart-home-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.smart-home-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #D4820A;
-  margin-bottom: 2px;
-  display: block;
-}
-
-.smart-home-desc {
-  font-size: 12px;
-  color: #B8860B;
-  display: block;
-}
-
-.smart-home-arrow {
-  font-size: 20px;
-  color: #F5A623;
-  flex-shrink: 0;
-}
-
-/* 快捷操作 */
-.home-actions {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  background: #fff;
-  margin: 12px;
-  border-radius: 16px;
-  padding: 16px 0;
-  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
-}
-
-.home-actions .action {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  padding: 8px 4px;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-
-.home-actions .action:active {
-  background: #F5F6F8;
-}
-
-.home-actions .action .icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  color: #fff;
-}
-
-.home-actions .action .icon.c1 {
-  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary));
-}
-
-.home-actions .action .icon.c2 {
-  background: linear-gradient(135deg, #FF6B35, #E55A2B);
-}
-
-.home-actions .action .icon.c3 {
-  background: linear-gradient(135deg, #1989FA, #0F7AE0);
-}
-
-.home-actions .action .icon.c4 {
-  background: linear-gradient(135deg, #722ED1, #5B1FB0);
-}
-
-.home-actions .action .lbl {
-  font-size: 12px;
-  color: #333;
 }
 
 /* 分区标题 */
@@ -400,11 +305,199 @@
     font-size: 22px;
   }
   
-  .smart-home-icon {
-    font-size: 28px;
-  }
-  
-  .smart-home-title {
-    font-size: 15px;
-  }
+}
+
+/* ===== 对齐新版原型 v4.3.7：Hero 标题 + Pill ===== */
+.home-hero .hero-title {
+  font-size: 23px;
+  font-weight: 800;
+  color: #1A3A27;
+  letter-spacing: 1px;
+  margin-top: 12px;
+  display: block;
+}
+.home-hero .hero-pill-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.home-hero .hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #45D06F, #24AD52);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 6px 14px rgba(36, 173, 82, 0.30);
+}
+.home-hero .hero-pill.ghost {
+  background: rgba(255, 255, 255, 0.72);
+  color: #275239;
+  border: 1px solid rgba(36, 173, 82, 0.22);
+  box-shadow: none;
+}
+
+/* 全局搜索条 */
+.home-search {
+  margin: 10px 12px 0;
+  background: #fff;
+  border: 1px solid var(--theme-border, #EFEFEF);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  padding: 6px 6px 6px 14px;
+  gap: 8px;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+.home-search .hs-icon {
+  font-size: 15px;
+  color: #bbb;
+  flex: none;
+}
+.home-search .hs-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  font-size: 13px;
+  color: #191919;
+}
+.home-search .hs-ph {
+  color: #bbb;
+}
+.home-search .hs-btn {
+  height: 34px;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #45D06F, #24AD52);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 10px rgba(36, 173, 82, 0.28);
+  flex: none;
+}
+.home-search .hs-btn:active {
+  transform: scale(0.96);
+}
+
+/* 第三项统计：可点击 */
+.home-stats .stat.pending {
+  cursor: pointer;
+}
+.home-stats .stat.pending:active {
+  transform: scale(0.98);
+}
+
+/* ===== 浅色功能宫格（2 列 pastel 卡片）===== */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px;
+}
+.home-cell {
+  position: relative;
+  min-height: 108px;
+  border-radius: 18px;
+  padding: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s;
+  box-shadow: 0 4px 14px rgba(23, 58, 40, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.home-cell:active {
+  transform: scale(0.965);
+}
+.home-cell .hc-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+}
+.home-cell .hc-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #1F2D26;
+  letter-spacing: 0.3px;
+  margin-top: 10px;
+}
+.home-cell .hc-sub {
+  font-size: 11px;
+  color: #7C8AA5;
+  margin-top: 4px;
+  line-height: 1.45;
+}
+.home-cell.p-blue { background: linear-gradient(135deg, #D9EAFF 0%, #EBF4FF 100%); }
+.home-cell.p-blue .hc-icon { background: linear-gradient(135deg, #4C93FF, #2E7CF6); box-shadow: 0 8px 16px rgba(46, 124, 246, 0.30); }
+.home-cell.p-green { background: linear-gradient(135deg, #DCF3E4 0%, #EDFAF1 100%); }
+.home-cell.p-green .hc-icon { background: linear-gradient(135deg, #3BB271, #16A34A); box-shadow: 0 8px 16px rgba(22, 163, 74, 0.26); }
+.home-cell.p-yellow { background: linear-gradient(135deg, #FFF3D1 0%, #FFF9E8 100%); }
+.home-cell.p-yellow .hc-icon { background: linear-gradient(135deg, #F7C14B, #EFA312); box-shadow: 0 8px 16px rgba(239, 163, 18, 0.26); }
+.home-cell.p-orange { background: linear-gradient(135deg, #FFE4CD 0%, #FFF1E6 100%); }
+.home-cell.p-orange .hc-icon { background: linear-gradient(135deg, #FF9A57, #F2732B); box-shadow: 0 8px 16px rgba(242, 115, 43, 0.26); }
+.home-cell.p-violet { background: linear-gradient(135deg, #E9E1FD 0%, #F3EEFF 100%); }
+.home-cell.p-violet .hc-icon { background: linear-gradient(135deg, #9B7CF8, #7C3AED); box-shadow: 0 8px 16px rgba(124, 58, 237, 0.26); }
+.home-cell.p-cyan { background: linear-gradient(135deg, #D3F2F8 0%, #E6FAFC 100%); }
+.home-cell.p-cyan .hc-icon { background: linear-gradient(135deg, #3CC0D9, #14A3BC); box-shadow: 0 8px 16px rgba(20, 163, 188, 0.26); }
+
+/* 自定义底部 TabBar 占位，防止内容被遮挡 */
+.container {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom)) !important;
+}
+
+/* ===== 智能录入悬浮球（右下角，避开居中“+”） ===== */
+.smart-fab {
+  position: fixed;
+  right: 24rpx;
+  bottom: calc(210rpx + env(safe-area-inset-bottom));
+  z-index: 99;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+.smart-fab-bubble {
+  background: rgba(36, 173, 82, 0.92);
+  color: #fff;
+  font-size: calc(22rpx * var(--font-scale));
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  box-shadow: 0 6rpx 16rpx rgba(36, 173, 82, 0.32);
+  white-space: nowrap;
+}
+.smart-fab-ball {
+  width: 104rpx;
+  height: 104rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #45D06F 0%, #1E9E4B 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 24rpx rgba(36, 173, 82, 0.42);
+  border: 4rpx solid rgba(255, 255, 255, 0.7);
+}
+.smart-fab-icon {
+  font-size: calc(46rpx * var(--font-scale));
+  line-height: 1;
+}
+.smart-fab-hover .smart-fab-ball {
+  transform: scale(0.92);
+  filter: brightness(0.95);
+}
+.smart-fab-hover .smart-fab-bubble {
+  opacity: 0.85;
 }

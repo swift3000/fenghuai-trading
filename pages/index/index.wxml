@@ -17,6 +17,18 @@
       </view>
       <view class="role-badge">{{roleName}}</view>
     </view>
+    <text class="hero-title">丰淮采购下单</text>
+    <view class="hero-pill-row">
+      <text class="hero-pill">⚡ 24小时在线下单</text>
+      <text class="hero-pill ghost">移动开单 · 实时对账</text>
+    </view>
+  </view>
+
+  <!-- 全局搜索条 -->
+  <view class="home-search">
+    <text class="hs-icon">🔍</text>
+    <input class="hs-input" type="search" placeholder="搜索订单号或客户名称" placeholder-class="hs-ph" value="{{searchKeyword}}" bindinput="onGlobalSearchInput" confirm-type="search" bindconfirm="goGlobalSearch" />
+    <view class="hs-btn" bindtap="goGlobalSearch">搜索</view>
   </view>
 
   <!-- 公告栏 -->
@@ -42,35 +54,43 @@
       <text class="num">¥{{todayAmount}}</text>
       <text class="lbl">今日金额</text>
     </view>
+    <view class="stat pending" bindtap="goToWorkbench">
+      <text class="num">{{pendingCount}}</text>
+      <text class="lbl">{{pendingLabel}}</text>
+    </view>
   </view>
 
-  <!-- 智能录入入口 -->
-  <view class="smart-home-card" bindtap="goToSmartInput">
-    <view class="smart-home-icon">🤖</view>
-    <view class="smart-home-content">
-      <text class="smart-home-title">智能录入</text>
-      <text class="smart-home-desc">文字/语音快速下单</text>
+  <!-- 功能宫格（参考小程序入口风格） -->
+  <view class="home-grid">
+    <view wx:if="{{canCreateOrder}}" class="home-cell p-blue" bindtap="goToNewOrder">
+      <view class="hc-icon">📝</view>
+      <text class="hc-title">新建订单</text>
+      <text class="hc-sub">快速录入客户订单</text>
     </view>
-    <text class="smart-home-arrow">›</text>
-  </view>
-
-  <!-- 快捷操作 -->
-  <view class="home-actions">
-    <view wx:if="{{canCreateOrder}}" class="action" bindtap="goToNewOrder">
-      <view class="icon c1">📝</view>
-      <text class="lbl">新建订单</text>
+    <view class="home-cell p-green" bindtap="goToOrders">
+      <view class="hc-icon">📋</view>
+      <text class="hc-title">订单查询</text>
+      <text class="hc-sub">今日 · 本周 · 全部</text>
     </view>
-    <view wx:if="{{canViewProducts}}" class="action" bindtap="goToProducts">
-      <view class="icon c2">📦</view>
-      <text class="lbl">商品管理</text>
+    <view wx:if="{{canViewReceivable}}" class="home-cell p-violet" bindtap="goToReceivable">
+      <view class="hc-icon">💰</view>
+      <text class="hc-title">赊销看板</text>
+      <text class="hc-sub">欠款 · 收款确认</text>
     </view>
-    <view wx:if="{{canViewCustomers}}" class="action" bindtap="goToCustomers">
-      <view class="icon c3">🏪</view>
-      <text class="lbl">客户管理</text>
+    <view wx:if="{{canViewReports}}" class="home-cell p-cyan" bindtap="goToReports">
+      <view class="hc-icon">📊</view>
+      <text class="hc-title">报表中心</text>
+      <text class="hc-sub">日 · 月经营数据</text>
     </view>
-    <view wx:if="{{canViewReports}}" class="action" bindtap="goToReports">
-      <view class="icon c4">📊</view>
-      <text class="lbl">报表导出</text>
+    <view wx:if="{{canViewCustomers}}" class="home-cell p-yellow" bindtap="goToCustomers">
+      <view class="hc-icon">🏪</view>
+      <text class="hc-title">客户管理</text>
+      <text class="hc-sub">客户档案 · 区域</text>
+    </view>
+    <view wx:if="{{canViewProducts}}" class="home-cell p-orange" bindtap="goToProducts">
+      <view class="hc-icon">📦</view>
+      <text class="hc-title">商品管理</text>
+      <text class="hc-sub">料号 · 价格 · 规格</text>
     </view>
   </view>
 
@@ -93,5 +113,10 @@
     <view class="empty-hint" wx:if="{{todayOrdersList.length === 0}}">
       <text>暂无今日订单</text>
     </view>
+  </view>
+  <!-- 智能录入悬浮球（右下角，避开居中“+”） -->
+  <view class="smart-fab" wx:if="{{canCreateOrder}}" bindtap="goToSmartInput" hover-class="smart-fab-hover">
+    <view class="smart-fab-bubble">智能录入</view>
+    <view class="smart-fab-ball"><text class="smart-fab-icon">🤖</text></view>
   </view>
 </view>

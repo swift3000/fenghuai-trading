@@ -7,6 +7,15 @@ function qtyDesc(it) {
   return pricing.formatQtyCombined(it)
 }
 
+// 单价文案（对齐原型 itemPriceText）：¥45.00/件 · ¥0.75/包
+function itemPriceText(it) {
+  const mode = it.pricing_mode || 'case'
+  const f2 = n => Number(n || 0).toFixed(2)
+  if (mode === 'case') return '¥' + f2(it.price_piece) + '/件 · ¥' + f2(it.price_unit != null ? it.price_unit : it.price_zero) + '/包'
+  if (mode === 'piece') return '¥' + f2(it.price_piece) + '/件'
+  return '¥' + f2(it.price_unit != null ? it.price_unit : it.price_zero) + '/包'
+}
+
 const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
@@ -113,6 +122,7 @@ Page({
         .filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
         .map(it => Object.assign({}, it, {
           qtyDesc: qtyDesc(it),
+          priceText: itemPriceText(it),
           amountText: (it.amount != null ? it.amount : pricing.calcItemAmount(it)) > 0 ? (it.amount != null ? it.amount : pricing.calcItemAmount(it)) : ''
         }))
       // 操作记录（对齐原型 renderOrderLogs）：无则生成默认创建记录
@@ -143,6 +153,11 @@ Page({
       const remaining = Math.max(0, totalAmount - received - discount)
       const creatorText = '下单员：' + (order.createdByName || order.created_by_name || '未知')
       const orderTimeText = order.created_at ? new Date(order.created_at).toLocaleString('zh-CN') : '—'
+      const shipParts = []
+      if (order.ship_large) shipParts.push('大件×' + order.ship_large)
+      if (order.ship_medium) shipParts.push('中件×' + order.ship_medium)
+      if (order.ship_small) shipParts.push('小件×' + order.ship_small)
+      const shipText = shipParts.length ? shipParts.join(' · ') : '—'
       console.log('💾 准备设置页面数据...');
       console.log('   订单:', order.orderNo);
       console.log('   商品数量:', rawItems.length);
@@ -167,6 +182,7 @@ Page({
         remainingDebt: remaining,
         creatorText,
         orderTimeText,
+        shipText,
         logs,
         editEnabled: ['submitted', 'sorted', 'rejected'].includes(order.status)
       })

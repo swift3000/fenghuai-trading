@@ -111,11 +111,8 @@ Page({
     });
     
     setTimeout(() => {
-      if (route.includes('/pages/index')) {
-        wx.switchTab({ url: route });
-      } else {
-        wx.redirectTo({ url: route });
-      }
+      // 首页/工作台均为 Tab 页，统一 switchTab
+      wx.switchTab({ url: route });
     }, 1500);
   },
   onFontScaleChange(scale) {

@@ -1,0 +1,47 @@
+========================================
+Loop 测试 v2 开始
+时间: 2026-08-13T09:11:21.845Z
+========================================
+
+========== 第 1 轮 ==========
+
+=== 检查 WXML 文件 ===
+
+=== 检查云函数 ===
+找到 13 个云函数
+✅ auth: 配置完整
+✅ check-customer-fields: 配置完整
+✅ clear-all-data: 配置完整
+✅ customers: 配置完整
+✅ import-data: 配置完整
+✅ orders: 配置完整
+✅ products: 配置完整
+✅ receivable: 配置完整
+✅ regions: 配置完整
+✅ report: 配置完整
+✅ smart: 配置完整
+✅ system: 配置完整
+✅ users: 配置完整
+
+=== 检查资源文件 ===
+✅ home.png: 1.4KB
+✅ home-active.png: 0.7KB
+✅ order.png: 1.5KB
+✅ order-active.png: 1.3KB
+✅ money.png: 2.5KB
+✅ money-active.png: 2.3KB
+✅ outbound.png: 1.4KB
+✅ outbound-active.png: 1.3KB
+✅ profile.png: 1.6KB
+✅ profile-active.png: 1.0KB
+
+✅ 所有检查通过！
+
+========================================
+Loop 测试完成
+总轮数：1
+剩余问题：0
+已修复：0
+========================================
+
+📄 报告已保存到：reports/LOOP-TEST-V2.md
