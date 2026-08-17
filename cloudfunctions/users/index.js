@@ -5,6 +5,32 @@ const _ = db.command
 const pm = require('./perm-matrix-shared.js')
 
 /**
+ * 读取 perm_configs 全部覆盖；集合不存在（首次使用）时回落到空数组，避免 502005 抛错
+ */
+async function readPermConfigs() {
+  try {
+    const c = await db.collection('perm_configs').get()
+    return c.data || []
+  } catch (e) {
+    if (e && (e.errCode === -502005 || /collection not exist/i.test(e.message || ''))) return []
+    throw e
+  }
+}
+
+/**
+ * 按 role 查 perm_configs 已有记录 _id；不存在返回 null
+ */
+async function findPermDocId(role) {
+  try {
+    const c = await db.collection('perm_configs').where({ role }).get()
+    return (c.data && c.data[0] && c.data[0]._id) || null
+  } catch (e) {
+    if (e && (e.errCode === -502005 || /collection not exist/i.test(e.message || ''))) return null
+    throw e
+  }
+}
+
+/**
  * 共享角色权限表（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
  */
 const ROLE_PERMISSIONS = {
@@ -161,9 +187,9 @@ exports.main = async (event, context) => {
 
     // 读取各角色实际权限（默认+覆盖）
     case 'perm-config': {
-      const configs = await db.collection('perm_configs').get()
+      const configs = await readPermConfigs()
       const byRole = {}
-      configs.data.forEach(c => { byRole[c.role] = c.permissions })
+      configs.forEach(c => { byRole[c.role] = c.permissions })
       const result = {}
       pm.ROLES.forEach(role => {
         result[role] = pm.mergedPerms(role, byRole[role])
@@ -184,9 +210,9 @@ exports.main = async (event, context) => {
       const valid = list.filter(k => allKeys.includes(k))
       // 锁定权限强制保留：member:manage 仅 admin
       if (role === 'admin' && !valid.includes('member:manage')) valid.push('member:manage')
-      const existing = await db.collection('perm_configs').where({ role }).get()
-      if (existing.data.length > 0) {
-        await db.collection('perm_configs').doc(existing.data[0]._id).update({
+      const existId = await findPermDocId(role)
+      if (existId) {
+        await db.collection('perm_configs').doc(existId).update({
           data: { permissions: valid, updatedAt: db.serverDate() }
         })
       } else {
@@ -200,9 +226,9 @@ exports.main = async (event, context) => {
     // 恢复默认：清空该角色覆盖（回落到全员开放默认）
     case 'reset-perm': {
       const { role } = event
-      const existing = await db.collection('perm_configs').where({ role }).get()
-      if (existing.data.length > 0) {
-        await db.collection('perm_configs').doc(existing.data[0]._id).remove()
+      const existId = await findPermDocId(role)
+      if (existId) {
+        await db.collection('perm_configs').doc(existId).remove()
       }
       return { code: 0, data: { role, permissions: pm.defaultPermsForRole(role) } }
     }

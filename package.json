@@ -9,7 +9,8 @@
     "test": "node tests/automated-test.js && node tests/smart-ai-test.js",
     "test:ui": "node tests/ui-automation-test.js",
     "check:perms": "node scripts/sync-perm-matrix.js",
-    "test:wx-pages": "node tests/wx-pagewalk-test.js"
+    "test:wx-pages": "node tests/wx-pagewalk-test.js",
+    "test:wx-perm": "node tests/wx-perm-test.js"
   },
   "dependencies": {
     "miniprogram-ci": "^2.1.31"
