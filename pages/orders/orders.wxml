@@ -2,8 +2,7 @@
   <view class="time-tabs">
     <view
       class="tab-item {{timeTab === item.key ? 'active' : ''}}"
-      wx:for="{{tabs}}"
-      wx:key="key"
+      wx:for="{{tabs}}" wx:key="key"
       data-key="{{item.key}}"
       bindtap="switchTab"
     >
@@ -16,31 +15,44 @@
   </view>
 
   <view class="order-list" wx:if="{{orders.length > 0}}">
-    <!-- 客户分组卡片展示 -->
-    <view class="group-card card" wx:for="{{groups}}" wx:key="name" wx:for-item="g">
-      <view class="group-head flex-between" bindtap="goToGroup" data-id="{{g.orders[0]._id}}">
-        <view>
-          <view class="group-customer">
-            <text class="customer-name">{{g.name}}</text>
-            <text class="pay-chip {{g.orders[0].payClass}}">{{g.orders[0].payLabel}}</text>
+    <!-- 单个订单卡片展示（原型样式，包含商品列表） -->
+    <view class="order-card card" wx:for="{{orders}}" wx:key="_id" bindtap="goToDetail" data-id="{{item._id}}">
+      <!-- 订单头部：客户名 + 状态标签 -->
+      <view class="order-header">
+        <view class="order-left">
+          <text class="customer-name">{{item.customerName}}</text>
+          <text class="status-chip {{item.statusClass}}">{{item.statusText}}</text>
+        </view>
+        <text class="order-amount">¥{{item.totalAmount}}</text>
+      </view>
+      
+      <!-- 订单元信息：订单号 + 商品数量 + 时间 -->
+      <view class="order-meta">
+        <text class="order-no">{{item.orderNo}}</text>
+        <text class="order-info">{{item.itemCount}}种商品 · {{item.region || ''}}</text>
+        <text class="order-time">{{item.timeText}}</text>
+      </view>
+      
+      <!-- 商品列表（原型核心！） -->
+      <view class="order-items" wx:if="{{item.items && item.items.length > 0}}">
+        <view class="item-row" wx:for="{{item.items}}" wx:key="material_code" wx:for-item="it">
+          <view class="item-main">
+            <text class="item-name">{{it.name}}</text>
+            <text class="item-spec" wx:if="{{it.spec}}">{{it.spec}}</text>
           </view>
-          <view class="group-sub">{{g.region}} · {{g.orders.length}} 笔订单</view>
-        </view>
-        <view class="order-amount">¥{{g.totalAmount}}</view>
-      </view>
-      <view class="group-order" wx:for="{{g.orders}}" wx:key="_id" wx:for-item="o" bindtap="goToDetail" data-id="{{o._id}}">
-        <view class="flex-between">
-          <text class="customer-name">{{o.customerName}}</text>
-          <text class="order-amount">¥{{o.totalAmount}}</text>
-        </view>
-        <view class="order-meta">
-          <text>{{o.orderNo}}</text>
-          <text class="pay-chip {{o.payClass}}">{{o.payLabel}}</text>
-          <text class="order-time">{{o.timeText}}</text>
+          <view class="item-qty">
+            <text class="qty-text">×{{it.qtyText}}</text>
+            <text class="item-remark" wx:if="{{it.remark}}">{{it.remark}}</text>
+          </view>
+          <text class="item-amount" wx:if="{{it.amountText}}">¥{{it.amountText}}</text>
         </view>
       </view>
+      
+      <!-- 支付状态标签 -->
+      <view class="pay-chip {{item.payClass}}" wx:if="{{item.payLabel}}">{{item.payLabel}}</view>
     </view>
   </view>
+
   <view class="empty-tip" wx:if="{{!orders.length}}">
     <text>暂无订单</text>
   </view>

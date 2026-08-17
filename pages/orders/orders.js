@@ -87,11 +87,20 @@ Page({
         if (status === 'sorted') { statusText = '已分拣'; statusClass = 'processing' }
         else if (status === 'confirmed') { statusText = '已出库'; statusClass = 'completed' }
         
-        // 计算商品数量
-        const itemCount = o.items?.length || o.itemCount || 0
+        // 计算商品数量（0件0包 的行不展示）
+        const viewItems = (o.items || [])
+          .filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
+          .map(it => {
+            const pq = it.piece_qty || 0
+            const zq = it.package_qty != null ? it.package_qty : (it.zero_qty || 0)
+            const amt = it.amount != null ? it.amount : (pq * (it.price_piece || 0) + zq * (it.price_unit != null ? it.price_unit : (it.price_zero || 0)))
+            return { ...it, qtyText: (pq > 0 ? pq + '件' : '') + (pq > 0 && zq > 0 ? '+' : '') + (zq > 0 ? zq + '包' : ''), amountText: amt > 0 ? amt : '' }
+          })
+        const itemCount = viewItems.length || o.itemCount || 0
         
         return {
           ...o,
+          items: viewItems,
           payLabel,
           payClass,
           statusText,

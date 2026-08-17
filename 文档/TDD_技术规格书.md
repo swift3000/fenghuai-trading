@@ -615,15 +615,20 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 
 ### 6.1A 【MVP】0 元订单与 0件0个 过滤
 
-**写入侧（拦截）**：
+**写入侧（拦截，2026-08-17 双重校验）**：
 ```javascript
 // orders: action = create | update
-const total = items.reduce((s, it) => s + it.amount, 0);
-if (total === 0) {
-  return { code: 'ORDER_ZERO_AMOUNT', msg: '订单金额为 0，无法提交' };
-}
+// ① 订单总额校验
+if (totalAmount <= 0) return { code: 2001, message: '订单金额不能为 0' };
+// ② 物品行双重校验：先过滤 0件0包 行，再按物品重算金额合计
+const validItems = normalizedItems.filter(it => (it.piece_qty||0) > 0 || (it.package_qty != null ? it.package_qty : it.zero_qty||0) > 0);
+const itemsSum = validItems.reduce((s, it) => s + (Number(it.amount)||0), 0);
+if (!validItems.length) return { code: 2001, message: '订单商品数量必须大于 0' };
+if (itemsSum <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' };
 ```
 - 前端在提交按钮上同步做禁用态与 Toast 提示，云函数为最终防线（双层校验）。
+- **② 的必要性**：`totalAmount` 是前端传入值，历史/种子数据存在 `totalAmount>0` 但 `items[].amount=0`（物品行未带金额）的脏数据；仅校验总额无法拦截，必须按物品行重算金额合计兜底。
+- **0 值留空（导出侧）**：`exportOutbound` / `report`（台账/客户汇总）中，物流大/中/小件、数量为 0 的单元格统一用 `pkgShow(v)=v>0?v:''` 输出为空字符串（不写 `0`），与界面「0 不显示」口径一致。
 
 **读取侧（过滤）**：
 ```javascript

@@ -108,9 +108,13 @@ Page({
       console.log('   金额:', order.totalAmount);
       
       const paymentStatus = order.payment_status || order.paymentStatus || 'unpaid'
-      const rawItems = (order.items || []).map(it => Object.assign({}, it, {
-        qtyDesc: qtyDesc(it)
-      }))
+      // 0件0包 的商品行不展示；金额 0 的行不显示金额
+      const rawItems = (order.items || [])
+        .filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
+        .map(it => Object.assign({}, it, {
+          qtyDesc: qtyDesc(it),
+          amountText: (it.amount != null ? it.amount : pricing.calcItemAmount(it)) > 0 ? (it.amount != null ? it.amount : pricing.calcItemAmount(it)) : ''
+        }))
       // 操作记录（对齐原型 renderOrderLogs）：无则生成默认创建记录
       const roleLabels = {
         orderer: '下单员', sorter: '分拣员', warehouse: '库管', admin: '管理员', system: '系统'
@@ -148,7 +152,13 @@ Page({
         order,
         sharedAtText,
         items: rawItems,
-        customer: order.customer || {},
+        customer: {
+          name: order.customerName || '',
+          region: order.customerRegion || '',
+          contact: order.customerContact || '',
+          phone: order.customerPhone || '',
+          address: order.customerAddress || '',
+        },
         paymentStatus,
         paymentStatusText: PAYMENT_STATUS_TEXT[paymentStatus] || PAYMENT_STATUS_TEXT.unpaid,
         orderStatusText: (ORDER_STATUS_TEXT[order.status] || order.status || '未知'),

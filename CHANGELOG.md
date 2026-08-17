@@ -6,6 +6,29 @@
 
 ---
 
+## [1.2] - 2026-08-17
+
+### Added
+- 全部导出（报表/客户汇总/收款台账/出库库单/送货单）支持**自定义时间区间**（起止日期，picker 选择），与今日/本周/本月并存
+- 云函数 `orders` create/update 新增**物品行双重校验**：有效商品为空或物品金额合计 ≤0 时拦截不生成（防 `totalAmount>0` 但物品金额为 0 的脏数据）
+
+### Changed
+- **0 值统一不显示**：数量 0 的件/包不体现（1件0包 只显示 1件及其价格）；金额/单价 0 不显示；物流大/中/小件 0 不显示
+- 导出 Excel/CSV 中 0 值单元格**留空**（`exportOutbound`、`exportLedger`、`exportDailySummary` 件数列用 `pkgShow` 0→空）
+- 订单列表/详情页商品行：0件0包 过滤、金额 0 不显示金额
+- 订单列表商品明细改用 `qtyText`（件+包合并、0不显示）
+- 全量文档同步（PRD §4.3A.3、TDD §6.1A、CHANGELOG、新版原型 reports/outbound 页）
+
+### Fixed
+- `exportOutbound` 物流中件=0 显示 `0` 的问题（改 0 留空）
+- 报表 custom 区间测试断言错误（改用客户视图对比）
+- 清理 `cloudfunctions/orders/miniprogram_npm` 冗余依赖（4.8MB）
+
+### Docs
+- 0 值逻辑口径写入 PRD/TDD；导出时间区间写入相关文档
+
+---
+
 ## [1.1] - 2026-08-10
 
 ### Added

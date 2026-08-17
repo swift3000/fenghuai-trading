@@ -142,6 +142,8 @@ function buildLedgerData(orders) {
   return { rows, totals }
 }
 
+// 0 值不显示：导出件数为 0 时留空（与界面口径一致）
+function pkShow(v) { return Number(v) > 0 ? Number(v) : '' }
 function sanitizeCell(v) {
   if (v === null || v === undefined) return ''
   let s = String(v)
@@ -484,12 +486,15 @@ exports.main = async (event, context) => {
         const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : ''
         ;(o.items || []).forEach(it => {
           const remark = it.remark || ''
-          const pieceQty = Number(it.piece_qty || 0)
-          const zeroQty = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+          let pieceQty = Number(it.piece_qty || 0)
+          let zeroQty = Number(it.package_qty != null ? it.package_qty : it.zero_qty || 0)
+          // 旧格式回退：无 piece_qty/package_qty 但有 qty/price → 按 件×单价
+          const legacy = (pieceQty<=0 && zeroQty<=0 && (it.qty||0)>0)
+          if (legacy) { pieceQty = Number(it.qty) }
+          const unitPricePiece = legacy ? (Number(it.price)||0) : (it.price_piece||0)
           if (pieceQty > 0) {
-            const unitPrice = it.price_piece || 0
-            const amt = pieceQty * unitPrice
-            byCustomer[key].rows.push([date, o.customerRegion || '', o.customerName, it.name, '件', pieceQty, unitPrice.toFixed(2), amt.toFixed(2), remark])
+            const amt = pieceQty * unitPricePiece
+            byCustomer[key].rows.push([date, o.customerRegion || '', o.customerName, it.name, '件', pieceQty, unitPricePiece.toFixed(2), amt.toFixed(2), remark])
           }
           if (zeroQty > 0) {
             const unitPrice = it.price_unit != null ? it.price_unit : it.price_zero || 0
@@ -535,10 +540,10 @@ exports.main = async (event, context) => {
       const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '大件', '中件', '小件', '件数']
       const csvRows = [[title], [], header]
       rows.forEach(r => {
-        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', r.big, r.medium, r.small, r.pkgs])
+        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', pkShow(r.big), pkShow(r.medium), pkShow(r.small), pkShow(r.pkgs)])
       })
       csvRows.push([])
-      csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', totals.big, totals.medium, totals.small, totals.pkgs])
+      csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', pkShow(totals.big), pkShow(totals.medium), pkShow(totals.small), pkShow(totals.pkgs)])
       csvRows.push(['总件数', totals.pkgs])
       if (format === 'excel') {
         const out = await buildExport(csvRows, COMPANY_NAME + '_收款台账_' + String(rangeDesc).replace(/\//g, ''), { format, sheetName: '收款台账' })

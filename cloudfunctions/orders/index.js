@@ -239,6 +239,12 @@ exports.main = async (event, context) => {
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
         return Object.assign({}, it, { qty, price, amount })
       })
+      // 过滤 0件0包 的商品行
+      const validItems = normalizedItems.filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
+      // 0 金额拦截：有效商品为空、或所有物品金额合计为 0（物品行未带金额）→ 订单不生成
+      const itemsSum = validItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+      if (!validItems.length) return { code: 2001, message: '订单商品数量必须大于 0' }
+      if (itemsSum <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
       const today = new Date()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `丰淮商贸-${dateStr}`, options: 'i' }) }).count()
@@ -370,7 +376,12 @@ exports.main = async (event, context) => {
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
         return Object.assign({}, it, { qty, price, amount })
       })
-      const patch = { items: normalizedItems, customerRegion: customerRegion || '', totalAmount, status: 'submitted', sortStatus: 'pending', outStatus: 'pending' }
+      // 与 create 一致：0件0包 过滤 + 0 金额拦截
+      const validItems2 = normalizedItems.filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
+      const itemsSum2 = validItems2.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
+      if (!validItems2.length) return { code: 2001, message: '订单商品数量必须大于 0' }
+      if (itemsSum2 <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
+      const patch = { items: validItems2, customerRegion: customerRegion || '', totalAmount, status: 'submitted', sortStatus: 'pending', outStatus: 'pending' }
       if (customerName) patch.customerName = customerName
       await db.collection('orders').doc(orderId).update({ data: patch })
       await appendLog(orderId, 'update', '编辑订单')
@@ -496,15 +507,19 @@ exports.main = async (event, context) => {
           currentCustomer = o.customerName
           rows.push([no++, '', '', '', o.customerName, '', '', '', '', '', '', ''])
         }
+        // 物流件数：0 不显示（与界面一致），导出留空
         const pkg = { big: o.ship_large||0, medium: o.ship_medium||0, small: o.ship_small||0 }
+        const pkgShow = v => (v > 0 ? v : '')
         let firstItem = true
         ;(o.items || []).forEach(it => {
-          const pieceQty = it.piece_qty || 0
-          const zeroQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+          // 旧格式数据回退：无 piece_qty/package_qty 但有 qty/price 时按 件×单价 展示
+          let pieceQty = it.piece_qty || 0
+          let zeroQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+          if (pieceQty <= 0 && zeroQty <= 0 && (it.qty || 0) > 0) { pieceQty = it.qty; }
           const pushRow = (unit, qty) => {
-            const big = firstItem ? pkg.big : ''
-            const mid = firstItem ? pkg.medium : ''
-            const small = firstItem ? pkg.small : ''
+            const big = firstItem ? pkgShow(pkg.big) : ''
+            const mid = firstItem ? pkgShow(pkg.medium) : ''
+            const small = firstItem ? pkgShow(pkg.small) : ''
             const timeStr = o.created_at ? new Date(o.created_at).toTimeString().slice(0,5) : ''
             rows.push(['', timeStr, o.customerRegion || '', o.orderNo, '', it.name, unit, qty, it.remark || '', big, mid, small])
             firstItem = false

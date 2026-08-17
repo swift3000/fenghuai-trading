@@ -22,7 +22,7 @@
     <view class="item-row" wx:for="{{items}}" wx:key="_id">
       <view class="flex-between">
         <text>{{item.name}}</text>
-        <text>¥{{item.amount}}</text>
+        <text wx:if="{{item.amountText}}">¥{{item.amountText}}</text>
       </view>
       <text class="item-spec">{{item.spec}} · 数量 {{item.qtyDesc}}</text>
     </view>
@@ -71,9 +71,9 @@
   <view wx:if="{{order.outStatus === 'done'}}" class="card shipping-info">
     <text class="section-title">物流包裹</text>
     <view wx:if="{{order.ship_large || order.ship_medium || order.ship_small}}" class="shipping-tags">
-      <view class="shipping-tag">大件 {{order.ship_large || 0}}</view>
-      <view class="shipping-tag">中件 {{order.ship_medium || 0}}</view>
-      <view class="shipping-tag">小件 {{order.ship_small || 0}}</view>
+      <view class="shipping-tag" wx:if="{{order.ship_large}}">大件 {{order.ship_large}}</view>
+      <view class="shipping-tag" wx:if="{{order.ship_medium}}">中件 {{order.ship_medium}}</view>
+      <view class="shipping-tag" wx:if="{{order.ship_small}}">小件 {{order.ship_small}}</view>
     </view>
     <view wx:else class="shipping-empty">未填写</view>
   </view>
