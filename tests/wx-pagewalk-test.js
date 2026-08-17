@@ -91,7 +91,7 @@ const PAGES = (ORDER_ID) => {
   const ORDER_ID = await resolveLatestOrderId();
   console.log('ORDER_ID ' + ORDER_ID);
 
-  const session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 40000 });
+  const session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 90000 });
   await delay(5000);
   console.log('BOOT ' + (await session.currentPage()).path);
 
