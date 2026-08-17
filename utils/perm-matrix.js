@@ -10,7 +10,7 @@
 
 // 权限分组（按模块分组，供成员管理-权限配置 UI 渲染）
 const PERM_GROUPS = [
-  { name: '订单管理', keys: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export'] },
+  { name: '订单管理', keys: ['order:create', 'order:edit', 'order:delete', 'order:print', 'order:export'] }, // 查看订单为全员基础权限（BASELINE_PERMS），不出现在开关矩阵
   { name: '商品管理', keys: ['product:view', 'product:edit'] },
   { name: '客户管理', keys: ['customer:view', 'customer:edit'] },
   { name: '分拣作业', keys: ['sort:task'] },
@@ -38,7 +38,7 @@ const PERM_LABELS = {
 const PERM_LOCKED = { 'member:manage': true }
 
 // 角色顺序（矩阵表头 / 前端渲染用）
-const ROLE_ORDER = ['admin', 'orderer', 'sorter', 'warehouse']
+const ROLE_ORDER = ['orderer', 'sorter', 'warehouse', 'admin']
 const ROLE_LABELS = { admin: '管理员', orderer: '下单员', sorter: '分拣员', warehouse: '库管' }
 
 // 各角色默认权限矩阵（对齐原型 DEFAULT_ROLE_PERMISSIONS）

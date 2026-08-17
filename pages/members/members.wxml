@@ -65,12 +65,12 @@
   <view class="perm-section card" wx:if="{{permGroups.length > 0}}">
     <view class="perm-header">
       <text class="perm-title">角色权限配置</text>
-      <text class="perm-sub">管理员可逐项调整每个角色的功能权限</text>
+      <text class="perm-sub">管理员可逐项调整每个角色的<text class="perm-note-strong">功能权限</text>。默认全员开放，仅「登记收款 / 确认收款」分工、<text class="perm-note-strong">成员管理固定管理员独占</text>（不可改，防锁死）。</text>
       <button class="perm-reset" bindtap="resetPerms" size="mini">↺ 恢复默认（全员开放）</button>
     </view>
 
     <view class="perm-note">
-      默认全员开放，仅「登记收款 / 确认收款」两步分离，<text class="perm-note-strong">成员管理固定管理员独占</text>（不可改，防锁死）。改动即时保存。
+      说明：「成员管理」固定为管理员独占（防止权限锁死），其余权限管理员可随时按需开关，改动即时保存生效。
     </view>
 
     <view class="perm-group" wx:for="{{permGroups}}" wx:key="name" wx:for-item="group" wx:for-index="gi">

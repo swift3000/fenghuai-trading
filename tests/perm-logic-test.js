@@ -26,6 +26,7 @@ ok(a.includes('receivable:collect') && a.includes('receivable:confirm'), '管理
 ok(o.includes('member:manage') === false && w.includes('member:manage') === false && s.includes('member:manage') === false, '成员管理仅管理员');
 ok(a.includes('member:manage'), '管理员拥有 member:manage');
 ok(o.length === s.length && o.length === w.length, '下单员/分拣员/库管 非赊销权限数量一致');
+ok(o.includes('order:view') && s.includes('order:view') && w.includes('order:view') && a.includes('order:view'), '全员含基线权限 order:view');
 
 console.log('【2】mergedPerms：覆盖 / 回落 / 非法键过滤');
 const baseO = pm.defaultPermsForRole('orderer');
@@ -38,8 +39,10 @@ ok(arrEq(pm.mergedPerms('orderer', ov), ov), '有覆盖时直接采用覆盖数�
 const ovBad = ['order:view', '', 'x'];
 ok(arrEq(pm.mergedPerms('orderer', ovBad), ['order:view', 'x']), '空串被过滤，非空串保留');
 console.log('  ℹ 提示: mergedPerms 不做白名单校验；bogus 非空串仅在手动改库时可能出现（正常 UI 写入已由 save-perm 白名单拦截）。可加白名单做纵深防御。');
-// 覆盖可为空数组（关闭全部）-> 返回空
-ok(arrEq(pm.mergedPerms('orderer', []), []), '空数组覆盖 = 关闭该角色全部权限');
+// 基线权限（order:view）强制并入：覆盖不含基线也会补回
+ok(arrEq(pm.mergedPerms('orderer', ['product:view']), ['order:view', 'product:view']), '覆盖不含基线时强制并入 order:view');
+// 空数组覆盖 = 仅剩基线（查看订单永远可用，与矩阵 UI 不展示该开关一致）
+ok(arrEq(pm.mergedPerms('orderer', []), pm.BASELINE_PERMS), '空数组覆盖 = 仅保留基线权限');
 
 console.log('【3】锁定权限 member:manage 始终仅 admin');
 ok(!!pm.LOCKED_PERMS['member:manage'], 'member:manage 在锁定表中');

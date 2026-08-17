@@ -107,6 +107,13 @@ const PAGES = (ORDER_ID) => {
       }), spec.method, spec.url);
     } catch (e) { nav = 'ERR:' + e.message; }
     await delay(2500);
+    // 导航校验：当前页未落到目标则重试导航（慢加载/网络抖动防错位）
+    for (let t = 0; t < 4; t++) {
+      const chk = await session.currentPage();
+      if (chk.path === routeNoSlash) break;
+      try { await session.evaluate((m, u) => new Promise((res) => { try { wx[m]({ url: u, fail: () => res('FAIL') }); setTimeout(() => res('ok'), 2500); } catch (e) { res('THROW'); } }), spec.method, spec.url); } catch (e) { }
+      await delay(2500);
+    }
     // 慢加载页（如 receivable 冷启动调云函数）：轮询当前页 loading 直到加载完成，上限 ~12s，避免探针抢跑读到初始空值
     try {
       const started = Date.now();

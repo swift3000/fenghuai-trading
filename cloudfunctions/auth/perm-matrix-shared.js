@@ -3,7 +3,7 @@
 //    修改后请同步 cloudfunctions/users/perm-matrix-shared.js（逐字节相同，云函数按目录独立部署），
 //    并运行 npm run check:perms 校验（部署云函数前建议执行）。
 const PERM_GROUPS = [
-  { name: '订单管理', keys: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export'] },
+  { name: '订单管理', keys: ['order:create', 'order:edit', 'order:delete', 'order:print', 'order:export'] }, // 查看订单为全员基础权限（BASELINE_PERMS），不出现在开关矩阵
   { name: '商品管理', keys: ['product:view', 'product:edit'] },
   { name: '客户管理', keys: ['customer:view', 'customer:edit'] },
   { name: '分拣作业', keys: ['sort:task'] },
@@ -34,26 +34,29 @@ const DEFAULT_MATRIX = {
   'report:ledger':      { orderer: true,  sorter: true,  warehouse: true,  admin: true },
   'member:manage':      { orderer: false, sorter: false, warehouse: false, admin: true }
 }
+// 基线权限：所有角色永久拥有、不可被关闭、不出现在开关矩阵（避免管理员保存其他开关时被全量回写误删）
+const BASELINE_PERMS = ['order:view']
 // 锁定权限：始终仅 admin，不可被关闭
 const LOCKED_PERMS = { 'member:manage': true }
 // 收集 role 的所有默认权限 key
 function defaultPermsForRole(role) {
-  const list = []
+  const list = BASELINE_PERMS.slice()
   PERM_GROUPS.forEach(g => g.keys.forEach(key => {
     if (DEFAULT_MATRIX[key] && DEFAULT_MATRIX[key][role]) list.push(key)
   }))
-  return list
+  return Array.from(new Set(list))
 }
 // 计算角色最终权限：
 // perm_configs 存的是该角色「完整权限数组」（save-perm 已写全量,含锁定项保护）。
 // 有覆盖记录(overrides != null)则直接采用该数组；无记录(undefined/null)回落默认。
 function mergedPerms(role, overrides) {
   if (overrides != null) {
-    return Array.from(new Set((overrides || []).filter(k => typeof k === 'string' && k.length)))
+    return Array.from(new Set(BASELINE_PERMS.concat((overrides || []).filter(k => typeof k === 'string' && k.length))))
   }
   return defaultPermsForRole(role)
 }
 module.exports = {
+  BASELINE_PERMS,
   PERM_GROUPS,
   DEFAULT_MATRIX,
   LOCKED_PERMS,

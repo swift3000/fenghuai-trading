@@ -35,12 +35,16 @@ const ROLES=['admin','orderer','sorter','warehouse'];
   const loaded=await s.evaluate(async()=>{try{const p=getCurrentPages()[getCurrentPages().length-1];await p.loadPermConfig();return {route:p.route,groups:p.data.permGroups.length};}catch(e){return {err:e.message};}});
   console.log('A) loadPermConfig => '+JSON.stringify(loaded));
   ok(loaded.groups===8,'权限矩阵渲染 8 个分组（'+(loaded.err||'')+'）');
-  const init=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];const g=p.data.permGroups[5];const row=g.rows.find(r=>r.key==='receivable:collect');return {route:p.route, on:row.cells[2].on};});
-  ok(init.route==='pages/members/members' && init.on===true,'初始 分拣员.登记收款 = 开（默认）');
+  const shape=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return {cols:p.data.roleCols.map(c=>c.role), orderKeys:p.data.permGroups[0].rows.map(r=>r.key), orderCount:p.data.permGroups[0].count};});
+  ok(shape.cols.join(',')==='orderer,sorter,warehouse,admin','列顺序对齐原型：下单员/分拣员/库管/管理员（'+shape.cols.join(',')+'）');
+  ok(shape.orderCount===5 && shape.orderKeys.indexOf('order:view')<0,'订单管理 5 项且不含 查看订单（基线权限不展示）');
+  const init=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];const g=p.data.permGroups[5];const row=g.rows.find(r=>r.key==='receivable:collect');return {route:p.route, onSorter:row.cells[1].on, onWarehouse:row.cells[2].on};});
+  ok(init.route==='pages/members/members' && init.onSorter===true,'初始 分拣员.登记收款 = 开（默认）');
+  ok(init.onWarehouse===false,'初始 库管.登记收款 = 关（默认两步分离）');
 
   // B. UI togglePerm 关闭 分拣员.receivable:collect
   const ri=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return p.data.permGroups[5].rows.findIndex(r=>r.key==='receivable:collect');});
-  const resB=await s.evaluate(async ri2=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'5',row:String(ri2),role:'2'}}});return {done:true};}catch(e){return {err:e.message};}}, ri);
+  const resB=await s.evaluate(async ri2=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'5',row:String(ri2),role:'1'}}});return {done:true};}catch(e){return {err:e.message};}}, ri);
   await delay(1800);
   ok(resB.done===true,'UI togglePerm 调用成功（'+JSON.stringify(resB)+'）');
   const cloudB=await cloudRolePerms();
@@ -50,7 +54,7 @@ const ROLES=['admin','orderer','sorter','warehouse'];
   const beforeC=await cloudRolePerms();
   ok(beforeC.admin.includes('member:manage'),'点击前 admin.member:manage = 开');
   const lockedRow=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return p.data.permGroups[7].rows.findIndex(r=>r.key==='member:manage');});
-  const resC=await s.evaluate(async ri3=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'7',row:String(ri3),role:'0'}}});return {done:true};}catch(e){return {err:e.message};}}, lockedRow);
+  const resC=await s.evaluate(async ri3=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'7',row:String(ri3),role:'3'}}});return {done:true};}catch(e){return {err:e.message};}}, lockedRow);
   await delay(1500);
   const afterC=await cloudRolePerms();
   ok(afterC.admin.includes('member:manage'),'锁定项保护：UI 点 admin.member:manage 被忽略，云端仍为开（'+JSON.stringify(resC)+'）');
