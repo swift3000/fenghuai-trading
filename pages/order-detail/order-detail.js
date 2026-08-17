@@ -1,6 +1,6 @@
 const { COMPANY_NAME } = require('../../constants/index.js')
 const pricing = require('../../utils/order-pricing')
-const { ORDER_STATUS_TEXT } = require('../../constants/index.js')
+const { ORDER_STATUS_TEXT, PAYMENT_STATUS_TEXT } = require('../../constants/index.js')
 
 // 为一行商品生成合并数量文案（2件+10包）
 function qtyDesc(it) {
@@ -150,7 +150,7 @@ Page({
         items: rawItems,
         customer: order.customer || {},
         paymentStatus,
-        paymentStatusText: paymentStatus === 'paid' ? '已收款' : (paymentStatus === 'pending' ? '待确认' : '未收款'),
+        paymentStatusText: PAYMENT_STATUS_TEXT[paymentStatus] || PAYMENT_STATUS_TEXT.unpaid,
         orderStatusText: (ORDER_STATUS_TEXT[order.status] || order.status || '未知'),
         receivedAmount: received,
         totalDiscount: discount,
