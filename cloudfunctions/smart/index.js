@@ -404,6 +404,7 @@ function buildItems(arr, products) {
       price_unit: product.price_unit != null ? product.price_unit : 0
     }
   }).filter(it => it.name)
+  return items
 }
 
 exports.main = async (event, context) => {
