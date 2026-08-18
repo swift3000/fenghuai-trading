@@ -58,11 +58,18 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   // 钩子场景下预建空壳占位，login 时 where(openid) 仍为空→走新建分支，isNewUser=true，文档以 openid 落库）=====
   let all=await db.collection('users').limit(100).get();
   let removed=0;
-  for(const u of all.data){ if((u.openid||'').indexOf('qa_mm_')===0 || (u.name||'').indexOf('QA_MM_')===0 || (u.createdBy||'')==='qa_mm'){ await db.collection('users').doc(u._id).remove(); removed++; } }
+  for(const u of all.data){
+    const isQa=(u.openid||'').indexOf('qa_mm_')===0 || (u.name||'').indexOf('QA_MM_')===0 || (u.createdBy||'')==='qa_mm' || (u.data&&u.data.placeholderFor&&u.data.placeholderFor.indexOf('qa_mm_')===0) || (u.placeholderFor&&u.placeholderFor.indexOf('qa_mm_')===0);
+    const isBlank=!u.name && !u.role && !u.openid;   // 历史 bug 写出的空白文档
+    if(isQa||isBlank){ await db.collection('users').doc(u._id).remove(); removed++; }
+  }
   console.log('预清理 qa_mm_ 残留: '+removed+' 条');
-  // 占位文档：无 openid 字段（login 的 where({openid:qa_mm_x}) 查不到 → 视为新用户）
+  // 占位文档：顶层直传、不带 openid（node-sdk add 不吃 {data:{}} 嵌套，会写出空白文档；
+  // 且占位若带 openid，login 会命中「已存在用户」分支、跳过邀请绑定，与真实首登不符）。
+  // 无 openid 时 where({openid:qa_mm_x}) 查不到 → 走新用户+邀请绑定分支；
+  // 成员列表 users.list 已过滤无身份文档，占位不会显示为空白卡片。
   for(const oid of [NEW_ORDERER, NEW_SORTER, NEW_WH, NEW_INV]){
-    await db.collection('users').add({ data:{ placeholderFor: oid, name:'QA_MM_占位', status:'placeholder', createdAt:new Date() } });
+    await db.collection('users').add({ name: 'QA_MM_占位', status: 'placeholder', placeholderFor: oid, createdAt: new Date() });
   }
   for(const role of ['orderer','sorter','warehouse','admin']){
     const c=await db.collection('perm_configs').where({role}).get();
@@ -210,7 +217,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   console.log('\n清理：删除全部 qa_mm_ 用户 + 清空 perm_configs');
   all=await db.collection('users').limit(100).get();
   let clean=0;
-  for(const u of all.data){ if((u.openid||'').indexOf('qa_mm_')===0 || (u.createdBy||'')==='qa_mm' || (u.name||'').indexOf('QA_MM_')===0){ await db.collection('users').doc(u._id).remove(); clean++; } }
+  for(const u of all.data){ if((u.openid||'').indexOf('qa_mm_')===0 || (u.createdBy||'')==='qa_mm' || (u.name||'').indexOf('QA_MM_')===0 || (!u.name&&!u.role&&!u.openid) || (u.placeholderFor&&u.placeholderFor.indexOf('qa_mm_')===0)){ await db.collection('users').doc(u._id).remove(); clean++; } }
   const ids=[inv1Id,inv2Id];
   for(const id of ids){ if(id){ try{ await db.collection('users').doc(id).remove(); }catch(e){} } }
   for(const role of ['orderer','sorter','warehouse','admin']){

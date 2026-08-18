@@ -5,14 +5,19 @@
 set -e
 cd "$(dirname "$0")/.."
 
+# 微信开发者工具模拟器冷启动偶发竞态（页面实例未就绪），UI 类步骤失败自动重试一次
+run_ui() {
+  node "$1" || { echo "    ⚠ 首次失败，等待 5s 后重试..."; sleep 5; node "$1"; }
+}
+
 echo "==> [1/8] 权限逻辑单测（perm-logic）"
 node tests/perm-logic-test.js
 
 echo "==> [2/8] 权限 UI 测试（wx-perm-ui，需微信开发者工具模拟器）"
-node tests/wx-perm-ui-test.js
+run_ui tests/wx-perm-ui-test.js
 
 echo "==> [3/8] 页面走查（wx-pagewalk）"
-node tests/wx-pagewalk-test.js
+run_ui tests/wx-pagewalk-test.js
 
 echo "==> [4/8] 开启 QA 身份钩子（部署 8 函数 QA_IMPERSONATE=1，约 3-4 分钟）"
 node tests/qa-toggle.js on
