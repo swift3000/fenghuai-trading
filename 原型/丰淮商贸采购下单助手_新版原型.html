@@ -1936,6 +1936,7 @@ body{padding:18px 0}
         <div class="menu-item" id="menuReports" onclick="navigateTo('reports')"><div class="left"><div class="icon m3"><svg class="ri" aria-hidden="true"><use href="#ri-bar-chart-2-line"></use></svg></div><span class="lbl">报表统计</span></div><span class="arrow">›</span></div>
         <div class="menu-item" onclick="toggleFontZoomPanel()"><div class="left"><div class="icon" style="background:var(--blue-soft);color:var(--blue)"><svg class="ri" aria-hidden="true"><use href="#ri-a-b"></use></svg></div><span class="lbl">字体大小</span></div><span style="font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-right:8px" id="profileFontScale">90%</span><span class="arrow">›</span></div>
         <div class="menu-item" onclick="openAutoConfirmModal()"><div class="left"><div class="icon" style="background:#FDF3DC;color:#D97706"><svg class="ri" aria-hidden="true"><use href="#ri-time-line"></use></svg></div><span class="lbl">定时自动确认<span id="autoCfgTag" style="margin-left:6px"></span></span></div><span class="arrow">›</span></div>
+        <div class="menu-item" onclick="openSettingsModal()"><div class="left"><div class="icon" style="background:var(--green-soft,#E7F7EE);color:#07C160"><svg class="ri" aria-hidden="true"><use href="#ri-settings-3-line"></use></svg></div><span class="lbl">系统设置<span style="margin-left:6px;font-size:calc(11px * var(--font-scale));color:#98A2B3">语音 / NLP 引擎</span></span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuMembers" onclick="openMembers()"><div class="left"><div class="icon" style="background:var(--violet-soft);color:var(--violet)"><svg class="ri" aria-hidden="true"><use href="#ri-team-line"></use></svg></div><span class="lbl">成员管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" onclick="resetDemoData()"><div class="left"><div class="icon m4"><svg class="ri" aria-hidden="true"><use href="#ri-refresh-line"></use></svg></div><span class="lbl">重置演示数据</span></div><span class="arrow">›</span></div>
       </div>
@@ -2058,6 +2059,56 @@ body{padding:18px 0}
       </div>
       <div class="auto-cfg-hint">开启后，每天到达所选时间，仍未确认的分拣/出库订单将全部自动确认（每日一次），防止订单跨天堆积；分拣员与库管工作台会显示定时提示，超时未确认订单标红。关闭则不限时，不显示任何定时提示，需人工确认。</div>
       <button class="btn primary" style="width:100%;margin-top:14px" onclick="saveAutoConfirm()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 系统设置弹窗（智能录入引擎：腾讯云语音 ASR + TokenHub NLP，仅管理员） -->
+<div class="modal-mask" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title">系统设置 · 智能录入引擎</div>
+      <div class="close" onclick="closeSettingsModal()"><svg class="ri" aria-hidden="true"><use href="#ri-close-line"></use></svg></div>
+    </div>
+    <div class="modal-body" style="padding:16px;max-height:70vh;overflow-y:auto">
+      <div style="font-size:calc(13px * var(--font-scale));color:var(--text-2);margin-bottom:12px">密钥仅保存在云端，不会泄露到前端。未启用/未配置时自动降级为规则引擎，文字录入仍正常。</div>
+      <div style="font-weight:600;font-size:calc(14px * var(--font-scale));margin:8px 0">🎙️ 腾讯云语音（ASR）· 语音转文字</div>
+      <div class="mf-row"><label>启用语音识别</label><select id="ssTencentEnabled"><option value="0">停用</option><option value="1">启用</option></select></div>
+      <div class="mf-row"><label>SecretId</label><input id="ssTencentSid" type="text" placeholder="腾讯云 SecretId（主账号或已授权 ASR 的子账号）"></div>
+      <div class="mf-row"><label>SecretKey</label><input id="ssTencentSkey" type="password" placeholder="腾讯云 SecretKey"></div>
+      <div class="mf-row"><label>识别引擎</label><select id="ssTencentEngine"><option value="16k_zh">通用 16K（麦克风录音）</option><option value="8k_zh">电话 8K</option></select></div>
+      <button class="btn primary" style="width:100%;margin-top:6px" onclick="saveTencentConfig()">💾 保存腾讯云配置（语音）</button>
+      <div style="height:16px"></div>
+      <div style="font-weight:600;font-size:calc(14px * var(--font-scale));margin:8px 0">🧠 TokenHub 大模型（NLP）· 复杂语义理解</div>
+      <div class="ag-step" style="font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-bottom:10px">接入腾讯云 TokenHub 大模型（OpenAI 兼容接口，与语音密钥独立），用于规则引擎未命中的口语化/复杂表达。23 个免费额度模型可切换，默认 hy3（100万 tokens/年）。</div>
+      <div class="mf-row"><label>启用 TokenHub NLP</label><select id="ssNlpEnabled"><option value="0">停用</option><option value="1">启用</option></select></div>
+      <div class="mf-row"><label>模型</label><select id="ssNlpModel">
+        <option value="hy3">hy3（默认推荐）</option>
+        <option value="glm-5.3">glm-5.3</option>
+        <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+        <option value="deepseek-v4-flash-202605">deepseek-v4-flash-202605</option>
+        <option value="kimi-k3">kimi-k3</option>
+        <option value="kimi-k2.7-code-highspeed">kimi-k2.7-code-highspeed</option>
+        <option value="glm-5.2">glm-5.2</option>
+        <option value="kimi-k2.7-code">kimi-k2.7-code</option>
+        <option value="minimax-m3">minimax-m3</option>
+        <option value="deepseek-v4-pro-202606">deepseek-v4-pro-202606</option>
+        <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+        <option value="mimo-v2.5-pro">mimo-v2.5-pro</option>
+        <option value="glm-5.1">glm-5.1</option>
+        <option value="glm-5">glm-5</option>
+        <option value="glm-5v-turbo">glm-5v-turbo</option>
+        <option value="glm-5-turbo">glm-5-turbo</option>
+        <option value="kimi-k2.6">kimi-k2.6</option>
+        <option value="minimax-m2.7">minimax-m2.7</option>
+        <option value="hy-role">hy-role</option>
+        <option value="hunyuan-role-latest">hunyuan-role-latest</option>
+        <option value="hy-mt2-pro">hy-mt2-pro</option>
+        <option value="hy-mt2-plus">hy-mt2-plus</option>
+        <option value="hy-mt2-lite">hy-mt2-lite</option>
+      </select></div>
+      <div class="mf-row"><label>API Key</label><input id="ssTokenhubKey" type="password" placeholder="TokenHub API Key（sk-开头，23 个模型通用）"></div>
+      <button class="btn primary" style="width:100%;margin-top:6px" onclick="saveTokenhubConfig()">💾 保存 TokenHub 配置</button>
     </div>
   </div>
 </div>
@@ -2764,6 +2815,39 @@ function openAutoConfirmModal(){
 }
 function closeAutoConfirmModal(){ closeModal('autoConfirmModal'); }
 function onAcEnabledChange(){ $('acTimeRow').style.opacity = $('acEnabled').checked ? '1' : '0.4'; }
+// ============ 系统设置：智能录入引擎（腾讯云 ASR + TokenHub NLP，原型演示 localStorage） ============
+const AI_CONFIG_KEY = 'aiConfig';
+function openSettingsModal(){
+  if(!getPerm('member:manage')){ showToast('仅管理员可访问系统设置'); return; }
+  const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
+  const setV=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v; };
+  setV('ssTencentEnabled', ai.tencentEnabled || '0');
+  setV('ssTencentSid', ai.tencentSid || '');
+  setV('ssTencentSkey', ai.tencentSkey || '');
+  setV('ssTencentEngine', ai.tencentEngine || '16k_zh');
+  setV('ssNlpEnabled', ai.nlpEnabled || '0');
+  setV('ssNlpModel', ai.nlpModel || 'hy3');
+  setV('ssTokenhubKey', ai.tokenhubKey || '');
+  openModal('settingsModal');
+}
+function closeSettingsModal(){ closeModal('settingsModal'); }
+function _readAiCfg(){ return JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}'); }
+function _writeAiCfg(c){ localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(c)); }
+function saveTencentConfig(){
+  const c=_readAiCfg();
+  c.tencentEnabled=document.getElementById('ssTencentEnabled').value;
+  c.tencentSid=document.getElementById('ssTencentSid').value.trim();
+  c.tencentSkey=document.getElementById('ssTencentSkey').value.trim();
+  c.tencentEngine=document.getElementById('ssTencentEngine').value;
+  _writeAiCfg(c); showToast('腾讯云配置已保存');
+}
+function saveTokenhubConfig(){
+  const c=_readAiCfg();
+  c.nlpEnabled=document.getElementById('ssNlpEnabled').value;
+  c.nlpModel=document.getElementById('ssNlpModel').value;
+  c.tokenhubKey=document.getElementById('ssTokenhubKey').value.trim();
+  _writeAiCfg(c); showToast('TokenHub 配置已保存');
+}
 function saveAutoConfirm(){
   autoConfirm.enabled = !!$('acEnabled').checked;
   const t = $('acTime').value;
