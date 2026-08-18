@@ -26,6 +26,10 @@
 | 根目录部署脚本（auto-deploy-*.sh / deploy-all.sh） | `deploy/scripts/` |
 | `GIT/`（记录类） | `docs/reports/` |
 | `PROJECT_STRUCTURE.md` | 保留，与 `tests/performance/` 并列维护 |
+## 原型
+- 原型位置：原型/（存量目录，新原型进 docs/ui/）
+- 开发对齐：只对齐产品事实（字段/流程/状态/权限/文案）；演示辅助剥离（4 角色演示切换≠真实 RBAC，按登录+权限实现）——原则见全局 AGENTS.md"原型对齐原则"
+
 ## 业务红线（改动前必查）
 - 4 角色：下单员/分拣员/库管/管理员，权限矩阵 scripts/sync-perm-matrix.js（check:perms）
 - 订单：新建即「待分拣」，无草稿；状态流 待分拣→已分拣→已出库→已完成
