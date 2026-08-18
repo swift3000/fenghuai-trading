@@ -11,7 +11,11 @@
     "check:perms": "node scripts/sync-perm-matrix.js",
     "test:wx-pages": "node tests/wx-pagewalk-test.js",
     "test:wx-perm": "node tests/wx-perm-test.js",
-    "test:wx-perm-ui": "node tests/wx-perm-ui-test.js"
+    "test:wx-perm-ui": "node tests/wx-perm-ui-test.js",
+    "test:wx-role-sim": "node tests/wx-role-sim-test.js",
+    "test:wx-e2e": "node tests/wx-e2e-flow-test.js",
+    "test:wx-member": "node tests/wx-member-mgmt-test.js",
+    "test:all": "sh scripts/test-all.sh"
   },
   "dependencies": {
     "miniprogram-ci": "^2.1.31"

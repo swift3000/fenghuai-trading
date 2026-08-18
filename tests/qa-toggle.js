@@ -11,7 +11,7 @@
 const path=require('path'),fs=require('fs'),{execFileSync}=require('child_process');
 const PROJECT=path.resolve(__dirname,'..');
 const RC=path.join(PROJECT,'cloudbaserc.json');
-const FNS=['products','customers','orders','users','receivable','report','outbound'];
+const FNS=['products','customers','orders','users','receivable','report','outbound','auth'];
 const mode=process.argv[2]||'';
 const env={};
 fs.readFileSync(path.join(PROJECT,'.env'),'utf8').split('\n').forEach(l=>{const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);if(m)env[m[1]]=m[2].trim();});

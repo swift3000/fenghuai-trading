@@ -7,14 +7,17 @@
     {
       "name": "auth",
       "runtime": "Nodejs20.19",
-      "timeout": 30
+      "timeout": 30,
+      "envVariables": {
+        "QA_IMPERSONATE": "1"
+      }
     },
     {
       "name": "products",
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -22,7 +25,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -36,7 +39,7 @@
       "timeout": 60,
       "memorySize": 1024,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -44,7 +47,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -57,7 +60,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -75,7 +78,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     },
     {
@@ -88,7 +91,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": ""
+        "QA_IMPERSONATE": "1"
       }
     }
   ]

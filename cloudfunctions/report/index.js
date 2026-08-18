@@ -47,6 +47,8 @@ async function checkPermission(permission) {
   const userResult = await db.collection('users').where({ openid: OPENID }).get()
   if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
   const user = userResult.data[0]
+  if (user.status && user.status !== 'active') return { code: 403, message: '账号已被禁用' }
+
   if (user.role === 'admin') return { code: 0 }
   if (user.permissions && user.permissions.includes(permission)) return { code: 0 }
   return { code: 403, message: '无权限访问' }

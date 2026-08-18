@@ -78,6 +78,8 @@ async function checkPermission(permission) {
   }
   
   const user = userResult.data[0]
+  if (user.status && user.status !== 'active') return { code: 403, message: '账号已被禁用' }
+
   if (user.role === 'admin') {
     return { code: 0, user }
   }

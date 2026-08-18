@@ -2,6 +2,11 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// ===== QA 测试身份钩子（生产默认关闭，安全）====
+// 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
+// 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试（与其他业务云函数同机制）。
+let __impersonatedOpenid = null
+
 // 引入权限矩阵
 let pmShared
 try {
@@ -18,8 +23,10 @@ try {
 async function effectivePermsForRole(role) {
   try {
     const cfg = await db.collection('perm_configs').where({ role }).get()
-    const overrides = (cfg.data && cfg.data[0] && cfg.data[0].permissions) || []
-    return pmShared.mergedPerms(role, overrides)
+    // 无覆盖时必须传 undefined（mergedPerms 第二参非 null 时只做「baseline+覆盖」，
+    // 传 [] 会把新用户权限缩成只剩 baseline，导致邀请进来的用户几乎没有任何权限）
+    const overrides = (cfg.data && cfg.data[0] && cfg.data[0].permissions) || null
+    return pmShared.mergedPerms(role, overrides ? overrides : undefined)
   } catch (e) {
     console.log('获取角色权限失败，使用默认权限:', e.message)
     return pmShared.defaultPermsForRole(role)
@@ -68,7 +75,8 @@ async function generateInviteQR(inviteCode) {
 exports.main = async (event, context) => {
   const { action } = event
   const wxContext = cloud.getWXContext()
-  const openid = wxContext.OPENID
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
+  const openid = __impersonatedOpenid || wxContext.OPENID
 
   console.log('auth 云函数调用，action:', action, 'openid:', openid)
 

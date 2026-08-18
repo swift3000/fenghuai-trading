@@ -24,6 +24,7 @@ Page({
     statusMap: {
       active: '正常',
       pending: '邀请中',
+      disabled: '禁用',
       inactive: '禁用'
     },
     roleIndex: 0,

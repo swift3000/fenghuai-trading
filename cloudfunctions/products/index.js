@@ -35,6 +35,8 @@ exports.main = async (event, context) => {
       return { code: 401, message: '用户不存在，请先登录' }
     }
     const user = userResult.data[0]
+    if (user.status && user.status !== 'active') return { code: 403, message: '账号已被禁用' }
+
     if (user.role === 'admin') return { code: 0, user }
     if (!user.permissions || !user.permissions.includes(permission)) {
       return { code: 403, message: '无权限访问' }

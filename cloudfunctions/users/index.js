@@ -131,6 +131,10 @@ exports.main = async (event, context) => {
   if (authResult.code !== 0) {
     return authResult
   }
+  const self = authResult.user || {}
+  // 前端成员管理页传的是 doc._id，而防御需同时兼容 _id 与 openid 两种标识，
+  // 否则 event.userId===openid 永远不成立，防自删/防自改角色/防自禁用保护形同虚设
+  const isSelf = (id) => !!(id && (id === self._id || id === self.openid || id === openid))
 
   switch (action) {
     case 'list': {
@@ -165,7 +169,7 @@ exports.main = async (event, context) => {
 
     case 'remove': {
       // 移除用户（不能移除自己）
-      if (event.userId === openid) {
+      if (isSelf(event.userId)) {
         return { code: 400, message: '无法移除自己' }
       }
 
@@ -180,7 +184,7 @@ exports.main = async (event, context) => {
 
     case 'update-role': {
       // 更新用户角色
-      if (event.userId === openid) {
+      if (isSelf(event.userId)) {
         return { code: 400, message: '无法修改自己的角色' }
       }
 
@@ -202,13 +206,18 @@ exports.main = async (event, context) => {
 
     case 'update-status': {
       // 禁用/启用用户
-      if (event.userId === openid) {
+      if (isSelf(event.userId)) {
         return { code: 400, message: '无法禁用自己' }
       }
-
+      let st = event.status
+      // 兼容旧值 inactive → disabled
+      if (st === 'inactive') st = 'disabled'
+      if (st !== 'active' && st !== 'disabled') {
+        return { code: 400, message: '无效状态值（应为 active 或 disabled）' }
+      }
       await db.collection('users').doc(event.userId).update({
         data: {
-          status: event.status,
+          status: st,
           updatedAt: db.serverDate()
         }
       })
