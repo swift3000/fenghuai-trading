@@ -11,12 +11,6 @@
     <text>🤖 智能录入（文字/语音）</text>
   </view>
 
-  <view class="items-section">
-    <view class="section-header flex-between">
-      <text class="section-title">商品明细</text>
-      <text class="add-btn" bindtap="addProduct">+ 添加商品</text>
-    </view>
-
     <view class="prow-card card" wx:for="{{items}}" wx:key="_id">
       <view class="prow-head">
         <view>
@@ -114,16 +108,16 @@
     <view class="empty-tip" wx:if="{{!items.length}}">
       <text>点击"添加商品"或"智能录入"开始</text>
     </view>
-  </view>
 
-  <view class="total-bar card">
-    <view class="flex-between">
-      <text class="total-label">合计</text>
-      <text class="total-amount">¥{{totalAmount}}</text>
+    <view class="add-product-btn" bindtap="addProduct">+ 添加商品 ▾</view>
+
+  <view class="order-footer">
+    <view class="footer-total">
+      <view class="ft-lbl">合计</view>
+      <view class="ft-amt">¥{{totalAmount}}</view>
     </view>
+    <button class="save-btn" bindtap="saveOrder">{{editMode ? '保存修改' : '保存订单'}}</button>
   </view>
-
-  <button class="btn-primary save-btn" bindtap="saveOrder">{{editMode ? '保存修改' : '保存订单'}}</button>
 
   <!-- 客户选择弹窗 -->
   <view class="modal-mask" wx:if="{{showCustomerModal}}" bindtap="closeCustomerModal"></view>

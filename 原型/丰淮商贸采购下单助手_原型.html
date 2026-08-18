@@ -4337,9 +4337,9 @@ function buildLedgerCards(customerMap, q2){
       const psLabel = ps === 'paid' ? '已结清' : (ps === 'pending' ? '待确认' : '未结清');
       return `<div class="ledger-order-row" onclick="navigateTo('orderDetail','${o.id}')">
         <span class="ledger-order-no">${o.orderNo}</span>
-        <span class="ledger-order-amt">¥${fmtMoney(o.amount||0)}</span>
+        <span class="ledger-order-amt">${fmtMoney(o.amount||0)}</span>
         <span class="ledger-order-status" style="color:${psColor}">${psLabel}</span>
-        ${ps !== 'paid' ? `<span class="ledger-order-debt">欠¥${fmtMoney(debt)}</span>` : ''}
+        ${ps !== 'paid' ? `<span class="ledger-order-debt">欠${fmtMoney(debt)}</span>` : ''}
       </div>`;
     }).join('');
     const moreCount = c.orders.length > 3 ? `<div class="ledger-more">共 ${c.orders.length} 笔订单 ›</div>` : '';
@@ -4360,15 +4360,15 @@ function buildLedgerCards(customerMap, q2){
       <div class="ledger-summary">
         <div class="ledger-sum-item">
           <div class="ledger-sum-label">应收总额</div>
-          <div class="ledger-sum-val">¥${fmtMoney(totalReceivable)}</div>
+          <div class="ledger-sum-val">${fmtMoney(totalReceivable)}</div>
         </div>
         <div class="ledger-sum-item">
           <div class="ledger-sum-label" style="color:var(--green)">已收</div>
-          <div class="ledger-sum-val" style="color:var(--green)">¥${fmtMoney(totalReceived)}</div>
+          <div class="ledger-sum-val" style="color:var(--green)">${fmtMoney(totalReceived)}</div>
         </div>
         <div class="ledger-sum-item">
           <div class="ledger-sum-label" style="color:var(--orange)">未结清</div>
-          <div class="ledger-sum-val" style="color:var(--orange)">¥${fmtMoney(totalUnsettled)}</div>
+          <div class="ledger-sum-val" style="color:var(--orange)">${fmtMoney(totalUnsettled)}</div>
         </div>
       </div>
       <!-- 最近订单 -->
@@ -4470,10 +4470,10 @@ function buildSettledCards(settledByCustomer, q2){
       return `<div class="sc-order-row" onclick="navigateTo('orderDetail','${o.id}')">
         <div class="sc-order-info">
           <span class="sc-order-no">${o.orderNo}</span>
-          <span class="sc-order-amt">应收 ¥${fmtMoney(o.amount||0)}</span>
+          <span class="sc-order-amt">应收 ${fmtMoney(o.amount||0)}</span>
         </div>
         <div class="sc-order-meta">
-          实收 <b style="color:var(--green)">¥${fmtMoney(perOrderReceived)}</b>
+          实收 <b style="color:var(--green)">${fmtMoney(perOrderReceived)}</b>
           ${lastPay ? '· ' + formatTime(new Date(lastPay.confirmed_at || lastPay.paid_at)) : ''}
         </div>
       </div>`;
@@ -4488,7 +4488,7 @@ function buildSettledCards(settledByCustomer, q2){
           <div class="dc-meta">${c.region} · ${c.orders.length} 笔已结清</div>
         </div>
         <div style="text-align:right">
-          <div class="dc-debt" style="color:var(--green)">¥${fmtMoney(totalReceived)}</div>
+          <div class="dc-debt" style="color:var(--green)">${fmtMoney(totalReceived)}</div>
           <span class="dc-status" style="color:#67C23A;border-color:#67C23A">已结清</span>
         </div>
       </div>
