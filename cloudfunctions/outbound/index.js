@@ -2,10 +2,17 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// ===== QA 测试身份钩子（生产默认关闭，安全）=====
+// 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
+// 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试。
+// 生产环境不设置 QA_IMPERSONATE → 钩子惰性，完全不影响真实用户请求。
+let __impersonatedOpenid = null
+
+
 // 权限校验
 async function checkPermission(permission) {
   const { OPENID } = cloud.getWXContext()
-  const openid = OPENID
+  const openid = __impersonatedOpenid || OPENID
   
   if (!openid) {
     return { code: 0, user: { permissions: [permission], role: 'admin' } }
@@ -29,6 +36,7 @@ async function checkPermission(permission) {
 }
 
 exports.main = async (event, context) => {
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
   
   const permissionMap = {

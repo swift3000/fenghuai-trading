@@ -2,6 +2,13 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// ===== QA 测试身份钩子（生产默认关闭，安全）=====
+// 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
+// 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试。
+// 生产环境不设置 QA_IMPERSONATE → 钩子惰性，完全不影响真实用户请求。
+let __impersonatedOpenid = null
+
+
 // 转义搜索词中的正则特殊字符
 function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -25,7 +32,8 @@ function debtAgeDays(order) {
 
 // 权限校验
 async function checkPermission(permission) {
-  const { OPENID } = cloud.getWXContext()
+  const { OPENID: __rawOID } = cloud.getWXContext()
+  const OPENID = __impersonatedOpenid || __rawOID
   if (!OPENID) {
     console.log('⚠️ 后台调用，跳过权限校验')
     return { code: 0 }
@@ -67,6 +75,7 @@ async function appendOrderLog(orderId, action, desc) {
 }
 
 exports.main = async (event, context) => {
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
   switch (action) {
     case 'dashboard': {

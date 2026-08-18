@@ -4,66 +4,18 @@
   "envId": "cloud1-d6g75loi673b1e039",
   "functionRoot": "cloudfunctions",
   "functions": [
-    {
-      "name": "auth",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "products",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "customers",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "check-customer-fields",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "orders",
-      "runtime": "Nodejs20.19",
-      "timeout": 60,
-      "memorySize": 1024
-    },
-    {
-      "name": "users",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "regions",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "receivable",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "system",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "smart",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "report",
-      "runtime": "Nodejs20.19",
-      "timeout": 30
-    },
-    {
-      "name": "import-data",
-      "runtime": "Nodejs20.19",
-      "timeout": 60
-    }
+    { "name": "auth", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "products", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "customers", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "check-customer-fields", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "orders", "runtime": "Nodejs20.19", "timeout": 60, "memorySize": 1024, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "users", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "regions", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "receivable", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "system", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "smart", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "report", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} },
+    { "name": "import-data", "runtime": "Nodejs20.19", "timeout": 60 },
+    { "name": "outbound", "runtime": "Nodejs20.19", "timeout": 30, "envVariables": {"QA_IMPERSONATE": ""} }
   ]
 }

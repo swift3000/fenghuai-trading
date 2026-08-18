@@ -1,6 +1,13 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+
+// ===== QA 测试身份钩子（生产默认关闭，安全）=====
+// 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
+// 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试。
+// 生产环境不设置 QA_IMPERSONATE → 钩子惰性，完全不影响真实用户请求。
+let __impersonatedOpenid = null
+
 const _ = db.command
 
 // 转义搜索词中的正则特殊字符，避免 db.RegExp/_.regexp 构造抛异常（用户输入含 ( [ * ? 等会 500）
@@ -9,8 +16,9 @@ function escapeRegExp(str) {
 }
 
 exports.main = async (event, context) => {
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const wxContext = cloud.getWXContext()
-  const openid = wxContext.OPENID
+  const openid = __impersonatedOpenid || wxContext.OPENID
   const { action } = event
 
   // 权限校验
