@@ -55,8 +55,10 @@ Page({
     wx.showLoading({ title: '加载中...' })
     try {
       const members = await callCloud('users', { action: 'list' })
+      // WXML 不能调用页面方法，这里预格式化加入日期（serverDate 可能为 {\$date} 对象）
+      const list = (members || []).map(m => Object.assign({}, m, { dateText: this.formatDate(m.createdAt) }))
       this.setData({
-        members: members || [],
+        members: list,
         roleIndex: this.data.roleOptions.findIndex(r => r.value === this.data.inviteRole)
       })
     } catch (e) {
@@ -282,8 +284,11 @@ Page({
   },
 
   formatDate(date) {
-    if (!date) return '-'
-    const d = new Date(date)
+    let d = date
+    if (d && typeof d === 'object') d = d['\u0024date'] || d.date || d
+    if (!d) return '-'
+    d = new Date(d)
+    if (isNaN(d.getTime())) return '-'
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   },
   onFontScaleChange(scale) {

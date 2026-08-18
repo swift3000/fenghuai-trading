@@ -51,7 +51,7 @@
         </view>
         <view class="member-status">
           <text class="status-{{item.status}}">{{statusMap[item.status]}}</text>
-          <text class="member-date">加入：{{formatDate(item.createdAt)}}</text>
+          <text class="member-date">加入：{{item.dateText}}</text>
         </view>
         <view class="member-invite" wx:if="{{item.status === 'pending' && item.inviteCode}}">
           <text class="invite-code-text">邀请码：{{item.inviteCode}}</text>
