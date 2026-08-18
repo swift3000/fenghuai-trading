@@ -4352,7 +4352,7 @@ function buildLedgerCards(customerMap, q2){
           <div class="dc-meta">${c.region} · ${c.orders.length} 笔订单</div>
         </div>
         <div style="text-align:right">
-          <div class="dc-debt" style="font-size:calc(16px * var(--font-scale))">${hasDebt ? '¥'+fmtMoney(totalUnsettled) : '✓'}</div>
+          <div class="dc-debt" style="font-size:calc(16px * var(--font-scale))">${hasDebt ? fmtMoney(totalUnsettled) : '✓'}</div>
           <span class="dc-status" style="color:${statusColor};border-color:${statusColor}">${statusText}</span>
         </div>
       </div>

@@ -925,82 +925,76 @@
 }
 .epp-btn::after { border: none; }
 
-/* ===== 赊销页新版 hero（对齐原型 1123+ 绿色 hero） ===== */
+/* ===== 赊销页 hero（对齐老板版原型 .receivable-hero 橙色实底） ===== */
 .recv-hero {
   position: relative;
   overflow: hidden;
-  margin: 12px 12px 0;
-  padding: 18px 18px 16px;
+  margin: 0 0 0;
+  padding: 32rpx 32rpx 28rpx;
   text-align: left;
-  background: linear-gradient(135deg, #CDEEDA 0%, #E2F6E9 46%, #F3FBF5 100%);
-  border-radius: 20px;
-  box-shadow: 0 10px 26px rgba(36, 173, 82, 0.10);
+  background: linear-gradient(135deg, #FF9A3D 0%, #FF6B35 100%);
+  border-radius: 0 0 48rpx 48rpx;
 }
-.recv-hero::before {
-  content: "";
-  position: absolute;
-  top: -50px;
-  right: -36px;
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  background: rgba(69, 208, 111, 0.16);
-}
+.recv-hero::before { display: none; }
 .recv-hero .rh-label {
   position: relative;
   font-size: 12px;
-  color: #5B7A68;
-  font-weight: 600;
+  color: #fff;
+  opacity: 0.9;
+  font-weight: 500;
 }
 .recv-hero .rh-amount {
   position: relative;
   font-size: 34px;
   font-weight: 800;
-  margin: 5px 0;
+  margin: 6px 0;
   font-variant-numeric: tabular-nums;
-  color: var(--orange-bright, #EA580C);
+  color: #fff;
 }
 .recv-hero .rh-summary-row {
   position: relative;
   display: flex;
-  gap: 8px;
-  margin: 10px 0 4px;
+  gap: 20rpx;
+  margin: 12px 0 4px;
   font-size: 11px;
   flex-wrap: wrap;
+  opacity: 0.95;
 }
 .recv-hero .rh-s-item {
   flex: 1;
-  background: #fff;
-  border: 1px solid rgba(36, 173, 82, 0.14);
-  border-radius: 12px;
-  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   font-weight: 500;
-  color: var(--text-2, #64748B);
+  color: #fff;
 }
 .recv-hero .rh-s-item .rh-s-lbl {
   display: block;
   font-size: 11px;
-  color: var(--text-2, #64748B);
+  color: #fff;
+  opacity: 0.9;
 }
 .recv-hero .rh-s-item .rh-s-val {
   display: block;
   font-weight: 700;
   font-size: 13px;
-  color: var(--text, #1F2937);
+  color: #fff;
   margin-top: 2px;
   font-variant-numeric: tabular-nums;
 }
-.recv-hero .rh-s-item.green .rh-s-val { color: var(--brand, #24AD52); }
-.recv-hero .rh-s-item.red .rh-s-val { color: var(--orange-bright, #EA580C); }
+.recv-hero .rh-s-item.green .rh-s-val { color: #A3F7B7; }
+.recv-hero .rh-s-item.red .rh-s-val { color: #FFB8B8; }
 .recv-hero .rh-sub {
   position: relative;
   font-size: 12px;
-  color: #7A948A;
+  color: #fff;
+  opacity: 0.9;
   display: flex;
   gap: 16px;
   margin-top: 10px;
 }
-.recv-hero .rh-sub-num { color: var(--text, #1F2937); font-weight: 700; }
+.recv-hero .rh-sub-num { color: #fff; font-weight: 700; }
 
 .recv-body { padding: 10px 12px; }
 
@@ -1061,26 +1055,20 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
-/* 新版操作按钮行（原型：橙色描边 + 蓝色导出） */
-.recv-action-row {
-  display: flex;
-  justify-content: flex-start;
-  gap: 8px;
-  margin-top: 10px;
-}
+/* 操作按钮行（对齐老板版原型：绿描边确认 + 绿色导出） */
 .recv-confirm-btn {
-  border-radius: 999px;
-  border: 1px solid var(--orange, #F97316);
-  color: var(--orange-dark, #C2410C);
+  background: #fff;
+  border: 1px solid var(--theme-primary, #07C160);
+  color: var(--theme-primary, #07C160);
+  border-radius: 14px;
+  font-size: calc(24rpx * var(--font-scale));
+  padding: 10rpx 26rpx;
 }
-.recv-confirm-btn:active {
-  background: var(--orange, #F97316);
-  color: #fff;
-}
+.recv-confirm-btn:active { background: var(--theme-primary, #07C160); color: #fff; }
 .btn-export-recv {
-  margin-left: 0;
-  background: var(--blue, #2563EB) !important;
-  border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.24);
+  margin-left: auto;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
 }
 
