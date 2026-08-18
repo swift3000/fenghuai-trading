@@ -88,12 +88,12 @@
 }
 
 .role-picker .label {
-  color: rgba(255, 255, 255, 0.9);
+  color: #333;
   font-weight: 500;
 }
 
 .role-picker .value {
-  color: #fff;
+  color: var(--theme-primary);
   font-weight: bold;
   margin-left: 12rpx;
   font-size: calc(30rpx * var(--font-scale));
@@ -128,6 +128,10 @@
 
 .member-list {
   margin-top: 24rpx;
+}
+.members-section .section-title {
+  color: #333;
+  margin-bottom: 12rpx;
 }
 
 .member-item {

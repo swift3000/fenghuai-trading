@@ -37,7 +37,7 @@
       <view class="member-item card" wx:for="{{members}}" wx:key="_id">
         <view class="member-header">
           <view class="member-info">
-            <text class="member-name">{{item.name}}</text>
+            <text class="member-name">{{item.name || '待加入成员'}}</text>
             <text class="member-phone" wx:if="{{item.phone}}">{{item.phone}}</text>
             <text class="member-region" wx:if="{{item.region}}">{{item.region}}</text>
           </view>
