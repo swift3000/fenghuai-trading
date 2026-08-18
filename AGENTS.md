@@ -68,5 +68,4 @@
 PRD_产品需求文档.md > 小程序MVP落地计划与技术架构.md > TDD_技术规格书.md > ERD_数据库设计.md > API_接口文档.md（均在 文档/）
 
 ## 工程纪律
-- 每个任务验证通过后立即 git commit（任务号+一句描述）
-- 凭据只存 ~/.codex/knowledge/credentials-local.md（local only）
+- 流程类纪律（commit 时机/push/分支发版/多会话并行/凭据处理）一律以全局 ~/.codex/AGENTS.md【工程纪律】【凭据处理】为准，本文件不复制
