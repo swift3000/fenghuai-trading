@@ -12,6 +12,20 @@
 - 打印：ESC/POS 指令 + 蓝牙 BLE（芯烨/佳博/汉印 58/80mm）
 - 智能录入：腾讯云 ASR（录音文件识别）+ TokenHub NLP（OpenAI 兼容，默认 hy3）；密钥由管理员在小程序「系统设置」云端配置，未配置自动降级为纯规则引擎
 
+## 目录映射（存量项目，新内容一律进规范位置，搬迁留到大改版）
+
+| 现状 | 规范位置（新内容用这个） |
+|---|---|
+| `文档/` | `docs/` |
+| `需求/` | `docs/prd/`（按版本分目录） |
+| `原型/` | `docs/ui/` |
+| `报告/` | `docs/reports/`（测试报告在 `tests/reports/`） |
+| `指南/` | `docs/guide/` |
+| `经验库/` | 全局 `~/.codex/knowledge/`（项目级坑写本文件"已知坑"） |
+| `output/` `screenshots/` `logs/` | `.local/`（不入库） |
+| 根目录部署脚本（auto-deploy-*.sh / deploy-all.sh） | `deploy/scripts/` |
+| `GIT/`（记录类） | `docs/reports/` |
+| `PROJECT_STRUCTURE.md` | 保留，与 `tests/performance/` 并列维护 |
 ## 业务红线（改动前必查）
 - 4 角色：下单员/分拣员/库管/管理员，权限矩阵 scripts/sync-perm-matrix.js（check:perms）
 - 订单：新建即「待分拣」，无草稿；状态流 待分拣→已分拣→已出库→已完成
