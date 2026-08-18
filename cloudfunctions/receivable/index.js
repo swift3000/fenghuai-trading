@@ -2,6 +2,22 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// ===== 北京时间边界工具（CLI 部署不注入运行时 TZ，统一在此按北京时间显式计算）=====
+const BJ_OFFSET_MS = 8 * 3600 * 1000
+function bjNow(){ return new Date(Date.now() + BJ_OFFSET_MS) }
+function bjDate(y, mo, d, h, mi, s, ms){ return new Date(Date.UTC(y, mo, d, h||0, mi||0, s||0, ms||0) - BJ_OFFSET_MS) }
+function bjTodayStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()) }
+function bjTodayEnd(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate(), 23, 59, 59, 999) }
+function bjTomorrowStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()+1) }
+function bjWeekStart(){ const n=bjNow(); const day=n.getDay()||7; return bjDate(n.getFullYear(), n.getMonth(), n.getDate()-day+1) }
+function bjWeekEnd(){ const n=bjNow(); const day=n.getDay()||7; return bjDate(n.getFullYear(), n.getMonth(), n.getDate()-day+6, 23, 59, 59, 999) }
+function bjMonthStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), 1) }
+function bjMonthEnd(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth()+1, 0, 23, 59, 59, 999) }
+function bjFromStr(s, endDay){ const p=String(s).split("-").map(Number); return bjDate(p[0], p[1]-1, p[2], endDay?23:0, endDay?59:0, endDay?59:0, endDay?999:0) }
+function bjDayAgo(i){ const n=bjNow(); const d=new Date(n.getFullYear(), n.getMonth(), n.getDate()-i); return { start:bjDate(d.getFullYear(),d.getMonth(),d.getDate()), end:bjDate(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999), label:(d.getMonth()+1)+"/"+d.getDate() } }
+// ===== 北京时间边界工具结束 =====
+
+
 // ===== QA 测试身份钩子（生产默认关闭，安全）=====
 // 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
 // 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试。
@@ -85,8 +101,8 @@ exports.main = async (event, context) => {
       // 时间范围过滤
       let dateFilter = null
       if (timeTab === 'today') {
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)
+        const start = bjTodayStart()
+        const end = bjTodayEnd()
         dateFilter = {
           created_at: db.command.and([
             db.command.gte(start),
@@ -95,9 +111,8 @@ exports.main = async (event, context) => {
         }
       } else if (timeTab === 'week') {
         // 周一为一周起点（getDay() 周日=0，需转为 7，否则周日查"本周"返回空集）
-        const day = now.getDay() || 7
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
-        const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 6, 23, 59, 59)
+        const start = bjWeekStart()
+        const end = bjWeekEnd()
         dateFilter = {
           created_at: db.command.and([
             db.command.gte(start),
@@ -105,8 +120,8 @@ exports.main = async (event, context) => {
           ])
         }
       } else if (timeTab === 'month') {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1)
-        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+        const start = bjMonthStart()
+        const end = bjMonthEnd()
         dateFilter = {
           created_at: db.command.and([
             db.command.gte(start),
@@ -115,10 +130,8 @@ exports.main = async (event, context) => {
         }
       } else if (timeTab === 'custom' && event.startDate && event.endDate) {
         // 自定义日期范围
-        const start = new Date(event.startDate)
-        start.setHours(0, 0, 0, 0)
-        const end = new Date(event.endDate)
-        end.setHours(23, 59, 59, 999)
+        const start = bjFromStr(event.startDate)
+        const end = bjFromStr(event.endDate, true)
         dateFilter = {
           created_at: db.command.and([
             db.command.gte(start),

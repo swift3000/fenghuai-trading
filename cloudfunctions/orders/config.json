@@ -9,5 +9,9 @@
       "type": "timer",
       "config": "0 */5 * * * * *"
     }
-  ]
+  ],
+  "envVariables": {
+    "TZ": "Asia/Shanghai",
+    "QA_IMPERSONATE": "1"
+  }
 }

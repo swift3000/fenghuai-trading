@@ -103,12 +103,10 @@ Page({
         : reportTab === 'customer'
           ? (data.customers || []).length > 0
           : (data.methods || []).length > 0
-      // 订单总数：product 取商品行订单数合计、customer 取云端值、payment 取收款笔数（对齐原型汇总卡口径）
-      const totalOrders = reportTab === 'product'
-        ? (data.products || []).reduce((sum, p) => sum + (p.orderCount || 0), 0)
-        : reportTab === 'customer'
-          ? (data.totalOrders != null ? data.totalOrders : 0)
-          : (data.paymentCount != null ? data.paymentCount : 0)
+      // 订单总数：product/customer 取云端去重订单数 totalOrders；payment 取收款笔数（对齐原型汇总卡口径）
+      const totalOrders = reportTab === 'payment'
+        ? (data.paymentCount != null ? data.paymentCount : 0)
+        : (data.totalOrders != null ? data.totalOrders : 0)
       this.setData({
         ...data,
         data: data, // 保持 WXML 读取 data.products/customers/methods

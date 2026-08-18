@@ -2,6 +2,18 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// ===== 北京时间边界工具（云函数运行时 TZ 无法通过 CLI 部署注入，统一在此显式按北京时间计算）=====
+const BJ_OFFSET_MS = 8 * 3600 * 1000
+function bjNow(){ return new Date(Date.now() + BJ_OFFSET_MS) }
+function bjDate(y, mo, d, h, mi, s, ms){ return new Date(Date.UTC(y, mo, d, h||0, mi||0, s||0, ms||0) - BJ_OFFSET_MS) }
+function bjTodayStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()) }
+function bjTomorrowStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()+1) }
+function bjWeekStart(){ const n=bjNow(); const day=n.getDay()||7; return bjDate(n.getFullYear(), n.getMonth(), n.getDate()-day+1) }
+function bjMonthStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), 1) }
+function bjFromStr(s, endDay){ const p=String(s).split("-").map(Number); return bjDate(p[0], p[1]-1, p[2], endDay?23:0, endDay?59:0, endDay?59:0, endDay?999:0) }
+// ===== 北京时间边界工具结束 =====
+
+
 // ===== QA 测试身份钩子（生产默认关闭，安全）=====
 // 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
 // 用指定 openid 覆盖本次请求身份，用于自动化多角色权限测试。
@@ -136,7 +148,7 @@ async function getAutoConfirmCfg() {
 }
 // 今天是否已跑过（幂等：一天只触发一次，改时间不重复确认）
 async function todayAutoMark() {
-  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const t = bjTodayStart()
   try {
     const res = await db.collection('auto_confirm_log').where({ runDate: t.getTime() }).limit(1).get()
     return res.data && res.data[0]
@@ -149,7 +161,7 @@ async function ensureLogCollection() {
   try { await db.createCollection('auto_confirm_log') } catch (e) { /* 已存在则忽略 */ }
 }
 async function markAutoRan(type, detail) {
-  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const t = bjTodayStart()
   const rec = { runDate: t.getTime(), time: Date.now(), type: type, detail: detail || {} }
   await ensureLogCollection()
   try {
@@ -160,7 +172,7 @@ async function markAutoRan(type, detail) {
 }
 // 把当天未人工确认的分拣/出库订单全部置 done（status 双状态派生；库管不依赖分拣）
 async function runAutoConfirm() {
-  const t = new Date(); t.setHours(0, 0, 0, 0)
+  const t = bjTodayStart()
   let sortN = 0, outN = 0
   const sortRes = await db.collection('orders')
     .where({ sortStatus: 'pending', created_at: db.command.gte(t) }).limit(500).get()
@@ -288,15 +300,13 @@ exports.main = async (event, context) => {
       }
       const now = new Date()
       if (timeTab === 'today') {
-        const today = new Date(); today.setHours(0,0,0,0)
+        const today = bjTodayStart()
         conditions.push({ created_at: db.command.gte(today) })
       } else if (timeTab === 'week') {
-        const day = now.getDay() || 7
-        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1)
-        start.setHours(0,0,0,0)
+        const start = bjWeekStart()
         conditions.push({ created_at: db.command.gte(start) })
       } else if (timeTab === 'month') {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1)
+        const start = bjMonthStart()
         conditions.push({ created_at: db.command.gte(start) })
       }
       let query = db.collection('orders')
@@ -415,7 +425,7 @@ exports.main = async (event, context) => {
       return { code: 0, data: {} }
     }
     case 'todayStats': {
-      const today = new Date(); today.setHours(0,0,0,0)
+      const today = bjTodayStart()
       const res = await db.collection('orders').where({ created_at: db.command.gte(today) }).get()
       let amount = 0
       res.data.forEach(o => { amount += Number(o.totalAmount) || 0 })
@@ -429,7 +439,7 @@ exports.main = async (event, context) => {
       }
       // 出库工作台：库管不等分拣完成，所有未出库订单都可见（与分拣并行）
       const pendingRes = await db.collection('orders').where({ outStatus: 'pending' }).orderBy('created_at', 'desc').limit(100).get()
-      const today = new Date(); today.setHours(0, 0, 0, 0)
+      const today = bjTodayStart()
       const doneRes = await db.collection('orders')
         .where({ outStatus: 'done', created_at: db.command.gte(today) })
         .orderBy('created_at', 'desc').limit(100).get()
@@ -495,14 +505,14 @@ exports.main = async (event, context) => {
       const { timeTab = 'today', startDate: customStart, endDate: customEnd } = event
       const where = { outStatus: 'done' }
       if (timeTab === 'custom' && customStart && customEnd) {
-        const start = new Date(customStart); start.setHours(0,0,0,0)
-        const end = new Date(customEnd); end.setHours(23,59,59,999)
+        const start = bjFromStr(customStart)
+        const end = bjFromStr(customEnd, true)
         where.created_at = db.command.and([db.command.gte(start), db.command.lte(end)])
       } else if (timeTab === 'all') {
         // 全部：不限时间
       } else {
-        const today = new Date(); today.setHours(0,0,0,0)
-        const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1); tomorrow.setHours(0,0,0,0)
+        const today = bjTodayStart()
+        const tomorrow = bjTomorrowStart()
         where.created_at = db.command.and([db.command.gte(today), db.command.lt(tomorrow)])
       }
       const res = await db.collection('orders')
@@ -772,7 +782,7 @@ exports.main = async (event, context) => {
       if (now.getHours() * 60 + now.getMinutes() < hh * 60 + mm) {
         return { code: 0, data: { skipped: true, reason: 'not_yet' } }
       }
-      const t0 = new Date(); t0.setHours(0, 0, 0, 0)
+      const t0 = bjTodayStart()
       const already = await todayAutoMark()
       if (already && already.type === 'auto_confirm') {
         return { code: 0, data: { skipped: true, reason: 'already_ran' } }
