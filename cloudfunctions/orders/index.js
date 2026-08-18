@@ -620,7 +620,10 @@ exports.main = async (event, context) => {
             o.customerContact = c.contact || ''
             o.customerAddress = c.address || c.region || ''
           }
-        } catch (e) {}
+        } catch (e) {
+          // 客户信息拉取失败不阻断打印（降级=无客户富集字段），但留痕防静默（T11 P2-1）
+          console.error('[print] 拉取客户信息失败, customerId=' + o.customerId, e && e.message)
+        }
         try {
           const unpaid = await db.collection('orders')
             .where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending']) })

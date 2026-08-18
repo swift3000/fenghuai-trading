@@ -363,7 +363,10 @@ exports.main = async (event, context) => {
               if (!oid) continue
               const oRes = await db.collection('orders').doc(oid).get()
               if (oRes.data && oRes.data.customerRegion === region) filtered.push(pay)
-            } catch (e) {}
+            } catch (e) {
+              // 订单查询失败→该笔不计入区域过滤结果（降级），留痕防静默（T11 P2-1）
+              console.error('[report] 区域过滤查单失败, orderId=' + (pay.orderId || pay.order_id), e && e.message)
+            }
           }
           payments = filtered
         }
