@@ -81,6 +81,24 @@
   </view>
 
   <view class="sec-card">
+    <view class="sec-head">🖨️ 打印机配置 <text class="hint-txt">蓝牙打印</text></view>
+    <view class="sec-body">
+      <view class="mf-row">
+        <text class="mf-label">打印机品牌</text>
+        <picker mode="selector" range="{{['芯烨（Xprinter）','佳博（Gprinter）','汉印（HPRT）']}}" value="{{printerBrandIndex}}" bindchange="onPrinterBrand">
+          <view class="picker-val">{{['芯烨（Xprinter）','佳博（Gprinter）','汉印（HPRT）'][printerBrandIndex]}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">打印纸宽</text>
+        <picker mode="selector" range="{{['58mm（便携）','80mm']}}" value="{{printerWidthIndex}}" bindchange="onPrinterWidth">
+          <view class="picker-val">{{['58mm（便携）','80mm'][printerWidthIndex]}}</view>
+        </picker>
+      </view>
+      <button class="btn-primary" bindtap="savePrinter">💾 保存打印机配置</button>
+    </view>
+  </view>
+  <view class="sec-card">
     <view class="sec-head">💾 数据备份</view>
     <view class="sec-body">
       <view class="ag-step">云开发平台每日自动备份数据库，无需手动操作。如需手动导出，请前往「微信开发者工具 → 云开发控制台 → 数据库」操作。</view>

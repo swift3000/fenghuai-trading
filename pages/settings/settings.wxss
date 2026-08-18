@@ -21,6 +21,12 @@
   border-bottom: 1rpx solid var(--theme-border);
   background: linear-gradient(135deg, var(--theme-card) 0%, var(--theme-bg) 100%);
 }
+.sec-head .hint-txt {
+  font-size: calc(22rpx * var(--font-scale));
+  font-weight: 400;
+  color: var(--theme-subtext, #999);
+  margin-left: 8rpx;
+}
 
 .sec-body {
   padding: 24rpx;

@@ -69,6 +69,15 @@
       <button class="perm-reset" bindtap="resetPerms" size="mini">↺ 恢复默认（全员开放）</button>
     </view>
 
+    <!-- 管理员设置指南 -->
+    <view class="admin-guide">
+      <view class="ag-title">🔐 管理员设置指南</view>
+      <view class="ag-step"><text class="ag-b">第 1 步：微信身份自动分配</text><view class="ag-line">每位员工用微信登录后，系统自动获得唯一的 openid 身份标识（管理员可在「团队成员」中查看），无需任何手动配置。</view></view>
+      <view class="ag-step"><text class="ag-b">第 2 步：成为首位管理员（零配置）</text><view class="ag-line">系统首次启动时没有管理员，<text class="ag-b">第一位登录的人自动成为管理员</text>，无需配置任何环境变量。你登录后会看到完整管理功能。</view></view>
+      <view class="ag-step"><text class="ag-b">第 3 步：添加更多管理员</text><view class="ag-line">在下方「团队成员」中点管理员角色的「＋ 添加成员」，填写对方信息即可。管理员数量不限。</view></view>
+      <view class="ag-step"><text class="ag-b">邀请成员</text><view class="ag-line">用上方「邀请新成员」生成带角色的专属链接，员工扫码即自动绑定角色，无需手动分配。</view></view>
+    </view>
+
     <view class="perm-note">
       说明：「成员管理」固定为管理员独占（防止权限锁死），其余权限管理员可随时按需开关，改动即时保存生效。
     </view>

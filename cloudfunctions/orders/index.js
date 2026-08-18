@@ -264,7 +264,7 @@ exports.main = async (event, context) => {
       const itemsSum = validItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
       if (!validItems.length) return { code: 2001, message: '订单商品数量必须大于 0' }
       if (itemsSum <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
-      const today = new Date()
+      const today = bjNow()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `丰淮商贸-${dateStr}`, options: 'i' }) }).count()
       const orderNo = `丰淮商贸-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
@@ -565,7 +565,7 @@ exports.main = async (event, context) => {
       const res = await db.collection('orders').doc(orderId).get()
       const o = res.data
       if (!o) return { code: 5001, message: '订单不存在' }
-      const d = new Date()
+      const d = bjNow()
       const p2 = (n) => (n < 10 ? '0' + n : '' + n)
       const rows = [
         [(o.customerName || COMPANY_NAME) + '送货单'],
@@ -649,7 +649,7 @@ exports.main = async (event, context) => {
       }).filter(Boolean)
       items.forEach(it => allTextParts.push(it.name, it.spec, String(it.qtyDesc), String(it.price), it.amount, it.remark))
       allTextParts.push(String(totalQty), grandTotal.toFixed(2), o.totalDebt != null ? String(o.totalDebt) : '0', '合计', '编号', '产品', '规格型号', '单位', '总数量', '单价', '金额', '备注', '累计欠款：', '订货电话：', '订货地址：', '主营业务：速冻面点，火锅丸子，单位团餐，酒店食材', '收货人(签字)：______________', '制单人：', '注：收到货后，请仔细查看储存说明，冷冻食品属特殊商品，如非产品本身质量问题、日期问题，一经售出，概不退换，谢谢合作！', '销售日期：', '单号：', '产品合计：', '送货金额：', '客户：', '（）', '件', '包', '¥.-0123456789，%！：')
-      const d = new Date()
+      const d = bjNow()
       const p2 = (n) => (n < 10 ? '0' + n : '' + n)
       allTextParts.push(d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()))
 

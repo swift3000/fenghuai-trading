@@ -579,7 +579,7 @@ exports.main = async (event, context) => {
 
 // 今日日期字符串
 function todayTxt() {
-  const d = new Date()
+  const d = bjNow()
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 }
 

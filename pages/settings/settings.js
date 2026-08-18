@@ -29,6 +29,11 @@ Page({
     // 定时自动确认（管理员可控）
     acEnabled: '0',
     acTime: '16:00',
+    // 打印机配置（蓝牙打印）
+    printerBrand: 'xinye',
+    printerBrandIndex: 0,
+    printerWidth: '58',
+    printerWidthIndex: 0,
   },
 
   onLoad() {
@@ -66,6 +71,15 @@ Page({
         relayKey: relay.apiKey || '',
         relayModel: relay.model || '',
       })
+      const printer = cfg.printer || {}
+      const brands = ['xinye', 'jiabo', 'hanyin']
+      const widths = ['58', '80']
+      this.setData({
+        printerBrand: brands.includes(printer.brand) ? printer.brand : 'xinye',
+        printerBrandIndex: Math.max(0, brands.indexOf(printer.brand || 'xinye')),
+        printerWidth: widths.includes(printer.width) ? printer.width : '58',
+        printerWidthIndex: Math.max(0, widths.indexOf(printer.width || '58')),
+      })
     } catch (e) {
       console.log('加载配置失败', e)
     }
@@ -93,6 +107,25 @@ Page({
   onRelayBaseUrl(e) { this.setData({ relayBaseUrl: e.detail.value }) },
   onRelayKey(e) { this.setData({ relayKey: e.detail.value }) },
   onRelayModel(e) { this.setData({ relayModel: e.detail.value }) },
+
+  // 打印机配置事件
+  onPrinterBrand(e) {
+    const idx = Number(e.detail.value)
+    this.setData({ printerBrandIndex: idx, printerBrand: ['xinye', 'jiabo', 'hanyin'][idx] })
+  },
+  onPrinterWidth(e) {
+    const idx = Number(e.detail.value)
+    this.setData({ printerWidthIndex: idx, printerWidth: ['58', '80'][idx] })
+  },
+
+  // 保存打印机配置
+  async savePrinter() {
+    await callCloud('system', {
+      action: 'updateAiConfig',
+      printer: { brand: this.data.printerBrand, width: this.data.printerWidth }
+    })
+    wx.showToast({ title: '打印机配置已保存', icon: 'success' })
+  },
 
 
   // 保存腾讯云语音配置
