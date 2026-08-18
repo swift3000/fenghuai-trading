@@ -77,8 +77,15 @@ exports.main = async (event, context) => {
         return { code: 0, data: pendingOut.data }
         
       case 'confirmSort':
-        // 确认分拣
+        // 确认分拣（T11 P2-3：状态守卫，非 submitted 状态重复确认直接返回，防重复流转）
         const { orderId: sortOrderId, items } = event
+        const sortCur = await db.collection('orders').doc(sortOrderId).get()
+        if (!sortCur.data) {
+          return { code: 4004, message: '订单不存在' }
+        }
+        if (sortCur.data.status !== 'submitted') {
+          return { code: 0, message: '已确认，无需重复操作', reused: true }
+        }
         await db.collection('orders').doc(sortOrderId).update({
           data: {
             status: 'sorted',
@@ -90,8 +97,15 @@ exports.main = async (event, context) => {
         return { code: 0, message: '分拣确认成功' }
         
       case 'confirmOut':
-        // 确认出库
+        // 确认出库（T11 P2-3：状态守卫，非 sorted 状态重复确认直接返回，防重复流转）
         const { orderId: outOrderId } = event
+        const outCur = await db.collection('orders').doc(outOrderId).get()
+        if (!outCur.data) {
+          return { code: 4004, message: '订单不存在' }
+        }
+        if (outCur.data.status !== 'sorted') {
+          return { code: 0, message: '已出库，无需重复操作', reused: true }
+        }
         await db.collection('orders').doc(outOrderId).update({
           data: {
             status: 'confirmed',

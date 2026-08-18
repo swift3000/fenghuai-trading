@@ -204,7 +204,7 @@ Page({
   },
 
   handleCollect() {
-    this.setData({ showCollectModal: true, collectDiscount: '' })
+    this.setData({ showCollectModal: true, collectDiscount: '', collectClientToken: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) })
   },
 
   closeCollectModal() {
@@ -261,7 +261,8 @@ Page({
         amount,
         paymentMethod,
         note: this.data.collectNote,
-        discount
+        discount,
+        clientToken: this.data.collectClientToken
       })
       wx.showToast({ title: '已登记收款，待库管确认', icon: 'success' })
       this.setData({ 

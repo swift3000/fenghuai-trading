@@ -287,7 +287,7 @@ exports.main = async (event, context) => {
     case 'collect': {
       const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
-      const { orderId, amount, paymentMethod, note, discount } = event
+      const { orderId, amount, paymentMethod, note, discount, clientToken } = event
 
       // 折价/减免属独立权限：即使持有 receivable:collect，若未配置 receivable:discount 也不得折价（纵深防御，前端已用 canDiscount 隐藏入口）
       if (discount && discount > 0) {
@@ -304,6 +304,19 @@ exports.main = async (event, context) => {
       
       if (!order) {
         return { code: 4004, message: '订单不存在' }
+      }
+      
+      // 幂等键（T11 P2-3）：前端每次打开登记弹窗生成一个 clientToken；
+      // 网络重试/双击带同一 token 进来 → 复用首次登记的 pending 记录，不重复生成
+      const token = clientToken || `auto_${orderId}_${Date.now()}`
+      const dupRes = await db.collection('payments')
+        .where({ order_id: orderId, client_token: token })
+        .limit(1)
+        .get()
+      if (dupRes.data.length > 0) {
+        const first = dupRes.data[0]
+        console.log('[collect] 幂等命中，复用已有 pending 记录', first._id)
+        return { code: 0, data: { paymentId: first._id, reused: true } }
       }
       
       // 剩余欠款 = 订单金额 − 累计实收 − 累计折价/货损
@@ -355,6 +368,7 @@ exports.main = async (event, context) => {
           method: paymentMethod || 'cash',
           note: note || '',
           status: 'pending',
+          client_token: token,
           registered_by: cloud.getWXContext().OPENID,
           registered_at: db.serverDate(),
           created_at: db.serverDate()
@@ -362,10 +376,12 @@ exports.main = async (event, context) => {
       })
       
       // 订单状态：未收款 → 待确认（不改变实收金额，确认时再累加）
+      // last_pending_payment_id（T11 P1-fix）：持久化最近一笔 pending，重试/排查可直接定位
       await db.collection('orders').doc(orderId).update({
         data: {
           payment_status: 'pending',
-          paymentStatus: 'pending'
+          paymentStatus: 'pending',
+          last_pending_payment_id: payRes._id
         }
       })
       await appendOrderLog(orderId, 'collect', `登记收款 ¥${Number(amount).toFixed(2)}（待确认）`)
@@ -399,6 +415,12 @@ exports.main = async (event, context) => {
       const targetOrderId = pay.orderId || pay.order_id
       if (!targetOrderId) {
         return { code: 4001, message: '收款记录缺少订单 ID' }
+      }
+      
+      // 幂等守卫（T11 P2-3）：已确认的收款重复确认 → 直接返回成功，不重复写日志/覆盖确认人
+      if (pay.status === 'confirmed') {
+        console.log('[confirmPayment] 幂等命中，该笔已确认', pay._id)
+        return { code: 0, data: { reused: true } }
       }
       
       // 标记该笔收款为已确认

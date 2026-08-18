@@ -177,6 +177,7 @@ Page({
     const target = unpaidOrders[0] || (item.orders || [])[0]
     this.setData({
       showCollectModal: true,
+      collectClientToken: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
       collectCustomerName: item.name,
       collectOrders: unpaidOrders.length > 0 ? unpaidOrders : (item.orders || []),
       collectOrderIndex: 0,
@@ -293,7 +294,8 @@ Page({
         amount: amount,
         paymentMethod: this.data.paymentMethods[this.data.paymentMethodIndex],
         note: this.data.collectNote,
-        discount: this.data.canDiscount ? discount : 0
+        discount: this.data.canDiscount ? discount : 0,
+        clientToken: this.data.collectClientToken
       })
 
       wx.showToast({ title: '收款成功', icon: 'success' })
