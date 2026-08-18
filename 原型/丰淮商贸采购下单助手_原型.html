@@ -820,15 +820,12 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .fz-val{font-size:calc(14px * var(--font-scale));font-weight:600;min-width:44px;text-align:center}
 .fz-reset{font-size:calc(12px * var(--font-scale));color:var(--green);text-align:center;cursor:pointer;padding-top:8px;border-top:1px solid var(--border);user-select:none}
 
-/* Smart Input Home Card */
-.smart-home-card{background:linear-gradient(135deg,#FFF7ED,#FFF3E6);border:1px solid #F5A623;border-radius:var(--radius);padding:16px;margin:12px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;box-shadow:0 2px 12px rgba(245,166,35,0.15)}
-.smart-home-card:active{background:#FFF0E0;transform:scale(0.98)}
-.smart-home-icon{font-size:calc(32px * var(--font-scale));flex-shrink:0}
-.smart-home-content{flex:1;min-width:0}
-.smart-home-title{font-size:calc(16px * var(--font-scale));font-weight:700;color:#D4820A;margin-bottom:2px}
-.smart-home-desc{font-size:calc(12px * var(--font-scale));color:#B8860B}
-.smart-home-arrow{font-size:calc(20px * var(--font-scale));color:#F5A623;flex-shrink:0}
-</style>
+/* Smart Input Floating Ball (首页右下角悬浮球) */
+.smart-fab{position:absolute;right:16px;bottom:72px;z-index:60;display:none;flex-direction:column;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.smart-fab.show{display:flex}
+.smart-fab:active .smart-fab-ball{transform:scale(0.94)}
+.smart-fab-bubble{background:var(--green);color:#fff;font-size:calc(11px * var(--font-scale));font-weight:600;padding:3px 10px;border-radius:12px;box-shadow:0 4px 12px rgba(36,173,82,.3);white-space:nowrap}
+.smart-fab-ball{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#45D06F,#1E9E4B);display:flex;align-items:center;justify-content:center;font-size:calc(26px * var(--font-scale));box-shadow:0 8px 20px rgba(36,173,82,.36);border:4px solid #fff;transition:transform .15s}</style>
 </head>
 <body>
 <div id="phone">
@@ -905,6 +902,12 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
           <div id="roleBadge" style="margin-left:auto;padding:4px 10px;border-radius:12px;font-size:calc(12px * var(--font-scale));background:rgba(255,255,255,0.25);color:#fff">下单员</div>
         </div>
       </div>
+      <!-- 全局搜索条（对齐小程序：订单号/客户名称，回车跳订单页） -->
+      <div class="home-search" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:14px;margin:12px 12px 0;padding:6px 6px 6px 14px;box-shadow:var(--shadow)">
+        <span style="font-size:15px;color:#bbb">🔍</span>
+        <input id="homeSearchInput" style="flex:1;min-width:0;border:none;outline:none;font-size:calc(13px * var(--font-scale));height:34px" placeholder="搜索订单号或客户名称" onkeydown="if(event.key==='Enter'){state.searchKeyword=this.value;navigateTo('orders')}"/>
+        <span onclick="state.searchKeyword=($('homeSearchInput')||{}).value||'';navigateTo('orders')" style="height:34px;padding:0 18px;border-radius:10px;background:linear-gradient(135deg,#45D06F,#24AD52);color:#fff;font-weight:700;font-size:calc(13px * var(--font-scale));display:flex;align-items:center;cursor:pointer">搜索</span>
+      </div>
       <div class="announce-bar" id="homeAnnouncement">
         <span class="announce-icon">📢</span>
         <div class="announce-content">
@@ -917,24 +920,13 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
         <div class="stat"><div class="num" id="statAmount">¥0</div><div class="lbl">今日金额</div></div>
       </div>
       
-      <!-- 智能录入入口（首页） -->
-      <div class="smart-home-card" onclick="state.currentOrderId=null; openSmartInputModal()">
-        <div class="smart-home-icon">🤖</div>
-        <div class="smart-home-content">
-          <div class="smart-home-title">智能录入</div>
-          <div class="smart-home-desc">文字/语音快速下单</div>
-        </div>
-        <div class="smart-home-arrow">›</div>
-      </div>
-      
+
       <div class="home-actions">
         <div class="action" onclick="state.currentOrderId=null; navigateTo('newOrder')"><div class="icon c1">📝</div><div class="lbl">新建订单</div></div>
         <div class="action" id="homeActionProducts" onclick="navigateTo('products')"><div class="icon c2">📦</div><div class="lbl">商品管理</div></div>
         <div class="action" id="homeActionCustomers" onclick="navigateTo('customers')"><div class="icon c3">🏪</div><div class="lbl">客户管理</div></div>
         <div class="action" onclick="exportReport()"><div class="icon c4">📊</div><div class="lbl">报表导出</div></div>
       </div>
-      <div class="section-title">今日订单<span class="more" onclick="navigateTo('orders')">查看全部 ›</span></div>
-      <div class="card" id="homeOrderList" style="padding:4px 16px"></div>
     </div>
 
     <!-- New Order Page -->
@@ -1410,6 +1402,10 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
     <div class="tab" data-tab="receivable" onclick="switchTab('receivable')"><div class="icon">💰</div><div class="lbl">赊销</div></div>
     <div class="tab" id="tab-outbound" data-tab="outbound" onclick="switchTab('outbound')"><div class="icon">🔍</div><div class="lbl">分拣出库</div></div>
     <div class="tab" data-tab="profile" onclick="switchTab('profile')"><div class="icon">👤</div><div class="lbl">我的</div></div>
+  </div>
+  <div class="smart-fab" id="smartFab" onclick="state.currentOrderId=null; openSmartFabVoice()">
+    <div class="smart-fab-bubble">智能录入</div>
+    <div class="smart-fab-ball">🤖</div>
   </div>
 </div>
 
@@ -2553,6 +2549,15 @@ const STACK = ['login'];
 const TAB_PAGES = ['home','orders','receivable','outbound','profile'];
 const TAB_BAR_MAP = {home:true, orders:true, receivable:true, outbound:true, profile:true};
 
+
+function setSmartFabVisible(){
+  const fab = $('smartFab');
+  if(!fab) return;
+  const active = document.querySelector('.page.active');
+  const onHome = active && active.id === 'page-home';
+  fab.classList.toggle('show', !!onHome);
+}
+
 function navigateTo(page, params){
   // Close modals
   ['productModal','customerModal','priceModal','collectModal','confirmCollectModal','forwardModal','packageModal'].forEach(m => closeModal(m));
@@ -2601,6 +2606,7 @@ function navigateTo(page, params){
   if(page === 'members') renderMembers();
   if(page === 'settings') initSettings();
   if(page === 'outbound'){ renderSortList(); renderWhList(); applyOutboundPermGates(); }
+  setSmartFabVisible();
 }
 
 function navigateBack(){
@@ -2623,6 +2629,7 @@ function navigateBack(){
       if(prev === 'orderDetail' && currentDetailOrder) initOrderDetail(currentDetailOrder.id);
       if(prev === 'shipping' && currentShippingOrder) initShipping(currentShippingOrder.id);
       if(prev === 'newOrder') initNewOrder();
+      setSmartFabVisible();
     }
   }
 }
@@ -2641,6 +2648,7 @@ function switchTab(tab, silent){
   if(tab === 'orders') renderOrderList();
   if(tab === 'receivable') renderReceivable();
   if(tab === 'outbound'){ renderSortList(); renderWhList(); applyOutboundPermGates(); }
+  setSmartFabVisible();
 }
 
 // ============ LOGIN ============
@@ -2988,24 +2996,7 @@ function initHome(){
   $('statOrders').textContent = todayOrders.length;
   $('statAmount').textContent = fmtMoney(todayAmount);
 
-  // Announcement carousel
-  renderAnnouncements();
-
-  // Recent orders (last 5) - 按角色过滤
-  const recent = [...getVisibleOrders()].sort((a,b)=> new Date(b.time)-new Date(a.time)).slice(0,5);
-  const list = $('homeOrderList');
-  if(recent.length === 0){
-    list.innerHTML = '<div class="empty-state"><div class="icon">📋</div><div class="text">暂无订单</div></div>';
-    return;
-  }
-  list.innerHTML = recent.map(o => {
-    const d = new Date(o.time);
-    const timeStr = String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
-    return `<div class="order-list-item" onclick="navigateTo('orderDetail','${o.id}')">
-      <div class="left"><div class="customer">${o.customer}</div><div class="sub">${o.items.length}种商品 · ${timeStr}</div></div>
-      <div class="right"><div class="amt">${fmtMoney(o.amount)}</div><div class="time">${o.orderNo}</div></div>
-    </div>`;
-  }).join('');
+  // 今日订单已统一移至「订单」Tab（订单列表页按今日/本周/本月/全部筛选，最新在前）
 }
 
 let announcementIndex = 0;
@@ -6118,6 +6109,17 @@ let customerLastUsed = {};
 // ========== 智能识别引擎 ==========
 
 // 打开智能录入弹窗
+// 悬浮球入口：直达语音录入（按住/点击说话）
+function openSmartFabVoice() {
+  openModal('smartInputModal');
+  switchSmartTab('voice');
+  if(isRecording===false && $('smartRecordBtn')){ /* 不自动开始录音，避免误触 */ }
+  $('smartInputText').value = '';
+  $('smartVoiceResult').style.display = 'none';
+  $('smartInputFooter').style.display = 'none';
+  smartDraft = null;
+}
+
 function openSmartInputModal() {
   openModal('smartInputModal');
   switchSmartTab('text');

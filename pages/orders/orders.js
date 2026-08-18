@@ -74,7 +74,7 @@ Page({
       const decorated = (orders || []).map(o => {
         // 付款状态标签
         const ps = o.paymentStatus || o.payment_status || 'unpaid'
-        // 付款标签口径对齐新版原型：unpaid=未付款 / pending(部分收款)=未结清 / paid=已结清
+        // 付款标签口径（对齐老版原型）：unpaid=未付款 / pending(部分收款)=未结清 / paid=已结清
         let payLabel = '未付款'
         let payClass = 'unpaid'
         if (ps === 'paid') { payLabel = '已结清'; payClass = 'paid' }

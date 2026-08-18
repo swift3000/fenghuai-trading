@@ -4,14 +4,31 @@
     <view wx:if="{{canOut}}" class="tab {{subTab==='out'?'active':''}}" data-tab="out" bindtap="switchSub"><text> 出库</text></view>
   </view>
   <view wx:if="{{subTab==='sort'}}">
-    <view class="section-title">待分拣</view>
+    <!-- 分拣子区 tabs（对齐原型：待分拣/已分拣 badge） -->
+    <view class="out-subtabs">
+      <view class="out-subtab {{sortTab==='pending'?'active':''}}" data-tab="pending" bindtap="switchSortTab">待分拣 <text class="wh-badge">{{pendingSort.length}}</text></view>
+      <view class="out-subtab {{sortTab==='sorted'?'active':''}}" data-tab="sorted" bindtap="switchSortTab">已分拣 <text class="wh-badge blue">{{doneSort.length}}</text></view>
+    </view>
+
+    <view class="wh-toolbar" wx:if="{{sortTab==='pending'}}">
+      <button class="btn-all-confirm" bindtap="handleAllSort">✅ 全部分拣</button>
+    </view>
     <view class="ac-notice" wx:if="{{autoPolicy.enabled && autoPolicy.duePassed && !autoPolicy.alreadyRan}}">⏰ 已过定时确认时间（{{autoPolicy.time}}），以下未确认订单已超时，请尽快处理</view>
     <view class="ac-notice ac-notice-off" wx:elif="{{autoPolicy.enabled}}">🕐 定时自动确认已开启：每天 {{autoPolicy.time}} 自动确认未处理订单</view>
-    <view class="order-card card {{item.overdue ? 'overdue-card' : ''}}" wx:for="{{pendingSort}}" wx:key="_id">
-      <text>{{item.customerName}}<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></text>
-      <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleSort">分拣确认</button></view>
-    </view>
-    <button class="btn-primary" bindtap="handleAllSort">全部分拣</button>
+    <block wx:if="{{sortTab==='pending'}}">
+      <view class="order-card card {{item.overdue ? 'overdue-card' : ''}}" wx:for="{{pendingSort}}" wx:key="_id">
+        <text>{{item.customerName}}<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></text>
+        <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleSort">分拣确认</button></view>
+      </view>
+      <view class="out-empty" wx:if="{{!pendingSort.length}}">暂无待分拣订单</view>
+    </block>
+    <block wx:else>
+      <view class="order-card card done-card" wx:for="{{doneSort}}" wx:key="_id">
+        <text>{{item.customerName}}</text>
+        <text class="done-tag">✓ 已分拣</text>
+      </view>
+      <view class="out-empty" wx:if="{{!doneSort.length}}">暂无已分拣订单</view>
+    </block>
   </view>
   <view wx:if="{{subTab==='out'}}">
     <view class="out-subtabs">
@@ -22,7 +39,10 @@
     <view class="ac-notice" wx:if="{{autoPolicy.enabled && autoPolicy.duePassed && !autoPolicy.alreadyRan}}">⏰ 已过定时确认时间（{{autoPolicy.time}}），以下未出库订单已超时，请尽快处理</view>
     <view class="ac-notice ac-notice-off" wx:elif="{{autoPolicy.enabled}}">🕐 定时自动确认已开启：每天 {{autoPolicy.time}} 自动确认未处理订单</view>
 
-    <button wx:if="{{outTab==='pending' && pendingOut.length}}" class="btn-all-confirm" bindtap="handleAllOut">✓ 全部确认</button>
+    <view class="wh-toolbar" wx:if="{{outTab==='pending'}}">
+      <button class="btn-all-confirm" bindtap="handleAllOut">✅ 全部确认</button>
+      <button class="btn-auto" bindtap="simulateAutoConfirm">⏰ 模拟16:00通过</button>
+    </view>
 
     <block wx:for="{{outTab==='pending' ? pendingOut : doneOut}}" wx:key="_id">
       <view class="wh-item {{item.outStatus==='done'?'confirmed':''}}">

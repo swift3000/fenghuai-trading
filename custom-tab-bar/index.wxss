@@ -37,6 +37,7 @@
 .tab-label {
   font-size: 20rpx;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .tab-item.active {

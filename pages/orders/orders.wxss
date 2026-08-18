@@ -108,6 +108,13 @@
   color: #FF6B35;
   white-space: nowrap;
 }
+.order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
 
 /* 订单元信息 */
 .order-meta {
@@ -202,9 +209,6 @@
 
 /* 支付状态标签 */
 .pay-chip {
-  position: absolute;
-  top: 14px;
-  right: 14px;
   font-size: calc(11px * var(--font-scale));
   padding: 2rpx 8rpx;
   border-radius: 8rpx;

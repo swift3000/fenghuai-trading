@@ -102,6 +102,78 @@ Page({
     this.setData({ showPreviewModal: true })
   },
 
+  // 选择导出格式（默认 Excel）
+  pickExportFormat() {
+    return new Promise(resolve => {
+      wx.showActionSheet({
+        itemList: ['Excel 表格（推荐）', 'CSV 文本'],
+        success: res => resolve(res.tapIndex === 0 ? 'excel' : 'csv'),
+        fail: () => resolve('excel')
+      })
+    })
+  },
+
+  // 保存导出文件：excel 下载云文件并打开（可转发/保存），csv 写本地文件
+  saveExportFile(result, fmt) {
+    if (fmt === 'excel' && result && result.fileID) {
+      return new Promise((resolve, reject) => {
+        wx.downloadFile({
+          url: result.fileID,
+          success: d => {
+            if (d.statusCode !== 200) return reject(new Error('download fail'))
+            wx.openDocument({
+              filePath: d.tempFilePath,
+              showMenu: true,
+              fileName: result.filename || 'export.xlsx',
+              success: () => resolve(true),
+              fail: () => resolve(d.tempFilePath)
+            })
+          },
+          fail: reject
+        })
+      })
+    }
+    if (result && result.csvContent) {
+      const fn = result.filename || ('export_' + Date.now() + '.csv')
+      const filePath = wx.env.USER_DATA_PATH + '/' + fn
+      wx.getFileSystemManager().writeFileSync(filePath, result.csvContent, 'utf8')
+      return Promise.resolve(filePath)
+    }
+    return Promise.resolve(null)
+  },
+
+  // 导出Excel（对齐原型 exportSingleOrder，复用现有云函数 action）
+  async handleExportExcel() {
+    const order = this.data.order
+    if (!order) { wx.showToast({ title: '暂无订单数据', icon: 'none' }); return }
+    const fmt = await this.pickExportFormat()
+    try {
+      wx.showLoading({ title: '导出中...' })
+      const { callCloud } = require('../../utils/request')
+      const result = await callCloud('orders', {
+        action: 'exportSingleOrder',
+        orderId: order._id || order.id,
+        format: fmt
+      })
+      const hasData = fmt === 'excel' ? !!(result && result.fileID) : !!(result && result.csvContent)
+      if (!hasData) { wx.hideLoading(); wx.showToast({ title: '导出失败', icon: 'none' }); return }
+      wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
+      if (fmt === 'excel') {
+        await this.saveExportFile(result, 'excel')
+        wx.hideLoading()
+        wx.showToast({ title: '已打开 Excel，可转发', icon: 'success' })
+        return
+      }
+      const filePath = await this.saveExportFile(result, 'csv')
+      wx.hideLoading()
+      wx.showModal({ title: '导出成功', content: '文件已保存到: \n' + filePath, showCancel: false })
+    } catch (e) {
+      console.error('导出失败', e)
+      wx.hideLoading()
+      wx.showToast({ title: '导出失败', icon: 'none' })
+    }
+  },
+
   // 返回列表
   handleBack() {
     wx.navigateBack({ delta: 1 })

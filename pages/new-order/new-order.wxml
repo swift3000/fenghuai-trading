@@ -171,51 +171,57 @@
     </view>
   </view>
 
-  <!-- 智能录入弹窗 -->
+  <!-- 智能录入弹窗（对齐原型：文字/语音双 tab） -->
   <view class="modal-mask" wx:if="{{showSmartModal}}" bindtap="closeSmartModal"></view>
   <view class="modal-content smart-modal" wx:if="{{showSmartModal}}">
     <view class="modal-header">
-      <text class="modal-title">智能录入</text>
+      <text class="modal-title">🤖 智能录入</text>
       <text class="modal-close" bindtap="closeSmartModal">×</text>
     </view>
     <view class="modal-body">
-      <!-- 语音录入（腾讯云 ASR） -->
-      <view class="smart-voice-notice" wx:if="{{voiceState === 'idle'}}">
-        <text class="notice-icon">🎙️</text>
-        <text class="notice-text">点击按住说话，说商品清单即可自动识别</text>
-        <text class="notice-sub">示例：""手抓饼两件，老酸奶十包""</text>
-        <view class="voice-btn" bindtap="startVoiceInput"><text class="voice-btn-icon">🎤</text></view>
+      <view class="smart-tabs">
+        <view class="smart-tab {{smartTab === 'text' ? 'active' : ''}}" bindtap="switchSmartTab" data-tab="text">文字录入</view>
+        <view class="smart-tab {{smartTab === 'voice' ? 'active' : ''}}" bindtap="switchSmartTab" data-tab="voice">语音录入</view>
       </view>
-      <view class="smart-voice-notice voice-recording" wx:if="{{voiceState === 'recording'}}">
-        <text class="notice-icon">🔴</text>
-        <text class="notice-text">正在录音… 请说话（最长 60 秒）</text>
-        <text class="notice-sub">点击下面按钮停止并识别</text>
-        <view class="voice-btn" bindtap="stopVoiceInput"><text class="voice-btn-icon">⏹</text></view>
-      </view>
-      <view class="smart-voice-notice" wx:if="{{voiceState === 'transcribing'}}">
-        <text class="notice-icon">⏳</text>
-        <text class="notice-text">语音识别中，请稍候…</text>
-        <text class="notice-sub">腾讯云 ASR 转文字</text>
-      </view>
-      <view class="smart-divider">或</view>
-      
-      <view class="smart-hint">
-        <text>📝 输入商品清单，系统自动识别</text>
-        <text class="hint-example">示例：手抓饼 2 件，老酸奶 10 包</text>
-      </view>
-      <textarea class="smart-textarea" placeholder="请输入商品清单，每行一个" value="{{smartInputText}}" bindinput="onSmartInputChange" />
-      <view class="smart-preview" wx:if="{{smartPreviewItems.length > 0}}">
-        <text class="preview-title">识别结果：</text>
-        <view class="preview-list">
-          <view class="preview-item" wx:for="{{smartPreviewItems}}" wx:key="name">
-            <text>{{item.name}} x {{item.qty}}</text>
+
+      <!-- 文字录入 -->
+      <block wx:if="{{smartTab === 'text'}}">
+        <text class="smart-hint-line">粘贴微信聊天记录或手动输入订单信息：</text>
+        <textarea class="smart-textarea" placeholder="例如：送 2 件手抓饼给东一路刀削面&#10;或：手抓饼 2 件，老酸奶 10 包" value="{{smartInputText}}" bindinput="onSmartInputChange" />
+        <view class="smart-preview" wx:if="{{smartPreviewItems.length > 0}}">
+          <text class="preview-title">识别结果：</text>
+          <view class="preview-list">
+            <view class="preview-item" wx:for="{{smartPreviewItems}}" wx:key="name">
+              <text>{{item.name}} x {{item.qty}}</text>
+            </view>
           </view>
         </view>
-      </view>
+      </block>
+
+      <!-- 语音录入（腾讯云 ASR） -->
+      <block wx:else>
+        <view class="smart-voice-notice" wx:if="{{voiceState === 'idle'}}">
+          <text class="notice-icon">🎙️</text>
+          <text class="notice-text">点击按住说话，说商品清单即可自动识别</text>
+          <text class="notice-sub">示例：“手抓饼两件，老酸奶十包”</text>
+          <view class="voice-btn" bindtap="startVoiceInput"><text class="voice-btn-icon">🎤</text></view>
+        </view>
+        <view class="smart-voice-notice voice-recording" wx:if="{{voiceState === 'recording'}}">
+          <text class="notice-icon">🔴</text>
+          <text class="notice-text">正在录音… 请说话（最长 60 秒）</text>
+          <text class="notice-sub">点击下面按钮停止并识别</text>
+          <view class="voice-btn" bindtap="stopVoiceInput"><text class="voice-btn-icon">⏹</text></view>
+        </view>
+        <view class="smart-voice-notice" wx:if="{{voiceState === 'transcribing'}}">
+          <text class="notice-icon">⏳</text>
+          <text class="notice-text">语音识别中，请稍候…</text>
+          <text class="notice-sub">腾讯云 ASR 转文字</text>
+        </view>
+      </block>
     </view>
     <view class="modal-footer">
       <button class="btn btn-cancel" bindtap="closeSmartModal">取消</button>
-      <button class="btn btn-primary" bindtap="processSmartInput" loading="{{smartInputLoading}}">{{smartInputLoading ? '识别中...' : '确认添加'}}</button>
+      <button class="btn btn-primary" bindtap="processSmartInput" loading="{{smartInputLoading}}">{{smartInputLoading ? '识别中...' : (smartTab === 'text' ? '确认添加' : '智能解析')}}</button>
     </view>
   </view>
 </view>

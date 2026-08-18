@@ -23,7 +23,10 @@
           <text class="customer-name">{{item.customerName}}</text>
           <text class="status-chip {{item.statusClass}}">{{item.statusText}}</text>
         </view>
-        <text class="order-amount">¥{{item.totalAmount}}</text>
+        <view class="order-right">
+          <text class="order-amount">¥{{item.totalAmount}}</text>
+          <text class="pay-chip {{item.payClass}}" wx:if="{{item.payLabel}}">{{item.payLabel}}</text>
+        </view>
       </view>
       
       <!-- 订单元信息：订单号 + 商品数量 + 时间 -->
@@ -47,9 +50,6 @@
           <text class="item-amount" wx:if="{{it.amountText}}">¥{{it.amountText}}</text>
         </view>
       </view>
-      
-      <!-- 支付状态标签 -->
-      <view class="pay-chip {{item.payClass}}" wx:if="{{item.payLabel}}">{{item.payLabel}}</view>
     </view>
   </view>
 

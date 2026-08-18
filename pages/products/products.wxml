@@ -1,12 +1,12 @@
 <view class="container" style="{{uiStyle}}">
-  <!-- 新增商品 -->
-  <view class="add-product-bar" wx:if="{{canEdit}}">
-    <button class="btn-add-product" bindtap="goToAdd">+ 新增商品</button>
-  </view>
-  
   <!-- 搜索栏 -->
   <view class="search-bar">
-    <input placeholder="搜索商品名称/料号/拼音" value="{{searchKeyword}}" bindinput="onSearch" />
+    <input placeholder="搜索商品名称/商品料号/拼音首字母" value="{{searchKeyword}}" bindinput="onSearch" />
+  </view>
+
+  <!-- 新增商品（对齐原型：搜索框下方橙色全宽按钮，product:edit 控制） -->
+  <view class="add-product-bar" wx:if="{{canEdit}}">
+    <button class="btn-add-product" bindtap="goToAdd">＋ 新增商品</button>
   </view>
 
   <!-- 商品列表 -->

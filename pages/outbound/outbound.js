@@ -10,6 +10,7 @@ Page({
     canOut: false,
     pendingSort: [], 
     doneSort: [], 
+    sortTab: 'pending',
     pendingOut: [], 
     doneOut: [],
     outTab: 'pending',
@@ -91,14 +92,49 @@ Page({
   switchOutTab(e) {
     this.setData({ outTab: e.currentTarget.dataset.tab })
   },
+
+  // 分拣子区 待分拣/已分拣 tab（对齐原型 switchSortTab）
+  switchSortTab(e) {
+    this.setData({ sortTab: e.currentTarget.dataset.tab })
+  },
+
+  // 模拟16:00通过（对齐原型 simulateAutoConfirm：复用现有 autoConfirmTrigger 定时逻辑）
+  async simulateAutoConfirm() {
+    if (!this.data.pendingOut.length && !this.data.pendingSort.length) {
+      wx.showToast({ title: '暂无待处理订单', icon: 'none' })
+      return
+    }
+    wx.showModal({
+      title: '模拟16:00通过',
+      content: '将立即执行定时自动确认（分拣+出库），确认继续？',
+      success: async (res) => {
+        if (!res.confirm) return
+        try {
+          const { callCloud } = require('../../utils/request')
+          const r = await callCloud('orders', { action: 'autoConfirmTrigger' })
+          const d = (r && r.data) || {}
+          if (d.skipped) {
+            wx.showToast({ title: d.reason === 'disabled' ? '定时确认未开启' : (d.reason === 'already_ran' ? '今天已自动确认过' : '未到执行时间'), icon: 'none' })
+          } else {
+            wx.showToast({ title: `自动通过：分拣${d.sort || 0} 出库${d.out || 0}`, icon: 'none' })
+          }
+          this.loadData()
+        } catch (e) {
+          console.error('模拟自动确认失败', e)
+          wx.showToast({ title: '执行失败，请重试', icon: 'none' })
+        }
+      }
+    })
+  },
   
   async loadData() {
     this.setData({ loading: true })
     try {
       const { callCloud } = require('../../utils/request')
-      const [data, policy] = await Promise.all([
+      const [data, policy, sortAll] = await Promise.all([
         callCloud('orders', { action: 'outboundList', subTab: this.data.subTab }),
-        callCloud('orders', { action: 'getAutoConfirmPolicy' })
+        callCloud('orders', { action: 'getAutoConfirmPolicy' }),
+        callCloud('orders', { action: 'list', timeTab: 'all' }).catch(() => [])
       ])
       // 超时判定：定时已开启 + 已过点 + 今天尚未自动确认 → 仍待人工确认的订单视为超时
       const overdue = !!(policy && policy.enabled && policy.duePassed && !policy.alreadyRan)
@@ -106,9 +142,14 @@ Page({
       const pendingSort = (data.pendingSort || []).map(o => mark(o, 'sortStatus'))
       const pendingOut = (data.pendingOut || []).map(o => mark(o, 'outStatus'))
       const doneOut = (data.doneOut || []).map(o => this.formatOrder(o))
+      // 已分拣 = 分拣完成（未出库也算展示）；派生自 list，不改云函数
+      const todayStr = new Date().toDateString()
+      const doneSort = (sortAll || []).filter(o => o.sortStatus === 'done' && new Date(o.created_at).toDateString() === todayStr)
+        .map(o => this.formatOrder(o))
       this.setData({ 
         // callCloud 已解包 res.result.data
         pendingSort,
+        doneSort,
         pendingOut,
         doneOut,
         autoPolicy: {

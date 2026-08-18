@@ -255,3 +255,34 @@
 .date-actions { display: flex; justify-content: center; }
 .btn-confirm { background: #1890FF; color: #FFFFFF; padding: 16rpx 48rpx; border-radius: 16rpx; font-size: calc(28rpx * var(--font-scale)); border: none; }
 .btn-confirm[disabled] { background: #D9D9D9; color: #999999; }
+
+/* ===== 汇总卡（对齐原型 .report-summary / .sum-card） ===== */
+.report-summary {
+  display: flex;
+  gap: 16rpx;
+  padding: 0 24rpx;
+  margin-bottom: 16rpx;
+}
+.sum-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx 16rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.sum-num {
+  font-size: calc(40rpx * var(--font-scale));
+  font-weight: 700;
+}
+.sum-num.green { color: var(--theme-primary, #06ad56); }
+.sum-num.orange { color: #FF8A2B; }
+.sum-lbl {
+  margin-top: 8rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  color: var(--text-2, #999);
+}
+/* 导出按钮配色（对齐原型：主色 / 橙 / 紫） */
+.export-buttons .export-btn { border-radius: 16rpx; }
+.export-buttons .export-btn-orange { background: #FF7A1A; }
+.export-buttons .export-btn-ledger { background: #534AB7; }

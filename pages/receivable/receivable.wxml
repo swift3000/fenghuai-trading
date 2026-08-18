@@ -35,14 +35,14 @@
     <!-- 三栏视图 Tab -->
     <view class="recv-view-tabs">
       <view class="rvt-tab {{viewTab==='ledger'?'active':''}}" data-tab="ledger" bindtap="switchView"><text>📋 客户台账</text></view>
-      <view class="rvt-tab {{viewTab==='unpaid'?'active':''}}" data-tab="unpaid" bindtap="switchView"><text>⏳ 未结清</text></view>
+      <view class="rvt-tab {{viewTab==='unpaid'?'active':''}}" data-tab="unpaid" bindtap="switchView"><text>📌 未结清</text></view>
       <view class="rvt-tab {{viewTab==='settled'?'active':''}}" data-tab="settled" bindtap="switchView"><text>✅ 已结清</text></view>
     </view>
 
     <!-- 操作按钮行 -->
     <view class="recv-action-row">
-      <button class="recv-confirm-btn" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✓ 收款确认{{pendingPaymentCount > 0 ? ' · ' + pendingPaymentCount : ''}}</button>
-      <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="openExportPreview">⬇ 导出</button>
+      <button class="recv-confirm-btn" wx:if="{{canConfirmPayment}}" bindtap="showConfirmWorkbench">✅ 收款确认{{pendingPaymentCount > 0 ? ' · ' + pendingPaymentCount : ''}}</button>
+      <button class="btn-export-recv" wx:if="{{canExport}}" bindtap="openExportPreview">📥 导出</button>
     </view>
 
   <!-- 客户列表 -->

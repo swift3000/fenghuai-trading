@@ -23,7 +23,8 @@ Page({
     smartInputLoading: false,
     smartPreviewItems: [],
     editMode: false,
-    voiceState: 'idle' // idle | recording | transcribing
+    voiceState: 'idle', // idle | recording | transcribing
+    smartTab: 'text' // 智能录入弹窗 tab：text 文字 / voice 语音（对齐原型）
   },
 
   onLoad(options) {
@@ -38,7 +39,8 @@ Page({
     this.loadProducts()
     // 首页智能录入入口：自动打开智能录入弹窗
     if (options && options.smart === '1') {
-      this.setData({ showSmartModal: true })
+      // 首页悬浮球入口：直达语音 tab（对齐原型 openSmartFabVoice）
+      this.setData({ showSmartModal: true, smartTab: 'voice' })
     }
   },
 
@@ -334,7 +336,8 @@ onCustomerSearch(e) {
 
   // ============ 数量双轨 ============
   adjustQty(e) {
-    const { index, field, delta } = e.currentTarget.dataset
+    const { index, field } = e.currentTarget.dataset
+    const delta = Number(e.currentTarget.dataset.delta) // dataset 返回字符串，显式转数字避免 "1"+"1"="11"
     const items = this.data.items
     items[index][field] = Math.max(0, (items[index][field] || 0) + delta)
     this.calcTotal()
@@ -386,14 +389,20 @@ onCustomerSearch(e) {
 
   // ============ 智能录入 ============
   openSmartInput() {
-    this.setData({ showSmartModal: true })
+    // 页面入口：默认文字 tab（对齐原型 openSmartInputModal）
+    this.setData({ showSmartModal: true, smartTab: 'text' })
+  },
+
+  // 切换文字/语音录入 tab（对齐原型 switchSmartTab）
+  switchSmartTab(e) {
+    this.setData({ smartTab: e.currentTarget.dataset.tab })
   },
 
   closeSmartModal() {
     if (this.data.voiceState === 'recording' && this._voiceRecorder) {
       try { this._voiceRecorder.stop() } catch (e) {}
     }
-    this.setData({ showSmartModal: false, smartInputText: '', smartPreviewItems: [], voiceState: 'idle' })
+    this.setData({ showSmartModal: false, smartInputText: '', smartPreviewItems: [], voiceState: 'idle', smartTab: 'text' })
   },
 
   // ============ 语音录入（腾讯云 ASR） ============

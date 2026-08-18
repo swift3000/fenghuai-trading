@@ -314,8 +314,12 @@ exports.main = async (event, context) => {
       if (!orderId) {
         return { code: 5001, message: '缺少订单 ID 参数' }
       }
-      const res = await db.collection('orders').doc(orderId).get()
-      const order = res.data
+      let order
+      try {
+        order = (await db.collection('orders').doc(orderId).get()).data
+      } catch (e) {
+        return { code: 404, message: '订单不存在' }
+      }
       // 关联客户资料（电话/地址/联系人）+ 累计欠款，供打印/送货单模板使用
       if (order && order.customerId) {
         try {
@@ -588,7 +592,7 @@ exports.main = async (event, context) => {
 
     case 'printOrder': {
       // 生成送货单 PDF（纯 JS 排版，内嵌子集中文字体）
-      const __p = await checkPermission('order:export'); if (__p.code !== 0) return __p
+      const __p = await checkPermission('order:print'); if (__p.code !== 0) return __p
       const orderId = event.orderId || event.id
       if (!orderId) return { code: 5001, message: '缺少订单 ID 参数' }
 
@@ -787,6 +791,18 @@ exports.main = async (event, context) => {
       const mark = await todayAutoMark()
       const alreadyRan = !!(mark && mark.type === 'auto_confirm')
       return { code: 0, data: { enabled: cfg.enabled, time: cfg.time, duePassed: duePassed, alreadyRan: alreadyRan } }
+    }
+    case 'qaClearAutoConfirmLog': {
+      // 仅 QA 环境（QA_IMPERSONATE=1）可用：用服务端身份清空 auto_confirm_log（小程序端按创建者权限删不到云函数写的记录）
+      if (typeof process === 'undefined' || !process.env || process.env.QA_IMPERSONATE !== '1') return { code: 403, message: 'qa action disabled' }
+      await ensureLogCollection()
+      let n = 0
+      for (;;) {
+        const rs = await db.collection('auto_confirm_log').limit(100).get()
+        if (!rs.data.length) break
+        for (const it of rs.data) { await db.collection('auto_confirm_log').doc(it._id).remove(); n++ }
+      }
+      return { code: 0, data: { deleted: n } }
     }
 
     default:

@@ -173,8 +173,13 @@ exports.main = async (event, context) => {
         return { code: 400, message: '无法移除自己' }
       }
 
-      const userResult = await db.collection('users').doc(event.userId).get()
-      if (userResult.data.role === 'admin') {
+      let target
+      try {
+        target = (await db.collection('users').doc(event.userId).get()).data
+      } catch (e) {
+        return { code: 404, message: '用户不存在' }
+      }
+      if (target.role === 'admin') {
         return { code: 400, message: '无法移除管理员' }
       }
 
@@ -188,8 +193,13 @@ exports.main = async (event, context) => {
         return { code: 400, message: '无法修改自己的角色' }
       }
 
-      const userResult = await db.collection('users').doc(event.userId).get()
-      if (userResult.data.role === 'admin' && event.role !== 'admin') {
+      let target2
+      try {
+        target2 = (await db.collection('users').doc(event.userId).get()).data
+      } catch (e) {
+        return { code: 404, message: '用户不存在' }
+      }
+      if (target2.role === 'admin' && event.role !== 'admin') {
         return { code: 400, message: '无法移除管理员权限' }
       }
 

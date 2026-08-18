@@ -1,42 +1,26 @@
 <view class="container" style="{{uiStyle}}">
-  <!-- 统计概览 -->
-  <view class="overview card" wx:if="{{reportTab !== 'payment'}}">
-    <view class="stat-item">
-      <text class="stat-label">总金额</text>
-      <text class="stat-value text-primary">¥{{totalAmount}}</text>
+  <!-- 汇总卡（对齐原型 .report-summary：订单总数/总金额） -->
+  <view class="report-summary">
+    <view class="sum-card">
+      <view class="sum-num green">{{totalOrders != null ? totalOrders : '—'}}</view>
+      <view class="sum-lbl">订单总数</view>
     </view>
-    <view class="stat-item" wx:if="{{reportTab === 'product'}}">
-      <text class="stat-label">总数量</text>
-      <text class="stat-value">{{totalQty}}</text>
-    </view>
-    <view class="stat-item" wx:if="{{reportTab === 'product'}}">
-      <text class="stat-label">商品数</text>
-      <text class="stat-value">{{productCount}}</text>
-    </view>
-    <view class="stat-item" wx:if="{{reportTab === 'customer'}}">
-      <text class="stat-label">订单数</text>
-      <text class="stat-value">{{totalOrders}}</text>
-    </view>
-    <view class="stat-item" wx:if="{{reportTab === 'customer'}}">
-      <text class="stat-label">客户数</text>
-      <text class="stat-value">{{customerCount}}</text>
-    </view>
-    <view class="stat-item" wx:if="{{reportTab === 'payment'}}">
-      <text class="stat-label">收款笔数</text>
-      <text class="stat-value">{{paymentCount}}</text>
+    <view class="sum-card">
+      <view class="sum-num orange">¥{{totalAmount != null ? totalAmount : '—'}}</view>
+      <view class="sum-lbl">总金额</view>
     </view>
   </view>
 
   <!-- 报表标签 -->
   <view class="report-tabs">
     <view class="tab {{reportTab==='product'?'active':''}}" data-tab="product" bindtap="switchTab">
-      <text>📦 商品汇总</text>
+      <text>商品汇总</text>
     </view>
     <view class="tab {{reportTab==='customer'?'active':''}}" data-tab="customer" bindtap="switchTab">
-      <text>👥 客户汇总</text>
+      <text>客户汇总</text>
     </view>
     <view class="tab {{reportTab==='payment'?'active':''}}" data-tab="payment" bindtap="switchTab">
-      <text>💰 收款台账</text>
+      <text>收款台账</text>
     </view>
   </view>
 
@@ -162,7 +146,7 @@
   <!-- 导出按钮（对齐原型三个导出） -->
   <view wx:if="{{canExport && hasData}}" class="export-buttons">
     <button class="btn-primary export-btn" bindtap="handleExport">📥 导出报表Excel</button>
-    <button class="btn-primary export-btn" bindtap="handleExportDailySummary">📊 客户汇总表(外县台账式)</button>
-    <button class="btn-primary export-btn" bindtap="handleExportLedger">💰 收款台账(外县格式)</button>
+    <button class="export-btn export-btn-orange" bindtap="handleExportDailySummary">📋 客户汇总表(外县台账式)</button>
+    <button class="export-btn export-btn-ledger" bindtap="handleExportLedger">📒 导出收款台账(外县格式)</button>
   </view>
 </view>

@@ -75,22 +75,22 @@
   
   <!-- 操作按钮 -->
   <view class="action-buttons">
-    <button class="btn btn-primary" bindtap="handlePrint">🖨 打印送货单</button>
-    <button class="btn btn-tertiary" bindtap="handleBack">← 返回列表</button>
+    <button class="btn btn-primary" bindtap="handlePrint">🖨️ 打印销售单</button>
+    <button class="btn btn-tertiary" bindtap="handleExportExcel">📥 导出Excel</button>
   </view>
   
   <!-- 打印预览弹窗 -->
   <view class="modal-mask" wx:if="{{showPreviewModal}}" bindtap="closePreviewModal"></view>
   <view class="modal-content preview-modal" wx:if="{{showPreviewModal}}">
     <view class="modal-header">
-      <text class="modal-title">打印送货单</text>
+      <text class="modal-title">打印销售单</text>
       <text class="modal-close" bindtap="closePreviewModal">×</text>
     </view>
     <view class="modal-body">
       <view class="preview-content">
         <view class="preview-item">
           <text class="preview-label">打印方式:</text>
-          <text class="preview-value">PDF 送货单（打开后右上角可打印/转发/保存）</text>
+          <text class="preview-value">PDF 销售单（打开后右上角可打印/转发/保存）</text>
         </view>
       </view>
     </view>

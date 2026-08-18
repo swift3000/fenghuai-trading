@@ -40,7 +40,7 @@
   line-height: 1;
 }
 
-/* Hero 服务卡（对齐新版原型：浅色渐变圆角卡）*/
+/* Hero 服务卡（对齐老版原型：浅色渐变圆角卡）*/
 .home-hero {
   position: relative;
   overflow: hidden;
@@ -355,7 +355,7 @@
   
 }
 
-/* ===== 对齐新版原型 v4.3.7：Hero 标题 + Pill ===== */
+/* ===== Hero 标题 + Pill ===== */
 .home-hero .hero-title {
   font-size: 23px;
   font-weight: 800;
@@ -445,6 +445,46 @@
 }
 .home-stats .stat.pending:active {
   transform: scale(0.98);
+}
+
+/* 功能入口（老板版：4 格一行） */
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: #fff;
+  margin: 12px;
+  border-radius: 16px;
+  padding: 14px 0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.home-actions .action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 4px;
+  border-radius: 8px;
+}
+.home-actions .action:active { background: #F5F6F8; }
+.home-actions .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+}
+.home-actions .icon.c1 { background: linear-gradient(135deg, #45D06F, #24AD52); }
+.home-actions .icon.c2 { background: linear-gradient(135deg, #FF9A57, #F2732B); }
+.home-actions .icon.c3 { background: linear-gradient(135deg, #4C93FF, #2E7CF6); }
+.home-actions .icon.c4 { background: linear-gradient(135deg, #7C3AED, #5B1FB0); }
+.home-actions .lbl {
+  font-size: 12px;
+  color: #333;
+  font-weight: 600;
 }
 
 /* ===== 浅色功能宫格（2 列 pastel 卡片）===== */

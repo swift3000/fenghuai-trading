@@ -1,12 +1,12 @@
 <view class="container" style="{{uiStyle}}">
-  <!-- 新增客户 -->
-  <view class="add-customer-bar" wx:if="{{canEdit}}">
-    <button class="btn-add-customer" bindtap="goToAdd">+ 新增客户</button>
-  </view>
-  
   <!-- 搜索栏 -->
   <view class="search-bar">
     <input placeholder="搜索客户名称/简称/联系人/区域" value="{{searchKeyword}}" bindinput="onSearch" />
+  </view>
+
+  <!-- 新增客户（对齐原型：搜索框下方橙色全宽按钮，customer:edit 控制） -->
+  <view class="add-customer-bar" wx:if="{{canEdit}}">
+    <button class="btn-add-customer" bindtap="goToAdd">＋ 新增客户</button>
   </view>
 
   <!-- 客户列表（按区域分组） -->

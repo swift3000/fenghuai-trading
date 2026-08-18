@@ -85,12 +85,12 @@
 
   <!-- 操作按钮 -->
   <view class="detail-actions">
-    <button wx:if="{{canPrint}}" class="act-btn act-print" bindtap="handlePrint">🖨 打印送货单</button>
-    <button wx:if="{{canEdit && editEnabled}}" class="act-btn act-edit" bindtap="handleEdit">✏ 编辑订单</button>
-    <button wx:if="{{canExport}}" class="act-btn act-export" bindtap="handleExportExcel">⬇ 导出Excel</button>
-    <button class="act-btn act-copy" bindtap="handleCopyOrder">⧉ 复制订单</button>
+    <button wx:if="{{canPrint}}" class="act-btn act-print" bindtap="handlePrint">🖨️ 打印送货单</button>
+    <button wx:if="{{canEdit && editEnabled}}" class="act-btn act-edit" bindtap="handleEdit">✏️ 编辑订单</button>
+    <button wx:if="{{canExport}}" class="act-btn act-export" bindtap="handleExportExcel">📥 导出Excel</button>
+    <button class="act-btn act-copy" bindtap="handleCopyOrder">📋 复制订单</button>
     <button wx:if="{{canPrint}}" class="act-btn act-forward" bindtap="onForwardTap">📤 转发客户微信</button>
-    <button wx:if="{{canDelete}}" class="act-btn act-delete" bindtap="handleDelete">🗑 删除订单</button>
+    <button wx:if="{{canDelete}}" class="act-btn act-delete" bindtap="handleDelete">🗑️ 删除订单</button>
   </view>
 
   <view style="height:20px"></view>
