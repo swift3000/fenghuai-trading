@@ -44,7 +44,7 @@
 .home-hero {
   position: relative;
   overflow: hidden;
-  margin: 0 12px 12px;
+  margin: 12px;
   border-radius: 20px;
   padding: 16px 16px 18px;
   background: linear-gradient(135deg, #CDEEDA 0%, #E2F6E9 46%, #F3FBF5 100%);
@@ -52,24 +52,62 @@
   color: #1A3A27;
 }
 
+.home-hero::before {
+  content: "";
+  position: absolute;
+  top: -84px;
+  right: -56px;
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 70%);
+}
+.home-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -70px;
+  left: -46px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(69, 208, 111, 0.22) 0%, rgba(69, 208, 111, 0) 70%);
+}
+.hero-illust {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-46%);
+  width: 118px;
+  height: 108px;
+  pointer-events: none;
+  z-index: 1;
+}
+.hero-main {
+  position: relative;
+  z-index: 2;
+  padding-right: 78px;
+}
 .home-hero .user-row {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .home-hero .avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.75);
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: #fff;
+  color: #24AD52;
+  border: 1px solid rgba(36, 173, 82, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #275239;
-  box-shadow: 0 2px 8px rgba(36, 173, 82, 0.15);
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(36, 173, 82, 0.16);
 }
 
 .home-hero .user-info {
@@ -109,17 +147,29 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #fff;
-  margin: 0 12px 12px;
+  background: #E6F7EC;
+  border: 1px solid rgba(36, 173, 82, 0.14);
+  margin: 12px;
   position: relative;
   z-index: 2;
-  border-radius: 16px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border-radius: 13px;
+  padding: 9px 12px;
 }
 
 .announce-bar .announce-icon {
-  font-size: 14px;
+  width: 27px;
+  height: 27px;
+  flex: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #45D06F, #24AD52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(36, 173, 82, 0.24);
+}
+.announce-bar .announce-icon image {
+  width: 15px;
+  height: 15px;
 }
 
 .announce-bar .announce-content {
@@ -128,8 +178,8 @@
 }
 
 .announce-bar .announce-text {
-  font-size: 12px;
-  color: #333;
+  font-size: 12.5px;
+  color: #2F5D43;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -147,14 +197,12 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: #999;
+  background: #BFE3CB;
   transition: all 0.2s;
 }
 
 .announce-bar .announce-dot.active {
-  background: var(--theme-primary);
-  width: 12px;
-  border-radius: 2px;
+  background: #24AD52;
 }
 
 /* 统计卡片 */
@@ -192,8 +240,8 @@
 /* 分区标题 */
 .section-title {
   font-size: 15px;
-  font-weight: 600;
-  margin: 16px 16px 8px;
+  font-weight: 700;
+  margin: 12px 14px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,8 +249,8 @@
 
 .section-title .more {
   font-size: 12px;
-  color: #666;
-  font-weight: 400;
+  color: #24AD52;
+  font-weight: 600;
 }
 
 /* 卡片容器 */
@@ -334,6 +382,11 @@
   font-size: 11px;
   font-weight: 600;
   box-shadow: 0 6px 14px rgba(36, 173, 82, 0.30);
+  line-height: 1;
+}
+.home-hero .hero-pill-bolt {
+  width: 13px;
+  height: 13px;
 }
 .home-hero .hero-pill.ghost {
   background: rgba(255, 255, 255, 0.72);
@@ -424,8 +477,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  color: #fff;
+}
+.home-cell .hc-icon image {
+  width: 22px;
+  height: 22px;
 }
 .home-cell .hc-title {
   font-size: 15.5px;

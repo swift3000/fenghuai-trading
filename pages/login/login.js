@@ -6,7 +6,8 @@ Page({
     uiStyle: '',
     isFirstAdmin: false,
     loading: false,
-    inviteCode: ''
+    inviteCode: '',
+    autoJumped: false
   },
 
   onLoad(options) {
@@ -20,6 +21,16 @@ Page({
         this.setData({ inviteCode: m[1] })
         wx.showToast({ title: '已识别邀请码，请登录', icon: 'none' })
       }
+    }
+  },
+
+  // 已登录用户冷启动兜底跳转：onLaunch 的 reLaunch 在页面栈未就绪时可能不生效，
+  // 导致登录态用户停在登录页。此处 onShow 检测后 switchTab 到对应角色页，无循环（index/onShow 不会跳回 login）。
+  onShow() {
+    const role = app.globalData.userRole;
+    if (!this.data.autoJumped && app.globalData.userInfo && role) {
+      this.setData({ autoJumped: true });
+      this.navigateToPage(role);
     }
   },
 
