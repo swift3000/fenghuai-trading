@@ -40,10 +40,7 @@ async function buildExport(rows, baseName, opts) {
 async function checkPermission(permission) {
   const { OPENID: __rawOID } = cloud.getWXContext()
   const OPENID = __impersonatedOpenid || __rawOID
-  if (!OPENID) {
-    console.log('⚠️ 后台调用，跳过权限校验')
-    return { code: 0 }
-  }
+  if (!OPENID) { return { code: 401, message: '无法获取用户身份，请在小程序内访问' } }
   const userResult = await db.collection('users').where({ openid: OPENID }).get()
   if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
   const user = userResult.data[0]

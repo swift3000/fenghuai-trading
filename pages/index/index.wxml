@@ -97,26 +97,6 @@
     </view>
   </view>
 
-  <!-- 今日订单列表 -->
-  <view class="section-title">
-    <text>今日订单</text>
-    <text class="more" bindtap="goToOrders">查看全部 ›</text>
-  </view>
-  <view class="card order-list-container">
-    <view class="order-list-item" wx:for="{{todayOrdersList}}" wx:key="_id" bindtap="goToOrderDetail" data-id="{{item._id}}">
-      <view class="left">
-        <text class="customer">{{item.customerName}}</text>
-        <text class="sub">{{item.time}} · {{item.itemCount}} 件商品</text>
-      </view>
-      <view class="right">
-        <text class="amount">¥{{item.totalAmount}}</text>
-        <text class="status {{item.status}}">{{item.statusText}}</text>
-      </view>
-    </view>
-    <view class="empty-hint" wx:if="{{todayOrdersList.length === 0}}">
-      <text>暂无今日订单</text>
-    </view>
-  </view>
   <!-- 智能录入悬浮球（右下角，避开居中“+”） -->
   <view class="smart-fab" wx:if="{{canCreateOrder}}" bindtap="goToSmartInput" hover-class="smart-fab-hover">
     <view class="smart-fab-bubble">智能录入</view>

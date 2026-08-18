@@ -1,6 +1,9 @@
 const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
+
+// QA 身份模拟钩子（仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时生效，生产不设置→惰性）
+let __impersonatedOpenid = null
 const https = require('https')
 const crypto = require('crypto')
 
@@ -297,11 +300,9 @@ function parseOrderText(text, products) {
 
 // 权限校验
 async function checkPermission(permission) {
-  const { OPENID } = cloud.getWXContext()
-  if (!OPENID) {
-    console.log('⚠️ 后台调用，跳过权限校验')
-    return { code: 0 }
-  }
+  const { OPENID: __rawOID } = cloud.getWXContext()
+  const OPENID = __impersonatedOpenid || __rawOID
+  if (!OPENID) { return { code: 401, message: '无法获取用户身份，请在小程序内访问' } }
   const userResult = await db.collection('users').where({ openid: OPENID }).get()
   if (userResult.data.length === 0) return { code: 401, message: '用户不存在' }
   const user = userResult.data[0]
@@ -394,13 +395,25 @@ async function parseWithTokenhub(text, products, th) {
   const system = '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
     'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
     '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
-  const content = await chatCompletions(th.baseUrl, th.apiKey, th.model, [
+  const models = Array.isArray(th.models) && th.models.length ? th.models
+    : (th.model ? [th.model] : [])
+  if (models.length === 0) return { used: false, items: [] }
+  const msgs = [
     { role: 'system', content: system },
     { role: 'user', content: '订单：' + text }
-  ], 800)
-  const arr = extractJsonArray(content)
-  if (!arr) return { used: true, items: [] }
-  return { used: true, items: buildItems(arr, products) }
+  ]
+  let lastErr = ''
+  for (const model of models) {
+    try {
+      const content = await chatCompletions(th.baseUrl, th.apiKey, model, msgs, 800)
+      const arr = extractJsonArray(content)
+      if (arr) return { used: true, items: buildItems(arr, products), model }
+      lastErr = 'model ' + model + ' 返回非数组内容'
+    } catch (e) {
+      lastErr = 'model ' + model + ' ' + (e.message || '')
+    }
+  }
+  return { used: true, items: [], error: lastErr }
 }
 
 // 把 AI 返回的 JSON 行对回商品库（各 NLP 引擎共用）
@@ -430,6 +443,7 @@ function buildItems(arr, products) {
 }
 
 exports.main = async (event, context) => {
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
   switch (action) {
     case 'match': {

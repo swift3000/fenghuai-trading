@@ -15,11 +15,8 @@ function escapeRegExp(str) {
 }
 
 async function checkPermission(openid, permission) {
-  // 如果是后台调用（OPENID 为空），跳过权限校验
-  if (!openid) {
-    console.log('⚠️ 后台调用，跳过权限校验')
-    return { code: 0, user: { permissions: [permission], role: 'admin' } }
-  }
+//   安全加固：无身份(空openid)一律拒绝——原"后台调用放行admin"为越权漏洞；内部定时 action 不走权限映射，不受影响
+  if (!openid) { return { code: 401, message: '无法获取用户身份，请在小程序内访问' } }
   
   const userResult = await db.collection('users').where({ openid }).get()
   if (userResult.data.length === 0) {

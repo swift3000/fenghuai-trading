@@ -9,7 +9,7 @@ for (const l of fs.readFileSync(path.join(__dirname, "../.env"), "utf8").split("
 const app = cloudbase.init({ secretId: env.CLOUDBASE_SECRET_ID, secretKey: env.CLOUDBASE_SECRET_KEY, envId: env.CLOUDBASE_ENV_ID })
 const db = app.database()
 const QA = { orderer: "qa_test_orderer_001", sorter: "qa_test_sorter_001", warehouse: "qa_test_warehouse_001", admin: "oo0s93SW9A4V4iO1ANyA3eqzxVIA" }
-const invoke = (name, data, as) => app.callFunction({ name, data: Object.assign({}, data, as ? { qaAsOpenid: QA[as] } : {}) }).then(r => r.result)
+const invoke = (name, data, as) => app.callFunction({ name, data: Object.assign({}, data, { qaAsOpenid: QA[as || "admin"] }) }).then(r => r.result)
 let pass = 0, fail = 0
 const check = (name, cond, detail) => {
   if (cond) { pass++; console.log("PASS", name) }
@@ -148,6 +148,15 @@ const J = o => JSON.stringify(o).slice(0, 150)
   const d1 = await invoke("orders", { action: "delete", orderId: oid })
   check("清理订单1", d1 && d1.code === 0, J(d1))
 
-  console.log("=== SUMMARY: " + pass + " pass, " + fail + " fail ===")
+    console.log("== 9. 匿名(无身份)访问必须被拒 ==")
+  const anon = (name, data) => app.callFunction({ name, data }).then(r => r.result)
+  const a1 = await anon("products", { action: "create", name: "ANON", spec: "1" })
+  check("匿名 新建商品 被拒", a1 && a1.code === 401, J(a1))
+  const a2 = await anon("customers", { action: "delete", customerId: "nonexistent" })
+  check("匿名 删除客户 被拒", a2 && a2.code === 401, J(a2))
+  const a3 = await anon("orders", { action: "delete", orderId: "nonexistent" })
+  check("匿名 删除订单 被拒", a3 && a3.code === 401, J(a3))
+
+console.log("=== SUMMARY: " + pass + " pass, " + fail + " fail ===")
   process.exit(fail ? 1 : 0)
 })().catch(e => { console.error("FATAL", e.message); process.exit(2) })

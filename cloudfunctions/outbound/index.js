@@ -14,9 +14,7 @@ async function checkPermission(permission) {
   const { OPENID } = cloud.getWXContext()
   const openid = __impersonatedOpenid || OPENID
   
-  if (!openid) {
-    return { code: 0, user: { permissions: [permission], role: 'admin' } }
-  }
+  if (!openid) { return { code: 401, message: '无法获取用户身份，请在小程序内访问' } }
   
   const userResult = await db.collection('users').where({ openid }).get()
   if (userResult.data.length === 0) {
