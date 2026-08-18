@@ -9,7 +9,8 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -17,7 +18,8 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -25,13 +27,17 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
       "name": "check-customer-fields",
       "runtime": "Nodejs20.19",
-      "timeout": 30
+      "timeout": 30,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
     },
     {
       "name": "orders",
@@ -39,7 +45,8 @@
       "timeout": 60,
       "memorySize": 1024,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -47,20 +54,25 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
       "name": "regions",
       "runtime": "Nodejs20.19",
-      "timeout": 30
+      "timeout": 30,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
     },
     {
       "name": "receivable",
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -68,7 +80,8 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -76,7 +89,8 @@
       "runtime": "Nodejs20.19",
       "timeout": 60,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
@@ -84,20 +98,25 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     },
     {
       "name": "import-data",
       "runtime": "Nodejs20.19",
-      "timeout": 60
+      "timeout": 60,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
     },
     {
       "name": "outbound",
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1"
+        "QA_IMPERSONATE": "1",
+        "TZ": "Asia/Shanghai"
       }
     }
   ]
