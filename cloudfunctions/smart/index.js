@@ -7,7 +7,7 @@ const crypto = require('crypto')
 // ============ 腾讯云 ASR（录音文件识别，音频走现有 CloudBase 存储临时链接） ============
 const ASR_HOST = 'asr.tencentcloudapi.com'
 const ASR_SERVICE = 'asr'
-const ASR_VERSION = '2019-AS6-3'
+const ASR_VERSION = '2019-06-14'
 
 function sha256hex(str) {
   return crypto.createHash('sha256').update(str, 'utf8').digest('hex')
@@ -55,8 +55,11 @@ function tencentApiCall({ secretId, secretKey, action, payload }) {
       res.on('end', () => {
         try {
           const j = JSON.parse(data)
-          if (j.code && j.code !== 0) return reject(new Error(j.message || ('API错误 ' + j.code)))
-          resolve(j.data || {})
+          // 腾讯云 v3 返回 {Response:{Error?}|{Data?...}}
+          if (j.Response && j.Response.Error) {
+            return reject(new Error(j.Response.Error.Message || (j.Response.Error.Code || 'ASR API错误')))
+          }
+          resolve((j.Response && j.Response.Data) || (j.Response && j.Response.TaskId !== undefined ? j.Response : {}) || {})
         } catch (e) {
           reject(new Error('ASR 响应解析失败: ' + data.slice(0, 120)))
         }
@@ -73,35 +76,54 @@ const sleep = ms => new Promise(r => setTimeout(r, ms))
 
 // ============ TokenHub 大模型（NLP 复杂语义理解，OpenAI 兼容接口，密钥 ai.tokenhub，与 ASR 分离） ============
 
+// 清洗 ASR 返回文本：去掉 [0:0.000,0:4.655] 等时间戳/区间标记、换行与首尾空白
+function cleanAsrText(t) {
+  if (!t) return ''
+  return String(t)
+    .replace(/\[[^\]]*:[^\]]*\]/g, '')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 // 录音文件识别：提交任务 → 轮询取结果（最多等 30 秒）
 async function asrTranscribe(tc, audioUrl) {
+  // 录音文件识别 CreateRecTask：EngineModelType/ChannelNum/ResTextFormat/SourceType 为必填，无 ProjectId/VoiceFormat
   const submit = await tencentApiCall({
     secretId: tc.secretId, secretKey: tc.secretKey,
     action: 'CreateRecTask',
     payload: {
-      ProjectId: 0,
-      EngineModel: tc.engine === '8k_zh' ? '8k_zh' : '16k_zh',
-      VoiceFormat: 10, // mp3
+      EngineModelType: tc.engine === '8k_zh' ? '8k_zh' : '16k_zh',
+      ChannelNum: 1,      // 单声道
+      ResTextFormat: 0,   // 全文返回（含标点）
+      SourceType: 0,      // 普通录音（非电话）
       Url: audioUrl
     }
   })
-  if (submit.TaskId === undefined || submit.TaskId === null) {
+  if (!submit || submit.TaskId === undefined || submit.TaskId === null) {
     throw new Error('提交识别任务失败：未返回 TaskId')
   }
-  for (let i = 0; i < 15; i++) {
+  // 轮询 DescribeTaskStatus（最多 60s）：部分任务 Result 先于 Status=0 返回，故以 Result 有内容为准
+  for (let i = 0; i < 28; i++) {
     await sleep(2000)
     const st = await tencentApiCall({
       secretId: tc.secretId, secretKey: tc.secretKey,
-      action: 'DescribeRecTask',
+      action: 'DescribeTaskStatus',
       payload: { TaskId: submit.TaskId }
     })
+    // 结果文本（Result 为全文；ResultDetail 为分句），去掉 [0:0.000,0:4.655] 时间戳标记
+    const raw = st.Result || (st.ResultDetail && st.ResultDetail.length ? st.ResultDetail.map(d => d.TextShow || d.Result || '').join('') : '')
+    const txt = cleanAsrText(raw)
     if (st.Status === 0) {
-      // 成功：返回 TextShow（含标点全文）
-      return st.TextShow || (st.Result && st.Result.TextShow) || ''
+      return txt || ''
+    }
+    if (txt) {
+      return txt // 识别已完成、状态位未跳 0 的常见情形，直接取已生成的全文
     }
     if (st.Status === -1 || st.Status === -2) {
-      throw new Error('识别失败：' + (st.ErrMsg || 'Status=' + st.Status))
+      throw new Error('识别失败：' + (st.ErrorMsg || 'Status=' + st.Status))
     }
+    // Status 2/3 继续等待
   }
   throw new Error('识别超时，请稍后重试')
 }
