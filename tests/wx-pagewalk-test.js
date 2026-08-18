@@ -76,7 +76,7 @@ const PAGES = (ORDER_ID) => {
     { url: '/pages/profile/profile', name: 'profile',
       probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; return { route: p.route, hasProfile: true }; } },
     { url: '/pages/members/members', name: 'members',
-      probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; const ms = p.data.members || []; return { route: p.route, count: ms.length, blank: ms.filter((m) => !m.name || !m.role).length }; },
+      probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; const ms = (p.data.members || []).filter((m) => m.status !== 'pending'); return { route: p.route, count: ms.length, blank: ms.filter((m) => !m.name || !m.role).length }; },
       check: (d) => (d.count || 0) >= 1 && (d.blank || 0) === 0,
       checkMsg: '存在空白成员卡片(缺 name/role)' },
     { url: '/pages/settings/settings', name: 'settings',
