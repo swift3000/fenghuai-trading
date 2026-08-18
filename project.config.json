@@ -102,6 +102,38 @@
       {
         "type": "file",
         "value": "project.private.config.json"
+      },
+      {
+        "type": "folder",
+        "value": "scripts"
+      },
+      {
+        "type": "folder",
+        "value": "报告"
+      },
+      {
+        "type": "folder",
+        "value": "指南"
+      },
+      {
+        "type": "folder",
+        "value": "ci"
+      },
+      {
+        "type": "folder",
+        "value": ".github"
+      },
+      {
+        "type": "folder",
+        "value": "GIT"
+      },
+      {
+        "type": "folder",
+        "value": ".github/workflows"
+      },
+      {
+        "type": "file",
+        "value": "b7fbab622776d6a24ac2ff94bb759960"
       }
     ],
     "include": []
