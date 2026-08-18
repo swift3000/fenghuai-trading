@@ -26,38 +26,38 @@
           <view class="picker-val">{{tencentEngine === '8k_zh' ? '电话 8K' : '通用 16K（麦克风录音）'}}</view>
         </picker>
       </view>
-      <button class="btn-primary" bindtap="saveTencent">💾 保存腾讯云语音配置</button>
+      <button class="btn-primary" bindtap="saveTencent">💾 保存腾讯云配置（语音）</button>
     </view>
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
-    <view class="sec-head">🧠 通义千问（NLP）配置</view>
+    <view class="sec-head">🧠 TokenHub 大模型（NLP）配置</view>
     <view class="sec-body">
-      <view class="ag-step">智能录入的「复杂语义理解」可接入通义千问（DashScope），用于规则引擎未命中的口语化/复杂表达。未配置或未启用时，自动降级为纯规则引擎（文字匹配仍可用）。</view>
+      <view class="ag-step">智能录入的「复杂语义理解」接入腾讯云 TokenHub 大模型（OpenAI 兼容接口，与语音识别密钥独立），用于规则引擎未命中的口语化/复杂表达。23 个免费额度模型可切换，默认 hy3（100万 tokens/年）。未启用或未配置时，自动降级为规则引擎（文字匹配仍可用）。密钥仅保存在云端，不会泄露到前端。</view>
       <view class="mf-row">
-        <text class="mf-label">启用千问 NLP</text>
-        <picker mode="selector" range="{{['停用','启用']}}" value="{{qwenEnabled}}" bindchange="onQwenEnabled">
-          <view class="picker-val">{{qwenEnabled === '1' ? '启用' : '停用'}}</view>
+        <text class="mf-label">启用 TokenHub NLP</text>
+        <picker mode="selector" range="{{['停用','启用']}}" value="{{nlpEnabled}}" bindchange="onNlpEnabled">
+          <view class="picker-val">{{nlpEnabled === '1' ? '启用' : '停用'}}</view>
+        </picker>
+      </view>
+      <view class="mf-row">
+        <text class="mf-label">模型</text>
+        <picker mode="selector" range="{{nlpModels}}" value="{{nlpModelIndex}}" bindchange="onNlpModel">
+          <view class="picker-val">{{nlpModel}}</view>
         </picker>
       </view>
       <view class="mf-row">
         <text class="mf-label">API Key</text>
-        <input password value="{{qwenKey}}" bindinput="onQwenKey" placeholder="DashScope API Key（sk-开头）" />
+        <input password value="{{tokenhubKey}}" bindinput="onTokenhubKey" placeholder="TokenHub API Key（sk-开头，23 个模型通用）" />
       </view>
-      <view class="mf-row">
-        <text class="mf-label">模型</text>
-        <picker mode="selector" range="{{['qwen-turbo','qwen-plus','qwen-max']}}" value="{{qwenModelIndex}}" bindchange="onQwenModel">
-          <view class="picker-val">{{qwenModel}}</view>
-        </picker>
-      </view>
-      <button class="btn-primary" bindtap="saveQwen">💾 保存千问配置</button>
+      <button class="btn-primary" bindtap="saveTokenhub">💾 保存 TokenHub 配置</button>
     </view>
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
     <view class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置</view>
     <view class="sec-body">
-      <view class="ag-step">智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（如 qiyuanapi），与千问并存互为降级。未配置或未启用时自动使用本地规则引擎。</view>
+      <view class="ag-step">智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（如 qiyuanapi），与 TokenHub 并存互为降级。未配置或未启用时自动使用本地规则引擎。</view>
       <view class="mf-row">
         <text class="mf-label">启用中转站 AI</text>
         <picker mode="selector" range="{{['停用','启用']}}" value="{{relayEnabled}}" bindchange="onRelayEnabled">

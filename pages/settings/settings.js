@@ -15,11 +15,12 @@ Page({
     tencentSkey: '',
     tencentEngine: '16k_zh',
     tencentEngineIndex: 0,
-    // 千问配置
-    qwenEnabled: '0',
-    qwenKey: '',
-    qwenModel: 'qwen-turbo',
-    qwenModelIndex: 0,
+    // TokenHub NLP 配置（腾讯云 OpenAI 兼容，独立密钥）
+    nlpEnabled: '0',
+    nlpModel: 'hy3',
+    nlpModelIndex: 0,
+    nlpModels: ['hy3','glm-5.3','deepseek-v4-flash','deepseek-v4-flash-202605','kimi-k3','kimi-k2.7-code-highspeed','glm-5.2','kimi-k2.7-code','minimax-m3','deepseek-v4-pro-202606','deepseek-v4-pro','mimo-v2.5-pro','glm-5.1','glm-5','glm-5v-turbo','glm-5-turbo','kimi-k2.6','minimax-m2.7','hy-role','hunyuan-role-latest','hy-mt2-pro','hy-mt2-plus','hy-mt2-lite'],
+    tokenhubKey: '',
     // 中转站 AI（OpenAI 兼容）配置
     relayEnabled: '0',
     relayBaseUrl: 'https://api.qiyuanapi.cc/v1',
@@ -48,7 +49,7 @@ Page({
       const cfg = await callCloud('system', { action: 'getAiConfig' })
       const ai = cfg.ai || {}
       const tencent = ai.tencent || {}
-      const qwen = ai.qwen || {}
+      const th = ai.tokenhub || {}
       const relay = ai.relay || {}
       this.setData({
         tencentEnabled: tencent.enabled ? '1' : '0',
@@ -56,10 +57,10 @@ Page({
         tencentSkey: tencent.secretKey || '',
         tencentEngine: tencent.engine || '16k_zh',
         tencentEngineIndex: tencent.engine === '8k_zh' ? 1 : 0,
-        qwenEnabled: qwen.enabled ? '1' : '0',
-        qwenKey: qwen.apiKey || '',
-        qwenModel: qwen.model || 'qwen-turbo',
-        qwenModelIndex: ['qwen-turbo','qwen-plus','qwen-max'].indexOf(qwen.model || 'qwen-turbo'),
+        nlpEnabled: th.enabled ? '1' : '0',
+        nlpModel: th.model || 'hy3',
+        nlpModelIndex: Math.max(0, this.data.nlpModels.indexOf(th.model || 'hy3')),
+        tokenhubKey: th.apiKey || '',
         relayEnabled: relay.enabled ? '1' : '0',
         relayBaseUrl: relay.baseUrl || '',
         relayKey: relay.apiKey || '',
@@ -79,13 +80,13 @@ Page({
     this.setData({ tencentEngineIndex: idx, tencentEngine: idx === 1 ? '8k_zh' : '16k_zh' })
   },
 
-  // 千问配置事件
-  onQwenEnabled(e) { this.setData({ qwenEnabled: e.detail.value }) },
-  onQwenKey(e) { this.setData({ qwenKey: e.detail.value }) },
-  onQwenModel(e) {
+  // TokenHub NLP 配置事件
+  onNlpEnabled(e) { this.setData({ nlpEnabled: e.detail.value }) },
+  onNlpModel(e) {
     const idx = Number(e.detail.value)
-    this.setData({ qwenModelIndex: idx, qwenModel: ['qwen-turbo','qwen-plus','qwen-max'][idx] })
+    this.setData({ nlpModelIndex: idx, nlpModel: this.data.nlpModels[idx] })
   },
+  onTokenhubKey(e) { this.setData({ tokenhubKey: e.detail.value }) },
 
   // 中转站 AI 配置事件
   onRelayEnabled(e) { this.setData({ relayEnabled: e.detail.value }) },
@@ -106,21 +107,22 @@ Page({
       engine: d.tencentEngine
     }
     await callCloud('system', { action: 'updateAiConfig', aiConfig: ai })
-    wx.showToast({ title: '腾讯云语音配置已保存', icon: 'success' })
+    wx.showToast({ title: '腾讯云配置已保存', icon: 'success' })
   },
 
-  // 保存千问配置
-  async saveQwen() {
+  // 保存 TokenHub NLP 配置（独立密钥，OpenAI 兼容）
+  async saveTokenhub() {
     const d = this.data
     const cfg = await callCloud('system', { action: 'getAiConfig' })
     const ai = cfg.ai || {}
-    ai.qwen = {
-      enabled: d.qwenEnabled === '1',
-      apiKey: d.qwenKey,
-      model: d.qwenModel
+    ai.tokenhub = {
+      enabled: d.nlpEnabled === '1',
+      apiKey: d.tokenhubKey,
+      baseUrl: 'https://tokenhub.tencentmaas.com/v1',
+      model: d.nlpModel
     }
     await callCloud('system', { action: 'updateAiConfig', aiConfig: ai })
-    wx.showToast({ title: '千问配置已保存', icon: 'success' })
+    wx.showToast({ title: 'TokenHub 配置已保存', icon: 'success' })
   },
 
   // 保存中转站 AI 配置

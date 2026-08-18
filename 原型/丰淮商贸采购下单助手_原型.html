@@ -1317,40 +1317,60 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
                 <option value="16k_zh">通用 16K（麦克风录音）</option>
                 <option value="8k_zh">电话 8K</option>
               </select></div>
-              <button class="btn primary" style="width:100%" onclick="saveTencentAsrConfig()">💾 保存腾讯云语音配置</button>
+              <button class="btn primary" style="width:100%" onclick="saveTencentConfig()">💾 保存腾讯云配置（语音）</button>
             </div>
           </div>
         </div>
         <div class="sec-card">
-          <div class="sec-head">🧠 通义千问（NLP）配置 <span class="hint">复杂语义理解</span></div>
+          <div class="sec-head">🧠 TokenHub 大模型（NLP）配置 <span class="hint">复杂语义理解</span></div>
           <div class="sec-body" style="padding:12px 16px">
-            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」可接入通义千问（DashScope），用于规则引擎未命中的口语化/复杂表达。未配置或未启用时，自动降级为纯规则引擎（文字匹配仍可用）。</div>
+            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」接入腾讯云 TokenHub 大模型（OpenAI 兼容接口，与语音识别密钥独立），用于规则引擎未命中的口语化/复杂表达。23 个免费额度模型可切换，默认 hy3（100万 tokens/年）。未启用或未配置时，自动降级为纯规则引擎（文字匹配仍可用）。密钥仅保存在云端，不会泄露到前端。</div>
             <div style="margin-top:12px">
-              <div class="mf-row"><label>启用千问 NLP</label><select id="aiQwenEnabled">
+              <div class="mf-row"><label>启用 TokenHub NLP</label><select id="aiNlpEnabled">
                 <option value="0">停用</option>
                 <option value="1">启用</option>
               </select></div>
-              <div class="mf-row"><label>API Key</label><input id="aiQwenKey" type="password" placeholder="DashScope API Key（sk-开头）"></div>
-              <div class="mf-row"><label>模型</label><select id="aiQwenModel">
-                <option value="qwen-turbo">qwen-turbo（推荐，快）</option>
-                <option value="qwen-plus">qwen-plus（均衡）</option>
-                <option value="qwen-max">qwen-max（最强）</option>
+              <div class="mf-row"><label>模型</label><select id="aiNlpModel">
+                <option value="hy3">hy3（默认推荐）</option>
+                <option value="glm-5.3">glm-5.3</option>
+                <option value="deepseek-v4-flash">deepseek-v4-flash</option>
+                <option value="deepseek-v4-flash-202605">deepseek-v4-flash-202605</option>
+                <option value="kimi-k3">kimi-k3</option>
+                <option value="kimi-k2.7-code-highspeed">kimi-k2.7-code-highspeed</option>
+                <option value="glm-5.2">glm-5.2</option>
+                <option value="kimi-k2.7-code">kimi-k2.7-code</option>
+                <option value="minimax-m3">minimax-m3</option>
+                <option value="deepseek-v4-pro-202606">deepseek-v4-pro-202606</option>
+                <option value="deepseek-v4-pro">deepseek-v4-pro</option>
+                <option value="mimo-v2.5-pro">mimo-v2.5-pro</option>
+                <option value="glm-5.1">glm-5.1</option>
+                <option value="glm-5">glm-5</option>
+                <option value="glm-5v-turbo">glm-5v-turbo</option>
+                <option value="glm-5-turbo">glm-5-turbo</option>
+                <option value="kimi-k2.6">kimi-k2.6</option>
+                <option value="minimax-m2.7">minimax-m2.7</option>
+                <option value="hy-role">hy-role</option>
+                <option value="hunyuan-role-latest">hunyuan-role-latest</option>
+                <option value="hy-mt2-pro">hy-mt2-pro</option>
+                <option value="hy-mt2-plus">hy-mt2-plus</option>
+                <option value="hy-mt2-lite">hy-mt2-lite</option>
               </select></div>
-              <button class="btn primary" style="width:100%" onclick="saveQwenConfig()">💾 保存千问配置</button>
+              <div class="mf-row"><label>API Key</label><input id="aiTokenhubKey" type="password" placeholder="TokenHub API Key（sk-开头，23 个模型通用）"></div>
+              <button class="btn primary" style="width:100%" onclick="saveTokenhubConfig()">💾 保存 TokenHub 配置</button>
             </div>
           </div>
         </div>
         <div class="sec-card">
           <div class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置 <span class="hint">语义理解</span></div>
           <div class="sec-body" style="padding:12px 16px">
-            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（与千问并存互为降级）。未配置或未启用时自动使用本地规则引擎。</div>
+            <div class="ag-step"><b>说明</b><br>智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（与 TokenHub 并存互为降级）。未配置或未启用时自动使用本地规则引擎。</div>
             <div style="margin-top:12px">
               <div class="mf-row"><label>启用中转站 AI</label><select id="aiRelayEnabled">
                 <option value="0">停用</option>
                 <option value="1">启用</option>
               </select></div>
               <div class="mf-row"><label>接口地址</label><input id="aiRelayBaseUrl" type="text" value="https://api.qiyuanapi.cc/v1" placeholder="https://api.example.com/v1"></div>
-              <div class="mf-row"><label>API Key</label><input id="aiRelayKey" type="password" value="sk-opc-ie0JPeJwbnSv7NZZZ6NIuIj2BJSR2RZN" placeholder="中转站 API Key"></div>
+              <div class="mf-row"><label>API Key</label><input id="aiRelayKey" type="password" value="" placeholder="中转站 API Key"></div>
               <div class="mf-row"><label>模型名</label><input id="aiRelayModel" type="text" value="qwen-0810" placeholder="如 qwen-0810 / gpt-4o"></div>
               <button class="btn primary" style="width:100%" onclick="saveRelayConfig()">💾 保存中转站 AI 配置</button>
             </div>
@@ -4769,7 +4789,7 @@ function genInviteLink(){
 function esc(s){ return String(s==null?'':s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
 // ============ 系统设置（1.0，仅管理员） ============
-// AI 服务配置（腾讯云语音 + 千问分开）+ 打印机配置 + 数据备份说明
+// AI 服务配置（腾讯云语音 + TokenHub NLP 独立密钥）+ 打印机配置 + 数据备份说明
 const AI_CONFIG_KEY = 'aiConfig';
 const PRINTER_CONFIG_KEY = 'printerConfig';
 function initSettings(){
@@ -4780,10 +4800,10 @@ function initSettings(){
   if($('aiTencentSid')) $('aiTencentSid').value = ai.tencentSid || '';
   if($('aiTencentSkey')) $('aiTencentSkey').value = ai.tencentSkey || '';
   if($('aiTencentEngine')) $('aiTencentEngine').value = ai.tencentEngine || '16k_zh';
-  // 回填千问配置
-  if($('aiQwenEnabled')) $('aiQwenEnabled').value = ai.qwenEnabled || '0';
-  if($('aiQwenKey')) $('aiQwenKey').value = ai.qwenKey || '';
-  if($('aiQwenModel')) $('aiQwenModel').value = ai.qwenModel || 'qwen-turbo';
+  // 回填 TokenHub NLP 配置（独立密钥，OpenAI 兼容）
+  if($('aiNlpEnabled')) $('aiNlpEnabled').value = ai.nlpEnabled || '0';
+  if($('aiNlpModel')) $('aiNlpModel').value = ai.nlpModel || 'hy3';
+  if($('aiTokenhubKey')) $('aiTokenhubKey').value = ai.tokenhubKey || '';
   // 回填中转站 AI 配置
   if($('aiRelayEnabled')) $('aiRelayEnabled').value = ai.relayEnabled || '0';
   if($('aiRelayBaseUrl')) $('aiRelayBaseUrl').value = ai.relayBaseUrl || '';
@@ -4794,22 +4814,22 @@ function initSettings(){
   if($('printerBrand')) $('printerBrand').value = pr.brand || 'xinye';
   if($('printerWidth')) $('printerWidth').value = pr.width || '58';
 }
-function saveTencentAsrConfig(){
+function saveTencentConfig(){
   const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
   cfg.tencentEnabled = $('aiTencentEnabled').value;
   cfg.tencentSid = $('aiTencentSid').value.trim();
   cfg.tencentSkey = $('aiTencentSkey').value.trim();
   cfg.tencentEngine = $('aiTencentEngine').value;
   localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
-  showToast('腾讯云语音配置已保存');
+  showToast('腾讯云配置已保存');
 }
-function saveQwenConfig(){
+function saveTokenhubConfig(){
   const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
-  cfg.qwenEnabled = $('aiQwenEnabled').value;
-  cfg.qwenKey = $('aiQwenKey').value.trim();
-  cfg.qwenModel = $('aiQwenModel').value;
+  cfg.nlpEnabled = $('aiNlpEnabled').value;
+  cfg.nlpModel = $('aiNlpModel').value;
+  cfg.tokenhubKey = $('aiTokenhubKey').value.trim();
   localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
-  showToast('千问配置已保存');
+  showToast('TokenHub 配置已保存');
 }
 function saveRelayConfig(){
   const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
@@ -6435,17 +6455,17 @@ async function parseSmartInput() {
     console.log('[parseSmartInput] 正则已提取到商品，跳过简单分割');
   }
 
-  // 4.5. AI 兜底：规则未命中任何商品且配置了中转站/千问时，调用 chat/completions 语义解析
+  // 4.5. AI 兜底：规则未命中任何商品且配置了 TokenHub/中转站时，调用语义解析（原型演示：走 OpenAI 兼容接口）
   if(productMatches.length === 0) {
     const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
     const relayEnabled = ai.relayEnabled === '1' && ai.relayBaseUrl && ai.relayKey;
-    const qwenEnabled = ai.qwenEnabled === '1' && ai.qwenKey;
-    if(relayEnabled || qwenEnabled) {
+    const tokenhubEnabled = ai.nlpEnabled === '1' && ai.tokenhubKey;
+    if(relayEnabled || tokenhubEnabled) {
       try {
-        // 优先中转站，其次千问（OpenAI 兼容 /chat/completions）
-        const engBase = relayEnabled ? ai.relayBaseUrl : 'https://dashscope.aliyuncs.com/compatible-mode/v1';
-        const engKey = relayEnabled ? ai.relayKey : ai.qwenKey;
-        const engModel = relayEnabled ? (ai.relayModel || 'qwen-0810') : (ai.qwenModel || 'qwen-turbo');
+        // 优先 TokenHub（OpenAI 兼容端点，独立密钥），其次中转站
+        const engBase = tokenhubEnabled ? 'https://tokenhub.tencentmaas.com/v1' : ai.relayBaseUrl;
+        const engKey = tokenhubEnabled ? ai.tokenhubKey : ai.relayKey;
+        const engModel = tokenhubEnabled ? (ai.nlpModel || 'hy3') : (ai.relayModel || 'gpt-4o');
         const names = (data && data.products || []).map(pp => pp.name).filter(Boolean).slice(0, 200);
         const sys = '你是采购下单助手。根据用户口语订单把每行解析为 {name,qty,unit} JSON 数组，name 尽量匹配商品表标准名，unit 用 件/包/箱/个。商品表：[' + names.map(n => JSON.stringify(n)).join(',') + ']。只输出 JSON。';
         const resp = await fetch((engBase.replace(/\/$/,'')) + (/(\/chat\/completions)$/.test(engBase) ? '' : '/chat/completions'), {

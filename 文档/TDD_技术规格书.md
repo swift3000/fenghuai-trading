@@ -512,7 +512,7 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 | **smart** | `{ action: 'match'/'transcribe', text?, audioFileID?, mode? }` | `{ customer, items, unmatched }` / `{ text }` | 全员 |
 | **report** | `{ action, filter, page, page_size }` | `{ list, pagination }` / 导出数据 | 按角色 |
 
-> **system 云函数**：负责系统配置读写，其中 `getAiConfig`/`updateAiConfig` 用于管理员配置 AI 服务密钥（腾讯云语音 ASR + 通义千问 NLP），密钥存 `system_config` 集合，仅管理员可读写。
+> **system 云函数**：负责系统配置读写，其中 `getAiConfig`/`updateAiConfig` 用于管理员配置 AI 服务密钥（腾讯云语音 ASR + TokenHub 大模型 NLP，OpenAI 兼容），密钥存 `system_config` 集合，仅管理员可读写。
 
 #### 5.1.1 orders action 规格（简化状态机）
 

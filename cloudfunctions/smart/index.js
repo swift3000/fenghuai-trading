@@ -71,6 +71,8 @@ function tencentApiCall({ secretId, secretKey, action, payload }) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 
+// ============ TokenHub 大模型（NLP 复杂语义理解，OpenAI 兼容接口，密钥 ai.tokenhub，与 ASR 分离） ============
+
 // 录音文件识别：提交任务 → 轮询取结果（最多等 30 秒）
 async function asrTranscribe(tc, audioUrl) {
   const submit = await tencentApiCall({
@@ -359,6 +361,28 @@ async function parseWithAI(text, products, ai) {
   ])
   const arr = extractJsonArray(content)
   if (!arr) return { used: true, items: [] }
+  return { used: true, items: buildItems(arr, products) }
+}
+
+// TokenHub（腾讯云 OpenAI 兼容）NLP 解析：密钥独立存 ai.tokenhub
+async function parseWithTokenhub(text, products, th) {
+  if (!th || !th.enabled || !th.apiKey || !th.baseUrl) return { used: false, items: [] }
+  const productNames = (products || []).map(pp => pp.name || '').filter(Boolean).slice(0, 200)
+  const allNames = '[' + productNames.map(n => JSON.stringify(n)).join(', ') + ']'
+  const system = '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
+    'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
+    '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
+  const content = await chatCompletions(th.baseUrl, th.apiKey, th.model, [
+    { role: 'system', content: system },
+    { role: 'user', content: '订单：' + text }
+  ], 800)
+  const arr = extractJsonArray(content)
+  if (!arr) return { used: true, items: [] }
+  return { used: true, items: buildItems(arr, products) }
+}
+
+// 把 AI 返回的 JSON 行对回商品库（各 NLP 引擎共用）
+function buildItems(arr, products) {
   const items = arr.map(it => {
     const product = (products || []).find(pp =>
       (it.name && (pp.name === it.name || pp.name.includes(it.name) || it.name.includes(pp.name))) ||
@@ -380,7 +404,6 @@ async function parseWithAI(text, products, ai) {
       price_unit: product.price_unit != null ? product.price_unit : 0
     }
   }).filter(it => it.name)
-  return { used: true, items }
 }
 
 exports.main = async (event, context) => {
@@ -434,6 +457,14 @@ exports.main = async (event, context) => {
       return { code: 0, data: { ready: !!(tc.enabled && tc.secretId && tc.secretKey) } }
     }
 
+    case 'checkNlpReady': {
+      // 供前端判断 TokenHub NLP 是否可用（不返回任何密钥）
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
+      const cfg = await getConfig()
+      const th = (cfg.ai && cfg.ai.tokenhub) || {}
+      return { code: 0, data: { ready: !!(th.enabled && th.apiKey && th.baseUrl) } }
+    }
+
     case 'parse': {
       const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       const { text } = event
@@ -467,12 +498,13 @@ exports.main = async (event, context) => {
       // 1. 先用本地规则引擎
       const ruleItems = parseOrderText(text, products)
 
-      // 2. 读取 AI 配置（中转站 relay 优先，千问 qwen 次之）
+      // 2. 读取 AI 配置（TokenHub 优先，relay 次之）
       const cfg = await getConfig()
       const ai = cfg.ai || {}
       const engines = []
-      if (ai.relay && ai.relay.enabled) engines.push(ai.relay)
-      if (ai.qwen && ai.qwen.enabled && ai.qwen.apiKey) engines.push(ai.qwen)
+      const th = (ai.tokenhub) || {}
+      if (th.enabled && th.apiKey && th.baseUrl) engines.push({ kind: 'tokenhub', th })
+      if (ai.relay && ai.relay.enabled && ai.relay.apiKey && ai.relay.baseUrl) engines.push({ kind: 'relay', eng: ai.relay })
 
       // 3. 规则已命中所有行则直接用；有未命中且配了引擎则走 AI
       if (ruleItems.length > 0) {
@@ -481,12 +513,14 @@ exports.main = async (event, context) => {
 
       for (const eng of engines) {
         try {
-          const aiResult = await parseWithAI(text, products, {
-            enabled: true,
-            baseUrl: eng.baseUrl || '',
-            apiKey: eng.apiKey || '',
-            model: eng.model || ''
-          })
+          const aiResult = eng.kind === 'tokenhub'
+            ? await parseWithTokenhub(text, products, eng.th)
+            : await parseWithAI(text, products, {
+                enabled: true,
+                baseUrl: (eng.eng && eng.eng.baseUrl) || '',
+                apiKey: (eng.eng && eng.eng.apiKey) || '',
+                model: (eng.eng && eng.eng.model) || ''
+              })
           if (aiResult.used && aiResult.items.length > 0) {
             return { code: 0, data: { items: aiResult.items, engine: 'ai' } }
           }

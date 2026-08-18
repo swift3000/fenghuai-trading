@@ -62,7 +62,7 @@ const res = await app.callFunction({
 | 23 | | create | 新增用户 |
 | 24 | | update | 修改用户 |
 | 25 | receivable | receivable | 赊销（三栏：客户台账/未结清/已结清 + 收款确认；已收口径） |
-| 26 | system | getAiConfig | 获取 AI 服务配置（腾讯云语音 + 千问） |
+| 26 | system | getAiConfig | 获取 AI 服务配置（腾讯云语音 + TokenHub NLP） |
 | 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
 | 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
 | 29 | | transcribe | 语音转文字 |
@@ -1031,21 +1031,21 @@ Array<{
 
 ## 7B. 系统配置（system）
 
-> 系统设置功能（AI 服务配置 + 打印机配置 + 数据备份）统一收敛到 `system` 云函数。AI 服务配置含**腾讯云语音（tencent）**与**千问（qwen）**两部分，配置存储于 `system_config` 集合。
+> 系统设置功能（AI 服务配置 + 打印机配置 + 数据备份）统一收敛到 `system` 云函数。AI 服务配置含**腾讯云语音（tencent，ASR）**与**TokenHub 大模型（tokenhub，NLP，OpenAI 兼容）**两部分，配置存储于 `system_config` 集合。
 
 #### 7B.1 获取 AI 服务配置（system.getAiConfig）
 
 **调用方式**：`wx.cloud.callFunction({ name: 'system', data: { action: 'getAiConfig' } })`
 
 - **最小权限**：admin
-- **说明**：返回当前 AI 服务配置（腾讯云语音 + 千问）与打印机配置。
+- **说明**：返回当前 AI 服务配置（腾讯云语音 + TokenHub NLP）与打印机配置。
 
 **返回 data**：
 ```json
 {
   "ai": {
     "tencent": { "enabled": false, "secretId": "", "secretKey": "", "engine": "16k_zh" },
-    "qwen": { "enabled": false, "apiKey": "", "model": "" }
+    "tokenhub": { "enabled": false, "apiKey": "", "baseUrl": "https://tokenhub.tencentmaas.com/v1", "model": "hy3" }
   },
   "printer": { }
 }
@@ -1065,10 +1065,11 @@ Array<{
 | tencent.secretId | string | ❌ | 腾讯云 SecretId（主账号/已授权子账号） |
 | tencent.secretKey | string | ❌ | 腾讯云 SecretKey |
 | tencent.engine | string | ❌ | 识别引擎：`16k_zh`（通用16K，默认）/ `8k_zh`（电话8K） |
-| qwen | object | ❌ | 千问配置 |
-| qwen.enabled | boolean | ❌ | 是否启用千问 |
-| qwen.apiKey | string | ❌ | 千问 API Key |
-| qwen.model | string | ❌ | 千问模型名 |
+| tokenhub | object | ❌ | TokenHub 大模型（NLP）配置，OpenAI 兼容 |
+| tokenhub.enabled | boolean | ❌ | 是否启用 TokenHub NLP |
+| tokenhub.apiKey | string | ❌ | TokenHub API Key（sk-开头，23 个模型通用） |
+| tokenhub.baseUrl | string | ❌ | 接口地址，固定 `https://tokenhub.tencentmaas.com/v1` |
+| tokenhub.model | string | ❌ | 模型名，默认 `hy3`（23 个免费额度模型可切换） |
 
 **返回 data**：`{ updated: true }`
 

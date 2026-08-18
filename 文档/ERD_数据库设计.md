@@ -502,10 +502,11 @@ db.payments.createIndex({ customer_id: 1, status: 1, registered_at: -1 });
 | `ai.tencent.secretId` | String | 否 | null | 腾讯云 SecretId | — |
 | `ai.tencent.secretKey` | String | 否 | null | 腾讯云 SecretKey | — |
 | `ai.tencent.engine` | String | 否 | null | 识别引擎：`16k_zh`（通用16K，默认）/ `8k_zh`（电话8K） | — |
-| `ai.qwen` | Object | 否 | null | 通义千问配置 | — |
-| `ai.qwen.enabled` | Boolean | 否 | false | 是否启用 | — |
-| `ai.qwen.apiKey` | String | 否 | null | 通义千问 API Key | — |
-| `ai.qwen.model` | String | 否 | null | 模型：`qwen-turbo`/`qwen-plus`/`qwen-max` | — |
+| `ai.tokenhub` | Object | 否 | null | TokenHub 大模型（NLP）配置，OpenAI 兼容 | — |
+| `ai.tokenhub.enabled` | Boolean | 否 | false | 是否启用 | — |
+| `ai.tokenhub.apiKey` | String | 否 | null | TokenHub API Key（sk-开头，23 个模型通用） | — |
+| `ai.tokenhub.baseUrl` | String | 否 | null | 接口地址 `https://tokenhub.tencentmaas.com/v1` | — |
+| `ai.tokenhub.model` | String | 否 | null | 模型：默认 `hy3`（23 个免费额度模型可切换） | — |
 | `printer` | Object | 否 | null | 打印机配置 | — |
 | `printer.brand` | String | 否 | null | 打印机品牌：`xinye`/`jiabo`/`hanyin` | — |
 | `printer.width` | String | 否 | null | 打印纸宽度：`58`/`80` | — |
