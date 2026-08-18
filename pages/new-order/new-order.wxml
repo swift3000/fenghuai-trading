@@ -179,11 +179,23 @@
       <text class="modal-close" bindtap="closeSmartModal">×</text>
     </view>
     <view class="modal-body">
-      <!-- 语音录入提示（功能开发中） -->
-      <view class="smart-voice-notice">
-        <text class="notice-icon">🔊</text>
-        <text class="notice-text">语音录入功能开发中</text>
-        <text class="notice-sub">请暂时使用文字录入</text>
+      <!-- 语音录入（腾讯云 ASR） -->
+      <view class="smart-voice-notice" wx:if="{{voiceState === 'idle'}}">
+        <text class="notice-icon">🎙️</text>
+        <text class="notice-text">点击按住说话，说商品清单即可自动识别</text>
+        <text class="notice-sub">示例：""手抓饼两件，老酸奶十包""</text>
+        <view class="voice-btn" bindtap="startVoiceInput"><text class="voice-btn-icon">🎤</text></view>
+      </view>
+      <view class="smart-voice-notice voice-recording" wx:if="{{voiceState === 'recording'}}">
+        <text class="notice-icon">🔴</text>
+        <text class="notice-text">正在录音… 请说话（最长 60 秒）</text>
+        <text class="notice-sub">点击下面按钮停止并识别</text>
+        <view class="voice-btn" bindtap="stopVoiceInput"><text class="voice-btn-icon">⏹</text></view>
+      </view>
+      <view class="smart-voice-notice" wx:if="{{voiceState === 'transcribing'}}">
+        <text class="notice-icon">⏳</text>
+        <text class="notice-text">语音识别中，请稍候…</text>
+        <text class="notice-sub">腾讯云 ASR 转文字</text>
       </view>
       <view class="smart-divider">或</view>
       

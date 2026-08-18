@@ -3,40 +3,30 @@
 
   <!-- 管理员专属配置 -->
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
-    <view class="sec-head">🎙️ 阿里语音（ASR）配置</view>
+    <view class="sec-head">🎙️ 腾讯云语音（ASR）配置</view>
     <view class="sec-body">
-      <view class="ag-step">智能录入的「语音转文字」依赖阿里云智能语音交互（ISI）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</view>
+      <view class="ag-step">智能录入的「语音转文字」依赖腾讯云语音识别（录音文件识别，需先在腾讯云控制台开通）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</view>
       <view class="mf-row">
         <text class="mf-label">启用语音识别</text>
-        <picker mode="selector" range="{{['停用','启用']}}" value="{{aliyunEnabled}}" bindchange="onAliyunEnabled">
-          <view class="picker-val">{{aliyunEnabled === '1' ? '启用' : '停用'}}</view>
+        <picker mode="selector" range="{{['停用','启用']}}" value="{{tencentEnabled}}" bindchange="onTencentEnabled">
+          <view class="picker-val">{{tencentEnabled === '1' ? '启用' : '停用'}}</view>
         </picker>
       </view>
       <view class="mf-row">
-        <text class="mf-label">AccessKeyId</text>
-        <input value="{{aliyunAk}}" bindinput="onAliyunAk" placeholder="阿里云 AccessKeyId" />
+        <text class="mf-label">SecretId</text>
+        <input value="{{tencentSid}}" bindinput="onTencentSid" placeholder="腾讯云 SecretId（主账号或已授权 ASR 的子账号）" />
       </view>
       <view class="mf-row">
-        <text class="mf-label">AccessKeySecret</text>
-        <input password value="{{aliyunSk}}" bindinput="onAliyunSk" placeholder="阿里云 AccessKeySecret" />
+        <text class="mf-label">SecretKey</text>
+        <input password value="{{tencentSkey}}" bindinput="onTencentSkey" placeholder="腾讯云 SecretKey" />
       </view>
       <view class="mf-row">
-        <text class="mf-label">AppKey</text>
-        <input value="{{aliyunAppKey}}" bindinput="onAliyunAppKey" placeholder="智能语音交互项目 AppKey" />
-      </view>
-      <view class="mf-row">
-        <text class="mf-label">服务地域</text>
-        <picker mode="selector" range="{{['cn-shanghai','cn-beijing','cn-hangzhou']}}" value="{{aliyunRegionIndex}}" bindchange="onAliyunRegion">
-          <view class="picker-val">{{aliyunRegion}}</view>
+        <text class="mf-label">识别引擎</text>
+        <picker mode="selector" range="{{['通用 16K（麦克风录音）','电话 8K']}}" value="{{tencentEngineIndex}}" bindchange="onTencentEngine">
+          <view class="picker-val">{{tencentEngine === '8k_zh' ? '电话 8K' : '通用 16K（麦克风录音）'}}</view>
         </picker>
       </view>
-      <view class="mf-row">
-        <text class="mf-label">识别模型</text>
-        <picker mode="selector" range="{{['通用（16K，麦克风录音）','电话（8K）']}}" value="{{aliyunModelIndex}}" bindchange="onAliyunModel">
-          <view class="picker-val">{{aliyunModel === 'telephone' ? '电话（8K）' : '通用（16K，麦克风录音）'}}</view>
-        </picker>
-      </view>
-      <button class="btn-primary" bindtap="saveAliyun">💾 保存阿里语音配置</button>
+      <button class="btn-primary" bindtap="saveTencent">💾 保存腾讯云语音配置</button>
     </view>
   </view>
 

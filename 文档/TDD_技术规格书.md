@@ -512,7 +512,7 @@ submitted（待分拣）──一键分拣──► sorted（已分拣）──�
 | **smart** | `{ action: 'match'/'transcribe', text?, audioFileID?, mode? }` | `{ customer, items, unmatched }` / `{ text }` | 全员 |
 | **report** | `{ action, filter, page, page_size }` | `{ list, pagination }` / 导出数据 | 按角色 |
 
-> **system 云函数**：负责系统配置读写，其中 `getAiConfig`/`updateAiConfig` 用于管理员配置 AI 服务密钥（阿里语音 ASR + 通义千问 NLP），密钥存 `system_config` 集合，仅管理员可读写。
+> **system 云函数**：负责系统配置读写，其中 `getAiConfig`/`updateAiConfig` 用于管理员配置 AI 服务密钥（腾讯云语音 ASR + 通义千问 NLP），密钥存 `system_config` 集合，仅管理员可读写。
 
 #### 5.1.1 orders action 规格（简化状态机）
 
@@ -832,7 +832,7 @@ async function exportOrders(filter) {
 
 - **前端解析引擎**：
   - 文字解析：正则表达式 + 关键词提取，从自然语言中识别商品名称、数量（件/包）、客户名称
-  - 语音识别（ASR）：生产化阶段对接阿里云智能语音（免费额度 1000 分钟/月），wx.getRecorderManager 录音 → 云函数转调 ASR API
+  - 语音识别（ASR）：生产化阶段对接腾讯云语音识别（按量计费，有免费额度，以控制台为准），wx.getRecorderManager 录音 → 云函数转调 ASR API
   - 自然语言理解（NLP）：生产化阶段可选对接通义千问 Qwen-Turbo/Plus（免费 200 万 Tokens/月），用于复杂语义理解
 - **匹配算法**：
   - 精确匹配：商品名称/料号完全一致
@@ -853,7 +853,7 @@ async function exportOrders(filter) {
   - 第二层：LLM 兜底（规则引擎未命中时调用），处理口语化/复杂表达，准确率 92-95%
   - 成本：前期 0 元（纯规则引擎），后期约 80 元/月（ASR + LLM 超出免费额度部分）
 - **smart 云函数对接 AI**：
-  - `smart.transcribe` 语音转文字对接阿里云智能语音（ISI），需从 `system_config` 集合读取阿里语音配置（AccessKeyId / AccessKeySecret / AppKey / 地域 / 模型），未配置时降级返回空
+  - `smart.transcribe` 语音转文字对接腾讯云语音识别（ISI），需从 `system_config` 集合读取腾讯云语音配置（SecretId / SecretKey / 引擎（16k_zh/8k_zh）），未配置时降级返回空
   - `smart.match` 复杂语义理解可选对接通义千问（DashScope），需从 `system_config` 集合读取千问配置（API Key / 模型），未配置时降级为纯规则引擎
   - 密钥统一从 `system_config` 集合读取（由 `system` 云函数 `getAiConfig` 提供），**不写死在前端**，仅管理员可配置
 

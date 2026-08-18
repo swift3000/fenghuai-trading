@@ -487,3 +487,19 @@
   background: #e5e7eb;
   margin: 0 20rpx;
 }
+
+/* 智能录入-语音 */
+.smart-voice-notice .voice-btn {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: #07C160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6rpx 16rpx rgba(7,193,96,.35);
+}
+.smart-voice-notice .voice-btn:active { transform: scale(.94); }
+.smart-voice-notice .voice-btn-icon { font-size: 44rpx; }
+.smart-voice-notice.voice-recording { background: #FFF3F0; border: 2rpx solid #FF6B4A; }
+.smart-voice-notice.voice-recording .voice-btn { background: #FF6B4A; box-shadow: 0 6rpx 16rpx rgba(255,107,74,.35); }

@@ -62,7 +62,7 @@ const res = await app.callFunction({
 | 23 | | create | 新增用户 |
 | 24 | | update | 修改用户 |
 | 25 | receivable | receivable | 赊销（三栏：客户台账/未结清/已结清 + 收款确认；已收口径） |
-| 26 | system | getAiConfig | 获取 AI 服务配置（阿里语音 + 千问） |
+| 26 | system | getAiConfig | 获取 AI 服务配置（腾讯云语音 + 千问） |
 | 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
 | 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
 | 29 | | transcribe | 语音转文字 |
@@ -1005,41 +1005,46 @@ Array<{
 
 **调用方式**：`wx.cloud.callFunction({ name: 'smart', data: { action: 'transcribe', ... } })`
 
-> **对接说明**：`transcribe` 对接**阿里云智能语音（ISI）**，运行时从 `system_config` 集合读取阿里语音配置（`aliyun`，见 §7B `getAiConfig`）。若未配置阿里语音，则**降级返回空文本**（`data.text = ""`），前端可提示「语音识别未配置」。
+> **对接说明**：`transcribe` 对接**腾讯云语音识别（录音文件识别）**，运行时从 `system_config` 集合读取腾讯云语音配置（`ai.tencent`，见 §7B `getAiConfig`）。若未配置腾讯云语音，则**降级返回空文本**（`data.text = ""`），前端可提示「语音识别未配置」。
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|:---:|------|
 | action | string | ✅ | 固定 "transcribe" |
-| audioFileID | string | ✅ | 云存储中的音频文件 ID |
+| fileID | string | ❌ | 云存储中的音频文件 ID（与 audioUrl 二选一） |
+| audioUrl | string | ❌ | 公网可访问的音频地址（与 fileID 二选一，一般用 fileID） |
+| audioText | string | ❌ | 兜底纯文本：未配置/无音频时直接原样返回 |
 
 **返回**：
 ```json
 {
   "code": 0,
   "data": {
-    "text": "送2件手抓饼给东一路刀削面"
+    "text": "送2件手抓饼给东一路刀削面",
+    "engine": "tencent-asr"
   }
 }
+
+> `engine` 取值：`tencent-asr`（识别成功）/ `disabled`（未配置或未启用）/ `no-audio`（未收到音频）/ `fallback`（识别失败，`text` 为 audioText 兜底值，并附 `error` 字段）。
 ```
 
 ---
 
 ## 7B. 系统配置（system）
 
-> 系统设置功能（AI 服务配置 + 打印机配置 + 数据备份）统一收敛到 `system` 云函数。AI 服务配置含**阿里语音（aliyun）**与**千问（qwen）**两部分，配置存储于 `system_config` 集合。
+> 系统设置功能（AI 服务配置 + 打印机配置 + 数据备份）统一收敛到 `system` 云函数。AI 服务配置含**腾讯云语音（tencent）**与**千问（qwen）**两部分，配置存储于 `system_config` 集合。
 
 #### 7B.1 获取 AI 服务配置（system.getAiConfig）
 
 **调用方式**：`wx.cloud.callFunction({ name: 'system', data: { action: 'getAiConfig' } })`
 
 - **最小权限**：admin
-- **说明**：返回当前 AI 服务配置（阿里语音 + 千问）与打印机配置。
+- **说明**：返回当前 AI 服务配置（腾讯云语音 + 千问）与打印机配置。
 
 **返回 data**：
 ```json
 {
   "ai": {
-    "aliyun": { "enabled": false, "accessKeyId": "", "accessKeySecret": "", "appKey": "", "region": "", "model": "" },
+    "tencent": { "enabled": false, "secretId": "", "secretKey": "", "engine": "16k_zh" },
     "qwen": { "enabled": false, "apiKey": "", "model": "" }
   },
   "printer": { }
@@ -1055,13 +1060,11 @@ Array<{
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|:---:|------|
-| aliyun | object | ❌ | 阿里语音配置 |
-| aliyun.enabled | boolean | ❌ | 是否启用阿里语音 |
-| aliyun.accessKeyId | string | ❌ | 阿里云 AccessKey ID |
-| aliyun.accessKeySecret | string | ❌ | 阿里云 AccessKey Secret |
-| aliyun.appKey | string | ❌ | 阿里智能语音 AppKey |
-| aliyun.region | string | ❌ | 阿里云地域 |
-| aliyun.model | string | ❌ | 语音识别模型 |
+| tencent | object | ❌ | 腾讯云语音（ASR）配置 |
+| tencent.enabled | boolean | ❌ | 是否启用腾讯云语音 |
+| tencent.secretId | string | ❌ | 腾讯云 SecretId（主账号/已授权子账号） |
+| tencent.secretKey | string | ❌ | 腾讯云 SecretKey |
+| tencent.engine | string | ❌ | 识别引擎：`16k_zh`（通用16K，默认）/ `8k_zh`（电话8K） |
 | qwen | object | ❌ | 千问配置 |
 | qwen.enabled | boolean | ❌ | 是否启用千问 |
 | qwen.apiKey | string | ❌ | 千问 API Key |

@@ -22,7 +22,8 @@ Page({
     smartInputText: '',
     smartInputLoading: false,
     smartPreviewItems: [],
-    editMode: false
+    editMode: false,
+    voiceState: 'idle' // idle | recording | transcribing
   },
 
   onLoad(options) {
@@ -389,7 +390,104 @@ onCustomerSearch(e) {
   },
 
   closeSmartModal() {
-    this.setData({ showSmartModal: false, smartInputText: '', smartPreviewItems: [] })
+    if (this.data.voiceState === 'recording' && this._voiceRecorder) {
+      try { this._voiceRecorder.stop() } catch (e) {}
+    }
+    this.setData({ showSmartModal: false, smartInputText: '', smartPreviewItems: [], voiceState: 'idle' })
+  },
+
+  // ============ 语音录入（腾讯云 ASR） ============
+  async startVoiceInput() {
+    // 录音权限
+    try {
+      const setting = await wx.getSetting()
+      if (!setting.authSetting['scope.record']) {
+        const res = await wx.authorize({ scope: 'scope.record' })
+        if (!res.auth) {
+          wx.showModal({ title: '需要录音权限', content: '请在设置中允许录音后重试', showCancel: false })
+          return
+        }
+      }
+    } catch (e) { /* 继续，start 时若失败再提示 */ }
+
+    const { callCloud } = require('../../utils/request')
+    // 检查 ASR 是否已配置（不泄露密钥，任意下单员可查）
+    let asrReady = false
+    try {
+      const st = await callCloud('smart', { action: 'checkAsrReady' })
+      asrReady = !!(st && st.ready)
+    } catch (e) { asrReady = false }
+    if (!asrReady) {
+      wx.showModal({ title: '语音识别未配置', content: '请管理员在「我的-系统设置」配置腾讯云语音（ASR）后使用', showCancel: false })
+      return
+    }
+
+    const recorder = wx.getRecorderManager()
+    this._voiceRecorder = recorder
+    recorder.onStop((res) => { this._onVoiceRecorded(res) })
+    recorder.onError((err) => {
+      this.setData({ voiceState: 'idle' })
+      wx.showToast({ title: (err && err.errMsg) || '录音失败', icon: 'none' })
+    })
+    try {
+      recorder.start({
+        duration: 60000,
+        sampleRate: 16000,
+        numberOfChannels: 1,
+        encodeBitRate: 48000,
+        format: 'mp3'
+      })
+      this.setData({ voiceState: 'recording' })
+    } catch (e) {
+      this.setData({ voiceState: 'idle' })
+      wx.showToast({ title: '无法开始录音', icon: 'none' })
+    }
+  },
+
+  stopVoiceInput() {
+    if (this._voiceRecorder && this.data.voiceState === 'recording') {
+      try { this._voiceRecorder.stop() } catch (e) {}
+    }
+  },
+
+  async _onVoiceRecorded(res) {
+    this.setData({ voiceState: 'transcribing' })
+    const tempPath = res && res.tempFilePath
+    if (!tempPath || (res && res.duration < 500)) {
+      this.setData({ voiceState: 'idle' })
+      wx.showToast({ title: '录音太短，请重试', icon: 'none' })
+      return
+    }
+    try {
+      // 1) 上传到 CloudBase 存储
+      const fileID = await new Promise((resolve, reject) => {
+        wx.cloud.uploadFile({
+          cloudPath: 'voice/' + Date.now() + '_' + Math.floor(Math.random() * 1e6) + '.mp3',
+          filePath: tempPath,
+          success: r => resolve(r.fileID),
+          fail: e => reject(e)
+        })
+      })
+      // 2) 云函数转写（smart.transcribe）
+      const { callCloud } = require('../../utils/request')
+      const data = await callCloud('smart', { action: 'transcribe', fileID })
+      const text = (data && data.text) || ''
+      if (text.trim()) {
+        this.setData({ smartInputText: text, voiceState: 'idle' })
+        this.onSmartInputChange({ detail: { value: text } })
+        wx.showToast({ title: '语音识别完成', icon: 'success' })
+      } else {
+        this.setData({ voiceState: 'idle' })
+        wx.showModal({
+          title: '未识别到内容',
+          content: data && data.engine === 'fallback' ? ('识别失败：' + (data.error || '请重试')) : '没听清，请说清楚一点再试',
+          showCancel: false
+        })
+      }
+    } catch (e) {
+      this.setData({ voiceState: 'idle' })
+      wx.showToast({ title: '语音识别失败，请重试', icon: 'none' })
+    }
   },
 
   onSmartInputChange(e) {

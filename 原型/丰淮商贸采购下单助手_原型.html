@@ -1303,27 +1303,21 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
     <div class="page" id="page-settings">
       <div class="members-wrap">
         <div class="sec-card">
-          <div class="sec-head">🎙️ 阿里语音（ASR）配置 <span class="hint">语音转文字</span></div>
+          <div class="sec-head">🎙️ 腾讯云语音（ASR）配置 <span class="hint">语音转文字</span></div>
           <div class="sec-body" style="padding:12px 16px">
-            <div class="ag-step"><b>说明</b><br>智能录入的「语音转文字」依赖阿里云智能语音交互（ISI）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</div>
+            <div class="ag-step"><b>说明</b><br>智能录入的「语音转文字」依赖腾讯云语音识别（录音文件识别，需先在腾讯云控制台开通）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</div>
             <div style="margin-top:12px">
-              <div class="mf-row"><label>启用语音识别</label><select id="aiAliyunEnabled">
+              <div class="mf-row"><label>启用语音识别</label><select id="aiTencentEnabled">
                 <option value="0">停用</option>
                 <option value="1">启用</option>
               </select></div>
-              <div class="mf-row"><label>AccessKeyId</label><input id="aiAliyunAk" type="text" placeholder="阿里云 AccessKeyId"></div>
-              <div class="mf-row"><label>AccessKeySecret</label><input id="aiAliyunSk" type="password" placeholder="阿里云 AccessKeySecret"></div>
-              <div class="mf-row"><label>AppKey</label><input id="aiAliyunAppKey" type="text" placeholder="智能语音交互项目 AppKey"></div>
-              <div class="mf-row"><label>服务地域</label><select id="aiAliyunRegion">
-                <option value="cn-shanghai">华东2（上海）cn-shanghai</option>
-                <option value="cn-beijing">华北2（北京）cn-beijing</option>
-                <option value="cn-hangzhou">华东1（杭州）cn-hangzhou</option>
+              <div class="mf-row"><label>SecretId</label><input id="aiTencentSid" type="text" placeholder="腾讯云 SecretId（主账号或已授权 ASR 的子账号）"></div>
+              <div class="mf-row"><label>SecretKey</label><input id="aiTencentSkey" type="password" placeholder="腾讯云 SecretKey"></div>
+              <div class="mf-row"><label>识别引擎</label><select id="aiTencentEngine">
+                <option value="16k_zh">通用 16K（麦克风录音）</option>
+                <option value="8k_zh">电话 8K</option>
               </select></div>
-              <div class="mf-row"><label>识别模型</label><select id="aiAliyunModel">
-                <option value="general">通用（16K，麦克风录音）</option>
-                <option value="telephone">电话（8K）</option>
-              </select></div>
-              <button class="btn primary" style="width:100%" onclick="saveAliyunConfig()">💾 保存阿里语音配置</button>
+              <button class="btn primary" style="width:100%" onclick="saveTencentAsrConfig()">💾 保存腾讯云语音配置</button>
             </div>
           </div>
         </div>
@@ -4775,19 +4769,17 @@ function genInviteLink(){
 function esc(s){ return String(s==null?'':s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
 // ============ 系统设置（1.0，仅管理员） ============
-// AI 服务配置（阿里语音 + 千问分开）+ 打印机配置 + 数据备份说明
+// AI 服务配置（腾讯云语音 + 千问分开）+ 打印机配置 + 数据备份说明
 const AI_CONFIG_KEY = 'aiConfig';
 const PRINTER_CONFIG_KEY = 'printerConfig';
 function initSettings(){
   if(!getPerm('member:manage')){ showToast('仅管理员可访问系统设置'); navigateBack(); return; }
-  // 回填阿里语音配置
+  // 回填腾讯云语音配置
   const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
-  if($('aiAliyunEnabled')) $('aiAliyunEnabled').value = ai.aliyunEnabled || '0';
-  if($('aiAliyunAk')) $('aiAliyunAk').value = ai.aliyunAk || '';
-  if($('aiAliyunSk')) $('aiAliyunSk').value = ai.aliyunSk || '';
-  if($('aiAliyunAppKey')) $('aiAliyunAppKey').value = ai.aliyunAppKey || '';
-  if($('aiAliyunRegion')) $('aiAliyunRegion').value = ai.aliyunRegion || 'cn-shanghai';
-  if($('aiAliyunModel')) $('aiAliyunModel').value = ai.aliyunModel || 'general';
+  if($('aiTencentEnabled')) $('aiTencentEnabled').value = ai.tencentEnabled || '0';
+  if($('aiTencentSid')) $('aiTencentSid').value = ai.tencentSid || '';
+  if($('aiTencentSkey')) $('aiTencentSkey').value = ai.tencentSkey || '';
+  if($('aiTencentEngine')) $('aiTencentEngine').value = ai.tencentEngine || '16k_zh';
   // 回填千问配置
   if($('aiQwenEnabled')) $('aiQwenEnabled').value = ai.qwenEnabled || '0';
   if($('aiQwenKey')) $('aiQwenKey').value = ai.qwenKey || '';
@@ -4802,16 +4794,14 @@ function initSettings(){
   if($('printerBrand')) $('printerBrand').value = pr.brand || 'xinye';
   if($('printerWidth')) $('printerWidth').value = pr.width || '58';
 }
-function saveAliyunConfig(){
+function saveTencentAsrConfig(){
   const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
-  cfg.aliyunEnabled = $('aiAliyunEnabled').value;
-  cfg.aliyunAk = $('aiAliyunAk').value.trim();
-  cfg.aliyunSk = $('aiAliyunSk').value.trim();
-  cfg.aliyunAppKey = $('aiAliyunAppKey').value.trim();
-  cfg.aliyunRegion = $('aiAliyunRegion').value;
-  cfg.aliyunModel = $('aiAliyunModel').value;
+  cfg.tencentEnabled = $('aiTencentEnabled').value;
+  cfg.tencentSid = $('aiTencentSid').value.trim();
+  cfg.tencentSkey = $('aiTencentSkey').value.trim();
+  cfg.tencentEngine = $('aiTencentEngine').value;
   localStorage.setItem(AI_CONFIG_KEY, JSON.stringify(cfg));
-  showToast('阿里语音配置已保存');
+  showToast('腾讯云语音配置已保存');
 }
 function saveQwenConfig(){
   const cfg = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
@@ -6144,12 +6134,12 @@ function switchSmartTab(mode) {
     textTab.style.color = 'var(--text-2)';
     voiceMode.style.display = '';
     textMode.style.display = 'none';
-    // 1.0：检查阿里语音是否启用，未启用时提示降级
+    // 1.0：检查腾讯云语音是否启用，未启用时提示降级
     const ai = JSON.parse(localStorage.getItem(AI_CONFIG_KEY) || '{}');
-    const aliyunEnabled = ai.aliyunEnabled === '1' && ai.aliyunAk && ai.aliyunSk && ai.aliyunAppKey;
+    const tencentEnabled = ai.tencentEnabled === '1' && ai.tencentSid && ai.tencentSkey;
     const tip = $('smartVoiceTip');
-    if(!aliyunEnabled && tip){
-      tip.textContent = '⚠️ 语音识别未启用，请在「系统设置」配置阿里语音';
+    if(!tencentEnabled && tip){
+      tip.textContent = '⚠️ 语音识别未启用，请在「系统设置」配置腾讯云语音';
       tip.style.color = 'var(--orange)';
     } else if(tip){
       tip.textContent = '点击开始录音';

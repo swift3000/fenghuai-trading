@@ -1363,6 +1363,9 @@ body{padding:18px 0}
 /* 智能录入弹窗 */
 .smart-modal{max-height:82%}
 .smart-voice-notice{margin:14px 16px 0;padding:18px 12px;border:1.5px dashed #7FB2F0;border-radius:14px;background:#F2F7FF;display:flex;flex-direction:column;align-items:center;gap:4px}
+.smart-voice-notice{position:relative;padding-right:100px}
+.svn-btn{position:absolute;right:16px;top:50%;transform:translateY(-50%)}
+.svn-btn-inner{width:44px;height:44px;border-radius:50%;background:#07C160;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 10px rgba(7,193,96,.35)}
 .smart-voice-notice .svn-icon{font-size:26px}
 .smart-voice-notice .svn-title{color:#2E6FE0;font-weight:600;font-size:calc(15px * var(--font-scale))}
 .smart-voice-notice .svn-sub{color:#98A2B3;font-size:calc(12px * var(--font-scale))}
@@ -2091,9 +2094,10 @@ body{padding:18px 0}
       <div class="close" onclick="closeSmartModal()"><svg class="ri" aria-hidden="true"><use href="#ri-close-line"></use></svg></div>
     </div>
     <div class="smart-voice-notice">
-      <div class="svn-icon">📢</div>
-      <div class="svn-title">语音录入功能开发中</div>
-      <div class="svn-sub">请暂时使用文字录入</div>
+      <div class="svn-icon">🎙️</div>
+      <div class="svn-title">点击右侧按钮说话，说商品清单即可自动识别（腾讯云 ASR）</div>
+      <div class="svn-sub">示例："手抓饼两件，老酸奶十包" · 需管理员先在系统设置配置腾讯云语音</div>
+      <div class="svn-btn" onclick="void 0" title="原型示意：小程序端为录音按钮"><div class="svn-btn-inner">🎤</div></div>
     </div>
     <div class="smart-divider">或</div>
     <div class="smart-hint">📝 输入商品清单，系统自动识别示例：手抓饼 2 件，老酸奶 10 包</div>

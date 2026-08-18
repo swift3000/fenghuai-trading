@@ -497,13 +497,11 @@ db.payments.createIndex({ customer_id: 1, status: 1, registered_at: -1 });
 |--------|------|------|--------|------|------|
 | `_id` | String | 是 | `'global'` | 主键（固定 `'global'`，单文档） | PK（默认） |
 | `ai` | Object | 否 | null | AI 服务配置 | — |
-| `ai.aliyun` | Object | 否 | null | 阿里语音配置 | — |
-| `ai.aliyun.enabled` | Boolean | 否 | false | 是否启用 | — |
-| `ai.aliyun.accessKeyId` | String | 否 | null | 阿里云 AccessKey ID | — |
-| `ai.aliyun.accessKeySecret` | String | 否 | null | 阿里云 AccessKey Secret | — |
-| `ai.aliyun.appKey` | String | 否 | null | 语音识别 AppKey | — |
-| `ai.aliyun.region` | String | 否 | null | 服务地域：`cn-shanghai`/`cn-beijing`/`cn-hangzhou` | — |
-| `ai.aliyun.model` | String | 否 | null | 识别模型：`general`/`telephone` | — |
+| `ai.tencent` | Object | 否 | null | 腾讯云语音（ASR）配置 | — |
+| `ai.tencent.enabled` | Boolean | 否 | false | 是否启用 | — |
+| `ai.tencent.secretId` | String | 否 | null | 腾讯云 SecretId | — |
+| `ai.tencent.secretKey` | String | 否 | null | 腾讯云 SecretKey | — |
+| `ai.tencent.engine` | String | 否 | null | 识别引擎：`16k_zh`（通用16K，默认）/ `8k_zh`（电话8K） | — |
 | `ai.qwen` | Object | 否 | null | 通义千问配置 | — |
 | `ai.qwen.enabled` | Boolean | 否 | false | 是否启用 | — |
 | `ai.qwen.apiKey` | String | 否 | null | 通义千问 API Key | — |
@@ -513,7 +511,7 @@ db.payments.createIndex({ customer_id: 1, status: 1, registered_at: -1 });
 | `printer.width` | String | 否 | null | 打印纸宽度：`58`/`80` | — |
 | `updatedAt` | Date | 是 | — | 更新时间 | — |
 
-> **安全提示**：`ai.aliyun.accessKeySecret` / `ai.qwen.apiKey` 为敏感密钥，仅管理员可读写，前端不得明文下发。
+> **安全提示**：`ai.tencent.secretKey` / `ai.qwen.apiKey` 为敏感密钥，仅管理员可读写，前端不得明文下发。
 
 ### 2.12 perm_configs（角色权限覆盖表）
 

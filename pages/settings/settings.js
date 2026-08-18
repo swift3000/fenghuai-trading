@@ -9,15 +9,12 @@ Page({
     uiStyle: '',
     // 用户角色
     userRole: '',
-    // 阿里语音配置
-    aliyunEnabled: '0',
-    aliyunAk: '',
-    aliyunSk: '',
-    aliyunAppKey: '',
-    aliyunRegion: 'cn-shanghai',
-    aliyunRegionIndex: 0,
-    aliyunModel: 'general',
-    aliyunModelIndex: 0,
+    // 腾讯云语音（ASR）配置
+    tencentEnabled: '0',
+    tencentSid: '',
+    tencentSkey: '',
+    tencentEngine: '16k_zh',
+    tencentEngineIndex: 0,
     // 千问配置
     qwenEnabled: '0',
     qwenKey: '',
@@ -26,7 +23,7 @@ Page({
     // 中转站 AI（OpenAI 兼容）配置
     relayEnabled: '0',
     relayBaseUrl: 'https://api.qiyuanapi.cc/v1',
-    relayKey: 'sk-opc-ie0JPeJwbnSv7NZZZ6NIuIj2BJSR2RZN',
+    relayKey: '',
     relayModel: 'qwen-0810',
     // 定时自动确认（管理员可控）
     acEnabled: '0',
@@ -50,18 +47,15 @@ Page({
     try {
       const cfg = await callCloud('system', { action: 'getAiConfig' })
       const ai = cfg.ai || {}
-      const aliyun = ai.aliyun || {}
+      const tencent = ai.tencent || {}
       const qwen = ai.qwen || {}
       const relay = ai.relay || {}
       this.setData({
-        aliyunEnabled: aliyun.enabled ? '1' : '0',
-        aliyunAk: aliyun.accessKeyId || '',
-        aliyunSk: aliyun.accessKeySecret || '',
-        aliyunAppKey: aliyun.appKey || '',
-        aliyunRegion: aliyun.region || 'cn-shanghai',
-        aliyunRegionIndex: ['cn-shanghai','cn-beijing','cn-hangzhou'].indexOf(aliyun.region || 'cn-shanghai'),
-        aliyunModel: aliyun.model || 'general',
-        aliyunModelIndex: aliyun.model === 'telephone' ? 1 : 0,
+        tencentEnabled: tencent.enabled ? '1' : '0',
+        tencentSid: tencent.secretId || '',
+        tencentSkey: tencent.secretKey || '',
+        tencentEngine: tencent.engine || '16k_zh',
+        tencentEngineIndex: tencent.engine === '8k_zh' ? 1 : 0,
         qwenEnabled: qwen.enabled ? '1' : '0',
         qwenKey: qwen.apiKey || '',
         qwenModel: qwen.model || 'qwen-turbo',
@@ -76,18 +70,13 @@ Page({
     }
   },
 
-  // 阿里语音配置事件
-  onAliyunEnabled(e) { this.setData({ aliyunEnabled: e.detail.value }) },
-  onAliyunAk(e) { this.setData({ aliyunAk: e.detail.value }) },
-  onAliyunSk(e) { this.setData({ aliyunSk: e.detail.value }) },
-  onAliyunAppKey(e) { this.setData({ aliyunAppKey: e.detail.value }) },
-  onAliyunRegion(e) {
+  // 腾讯云语音配置事件
+  onTencentEnabled(e) { this.setData({ tencentEnabled: e.detail.value }) },
+  onTencentSid(e) { this.setData({ tencentSid: e.detail.value }) },
+  onTencentSkey(e) { this.setData({ tencentSkey: e.detail.value }) },
+  onTencentEngine(e) {
     const idx = Number(e.detail.value)
-    this.setData({ aliyunRegionIndex: idx, aliyunRegion: ['cn-shanghai','cn-beijing','cn-hangzhou'][idx] })
-  },
-  onAliyunModel(e) {
-    const idx = Number(e.detail.value)
-    this.setData({ aliyunModelIndex: idx, aliyunModel: idx === 1 ? 'telephone' : 'general' })
+    this.setData({ tencentEngineIndex: idx, tencentEngine: idx === 1 ? '8k_zh' : '16k_zh' })
   },
 
   // 千问配置事件
@@ -105,21 +94,19 @@ Page({
   onRelayModel(e) { this.setData({ relayModel: e.detail.value }) },
 
 
-  // 保存阿里语音配置
-  async saveAliyun() {
+  // 保存腾讯云语音配置
+  async saveTencent() {
     const d = this.data
     const cfg = await callCloud('system', { action: 'getAiConfig' })
     const ai = cfg.ai || {}
-    ai.aliyun = {
-      enabled: d.aliyunEnabled === '1',
-      accessKeyId: d.aliyunAk,
-      accessKeySecret: d.aliyunSk,
-      appKey: d.aliyunAppKey,
-      region: d.aliyunRegion,
-      model: d.aliyunModel
+    ai.tencent = {
+      enabled: d.tencentEnabled === '1',
+      secretId: d.tencentSid,
+      secretKey: d.tencentSkey,
+      engine: d.tencentEngine
     }
     await callCloud('system', { action: 'updateAiConfig', aiConfig: ai })
-    wx.showToast({ title: '阿里语音配置已保存', icon: 'success' })
+    wx.showToast({ title: '腾讯云语音配置已保存', icon: 'success' })
   },
 
   // 保存千问配置

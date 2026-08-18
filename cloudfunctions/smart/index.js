@@ -2,6 +2,108 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const https = require('https')
+const crypto = require('crypto')
+
+// ============ 腾讯云 ASR（录音文件识别，音频走现有 CloudBase 存储临时链接） ============
+const ASR_HOST = 'asr.tencentcloudapi.com'
+const ASR_SERVICE = 'asr'
+const ASR_VERSION = '2019-AS6-3'
+
+function sha256hex(str) {
+  return crypto.createHash('sha256').update(str, 'utf8').digest('hex')
+}
+function hmacsha256(key, data) {
+  return crypto.createHmac('sha256', key).update(data, 'utf8').digest()
+}
+
+// TC3-HMAC-SHA256 签名 + POST 调用腾讯云 API
+function tencentApiCall({ secretId, secretKey, action, payload }) {
+  return new Promise((resolve, reject) => {
+    const date = new Date().toISOString().slice(0, 10)
+    const timestamp = Math.floor(Date.now() / 1000)
+    const body = JSON.stringify(payload)
+
+    const canonicalHeaders = 'content-type:application/json; charset=utf-8\nhost:' + ASR_HOST + '\nx-tc-action:' + action.toLowerCase() + '\n'
+    const signedHeaders = 'content-type;host;x-tc-action'
+    const canonicalRequest = ['POST', '/', '', canonicalHeaders, signedHeaders, sha256hex(body)].join('\n')
+    const credentialScope = date + '/' + ASR_SERVICE + '/tc3_request'
+    const stringToSign = 'TC3-HMAC-SHA256\n' + timestamp + '\n' + credentialScope + '\n' + sha256hex(canonicalRequest)
+    const kDate = hmacsha256('TC3' + secretKey, date)
+    const kService = hmacsha256(kDate, ASR_SERVICE)
+    const kSigning = hmacsha256(kService, 'tc3_request')
+    const signature = crypto.createHmac('sha256', kSigning).update(stringToSign, 'utf8').digest('hex')
+    const authorization = 'TC3-HMAC-SHA256 Credential=' + secretId + '/' + credentialScope +
+      ', SignedHeaders=' + signedHeaders + ', Signature=' + signature
+
+    const req = https.request({
+      hostname: ASR_HOST,
+      port: 443,
+      path: '/',
+      method: 'POST',
+      headers: {
+        'Authorization': authorization,
+        'Content-Type': 'application/json; charset=utf-8',
+        'Host': ASR_HOST,
+        'X-TC-Action': action,
+        'X-TC-Version': ASR_VERSION,
+        'X-TC-Timestamp': String(timestamp),
+        'Content-Length': Buffer.byteLength(body)
+      }
+    }, res => {
+      let data = ''
+      res.on('data', c => { data += c })
+      res.on('end', () => {
+        try {
+          const j = JSON.parse(data)
+          if (j.code && j.code !== 0) return reject(new Error(j.message || ('API错误 ' + j.code)))
+          resolve(j.data || {})
+        } catch (e) {
+          reject(new Error('ASR 响应解析失败: ' + data.slice(0, 120)))
+        }
+      })
+    })
+    req.on('error', e => reject(new Error('ASR 请求失败: ' + e.message)))
+    req.setTimeout(30000, () => { req.destroy(new Error('ASR 请求超时')) })
+    req.write(body)
+    req.end()
+  })
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+// 录音文件识别：提交任务 → 轮询取结果（最多等 30 秒）
+async function asrTranscribe(tc, audioUrl) {
+  const submit = await tencentApiCall({
+    secretId: tc.secretId, secretKey: tc.secretKey,
+    action: 'CreateRecTask',
+    payload: {
+      ProjectId: 0,
+      EngineModel: tc.engine === '8k_zh' ? '8k_zh' : '16k_zh',
+      VoiceFormat: 10, // mp3
+      Url: audioUrl
+    }
+  })
+  if (submit.TaskId === undefined || submit.TaskId === null) {
+    throw new Error('提交识别任务失败：未返回 TaskId')
+  }
+  for (let i = 0; i < 15; i++) {
+    await sleep(2000)
+    const st = await tencentApiCall({
+      secretId: tc.secretId, secretKey: tc.secretKey,
+      action: 'DescribeRecTask',
+      payload: { TaskId: submit.TaskId }
+    })
+    if (st.Status === 0) {
+      // 成功：返回 TextShow（含标点全文）
+      return st.TextShow || (st.Result && st.Result.TextShow) || ''
+    }
+    if (st.Status === -1 || st.Status === -2) {
+      throw new Error('识别失败：' + (st.ErrMsg || 'Status=' + st.Status))
+    }
+  }
+  throw new Error('识别超时，请稍后重试')
+}
+
 
 function levenshtein(a, b) {
   const matrix = []
@@ -296,10 +398,42 @@ exports.main = async (event, context) => {
     }
     
     case 'transcribe': {
+      // 语音转文字（腾讯云 ASR 录音文件识别，音频走现有 CloudBase 存储临时链接）
+      // event: { fileID?: CloudBase文件ID, audioUrl?: 公网音频地址, audioText?: 兜底纯文本 }
       const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
-      return { code: 0, data: { text: event.audioText || '' } }
+      const cfg = await getConfig()
+      const tc = (cfg.ai && cfg.ai.tencent) || {}
+      if (!tc.enabled || !tc.secretId || !tc.secretKey) {
+        return { code: 0, data: { text: event.audioText || '', engine: 'disabled' } }
+      }
+      let audioUrl = event.audioUrl || ''
+      if (!audioUrl && event.fileID) {
+        try {
+          const f = await cloud.getTempFileURL({ fileList: [event.fileID] })
+          const file = (f.fileList || [])[0]
+          if (file && file.status === 0 && file.tempFileURL) audioUrl = file.tempFileURL
+        } catch (e) { /* 忽略，走兜底 */ }
+      }
+      if (!audioUrl) {
+        return { code: 0, data: { text: event.audioText || '', engine: 'no-audio' } }
+      }
+      try {
+        const text = await asrTranscribe({ secretId: tc.secretId, secretKey: tc.secretKey, engine: tc.engine || '16k_zh' }, audioUrl)
+        return { code: 0, data: { text: text || '', engine: 'tencent-asr' } }
+      } catch (e) {
+        console.error('ASR 转写失败', e.message)
+        return { code: 0, data: { text: event.audioText || '', engine: 'fallback', error: e.message } }
+      }
     }
     
+    case 'checkAsrReady': {
+      // 供前端判断语音识别是否可用（不返回任何密钥）
+      const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
+      const cfg = await getConfig()
+      const tc = (cfg.ai && cfg.ai.tencent) || {}
+      return { code: 0, data: { ready: !!(tc.enabled && tc.secretId && tc.secretKey) } }
+    }
+
     case 'parse': {
       const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       const { text } = event
