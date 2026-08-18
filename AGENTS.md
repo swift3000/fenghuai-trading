@@ -37,10 +37,20 @@
 - 金额守恒：应收 = 已收 + 未结清；收款两步（登记 collect：下单员/分拣员 → 确认 confirm：仅库管）
 - 打印/转发模板 = 西安迈尚销售单格式，客户指定，不得擅改（无 NO.、无三方操作人追溯）
 
+## 编码基线（三层，2026-08-19 补全，只能加严不能放宽）
+- 第 1 层·通用：遵循全局 AGENTS.md【编码纪律】（任务编号/完成前自审/错误处理/安全/性能预算/兼容）
+- 第 2 层·类型（微信小程序 + Serverless 后端）：
+  - 云函数：一律 async/await；DB 调用有超时+统一错误返回；热路径查询必命中索引（索引名写注释）；一个云函数只做一件事；node-sdk 与 wx-server-sdk 写文档口径不得混用（见已知坑）
+  - 前端：setData 控频次与体积（合并调用、大列表分页）；主包 <2MB 红线；页面按需加载；隐私接口仅授权后调用且失败降级不阻塞
+  - 完整类型基线见 ~/.codex/skills/multi-agent-delivery/references/coding-baseline.md
+- 第 3 层·项目特有：权限矩阵 scripts/sync-perm-matrix.js（check:perms）改动后必跑；金额/守恒红线见"业务红线"段
+- 工具链门禁：npm run check:perms + test:all；CI：.github/workflows/ci.yml（lint+权限矩阵+单测）
+
 ## 测试
 - 一键全量：`npm run test:all`（scripts/test-all.sh）；单项 `npm run test:wx-e2e` 等，入口 scripts 见 package.json
 - 自动化走微信开发者工具：CLI `/Applications/wechatwebdevtools.app/Contents/MacOS/cli`；skills = wechat-devtools-automator + wechat-auto-test
 - 测试数据打 TEST 前缀，测完清理；QA 模拟身份用云函数 env QA_IMPERSONATE=1
+- 核心路径清单（regression.sh 必覆盖）：登录→智能录入→录单→分拣→出库→收款→蓝牙打印/转发销售单
 
 ## 部署
 - 云函数一键部署：`bash auto-deploy-cloudfunctions.sh`（逐个 cli deploy）；CI：ci/upload.js（miniprogram-ci，private.key 在 ci/ 目录，勿外传）

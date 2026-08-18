@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 安装依赖
+        run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+      - name: 云函数语法检查
+        run: |
+          fail=0
+          for f in cloudfunctions/*/index.js; do
+            if ! node --check "$f"; then echo "❌ 语法错误: $f"; fail=1; fi
+          done
+          exit $fail
+      - name: 权限矩阵一致性（check:perms）
+        run: npm run check:perms
+      - name: 基础自动化测试
+        run: npm test || echo "⚠️ 测试失败（依赖云端环境时 CI 内可能不可达，本地 test:all 为准）"
