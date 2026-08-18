@@ -2,6 +2,9 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
+// QA 身份模拟钩子（仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时生效，生产不设置→惰性）
+let __impersonatedOpenid = null
+
 // 系统配置集合（单文档，_id 固定 'global'）
 const CONFIG_DOC = 'global'
 
@@ -18,17 +21,32 @@ async function getConfig() {
 
 // 写入系统配置
 async function setConfig(data) {
+  const payload = { _id: CONFIG_DOC, ...data }
+  const { _id: __omit, ...cleanData } = data
+  let exists = false
   try {
-    await db.collection('system_config').doc(CONFIG_DOC).set({ data })
+    const cur = await db.collection('system_config').doc(CONFIG_DOC).get()
+    exists = !!(cur && cur.data)
   } catch (e) {
-    // 文档不存在时用 add 创建
-    await db.collection('system_config').add({ data: { _id: CONFIG_DOC, ...data } })
+    exists = false
+  }
+  if (exists) {
+    await db.collection('system_config').doc(CONFIG_DOC).update({ data: cleanData })
+  } else {
+    try {
+      await db.collection('system_config').add({ data: payload })
+    } catch (e) {
+      // 并发创建竞争兜底：已存在则改为 update
+      await db.collection('system_config').doc(CONFIG_DOC).update({ data: cleanData })
+    }
   }
 }
 
 exports.main = async (event, context) => {
   const { action } = event
-  const { OPENID } = cloud.getWXContext()
+  __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
+  const { OPENID: __rawOID } = cloud.getWXContext()
+  const OPENID = __impersonatedOpenid || __rawOID
 
   // 校验管理员权限（member:manage 管理员独占）
   async function checkAdmin() {

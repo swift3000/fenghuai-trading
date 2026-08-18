@@ -1,0 +1,153 @@
+// 全 action 覆盖测试：真实调用每个云函数 action + 各角色权限矩阵验证
+process.env.QA_IMPERSONATE = "1"
+const cloudbase = require("@cloudbase/node-sdk")
+const fs = require("fs"), path = require("path")
+const env = {}
+for (const l of fs.readFileSync(path.join(__dirname, "../.env"), "utf8").split("\n")) {
+  const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2].trim()
+}
+const app = cloudbase.init({ secretId: env.CLOUDBASE_SECRET_ID, secretKey: env.CLOUDBASE_SECRET_KEY, envId: env.CLOUDBASE_ENV_ID })
+const db = app.database()
+const QA = { orderer: "qa_test_orderer_001", sorter: "qa_test_sorter_001", warehouse: "qa_test_warehouse_001", admin: "oo0s93SW9A4V4iO1ANyA3eqzxVIA" }
+const invoke = (name, data, as) => app.callFunction({ name, data: Object.assign({}, data, as ? { qaAsOpenid: QA[as] } : {}) }).then(r => r.result)
+let pass = 0, fail = 0
+const check = (name, cond, detail) => {
+  if (cond) { pass++; console.log("PASS", name) }
+  else { fail++; console.log("FAIL", name, "—", String(detail).slice(0, 200)) }
+}
+const J = o => JSON.stringify(o).slice(0, 150)
+;(async () => {
+  const now = new Date(), iso = s => s.toISOString()
+  const cust = (await db.collection("customers").where({ name: "0088" }).get()).data[0] || (await db.collection("customers").limit(1).get()).data[0]
+
+  console.log("== 1. 商品 CRUD ==")
+  const pCreate = await invoke("products", { action: "create", name: "全量测试商品", material_code: "QA" + Date.now(), spec: "1", pricing_mode: "case", unit_piece_qty: 1, price_piece: 10, price_unit: 0, unit: "件" }, "orderer")
+  check("orderer 新建商品(权限开)", pCreate && pCreate.code === 0, J(pCreate))
+  const pid = pCreate.data && (pCreate.data._id || pCreate.data.productId || (pCreate.data.product && pCreate.data.product._id))
+  const pList = await invoke("products", { action: "list", keyword: "全量测试商品" })
+  check("商品列表可搜到", pList && (pList.data.list || pList.data || []).some(x => (x.name || "").includes("全量测试商品")), J(pList))
+  const pUpd = await invoke("products", { action: "update", productId: pid, price_piece: 12 }, "sorter")
+  check("sorter 更新商品(权限开)", pUpd && pUpd.code === 0, J(pUpd))
+  const pDel = await invoke("products", { action: "delete", productId: pid }, "admin")
+  check("删除商品", pDel && pDel.code === 0, J(pDel))
+
+  console.log("== 2. 客户 CRUD ==")
+  const cCreate = await invoke("customers", { action: "create", name: "全量测试客户", region: "汉滨", contact: "张三", phone: "13800000000" })
+  check("新建客户", cCreate && cCreate.code === 0, J(cCreate))
+  const cid = cCreate.data && (cCreate.data._id || cCreate.data.customerId)
+  const cUpd = await invoke("customers", { action: "update", customerId: cid, contact: "李四" })
+  check("更新客户", cUpd && cUpd.code === 0, J(cUpd))
+  const cDel = await invoke("customers", { action: "delete", customerId: cid })
+  check("删除客户", cDel && cDel.code === 0, J(cDel))
+
+  console.log("== 3. 订单全链路（orderer 建单）==")
+  const oCreate = await invoke("orders", { action: "create", customerId: cust._id, customerName: cust.name, customerRegion: cust.region, totalAmount: 30, items: [{ material_code: cust ? "1" : "1", name: "测试A", spec: "1", pricing_mode: "case", unit_piece_qty: 1, price_piece: 10, price_unit: 0, unit: "件", piece_qty: 1, zero_qty: 0, amount: 10 }, { material_code: "2", name: "测试B", spec: "1", pricing_mode: "case", unit_piece_qty: 1, price_piece: 20, price_unit: 0, unit: "件", piece_qty: 1, zero_qty: 0, amount: 20 }], orderDate: iso(now).slice(0, 10) }, "orderer")
+  check("orderer 创建订单", oCreate && oCreate.code === 0, J(oCreate))
+  const oid = oCreate.data && (oCreate.data.orderId || oCreate.data._id || (oCreate.data.order && oCreate.data.order._id))
+  const oDetail = await invoke("orders", { action: "detail", orderId: oid })
+  check("订单详情 2 商品", oDetail && oDetail.code === 0 && oDetail.data.items.length === 2, J(oDetail.data))
+  const oUpd = await invoke("orders", { action: "update", orderId: oid, customerName: cust.name, customerRegion: cust.region, totalAmount: 30, items: oDetail.data.items }, "orderer")
+  check("orderer 编辑订单", oUpd && oUpd.code === 0, J(oUpd))
+  const oLast = await invoke("orders", { action: "lastOrder", customerId: cust._id })
+  check("lastOrder 返回本单", oLast && oLast.code === 0, J(oLast))
+  const oStats = await invoke("orders", { action: "todayStats" })
+  check("todayStats", oStats && oStats.code === 0, J(oStats))
+
+  console.log("== 4. 分拣/出库/物流件数（角色隔离）==")
+  const sList = await invoke("orders", { action: "outboundList" })
+  check("outboundList", sList && sList.code === 0, J(sList))
+  const sortByOrderer = await invoke("orders", { action: "confirmSort", orderId: oid }, "orderer")
+  check("orderer 分拣确认(权限开)", sortByOrderer && sortByOrderer.code === 0, J(sortByOrderer))
+  const outBySorter = await invoke("orders", { action: "confirmOut", orderId: oid, batchMode: false, ship_large: 2, ship_medium: 1, ship_small: 0 }, "sorter")
+  check("sorter 出库确认(权限开)", outBySorter && outBySorter.code === 0, J(outBySorter))
+  const oD2 = await invoke("orders", { action: "detail", orderId: oid })
+  const pk = oD2.data && (oD2.data.package || oD2.data)
+  check("物流件数 大2 中1 小0(0不显示逻辑)", pk && (pk.big === 2 || pk.ship_large === 2) && (pk.mid === 1 || pk.ship_medium === 1), J(pk))
+  const markShared = await invoke("orders", { action: "markShared", orderId: oid }, "orderer")
+  check("markShared 转发标记", markShared && markShared.code === 0, J(markShared))
+
+  console.log("== 5. 出库云函数独立入口 ==")
+  const obSort = await invoke("outbound", { action: "pendingSortList" })
+  check("outbound pendingSortList", obSort && obSort.code === 0, J(obSort))
+  const obOut = await invoke("outbound", { action: "pendingOutList" })
+  check("outbound pendingOutList", obOut && obOut.code === 0, J(obOut))
+
+  console.log("== 6. 收款两步流程（含折价权限）==")
+  const collect = await invoke("receivable", { action: "collect", orderId: oid, amount: 20, paymentMethod: "现金", discount: 5 }, "orderer")
+  check("orderer 登记收款(含折价)", collect && collect.code === 0, J(collect))
+  const confirmByOrderer = await invoke("receivable", { action: "confirmPayment", orderId: oid }, "orderer")
+  check("orderer 确认收款(应被拒:confirm仅库管/管理员)", confirmByOrderer && confirmByOrderer.code !== 0, J(confirmByOrderer))
+  const whCollect = await invoke("receivable", { action: "collect", orderId: oid, amount: 5, paymentMethod: "微信" }, "warehouse")
+  check("warehouse 登记收款(应被拒:权限关)", whCollect && whCollect.code !== 0, J(whCollect))
+  const confirmByWh = await invoke("receivable", { action: "confirmPayment", orderId: oid }, "warehouse")
+  check("warehouse 确认收款(仅库管/管理员)", confirmByWh && confirmByWh.code === 0, J(confirmByWh))
+  const confirmBySorter = await invoke("receivable", { action: "confirmPayment", orderId: oid }, "sorter")
+  check("sorter 确认收款(应被拒:confirm仅库管/管理员)", confirmBySorter && confirmBySorter.code !== 0, J(confirmBySorter))
+  const hist = await invoke("receivable", { action: "paymentHistory", orderId: oid })
+  check("paymentHistory", hist && hist.code === 0, J(hist))
+  const dash = await invoke("receivable", { action: "dashboard" })
+  check("dashboard 含本单欠款", dash && dash.code === 0, J(dash))
+  const pend = await invoke("receivable", { action: "pendingConfirm" })
+  check("pendingConfirm", pend && pend.code === 0, J(pend))
+  const cDet = await invoke("receivable", { action: "customerDetail", customerId: cust._id })
+  check("customerDetail", cDet && cDet.code === 0, J(cDet))
+
+  console.log("== 7. 定时自动确认（system）==")
+  const acGet = await invoke("system", { action: "getAutoConfirm" }, "admin")
+  check("getAutoConfirm(admin)", acGet && acGet.code === 0, J(acGet))
+  const acSet = await invoke("system", { action: "updateAutoConfirm", enabled: true, time: "16:00" }, "admin")
+  check("开启定时 16:00(admin)", acSet && acSet.code === 0, J(acSet))
+  const acSetRole = await invoke("system", { action: "updateAutoConfirm", enabled: true, time: "16:00" }, "orderer")
+  check("orderer 改定时(应被拒)", acSetRole && acSetRole.code !== 0, J(acSetRole))
+  const acOff = await invoke("system", { action: "updateAutoConfirm", enabled: false }, "admin")
+  check("关闭定时(恢复默认)", acOff && acOff.code === 0, J(acOff))
+  const policy = await invoke("orders", { action: "getAutoConfirmPolicy" })
+  check("getAutoConfirmPolicy", policy && policy.code === 0, J(policy))
+
+  console.log("== 8. 成员管理（users）==")
+  const uList = await invoke("users", { action: "list" }, "admin")
+  check("成员列表(admin)", uList && uList.code === 0 && (uList.data.users || uList.data || []).length >= 4, J(uList))
+  const uAdd = await invoke("users", { action: "add", name: "全量测试分拣", phone: "13900001111", role: "sorter", region: "汉滨" }, "admin")
+  check("管理员邀请 sorter", uAdd && uAdd.code === 0, J(uAdd))
+  const uAddByOrderer = await invoke("users", { action: "add", name: "越权测试", phone: "13900002222", role: "orderer" }, "orderer")
+  check("orderer 邀请成员(应被拒)", uAddByOrderer && uAddByOrderer.code !== 0, J(uAddByOrderer))
+  const newUid = uAdd.data && (uAdd.data._id || uAdd.data.userId || (uAdd.data.user && uAdd.data.user._id))
+  const uRemove = await invoke("users", { action: "remove", userId: newUid }, "admin")
+  check("管理员移除成员", uRemove && uRemove.code === 0, J(uRemove))
+
+  console.log("== 9. 导出全格式（当前订单+数据）==")
+  for (const [action, tab] of [["export", "product"], ["export", "customer"], ["exportDailySummary", null], ["exportLedger", null]]) {
+    const params = { action, timeTab: "month", format: "csv" }
+    if (tab) params.reportTab = tab
+    const r = await invoke("report", params)
+    check("csv " + action, r && r.code === 0 && (r.data && (r.data.csvContent || r.data.fileID)), J(r))
+    const rx = await invoke("report", Object.assign({}, params, { format: "excel" }))
+    check("excel " + action, rx && rx.code === 0 && rx.data && (rx.data.fileID || rx.data.csvContent), J(rx))
+  }
+  const sum = await invoke("report", { action: "summary", reportTab: "payment", timeTab: "month" })
+  check("summary payment", sum && sum.code === 0, J(sum))
+  const trend = await invoke("report", { action: "trend", days: 7 })
+  check("trend 7天", trend && trend.code === 0, J(trend))
+  const expOut = await invoke("outbound", { action: "exportOutbound", format: "csv" })
+  check("exportOutbound csv", expOut && expOut.code === 0, J(expOut))
+  const single = await invoke("orders", { action: "exportSingleOrder", orderId: oid, format: "excel" })
+  check("exportSingleOrder excel", single && single.code === 0, J(single))
+  const printO = await invoke("orders", { action: "printOrder", orderId: oid })
+  check("printOrder", printO && printO.code === 0, J(printO))
+
+  console.log("== 10. 权限矩阵（订单操作按角色开关）==")
+  const oCreate2 = await invoke("orders", { action: "create", customerId: cust._id, customerName: cust.name, customerRegion: cust.region, totalAmount: 10, items: [{ material_code: "1", name: "矩阵商品", spec: "1", pricing_mode: "case", unit_piece_qty: 1, price_piece: 10, price_unit: 0, unit: "件", piece_qty: 1, zero_qty: 0, amount: 10 }], orderDate: iso(now).slice(0, 10) }, "warehouse")
+  check("warehouse 建单(权限开)", oCreate2 && oCreate2.code === 0, J(oCreate2))
+  const oid2 = oCreate2.data && (oCreate2.data.orderId || oCreate2.data._id || (oCreate2.data.order && oCreate2.data.order._id))
+  const memberBySorter = await invoke("users", { action: "list" }, "sorter")
+  check("sorter 看成员列表(应被拒:member仅管理员)", memberBySorter && memberBySorter.code !== 0, J(memberBySorter))
+  const delBySorter = await invoke("orders", { action: "delete", orderId: oid2 }, "sorter")
+  check("sorter 删单(默认矩阵允许)", delBySorter && delBySorter.code === 0, J(delBySorter))
+
+  console.log("== 11. 清理 ==")
+  const d1 = await invoke("orders", { action: "delete", orderId: oid })
+  check("清理订单1", d1 && d1.code === 0, J(d1))
+
+  console.log("=== SUMMARY: " + pass + " pass, " + fail + " fail ===")
+  process.exit(fail ? 1 : 0)
+})().catch(e => { console.error("FATAL", e.message); process.exit(2) })

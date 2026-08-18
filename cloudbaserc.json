@@ -66,7 +66,10 @@
     {
       "name": "system",
       "runtime": "Nodejs20.19",
-      "timeout": 30
+      "timeout": 30,
+      "envVariables": {
+        "QA_IMPERSONATE": ""
+      }
     },
     {
       "name": "smart",
