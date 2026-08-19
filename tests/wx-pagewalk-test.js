@@ -49,7 +49,7 @@ async function resolveLatestOrderId() {
 
 // 每个探针都是自包含函数体（不引用外层变量）。
 const PAGES = (ORDER_ID) => {
-  const TABS = new Set(['/pages/index/index', '/pages/orders/orders', '/pages/outbound/outbound', '/pages/profile/profile']);
+  const TABS = new Set(['/pages/index/index', '/pages/orders/orders', '/pages/receivable/receivable', '/pages/outbound/outbound', '/pages/profile/profile']);
   const defs = [
     { url: '/pages/index/index', name: 'home',
       probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; return { route: p.route, hasUser: true }; } },

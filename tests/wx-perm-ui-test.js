@@ -28,7 +28,11 @@ const ROLES=['admin','orderer','sorter','warehouse'];
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
-  await s.evaluate(()=>new Promise(r=>{try{wx.navigateTo({url:'/pages/members/members',fail:()=>r('FAIL')});setTimeout(()=>r('ok'),2500);}catch(e){r('THROW');}}));
+  // 登录自举：不依赖开发者工具残留登录态，干净环境也能过（admin 角色才能访问成员/权限矩阵页）
+  // 注意：对象须内联在 evaluate 回调内（回调被序列化到小程序上下文执行，取不到 Node 侧变量）
+  await s.evaluate(()=>new Promise(r=>{try{const u={openid:'qa_permui_admin',name:'测试',role:'admin',tenantName:'丰淮商贸',permissions:['order:view','order:create','order:edit','order:delete','order:print','order:export','product:view','product:edit','customer:view','customer:edit','sort:task','warehouse:confirm','receivable:view','receivable:collect','receivable:confirm','receivable:discount','report:view','report:export','report:ledger','member:manage']};wx.setStorageSync('currentUser',u);wx.setStorageSync('userInfo',u);wx.setStorageSync('userRole','admin');wx.reLaunch({url:'/pages/index/index'});r('ok');}catch(e){r('THROW '+e.message);}}));
+  await delay(3500);
+  await s.evaluate(()=>new Promise(r=>{try{wx.navigateTo({url:'/pages/members/members',fail:(e)=>r('FAIL '+e.errMsg)});setTimeout(()=>r('ok'),2500);}catch(e){r('THROW');}}));
   await delay(3500);
 
   // A. 触发真实 loadPermConfig（内部取页面）
