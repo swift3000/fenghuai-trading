@@ -58,7 +58,7 @@ exports.main = async (event, context) => {
         ]))
       }
       
-      const res = await query.orderBy('createdAt', 'desc').limit(100).get()
+      const res = await query.orderBy('createdAt', 'desc').limit(1000).get()
       
       // 字段映射，兼容前端旧字段名
       const products = res.data.map(p => ({

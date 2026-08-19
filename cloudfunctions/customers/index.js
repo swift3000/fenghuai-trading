@@ -52,7 +52,7 @@ exports.main = async (event, context) => {
           { region: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) }
         ]))
       }
-      const res = await query.orderBy('createdAt', 'desc').limit(100).get()
+      const res = await query.orderBy('createdAt', 'desc').limit(1000).get()
       
       return { code: 0, data: res.data }
     }

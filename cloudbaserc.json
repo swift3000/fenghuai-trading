@@ -111,6 +111,14 @@
       }
     },
     {
+      "name": "sync-data",
+      "runtime": "Nodejs20.19",
+      "timeout": 90,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
+    },
+    {
       "name": "outbound",
       "runtime": "Nodejs20.19",
       "timeout": 30,
