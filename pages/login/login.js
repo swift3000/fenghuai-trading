@@ -82,7 +82,6 @@ Page({
       // 根据角色更新 TabBar
       app.updateTabBarByRole(role);
       
-      console.log('登录成功:', userInfo);
       
       // 登录成功，跳转到对应页面
       this.navigateToPage(role);

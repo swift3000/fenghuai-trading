@@ -81,7 +81,7 @@ Page({
         printerWidthIndex: Math.max(0, widths.indexOf(printer.width || '58')),
       })
     } catch (e) {
-      console.log('加载配置失败', e)
+      console.error('加载配置失败', e)
     }
   },
 
@@ -190,7 +190,7 @@ Page({
         acTime: cfg.time || '16:00'
       })
     } catch (e) {
-      console.log('加载定时确认配置失败', e)
+      console.error('加载定时确认配置失败', e)
     }
   },
   onAcEnabled(e) {

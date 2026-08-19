@@ -26,13 +26,9 @@ const PAGE_PERMISSIONS = {
  * 检查页面访问权限
  */
 function checkPageAccess(pagePath) {
-  console.log('[路由守卫] 检查页面访问:', pagePath)
-  console.log('[路由守卫] 全局用户信息:', app.globalData.userInfo)
-  console.log('[路由守卫] 全局用户角色:', app.globalData.userRole)
   
   // 检查是否已登录
   if (!app.globalData.userInfo || !app.globalData.userRole) {
-    console.log('[路由守卫] 未登录，拒绝访问')
     return {
       allowed: false,
       message: '请先登录',
@@ -44,7 +40,6 @@ function checkPageAccess(pagePath) {
   
   // 如果没有权限要求，直接允许
   if (requiredPermissions.length === 0) {
-    console.log('[路由守卫] 无权限要求，允许访问')
     return { allowed: true }
   }
 
@@ -52,19 +47,14 @@ function checkPageAccess(pagePath) {
   const role = app.globalData.userRole
   const userPermissions = app.globalData.userInfo.permissions || []
 
-  console.log('[路由守卫] 用户角色:', role)
-  console.log('[路由守卫] 用户权限:', userPermissions)
-  console.log('[路由守卫] 需要权限:', requiredPermissions[0])
 
   // 管理员拥有所有权限
   if (role === 'admin') {
-    console.log('[路由守卫] 管理员，允许访问')
     return { allowed: true }
   }
 
   // 检查是否有所需权限（任一即可，匹配原型 outbound=sort:task||warehouse:confirm）
   const hasPermission = requiredPermissions.some(p => userPermissions.includes(p))
-  console.log('[路由守卫] 权限检查结果:', hasPermission)
 
   if (!hasPermission) {
     return {
@@ -74,7 +64,6 @@ function checkPageAccess(pagePath) {
     }
   }
 
-  console.log('[路由守卫] 允许访问')
   return { allowed: true }
 }
 

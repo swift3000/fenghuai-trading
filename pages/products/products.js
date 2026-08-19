@@ -250,19 +250,16 @@ const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) |
     this.setData({ isSearching: true })
     wx.showLoading({ title: '加载中...' })
     try {
-      console.log('🔍 开始加载商品数据...')
       const res = await callCloud('products', {
         action: 'list',
         searchKey: this.data.searchKeyword
       })
-      console.log('✅ 商品数据加载成功:', res ? res.length : 0, '条')
       this.setData({ products: this.decorateProducts(res || []) })
     } catch (e) {
       console.error('❌ 加载商品失败:', e)
       console.error('错误详情:', JSON.stringify(e))
       wx.showToast({ title: '加载失败：' + (e.message || '未知错误'), icon: 'none', duration: 3000 })
       // 降级：显示默认商品
-      console.log('📦 使用默认商品数据')
       this.setData({ products: this.decorateProducts(DEFAULT_PRODUCTS) })
     } finally {
       wx.hideLoading()

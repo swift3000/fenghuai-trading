@@ -12,14 +12,12 @@ function setTabBarByPerms(permissions) {
   // 使用自定义 TabBar 后，原生 tabBar 已隐藏，无需显隐原生条目。
   // 这里仅刷新自定义栏（权限/主题），保持旧调用签名兼容。
   refreshCustomTabBar()
-  console.log('TabBar 已按实际权限更新（自定义栏）: 赊销/工作台由自定义栏按权限路由')
 }
 
 function setTabBarByRole(role) {
   // 使用自定义 TabBar 后，按角色显隐原生条目已无意义。
   // 仅刷新自定义栏，保持旧调用签名兼容。
   refreshCustomTabBar()
-  console.log('TabBar 已更新为自定义栏, 角色:', role)
 }
 
 /**
@@ -28,7 +26,6 @@ function setTabBarByRole(role) {
  */
 function showTabBar(show) {
   // 自定义 TabBar 由页面渲染，无需原生 show/hide；保留签名兼容。
-  console.log('showTabBar（自定义栏，无操作）:', show)
 }
 
 /**

@@ -67,34 +67,17 @@ Page({
 
   async loadOrderDetail(id) {
     try {
-      console.log('========================================');
-      console.log('🔍 开始加载订单详情');
-      console.log('   订单 ID:', id);
-      console.log('========================================');
       wx.showLoading({ title: '加载中...', mask: true });
       
       const { callCloud } = require('../../utils/request')
       const res = await callCloud('orders', { action: 'detail', orderId: id, id })
-      console.log('📡 云函数调用完成');
-      console.log('📦 原始返回数据:', JSON.stringify(res, null, 2));
-      console.log('res.result:', res.result);
-      console.log('res.data:', res.data);
       
       // 处理返回数据
       
       // callCloud 已经解包了数据，res 就是订单数据本身
       const order = res || {};
       
-      console.log('📋 处理后的 order 对象:');
-      console.log('   order._id:', order ? order._id : 'NULL');
-      console.log('   order.id:', order ? order.id : 'NULL');
-      console.log('   order.orderNo:', order ? order.orderNo : 'NULL');
-      console.log('   order.items:', order && order.items ? order.items.length : 'NULL');
-      console.log('   order.customerName:', order ? order.customerName : 'NULL');
       
-      console.log('🔎 验证订单数据...');
-      console.log('   order 对象:', order);
-      console.log('   order._id:', order ? order._id : 'undefined');
       
       if (!order) {
         console.error('❌ 订单数据为空');
@@ -107,14 +90,9 @@ Page({
         console.error('❌ 订单 ID 缺失:', order);
         wx.hideLoading();
         wx.showToast({ title: '订单 ID 缺失，数据格式错误', icon: 'none' });
-        console.log('   完整数据:', JSON.stringify(order, null, 2));
         return;
       }
       
-      console.log('✅ 订单数据验证通过');
-      console.log('   订单号:', order.orderNo);
-      console.log('   客户:', order.customerName);
-      console.log('   金额:', order.totalAmount);
       
       const paymentStatus = order.payment_status || order.paymentStatus || 'unpaid'
       // 0件0包 的商品行不展示；金额 0 的行不显示金额
@@ -158,10 +136,6 @@ Page({
       if (order.ship_medium) shipParts.push('中件×' + order.ship_medium)
       if (order.ship_small) shipParts.push('小件×' + order.ship_small)
       const shipText = shipParts.length ? shipParts.join(' · ') : '—'
-      console.log('💾 准备设置页面数据...');
-      console.log('   订单:', order.orderNo);
-      console.log('   商品数量:', rawItems.length);
-      console.log('   客户:', order.customerName);
       
       this.setData({
         order,
@@ -197,9 +171,6 @@ Page({
       });
     } finally {
       wx.hideLoading();
-      console.log('========================================');
-      console.log('🏁 加载订单详情结束');
-      console.log('========================================');
     }
   },
 

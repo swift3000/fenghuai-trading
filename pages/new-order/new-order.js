@@ -52,7 +52,6 @@ Page({
       const customerList = res && res.data ? res.data : (res || [])
       this.setData({ customerList, displayCustomers: customerList })
       this.refreshCustomers()
-      console.log('✅ 客户列表加载完成:', customerList.length, '个')
       wx.hideLoading();
     } catch (e) {
       console.error('加载客户失败', e)
@@ -93,7 +92,6 @@ Page({
     }
     // 确保 displayCustomers 总是有值
     this.setData({ displayCustomers: list })
-    console.log('📋 刷新客户列表:', list.length, '个，关键词:', keyword)
   },
 
   // 根据搜索关键词计算当前展示商品（无关键词仅前 8 个，附价格文案）
@@ -117,7 +115,6 @@ Page({
   },
 
   async loadOrder(id) {
-    console.log('加载订单', id)
     this._editingOrderId = id
     try {
       const { callCloud } = require('../../utils/request')
