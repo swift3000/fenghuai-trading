@@ -570,7 +570,7 @@ exports.main = async (event, context) => {
       const d = bjNow()
       const p2 = (n) => (n < 10 ? '0' + n : '' + n)
       const rows = [
-        [(o.customerName || COMPANY_NAME) + '送货单'],
+        [salesTitle(o)],
         [],
         ['订单号', o.orderNo],
         ['客户', o.customerName || ''],
@@ -597,8 +597,8 @@ exports.main = async (event, context) => {
       })
       rows.push([])
       rows.push(['合计', '', '', '', grandTotal.toFixed(2), ''])
-      const baseName = (o.customerName || '客户') + '_送货单_' + o.orderNo
-      const out = await buildExport(rows, baseName, { format: event.format, sheetName: '送货单' })
+      const baseName = (o.customerName || '客户') + '_销售单_' + o.orderNo
+      const out = await buildExport(rows, baseName, { format: event.format, sheetName: '销售单' })
       return { code: 0, data: out }
     }
 
@@ -770,7 +770,7 @@ exports.main = async (event, context) => {
       const pdfBuf = Buffer.from(await doc.save())
 
       // 4) 上传云存储
-      const safeName = ((o.customerName || '客户') + '_送货单_' + (o.orderNo || 'no')).replace(/\//g, '')
+      const safeName = ((o.customerName || '客户') + '_销售单_' + (o.orderNo || 'no')).replace(/\//g, '')
       const cloudPath = 'exports/' + safeName + '_' + Date.now() + '.pdf'
       const up = await cloud.uploadFile({ cloudPath, fileContent: pdfBuf })
       return { code: 0, data: { fileID: up.fileID, filename: safeName + '.pdf' } }
