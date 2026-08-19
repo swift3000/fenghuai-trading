@@ -1,6 +1,6 @@
 # 文档索引（docs/）
 
-> 目录纪律：prd=需求 / design=设计(ERD·TDD·规范) / api=接口 / guide=操作指南 / ui=原型 / reports=报告。
+> 目录纪律：prd=需求 / design=设计(ERD·TDD·规范) / api=接口 / guide=操作指南（仅长期有效） / ui=原型 / reports=报告。
 > 历史报告归档在 reports/_archive_20260814/。新报告一律进 reports/（带日期命名）。
 
 ## 需求（prd/）
@@ -36,7 +36,7 @@
 | [wechat-devtools-mcp-使用指南](guide/wechat-devtools-mcp-使用指南.md) | 开发者工具自动化 |
 | [工具清单](guide/工具清单.md) | 本项目工具链速查 |
 
-> guide/ 下还有历次测试/修复的专项指南（自动化测试系列、修复指南系列、手动测试指引等），按文件名直接检索。
+> 2026-08-19 起：历次测试/修复的一次性专项指南（自动化测试系列、修复指南系列、手动测试指引等，共 31 篇）已归档至 [reports/_archive_20260819/](reports/_archive_20260819/)，guide/ 只保留上表 7 篇长期指南。
 
 ## 原型（ui/）
 | 文档 | 说明 |
