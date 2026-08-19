@@ -11,7 +11,7 @@
 const path=require('path'),fs=require('fs'),{execFileSync}=require('child_process');
 const PROJECT=path.resolve(__dirname,'..');
 const RC=path.join(PROJECT,'cloudbaserc.json');
-const FNS=['products','customers','orders','users','receivable','report','outbound','auth'];
+const FNS=['products','customers','orders','users','receivable','report','outbound','auth','system','smart'];
 const mode=process.argv[2]||'';
 const env={};
 fs.readFileSync(path.join(PROJECT,'.env'),'utf8').split('\n').forEach(l=>{const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);if(m)env[m[1]]=m[2].trim();});
@@ -20,7 +20,7 @@ const ENV_ID=env.CLOUDBASE_ENV_ID;
 function setRcValue(val){
   const c=JSON.parse(fs.readFileSync(RC,'utf8'));
   c.functions.forEach(f=>{
-    if(FNS.includes(f.name)){ f.envVariables={ QA_IMPERSONATE: val }; }
+    if(FNS.includes(f.name)){ f.envVariables=Object.assign({}, f.envVariables, { QA_IMPERSONATE: val }); }
   });
   fs.writeFileSync(RC, JSON.stringify(c,null,2)+'\n');
 }

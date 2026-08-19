@@ -9,7 +9,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -18,7 +18,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -27,7 +27,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -45,7 +45,7 @@
       "timeout": 60,
       "memorySize": 1024,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -54,7 +54,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -71,7 +71,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -80,7 +80,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -89,7 +89,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 60,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -98,7 +98,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     },
@@ -115,7 +115,7 @@
       "runtime": "Nodejs20.19",
       "timeout": 30,
       "envVariables": {
-        "QA_IMPERSONATE": "1",
+        "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
     }
