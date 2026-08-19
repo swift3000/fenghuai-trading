@@ -56,10 +56,5 @@
     "custom": true
   },
   "sitemapLocation": "sitemap.json",
-  "cloud": true,
-  "permission": {
-    "scope.record": {
-      "desc": "用于智能录入语音转文字"
-    }
-  }
+  "cloud": true
 }

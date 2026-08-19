@@ -45,7 +45,7 @@
 - 导出 Excel/CSV 中 0 值单元格**留空**（`exportOutbound`、`exportLedger`、`exportDailySummary` 件数列用 `pkgShow` 0→空）
 - 订单列表/详情页商品行：0件0包 过滤、金额 0 不显示金额
 - 订单列表商品明细改用 `qtyText`（件+包合并、0不显示）
-- 全量文档同步（PRD §4.3A.3、TDD §6.1A、CHANGELOG、新版原型 reports/outbound 页）
+- 全量文档同步（PRD §4.3A.3、TDD §6.1A、CHANGELOG、原型 reports/outbound 页）
 
 ### Fixed
 - `exportOutbound` 物流中件=0 显示 `0` 的问题（改 0 留空）
