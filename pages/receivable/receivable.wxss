@@ -1072,3 +1072,81 @@
   box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
 }
 
+
+/* 客户卡片三栏汇总 + 订单行（对齐原型） */
+.cc-summary {
+  display: flex;
+  background: #F8FAFC;
+  border-radius: 12rpx;
+  padding: 16rpx 0;
+  margin-bottom: 8rpx;
+}
+.cc-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.cc-col + .cc-col {
+  border-left: 1rpx solid #E5E7EB;
+}
+.cc-col-lbl {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+.cc-col-val {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 4rpx;
+}
+.cc-col-val.cc-paid {
+  color: #16A34A;
+}
+.cc-col-val.cc-due {
+  color: #EA580C;
+}
+.cc-orders {
+  margin-top: 4rpx;
+}
+.cc-o-row {
+  display: flex;
+  align-items: center;
+  padding: 10rpx 0;
+  border-top: 1rpx dashed #E5E7EB;
+  gap: 12rpx;
+}
+.cc-o-row:first-child {
+  border-top: none;
+}
+.cc-o-no {
+  flex: 1;
+  font-size: 24rpx;
+  color: #374151;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cc-o-amt {
+  font-size: 24rpx;
+  color: #374151;
+}
+.cc-o-st {
+  font-size: 22rpx;
+}
+.cc-o-st.st-paid {
+  color: #16A34A;
+}
+.cc-o-st.st-due {
+  color: #EA580C;
+}
+.cc-o-st.st-pending {
+  color: #2563EB;
+}
+.cc-o-bal {
+  font-size: 24rpx;
+  color: #DC2626;
+  font-weight: 600;
+  min-width: 100rpx;
+  text-align: right;
+}

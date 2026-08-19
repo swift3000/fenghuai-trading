@@ -138,3 +138,8 @@
     </view>
   </view>
 </view>
+<view class="empty-state" wx:if="{{noOrder}}">
+  <text class="empty-icon">📋</text>
+  <text class="empty-text">订单不存在或未选择</text>
+  <text class="empty-tip">请从订单列表进入</text>
+</view>

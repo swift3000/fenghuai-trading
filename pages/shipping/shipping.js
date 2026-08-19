@@ -8,6 +8,7 @@ Page({
     uiStyle: '',
     companyName: COMPANY_NAME,
     order: null,
+    noOrder: false,
     items: [],
     orderDate: '',
     
@@ -28,6 +29,8 @@ Page({
     })
     if (options.orderId) {
       this.loadOrder(options.orderId)
+    } else {
+      this.setData({ noOrder: true })
     }
   },
 

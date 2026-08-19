@@ -453,3 +453,25 @@
     gap: 20rpx;
   }
 }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+}
+.empty-state .empty-icon {
+  font-size: 72rpx;
+  margin-bottom: 24rpx;
+}
+.empty-state .empty-text {
+  font-size: 30rpx;
+  color: #666;
+  font-weight: 500;
+}
+.empty-state .empty-tip {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 12rpx;
+}

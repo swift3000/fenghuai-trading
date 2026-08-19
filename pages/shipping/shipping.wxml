@@ -101,6 +101,11 @@
   </view>
 </view>
 
+<view class="empty-state" wx:elif="{{noOrder}}">
+  <text class="empty-icon">📄</text>
+  <text class="empty-text">未选择订单</text>
+  <text class="empty-tip">请从订单详情进入</text>
+</view>
 <!-- 加载状态 -->
 <view class="loading-state" wx:else>
   <text class="loading-icon">⏳</text>

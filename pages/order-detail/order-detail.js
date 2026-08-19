@@ -45,7 +45,8 @@ Page({
     creatorText: '',
     shareCardReady: false,
     shareTempFilePath: '',
-    logs: []
+    logs: [],
+    noOrder: false
   },
 
   onLoad(options) {
@@ -62,6 +63,8 @@ Page({
     });
     if (options.id) {
       this.loadOrderDetail(options.id);
+    } else {
+      this.setData({ noOrder: true })
     }
   },
 

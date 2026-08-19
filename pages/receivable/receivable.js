@@ -127,6 +127,13 @@ Page({
           if (Number(o.debtAgeDays) > monthMap[key].maxAge) monthMap[key].maxAge = Number(o.debtAgeDays)
           if (o.paymentStatus === 'pending') monthMap[key].pending = true
         })
+        // 订单行展示（对齐原型：单号/金额/状态/欠款）
+        customer.orders = (c.orders || []).map(o => {
+          const ps = o.paymentStatus || 'unpaid'
+          const bal = Number(o.unpaidAmount) || 0
+          const statusText = bal <= 0.001 ? '已结清' : (ps === 'pending' ? '待确认' : '未结清')
+          return Object.assign({}, o, { statusText, statusPending: ps === 'pending' && bal > 0.001, balText: bal.toFixed(2) })
+        })
         const months = Object.keys(monthMap).sort().map(k => {
           const m = monthMap[k]
           // 颜色：pending 蓝，否则按该月最长账龄分色（对齐原型 agingSeverity）

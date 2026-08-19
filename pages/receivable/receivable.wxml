@@ -58,30 +58,18 @@
         </view>
       </view>
       
-      <view class="customer-details">
-        <view class="detail-row">
-          <text class="detail-label">联系人:</text>
-          <text class="detail-value">{{item.contact || '-'}}</text>
-          <text class="detail-phone" wx:if="{{item.phone}}" bindtap="callPhone" data-phone="{{item.phone}}">📞</text>
-        </view>
-        <view class="detail-row">
-          <text class="detail-label">订单数:</text>
-          <text class="detail-value">{{item.orderCount}} 单</text>
-        </view>
-        <view class="detail-row dc-aging" wx:if="{{item.unpaidAmount > 0 && item.maxAge > 0}}">
-          <view class="aging-dot" style="background: {{item.agingColor}}"></view>
-          <text class="aging-text">最长欠款 {{item.maxAge}} 天</text>
-        </view>
+      <view class="cc-summary">
+        <view class="cc-col"><text class="cc-col-lbl">应收总额</text><text class="cc-col-val">¥{{item.totalAmount}}</text></view>
+        <view class="cc-col"><text class="cc-col-lbl">已收</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
+        <view class="cc-col"><text class="cc-col-lbl">未结清</text><text class="cc-col-val {{item.unpaidAmount > 0 ? 'cc-due' : ''}}">¥{{item.unpaidAmount}}</text></view>
       </view>
 
-      <view class="customer-stats">
-        <view class="stat-bar">
-          <view class="stat-progress" style="width: {{item.totalAmount > 0 ? (item.paidAmount / item.totalAmount * 100) : 0}}%"></view>
-        </view>
-        <view class="stat-text">
-          <text>应收：¥{{item.totalAmount}}</text>
-          <text>已收：¥{{item.paidAmount}}</text>
-          <text wx:if="{{item.unpaidAmount > 0}}" class="text-danger">欠款：¥{{item.unpaidAmount}}</text>
+      <view class="cc-orders">
+        <view class="cc-o-row" wx:for="{{item.orders}}" wx:key="_id" wx:for-item="o">
+          <text class="cc-o-no">{{o.orderNo}}</text>
+          <text class="cc-o-amt">¥{{o.totalAmount}}</text>
+          <text class="cc-o-st {{o.statusPending ? 'st-pending' : (o.statusText === '已结清' ? 'st-paid' : 'st-due')}}">{{o.statusText}}</text>
+          <text class="cc-o-bal" wx:if="{{o.unpaidAmount > 0.001}}">欠¥{{o.balText}}</text>
         </view>
       </view>
 
