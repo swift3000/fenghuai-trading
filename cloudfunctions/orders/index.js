@@ -4,7 +4,7 @@ const db = cloud.database()
 
 // ===== 北京时间边界工具（云函数运行时 TZ 无法通过 CLI 部署注入，统一在此显式按北京时间计算）=====
 const BJ_OFFSET_MS = 8 * 3600 * 1000
-function bjNow(){ return new Date(Date.now() + BJ_OFFSET_MS) }
+function bjNow(){ const d=new Date(Date.now() + BJ_OFFSET_MS); return { getFullYear:()=>d.getUTCFullYear(), getMonth:()=>d.getUTCMonth(), getDate:()=>d.getUTCDate(), getDay:()=>d.getUTCDay(), getHours:()=>d.getUTCHours(), getMinutes:()=>d.getUTCMinutes(), getSeconds:()=>d.getUTCSeconds(), getTime:()=>d.getTime() } }
 function bjDate(y, mo, d, h, mi, s, ms){ return new Date(Date.UTC(y, mo, d, h||0, mi||0, s||0, ms||0) - BJ_OFFSET_MS) }
 function bjTodayStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()) }
 function bjTomorrowStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()+1) }

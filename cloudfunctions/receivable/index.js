@@ -4,7 +4,7 @@ const db = cloud.database()
 
 // ===== 北京时间边界工具（CLI 部署不注入运行时 TZ，统一在此按北京时间显式计算）=====
 const BJ_OFFSET_MS = 8 * 3600 * 1000
-function bjNow(){ return new Date(Date.now() + BJ_OFFSET_MS) }
+function bjNow(){ const d=new Date(Date.now() + BJ_OFFSET_MS); return { getFullYear:()=>d.getUTCFullYear(), getMonth:()=>d.getUTCMonth(), getDate:()=>d.getUTCDate(), getDay:()=>d.getUTCDay(), getHours:()=>d.getUTCHours(), getMinutes:()=>d.getUTCMinutes(), getSeconds:()=>d.getUTCSeconds(), getTime:()=>d.getTime() } }
 function bjDate(y, mo, d, h, mi, s, ms){ return new Date(Date.UTC(y, mo, d, h||0, mi||0, s||0, ms||0) - BJ_OFFSET_MS) }
 function bjTodayStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate()) }
 function bjTodayEnd(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), n.getDate(), 23, 59, 59, 999) }
@@ -14,7 +14,7 @@ function bjWeekEnd(){ const n=bjNow(); const day=n.getDay()||7; return bjDate(n.
 function bjMonthStart(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth(), 1) }
 function bjMonthEnd(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMonth()+1, 0, 23, 59, 59, 999) }
 function bjFromStr(s, endDay){ const p=String(s).split("-").map(Number); return bjDate(p[0], p[1]-1, p[2], endDay?23:0, endDay?59:0, endDay?59:0, endDay?999:0) }
-function bjDayAgo(i){ const n=bjNow(); const d=new Date(n.getFullYear(), n.getMonth(), n.getDate()-i); return { start:bjDate(d.getFullYear(),d.getMonth(),d.getDate()), end:bjDate(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999), label:(d.getMonth()+1)+"/"+d.getDate() } }
+function bjDayAgo(i){ const n=bjNow(); const dt=new Date(Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()-i)); const y=dt.getUTCFullYear(), m=dt.getUTCMonth(), d=dt.getUTCDate(); return { start:bjDate(y,m,d), end:bjDate(y,m,d,23,59,59,999), label:(m+1)+"/"+d } }
 // ===== 北京时间边界工具结束 =====
 
 
