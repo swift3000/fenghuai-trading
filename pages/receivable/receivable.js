@@ -1,4 +1,5 @@
 const { guardPageLoad } = require('../../utils/router-guard')
+const tabbarHelper = require('../../utils/tabbar-helper')
 
 const uiStyle = require('../../utils/ui-style')
 Page({
@@ -64,6 +65,7 @@ Page({
   },
 
   onShow() {
+    tabbarHelper.refreshCustomTabBar('receivable')
     uiStyle.applyUiStyle(this)
     this.checkPaymentConfirmPermission()
     this.loadData()

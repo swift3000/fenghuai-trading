@@ -9,18 +9,14 @@
     <text class="tab-label">订单</text>
   </view>
 
-  <view class="tab-new-wrap">
-    <view class="tab-new {{canCreate ? '' : 'disabled'}}" bindtap="goNew" aria-label="新建订单">
-      <view class="tab-new-icon">
-        <view class="plus"><view class="plus-h"></view><view class="plus-v"></view></view>
-      </view>
-      <text class="tab-new-label">新建</text>
-    </view>
+  <view class="tab-item {{active==='receivable' ? 'active' : ''}}" data-key="receivable" bindtap="goReceivable">
+    <image class="tab-icon" src="{{active==='receivable' ? '/assets/icons/money-active.png' : '/assets/icons/money.png'}}" mode="aspectFit"></image>
+    <text class="tab-label">赊销</text>
   </view>
 
-  <view class="tab-item {{active==='workbench' ? 'active' : ''}}" data-key="workbench" bindtap="goWorkbench">
-    <image class="tab-icon" src="{{active==='workbench' ? '/assets/icons/workbench-active.png' : '/assets/icons/workbench.png'}}" mode="aspectFit"></image>
-    <text class="tab-label">工作台</text>
+  <view class="tab-item {{active==='outbound' ? 'active' : ''}}" data-key="outbound" bindtap="goOutbound">
+    <image class="tab-icon" src="{{active==='outbound' ? '/assets/icons/outbound-active.png' : '/assets/icons/outbound.png'}}" mode="aspectFit"></image>
+    <text class="tab-label">分拣出库</text>
   </view>
 
   <view class="tab-item {{active==='profile' ? 'active' : ''}}" data-key="profile" bindtap="goProfile">

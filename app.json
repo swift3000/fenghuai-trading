@@ -41,10 +41,16 @@
         "selectedIconPath": "assets/icons/order-active.png"
       },
       {
+        "pagePath": "pages/receivable/receivable",
+        "text": "赊销",
+        "iconPath": "assets/icons/money.png",
+        "selectedIconPath": "assets/icons/money-active.png"
+      },
+      {
         "pagePath": "pages/outbound/outbound",
-        "text": "工作台",
-        "iconPath": "assets/icons/workbench.png",
-        "selectedIconPath": "assets/icons/workbench-active.png"
+        "text": "分拣出库",
+        "iconPath": "assets/icons/outbound.png",
+        "selectedIconPath": "assets/icons/outbound-active.png"
       },
       {
         "pagePath": "pages/profile/profile",

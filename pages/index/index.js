@@ -196,7 +196,7 @@ Page({
     } else if (role === 'warehouse' && perms.includes('warehouse:confirm')) {
       wx.switchTab({ url: '/pages/outbound/outbound' });
     } else if (perms.includes('receivable:view')) {
-      wx.navigateTo({ url: '/pages/receivable/receivable' });
+      wx.switchTab({ url: '/pages/receivable/receivable' });
     } else {
       wx.switchTab({ url: '/pages/orders/orders' });
     }
@@ -214,7 +214,7 @@ Page({
 
   // 跳转到赊销看板
   goToReceivable() {
-    wx.navigateTo({ url: '/pages/receivable/receivable' });
+    wx.switchTab({ url: '/pages/receivable/receivable' });
   },
 
   // 跳转到商品管理

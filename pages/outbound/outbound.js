@@ -79,7 +79,7 @@ Page({
   },
   
   onShow() {
-    tabbarHelper.refreshCustomTabBar('workbench')
+    tabbarHelper.refreshCustomTabBar('outbound')
     uiStyle.applyUiStyle(this) 
     this.loadData() 
   },
