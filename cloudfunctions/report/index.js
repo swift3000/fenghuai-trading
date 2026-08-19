@@ -126,9 +126,10 @@ function itemAmount(it) {
   const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
   const pricePiece = it.price_piece || 0
   const priceUnit = it.price_unit != null ? it.price_unit : it.price_zero || 0
-  if (mode === 'piece') return pieceQty * pricePiece
-  if (mode === 'unit') return packageQty * priceUnit
-  return pieceQty * pricePiece + packageQty * priceUnit
+  // T11 P2-2：金额分位取整，与订单侧口径一致
+  if (mode === 'piece') return Math.round(pieceQty * pricePiece * 100) / 100
+  if (mode === 'unit') return Math.round(packageQty * priceUnit * 100) / 100
+  return Math.round((pieceQty * pricePiece + packageQty * priceUnit) * 100) / 100
 }
 
 // 收款台账数据（对标原型 buildLedgerData）

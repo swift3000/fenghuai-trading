@@ -250,9 +250,10 @@ exports.main = async (event, context) => {
         const pricePiece = it.price_piece || 0
         const priceUnit = it.price_unit != null ? it.price_unit : (it.price_zero || 0)
         let amount = 0
-        if (mode === 'piece') amount = pieceQty * pricePiece
-        else if (mode === 'unit') amount = packageQty * priceUnit
-        else amount = pieceQty * pricePiece + packageQty * priceUnit
+        // T11 P2-2：金额分位取整，防浮点乘加误差（0.1+0.2 型）
+        if (mode === 'piece') amount = Math.round(pieceQty * pricePiece * 100) / 100
+        else if (mode === 'unit') amount = Math.round(packageQty * priceUnit * 100) / 100
+        else amount = Math.round((pieceQty * pricePiece + packageQty * priceUnit) * 100) / 100
         // 兼容旧字段
         const qty = Math.max(pieceQty, packageQty) || it.qty || 0
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
@@ -389,9 +390,10 @@ exports.main = async (event, context) => {
         const pricePiece = it.price_piece || 0
         const priceUnit = it.price_unit != null ? it.price_unit : (it.price_zero || 0)
         let amount = 0
-        if (mode === 'piece') amount = pieceQty * pricePiece
-        else if (mode === 'unit') amount = packageQty * priceUnit
-        else amount = pieceQty * pricePiece + packageQty * priceUnit
+        // T11 P2-2：金额分位取整，防浮点乘加误差（0.1+0.2 型）
+        if (mode === 'piece') amount = Math.round(pieceQty * pricePiece * 100) / 100
+        else if (mode === 'unit') amount = Math.round(packageQty * priceUnit * 100) / 100
+        else amount = Math.round((pieceQty * pricePiece + packageQty * priceUnit) * 100) / 100
         const qty = Math.max(pieceQty, packageQty) || it.qty || 0
         // 单价口径与 create 一致：case 模式存件价，其余按模式对应单价
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
