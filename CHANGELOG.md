@@ -6,6 +6,17 @@
 
 ---
 
+## [1.4] - 2026-08-19
+
+### Changed
+- **目录按全局目录纪律归位**：文档/→docs/、指南/→docs/guide/、报告/与 GIT/→docs/reports/、原型/→docs/ui/、需求/→docs/prd/、经验库/编程错误经验.md→docs/reports/项目级错误经验.md；根部署脚本→deploy/scripts/；output/logs/screenshots→.local/（不入库）。同步更新 README/PROJECT_STRUCTURE/AGENTS.md 路径引用，修正脚本与测试里的硬编码旧路径
+
+### Fixed
+- **qa-toggle 误删云函数 TZ 环境变量**：setRcValue 原整体替换 envVariables 会删掉 TZ=Asia/Shanghai，改为 Object.assign 合并；FNS 补齐 system/smart（均含 QA 钩子）
+- **cloudbaserc.json 恢复干净生产态**：全部函数保留 TZ，10 个 QA 函数 QA_IMPERSONATE 置空
+- ci/upload.js 清理失效忽略项（原型/文档/经验库/需求等），补齐 deploy/ 与 .local/
+---
+
 ## [1.3] - 2026-08-17
 
 ### Added

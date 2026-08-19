@@ -47,11 +47,11 @@ async function fixData() {
   console.log('🔧 开始修复数据库数据')
   console.log('='.repeat(60) + '\n')
   
-  const customersPath = path.join(__dirname, '../原型/_DEFAULT_CUSTOMERS_generated.txt')
+  const customersPath = path.join(__dirname, '../docs/ui/_DEFAULT_CUSTOMERS_generated.txt')
   const customersContent = fs.readFileSync(customersPath, 'utf8')
   const DEFAULT_CUSTOMERS = parseJsArray(customersContent)
   
-  const productsPath = path.join(__dirname, '../原型/_DEFAULT_PRODUCTS_generated.txt')
+  const productsPath = path.join(__dirname, '../docs/ui/_DEFAULT_PRODUCTS_generated.txt')
   const productsContent = fs.readFileSync(productsPath, 'utf8')
   const DEFAULT_PRODUCTS = parseJsProducts(productsContent)
   

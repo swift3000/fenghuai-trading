@@ -88,7 +88,7 @@ if ! command -v computer-use &> /dev/null; then
 ### 6. 对照原型
 
 原型文件：
-- 路径：/Users/god/Desktop/项目/github/fenghuai-trading/原型/丰淮商贸采购下单助手_原型.html
+- 路径：/Users/god/Desktop/项目/github/fenghuai-trading/docs/ui/丰淮商贸采购下单助手_原型.html
 - 在浏览器中打开对比
 
 GUIDE

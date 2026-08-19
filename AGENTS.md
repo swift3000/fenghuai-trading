@@ -13,22 +13,21 @@
 - 打印：ESC/POS 指令 + 蓝牙 BLE（芯烨/佳博/汉印 58/80mm）
 - 智能录入：腾讯云 ASR（录音文件识别）+ TokenHub NLP（OpenAI 兼容，默认 hy3）；密钥由管理员在小程序「系统设置」云端配置，未配置自动降级为纯规则引擎
 
-## 目录映射（存量项目，新内容一律进规范位置，搬迁留到大改版）
+## 目录结构（2026-08-19 已按全局目录纪律归位，新内容一律进规范位置）
 
-| 现状 | 规范位置（新内容用这个） |
+| 位置 | 内容 |
 |---|---|
-| `文档/` | `docs/` |
-| `需求/` | `docs/prd/`（按版本分目录） |
-| `原型/` | `docs/ui/` |
-| `报告/` | `docs/reports/`（测试报告在 `tests/reports/`） |
-| `指南/` | `docs/guide/` |
-| `经验库/` | 全局 `~/.codex/knowledge/`（项目级坑写本文件"已知坑"） |
-| `output/` `screenshots/` `logs/` | `.local/`（不入库） |
-| 根目录部署脚本（auto-deploy-*.sh / deploy-all.sh） | `deploy/scripts/` |
-| `GIT/`（记录类） | `docs/reports/` |
+| `docs/` | PRD/ERD/TDD/API/架构/用户手册等核心文档 |
+| `docs/prd/` | 需求与业务数据（xlsx/源文件） |
+| `docs/ui/` | 原型 HTML 与默认数据 |
+| `docs/reports/` | 测试/修复/检查报告（自动化测试报告在 `tests/reports/`） |
+| `docs/guide/` | 操作/部署/测试指南 |
+| `~/.codex/knowledge/` + `docs/reports/项目级错误经验.md` | 错误经验（全局库 + 项目级清单） |
+| `.local/` | 本地工作产物（output/screenshots/logs，不入库） |
+| `deploy/scripts/` | 云函数一键部署脚本 |
 | `PROJECT_STRUCTURE.md` | 保留，与 `tests/performance/` 并列维护 |
 ## 原型
-- 原型位置：原型/（存量目录，新原型进 docs/ui/）
+- 原型位置：docs/ui/（丰淮商贸采购下单助手_原型.html，唯一 UI 基准）
 - 开发对齐：只对齐产品事实（字段/流程/状态/权限/文案）；演示辅助剥离（4 角色演示切换≠真实 RBAC，按登录+权限实现）——原则见全局 AGENTS.md"原型对齐原则"
 
 ## 业务红线（改动前必查）
@@ -54,7 +53,7 @@
 - 核心路径清单（regression.sh 必覆盖）：登录→智能录入→录单→分拣→出库→收款→蓝牙打印/转发销售单
 
 ## 部署
-- 云函数一键部署：`bash auto-deploy-cloudfunctions.sh`（逐个 cli deploy）；CI：ci/upload.js（miniprogram-ci，private.key 在 ci/ 目录，勿外传）
+- 云函数一键部署：`bash deploy/scripts/auto-deploy-cloudfunctions.sh`（逐个 cli deploy）；CI：ci/upload.js（miniprogram-ci，private.key 在 ci/ 目录，勿外传）
 - 云函数改动 → 先部署验证 → 确认无误再视为上线（Serverless 无服务器回滚，回滚=重新部署上一版云函数）
 - 发版前：确认 cloudbaserc.json envVariables 未动；发版后冒烟：登录→录单→分拣→出库→收款
 
@@ -63,10 +62,10 @@
 - system 云函数 setConfig：先查后写（存在 update/不存在 add/竞争兜底 update），.set() 对已存在文档会撞 E11000
 - ASR 端到端转写 >30s：callFunction 等待放宽；生产走 smart 云函数（timeout 60s）
 - node-sdk 写后必须回读验证顶层 key
-- 完整历史坑见：~/.codex/knowledge/errors.md（grep 项目名 fenghuai）+ 项目内 文档/编程错误经验.md、经验库/
+- 完整历史坑见：~/.codex/knowledge/errors.md（grep 项目名 fenghuai）项目级清单 docs/reports/项目级错误经验.md
 
 ## 文档权威顺序
-PRD_产品需求文档.md > 小程序MVP落地计划与技术架构.md > TDD_技术规格书.md > ERD_数据库设计.md > API_接口文档.md（均在 文档/）
+PRD_产品需求文档.md > 小程序MVP落地计划与技术架构.md > TDD_技术规格书.md > ERD_数据库设计.md > API_接口文档.md（均在 docs/）
 
 ## 工程纪律
 - 流程类纪律（commit 时机/push/分支发版/多会话并行/凭据处理）一律以全局 ~/.codex/AGENTS.md【工程纪律】【凭据处理】为准，本文件不复制

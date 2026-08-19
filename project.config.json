@@ -41,39 +41,31 @@
       },
       {
         "type": "folder",
-        "value": "logs"
-      },
-      {
-        "type": "folder",
-        "value": "output"
-      },
-      {
-        "type": "folder",
-        "value": "screenshots"
-      },
-      {
-        "type": "folder",
-        "value": "loop_project"
-      },
-      {
-        "type": "folder",
         "value": "docs"
       },
       {
         "type": "folder",
-        "value": "文档"
+        "value": "deploy"
       },
       {
         "type": "folder",
-        "value": "需求"
+        "value": ".local"
       },
       {
         "type": "folder",
-        "value": "经验库"
+        "value": "scripts"
       },
       {
         "type": "folder",
-        "value": "原型"
+        "value": "ci"
+      },
+      {
+        "type": "folder",
+        "value": ".github"
+      },
+      {
+        "type": "folder",
+        "value": ".git"
       },
       {
         "type": "folder",
@@ -81,7 +73,7 @@
       },
       {
         "type": "folder",
-        "value": ".git"
+        "value": "loop_project"
       },
       {
         "type": "suffix",
@@ -102,38 +94,6 @@
       {
         "type": "file",
         "value": "project.private.config.json"
-      },
-      {
-        "type": "folder",
-        "value": "scripts"
-      },
-      {
-        "type": "folder",
-        "value": "报告"
-      },
-      {
-        "type": "folder",
-        "value": "指南"
-      },
-      {
-        "type": "folder",
-        "value": "ci"
-      },
-      {
-        "type": "folder",
-        "value": ".github"
-      },
-      {
-        "type": "folder",
-        "value": "GIT"
-      },
-      {
-        "type": "folder",
-        "value": ".github/workflows"
-      },
-      {
-        "type": "file",
-        "value": "b7fbab622776d6a24ac2ff94bb759960"
       }
     ],
     "include": []

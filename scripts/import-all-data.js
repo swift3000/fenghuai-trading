@@ -49,7 +49,7 @@ async function importCustomers() {
   console.log('开始导入客户数据...')
   
   // 读取原型数据
-  const customersPath = path.join(__dirname, '../原型/_DEFAULT_CUSTOMERS_generated.txt')
+  const customersPath = path.join(__dirname, '../docs/ui/_DEFAULT_CUSTOMERS_generated.txt')
   const customersContent = fs.readFileSync(customersPath, 'utf8')
   const DEFAULT_CUSTOMERS = parseJsArray(customersContent)
   
@@ -107,7 +107,7 @@ async function importProducts() {
   console.log('\n开始导入商品数据...')
   
   // 读取原型数据
-  const productsPath = path.join(__dirname, '../原型/_DEFAULT_PRODUCTS_generated.txt')
+  const productsPath = path.join(__dirname, '../docs/ui/_DEFAULT_PRODUCTS_generated.txt')
   const productsContent = fs.readFileSync(productsPath, 'utf8')
   const DEFAULT_PRODUCTS = parseJsProducts(productsContent)
   

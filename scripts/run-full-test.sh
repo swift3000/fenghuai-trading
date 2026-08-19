@@ -3,7 +3,7 @@ set -e
 
 PROJECT="/Users/god/Desktop/项目/github/fenghuai-trading"
 AUTOMATOR="/Users/god/.codex/skills/wechat-devtools-automator/scripts/wechat_devtools_automator.sh"
-OUTPUT_DIR="$PROJECT/output/full-test-$(date +%Y%m%d-%H%M%S)"
+OUTPUT_DIR="$PROJECT/.local/output/full-test-$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "$OUTPUT_DIR"
 

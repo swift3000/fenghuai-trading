@@ -31,10 +31,9 @@ loop_project/
 # miniprogram-ci 上传私钥(切勿提交)
 scripts/miniprogram-ci-key/*.key
 
-# 测试产物（截图/日志/输出，不上传）
-output/
-logs/
-
 # miniprogram-ci 上传私钥(切勿提交，与 scripts/ 规则同等重要)
 ci/private.key
 ci/*.key
+
+# 本地工作产物（截图/日志/输出，统一归 .local/，不上传）
+.local/

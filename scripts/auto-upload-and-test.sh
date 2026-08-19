@@ -130,8 +130,8 @@ cat > "$PROJECT_DIR/scripts/run-prototype-test.sh" << 'TESTSCRIPT'
 
 PROJECT_DIR="/Users/god/Desktop/项目/github/fenghuai-trading"
 AUTOMATOR="/Users/god/.codex/skills/wechat-devtools-automator/scripts/wechat_devtools_automator.sh"
-PROTOTYPE_DIR="$PROJECT_DIR/原型"
-OUTPUT_DIR="$PROJECT_DIR/output/prototype-test-$(date +%Y%m%d-%H%M%S)"
+PROTOTYPE_DIR="$PROJECT_DIR/docs/ui"
+OUTPUT_DIR="$PROJECT_DIR/.local/output/prototype-test-$(date +%Y%m%d-%H%M%S)"
 
 mkdir -p "$OUTPUT_DIR"
 

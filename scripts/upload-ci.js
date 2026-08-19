@@ -25,7 +25,7 @@ const desc = process.argv[3] || "auto upload " + new Date().toLocaleString("zh-C
     type: "miniProgram",
     projectPath: path.join(__dirname, ".."),
     privateKeyPath: keyPath,
-    ignores: ["node_modules/**/*", "tests/**/*", "scripts/**/*", "output/**/*", "screenshots/**/*", "logs/**/*", "cloudfunctions/**/*", ".git/**/*", "**/*.md", "package-lock.json", "package.json", ".env", "project.private.config.json"],
+    ignores: ["node_modules/**/*", "tests/**/*", "scripts/**/*", ".local/**/*", "cloudfunctions/**/*", ".git/**/*", "**/*.md", "package-lock.json", "package.json", ".env", "project.private.config.json"],
   });
   console.log("uploading:", JSON.stringify({ version, desc, appid }));
   const res = await ci.upload({ project, version, desc, setting: { es6: true, minify: true, autoPrefixWXSS: true } });

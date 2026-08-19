@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = '/Users/god/Desktop/项目/github/fenghuai-trading';
-const prototypePath = path.join(projectRoot, '原型/丰淮商贸采购下单助手_原型.html');
+const prototypePath = path.join(projectRoot, 'docs/ui/丰淮商贸采购下单助手_原型.html');
 
 console.log('🔍 开始对比原型设计与当前实现...\n');
 
@@ -170,7 +170,7 @@ console.log('='.repeat(60));
 console.log('');
 console.log('1. 请在微信开发者工具中实际运行小程序');
 console.log('2. 逐个页面截图（登录、首页、新建订单等）');
-console.log('3. 对照原型 HTML 文件（原型/丰淮商贸采购下单助手_原型.html）');
+console.log('3. 对照原型 HTML 文件（docs/ui/丰淮商贸采购下单助手_原型.html）');
 console.log('4. 找出具体差异点');
 console.log('5. 截图发给我，我会精准修复');
 console.log('');
@@ -181,5 +181,5 @@ console.log('  - 数据未加载（云函数问题）');
 console.log('  - WXML 结构错误');
 console.log('  - 样式覆盖冲突');
 console.log('');
-console.log('📄 原型文件位置：原型/丰淮商贸采购下单助手_原型.html');
+console.log('📄 原型文件位置：docs/ui/丰淮商贸采购下单助手_原型.html');
 console.log('📄 可以浏览器打开查看完整设计');
