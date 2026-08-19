@@ -1,14 +1,18 @@
 <view class="container" style="{{uiStyle}}">
   <!-- 邀请新成员 -->
   <view class="invite-section card">
-    <text class="section-title">邀请新成员</text>
+    <text class="section-title">📨 邀请新成员</text>
+    <text class="invite-sub">先选「邀请角色」，再生成专属邀请二维码 / 链接。员工微信扫码即用其 openid 注册，并<text class="invite-sub-b">自动绑定为该角色</text>，无需管理员再手动分配。</text>
     <picker bindchange="changeInviteRole" value="{{inviteRole}}" range="{{roleOptions}}" range-key="label">
       <view class="role-picker">
-        <text class="label">选择角色：</text>
+        <text class="label">邀请角色</text>
         <text class="value">{{inviteRoleLabel}}</text>
       </view>
     </picker>
-    <button class="btn-primary" bindtap="handleInvite">生成邀请二维码</button>
+    <view class="invite-actions">
+      <button class="btn-primary invite-btn" bindtap="handleInvite">🔗 生成邀请</button>
+      <button class="invite-btn refresh" bindtap="handleInvite">🔄 刷新</button>
+    </view>
 
     <!-- 生成的邀请卡片 -->
     <view class="invite-result" wx:if="{{inviteQr || lastInvite}}">

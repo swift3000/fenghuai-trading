@@ -76,6 +76,39 @@
   display: block;
 }
 
+/* 邀请区副标题（对齐原型 ic-sub） */
+.invite-sub {
+  display: block;
+  font-size: calc(24rpx * var(--font-scale));
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.6;
+  margin-bottom: 16rpx;
+}
+
+.invite-sub-b {
+  font-weight: bold;
+  color: #fff;
+}
+
+/* 邀请操作按钮行（对齐原型 qr-row 双按钮） */
+.invite-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.invite-btn {
+  flex: 1;
+  margin: 0;
+  font-size: calc(28rpx * var(--font-scale));
+  border-radius: 12rpx;
+}
+
+.invite-btn.refresh {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--theme-primary);
+  font-weight: 500;
+}
+
 .role-picker {
   padding: 20rpx;
   background: rgba(255, 255, 255, 0.95);
