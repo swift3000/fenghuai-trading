@@ -46,6 +46,27 @@
 - 第 3 层·项目特有：权限矩阵 scripts/sync-perm-matrix.js（check:perms）改动后必跑；金额/守恒红线见"业务红线"段
 - 工具链门禁：npm run check:perms + test:all；CI：.github/workflows/ci.yml（lint+权限矩阵+单测）
 
+## 子页面探测结果（2026-08-20 按全局深度探测制实测；页面结构新增后必须重探并回写本节）
+- 层级锚点：主包 14 页（无分包）→ 页内 tab 切换 → 半屏弹窗/表单（无 route query 深层子页，order-detail 靠 query 参数仍属 L1）
+- **L1（14 页）**：login / index / orders / new-order / order-detail / products / customers / receivable / outbound / reports / shipping / profile / members / settings（wx-pagewalk-test.js 已全覆盖）
+- **L2 页内 tab（6 处，必须逐个点击遍历）**：
+  - orders：time-tabs（今日/本周/全部）
+  - new-order：smart-tabs（语音/文字）
+  - receivable：recv-view-tabs（客户台账/未结清/已结清）
+  - outbound：out-subtabs（分拣/出库）+ export-time-tabs
+  - reports：report-tabs + time-tabs
+  - members：权限矩阵折叠展开（perm-section 点击展开/收起）
+- **L3 弹窗/表单（逐页断言可开可关、不残留）**：
+  - new-order：商品选择/客户选择/智能录入等 19 处弹窗标记（商品添加、数量、备注、确认提交）
+  - products：22 处（新增/编辑/删除确认）
+  - customers：14 处（新增/编辑/删除确认）
+  - receivable：8 处（登记收款/确认收款/折价减免弹窗）
+  - order-detail：7 处（确认分拣/出库/打印/转发）
+  - shipping：7 处（包裹件数编辑）
+  - members：6 处（添加成员弹窗/邀请弹窗）
+- 测试深度=3 层；深层无数据时 API 造一条 TEST 数据实测后清理，不以无数据跳过
+- 回归脚本：L1=tests/wx-pagewalk-test.js；L2/L3=tests/wx-deepwalk-test.js（2026-08-20 已建，24/24 全绿，挂在 test-all.sh 第 4/9 步）
+
 ## 测试
 - 一键全量：`npm run test:all`（scripts/test-all.sh）；单项 `npm run test:wx-e2e` 等，入口 scripts 见 package.json
 - 自动化走微信开发者工具：CLI `/Applications/wechatwebdevtools.app/Contents/MacOS/cli`；skills = wechat-devtools-automator + wechat-auto-test
