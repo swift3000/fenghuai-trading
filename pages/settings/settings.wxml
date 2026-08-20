@@ -3,7 +3,7 @@
 
   <!-- 管理员专属配置 -->
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
-    <view class="sec-head">🎙️ 腾讯云语音（ASR）配置</view>
+    <view class="sec-head">🎙️ 腾讯云语音（ASR）配置 <text class="hint-txt">语音转文字</text></view>
     <view class="sec-body">
       <view class="ag-step">智能录入的「语音转文字」依赖腾讯云语音识别（录音文件识别，需先在腾讯云控制台开通）。未配置或未启用时，语音录入不可用，但文字录入仍正常。密钥仅保存在云端，不会泄露到前端。</view>
       <view class="mf-row">
@@ -31,7 +31,7 @@
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
-    <view class="sec-head">🧠 TokenHub 大模型（NLP）配置</view>
+    <view class="sec-head">🧠 TokenHub 大模型（NLP）配置 <text class="hint-txt">复杂语义理解</text></view>
     <view class="sec-body">
       <view class="ag-step">智能录入的「复杂语义理解」接入腾讯云 TokenHub 大模型（OpenAI 兼容接口，与语音识别密钥独立），用于规则引擎未命中的口语化/复杂表达。23 个免费额度模型可切换，默认 hy3（100万 tokens/年）。未启用或未配置时，自动降级为规则引擎（文字匹配仍可用）。密钥仅保存在云端，不会泄露到前端。</view>
       <view class="mf-row">
@@ -55,7 +55,7 @@
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
-    <view class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置</view>
+    <view class="sec-head">🔌 中转站 AI（OpenAI 兼容）配置 <text class="hint-txt">语义理解</text></view>
     <view class="sec-body">
       <view class="ag-step">智能录入的「复杂语义理解」也可接入 OpenAI 兼容中转站接口（如 qiyuanapi），与 TokenHub 并存互为降级。未配置或未启用时自动使用本地规则引擎。</view>
       <view class="mf-row">
@@ -99,7 +99,7 @@
     </view>
   </view>
   <view class="sec-card">
-    <view class="sec-head">💾 数据备份</view>
+    <view class="sec-head">💾 数据备份 <text class="hint-txt">云开发自动备份</text></view>
     <view class="sec-body">
       <view class="ag-step">云开发平台每日自动备份数据库，无需手动操作。如需手动导出，请前往「微信开发者工具 → 云开发控制台 → 数据库」操作。</view>
     </view>
