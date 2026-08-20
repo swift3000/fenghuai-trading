@@ -56,9 +56,6 @@
           </view>
           <text class="ms">{{m.subText}}</text>
         </view>
-        <picker class="change-role-picker" bindchange="changeRole" data-id="{{m._id}}" value="{{roleIndex}}" range="{{roleOptions}}" range-key="label" wx:if="{{m.role !== 'admin'}}">
-          <text class="change-role">切换</text>
-        </picker>
         <view class="member-del" data-id="{{m._id}}" bindtap="handleRemove">✕</view>
       </view>
     </view>

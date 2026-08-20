@@ -161,27 +161,6 @@ Page({
   // 弹窗遮罩阻止冒泡占位
   noop() {},
 
-  async changeRole(e) {
-    const userId = e.currentTarget.dataset.id
-    const newRole = e.detail.value
-    const roleLabel = this.data.roleOptions.find(r => r.value === newRole)?.label || newRole
-    
-    try {
-      wx.showLoading({ title: '更新中...' })
-      await callCloud('users', { 
-        action: 'update-role', 
-        userId, 
-        role: newRole 
-      })
-      wx.showToast({ title: '角色已更新' })
-      this.loadMembers()
-    } catch (e) {
-      wx.showToast({ title: '更新失败', icon: 'none' })
-    } finally {
-      wx.hideLoading()
-    }
-  },
-
   // 生成带角色的邀请码 + 二维码（调用后端 auth/getInviteCode，自动创建待激活用户）
   async handleInvite() {
     wx.showLoading({ title: '生成中...' })

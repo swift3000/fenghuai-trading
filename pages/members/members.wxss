@@ -251,19 +251,7 @@
   box-shadow: 0 2rpx 8rpx rgba(88, 86, 214, 0.3);
 }
 
-.change-role {
-  font-size: calc(24rpx * var(--font-scale));
-  color: var(--theme-primary);
-  padding: 8rpx 16rpx;
-  border: 1rpx solid var(--theme-primary);
-  border-radius: 6rpx;
-  font-weight: 500;
-}
 
-.change-role:active {
-  background: var(--theme-primary-bg);
-  opacity: 0.7;
-}
 
 .text-danger {
   color: #FF3B30;
@@ -618,9 +606,6 @@
   font-size: calc(21rpx * var(--font-scale));
   color: #B8860B;
   margin-left: 12rpx;
-}
-.change-role-picker {
-  flex-shrink: 0;
 }
 .member-del {
   width: 56rpx;
