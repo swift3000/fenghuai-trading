@@ -48,18 +48,12 @@ console.log('【3】锁定权限 member:manage 始终仅 admin');
 ok(!!pm.LOCKED_PERMS['member:manage'], 'member:manage 在锁定表中');
 ok(!pm.DEFAULT_MATRIX['member:manage'].orderer && !pm.DEFAULT_MATRIX['member:manage'].sorter && !pm.DEFAULT_MATRIX['member:manage'].warehouse, '默认矩阵中非 admin 无 member:manage');
 
-console.log('【4】users/index.js 硬编码 ROLE_PERMISSIONS 与矩阵一致性（防漂移 bug）');
+console.log('【4】users/index.js 权限来源 = 共享矩阵（防硬编码漂移）');
 const uSrc = fs.readFileSync(path.join(__dirname, '..', 'cloudfunctions', 'users', 'index.js'), 'utf8');
-const start = uSrc.indexOf('const ROLE_PERMISSIONS = {');
-let depth = 0, end = -1;
-for (let i = uSrc.indexOf('{', start); i < uSrc.length; i++) {
-  if (uSrc[i] === '{') depth++;
-  else if (uSrc[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
-}
-const ROLE_PERMISSIONS = eval('(' + uSrc.slice(start + 'const ROLE_PERMISSIONS ='.length, end) + ')');
-for (const role of ['admin', 'orderer', 'sorter', 'warehouse']) {
-  ok(arrEq(ROLE_PERMISSIONS[role] || [], pm.defaultPermsForRole(role)), `ROLE_PERMISSIONS.${role} === 矩阵默认（${(ROLE_PERMISSIONS[role]||[]).length} 项）`);
-}
+const okNoHardcode = !uSrc.includes('const ROLE_PERMISSIONS');
+ok(okNoHardcode, 'users/index.js 无硬编码 ROLE_PERMISSIONS（已统一到共享矩阵）');
+ok(uSrc.includes("require('./perm-matrix-shared.js')"), 'users/index.js 引用共享矩阵 perm-matrix-shared.js');
+ok(uSrc.includes('pm.defaultPermsForRole'), 'users/index.js 用 pm.defaultPermsForRole 分配权限');
 
 console.log('【5】auth 与 users 的共享矩阵文件字节一致');
 const A = fs.readFileSync(path.join(__dirname, '..', 'cloudfunctions', 'auth', 'perm-matrix-shared.js'), 'utf8');
