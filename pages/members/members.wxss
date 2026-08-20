@@ -512,3 +512,226 @@
 .perm-switch.locked {
   opacity: 0.55;
 }
+
+/* ===== T19: 对齐原型 成员列表分组 + 添加成员弹窗 + 权限折叠 ===== */
+.members-section.card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 20rpx 16rpx 8rpx;
+  margin-top: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+.sec-head-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 4rpx 8rpx 0;
+}
+.sec-hint {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #999;
+}
+.role-group {
+  margin-top: 8rpx;
+}
+.role-group-head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 8rpx 12rpx;
+}
+.member-role {
+  font-size: calc(22rpx * var(--font-scale));
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  color: #fff;
+}
+.member-count {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #666;
+}
+.add-member-btn {
+  margin-left: auto;
+  font-size: calc(24rpx * var(--font-scale));
+  font-weight: 500;
+  color: var(--theme-primary, #67C23A);
+  background: rgba(103, 194, 58, 0.1);
+  border: none;
+  padding: 8rpx 24rpx;
+  border-radius: 28rpx;
+  line-height: 1.4;
+}
+.add-member-btn::after { border: none; }
+.add-member-btn:active {
+  background: rgba(103, 194, 58, 0.22);
+}
+.role-empty {
+  padding: 4rpx 16rpx 20rpx;
+  font-size: calc(24rpx * var(--font-scale));
+  color: #bbb;
+}
+.member-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 20rpx 8rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background: transparent;
+  box-shadow: none;
+  margin: 0;
+}
+.member-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 600;
+  font-size: calc(30rpx * var(--font-scale));
+  flex-shrink: 0;
+}
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+.mn-line {
+  display: flex;
+  align-items: baseline;
+}
+.mn {
+  font-size: calc(28rpx * var(--font-scale));
+  font-weight: 500;
+  color: #333;
+}
+.ms {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #999;
+  margin-top: 4rpx;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.member-pending {
+  font-size: calc(21rpx * var(--font-scale));
+  color: #B8860B;
+  margin-left: 12rpx;
+}
+.change-role-picker {
+  flex-shrink: 0;
+}
+.member-del {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 14rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  color: #FF3B30;
+  font-size: calc(28rpx * var(--font-scale));
+  flex-shrink: 0;
+}
+.member-del:active {
+  background: #FDE2E2;
+}
+
+/* 添加成员弹窗 */
+.modal-mask {
+  position: fixed;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  width: 84%;
+  background: #fff;
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 32rpx 8rpx;
+}
+.modal-title {
+  font-size: calc(32rpx * var(--font-scale));
+  font-weight: 600;
+  color: #333;
+}
+.modal-close {
+  font-size: calc(30rpx * var(--font-scale));
+  color: #999;
+  padding: 8rpx;
+}
+.modal-body {
+  padding: 16rpx 32rpx 32rpx;
+}
+.mf-row {
+  margin-bottom: 24rpx;
+}
+.mf-label {
+  display: block;
+  font-size: calc(26rpx * var(--font-scale));
+  color: #666;
+  margin-bottom: 10rpx;
+}
+.mf-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1rpx solid #e5e5e5;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  font-size: calc(28rpx * var(--font-scale));
+  background: #fafafa;
+}
+.mf-picker {
+  border: 1rpx solid #e5e5e5;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  background: #fafafa;
+}
+.mf-picker-value {
+  font-size: calc(28rpx * var(--font-scale));
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.mf-arrow {
+  color: #999;
+  font-size: calc(24rpx * var(--font-scale));
+}
+.mf-submit {
+  width: 100%;
+  margin-top: 12rpx;
+}
+
+/* 权限配置折叠头 */
+.perm-sec-head {
+  display: flex;
+  align-items: center;
+  padding: 4rpx 0 16rpx;
+}
+.perm-sec-head .perm-title {
+  margin-right: 12rpx;
+}
+.perm-hint {
+  font-size: calc(22rpx * var(--font-scale));
+  color: #999;
+  flex: 1;
+}
+.sec-arrow {
+  font-size: calc(26rpx * var(--font-scale));
+  color: #999;
+  transition: transform 0.25s ease;
+}
+.sec-arrow.collapsed {
+  transform: rotate(-90deg);
+}

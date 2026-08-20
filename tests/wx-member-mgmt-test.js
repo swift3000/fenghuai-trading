@@ -5,7 +5,7 @@
  * 覆盖：
  *  1) 邀请流程 auth.getInviteCode → 新用户 login(inviteCode) 绑定激活 → 角色权限即时可用
  *  2) users.add 直接创建（API 口径）
- *  3) users.remove：删普通成员成功 / 删自己 400 / 删管理员 400
+ *  3) users.remove：删普通成员成功 / 删自己 400 / 至少保留一名管理员（≥2 时可删其他 admin，对齐原型）
  *  4) users.update-role：切换后权限即时变化（业务函数实测）；admin 降级保护 400
  *  5) users.update-status：禁用 → 业务函数 403「账号已被禁用」；启用 → 恢复；非法状态 400
  *  6) perm-config / save-perm / reset-perm 闭环：锁定项 member:manage 仅 admin 可开，非 admin 提交被强制剥离
@@ -38,6 +38,8 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
+  // auto-sim may not run onLaunch->wx.cloud.init; idempotent bootstrap (no-op on real launch)
+  try{ await s.evaluate(async ()=>{ try{ if(!wx.cloud.config){ wx.cloud.init({env:'cloud1-d6g75loi673b1e039'}); } }catch(e){} return 'ok'; }); await delay(1500); }catch(e){}
   const rawCall=async (fn,action,oid,data)=>{
     const d=Object.assign({action},data||{}); if(oid) d.qaAsOpenid=oid;
     return s.evaluate(async (fn2,d2)=>{
@@ -53,6 +55,19 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
     return r;
   };
   const asAdmin=(fn,action,data)=>callAs(fn,action,ADMIN,data);
+  // CloudBase 最终一致性：写后读可能短暂读到旧权限/旧状态，403 类断言用有界重试（最多 6 次 x 600ms）
+  // 放行侧对称重试：admin 改写 users 文档后，业务函数可能短暂读到旧权限/旧状态 → 「应放行」拿到 403 假失败
+  // 只容忍一致性延迟；若真无权限（真 bug）会超时后仍以 403 返回，断言照常失败，不掩盖问题
+  const allowedRetry=async (fn,action,oid,data)=>{
+    let r=await callAs(fn,action,oid,data); let t=0;
+    while(!allowed(r) && t<6){ await delay(600); r=await callAs(fn,action,oid,data); t++; }
+    return r;
+  };
+  const deniedRetry=async (fn,action,oid,data)=>{
+    let r=await callAs(fn,action,oid,data); let t=0;
+    while(!denied(r) && t<6){ await delay(600); r=await callAs(fn,action,oid,data); t++; }
+    return r;
+  };
 
   // ===== 预清理 + 占位预建（QA 钩子模拟身份必须是已存在文档：真实新用户文档由 auth.login 现场创建，
   // 钩子场景下预建空壳占位，login 时 where(openid) 仍为空→走新建分支，isNewUser=true，文档以 openid 落库）=====
@@ -94,7 +109,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const u1=await cfFindUser(NEW_ORDERER);
   ok(!!u1 && u1.role==='orderer' && (u1.permissions||[]).indexOf('order:create')>=0,'激活后角色=orderer 且带默认权限');
   ok((u1&&u1.inviteStatus)==='activated','inviteStatus=activated');
-  ok(allowed(await callAs('orders','list',NEW_ORDERER,{})),'新用户 orderer 查订单 放行（权限即时可用）');
+  ok(allowed(await allowedRetry('orders','list',NEW_ORDERER,{})),'新用户 orderer 查订单 放行（权限即时可用）');
   ok(denied(await callAs('users','list',NEW_ORDERER,{})),'新用户 orderer 访问成员管理 403');
 
   console.log('\n【2】users.add 直接创建（管理员 API 口径）');
@@ -124,10 +139,17 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
     }
     const l4=await db.collection('users').limit(100).get();
     const otherAdmin=l4.data.find(u=>u.role==='admin'&&u._id!==ADMIN);
-    if(otherAdmin){
-      ok(code(await asAdmin('users','remove',{userId:otherAdmin._id}))===400,'删除其他管理员 400');
+    if(otherAdmin && otherAdmin.openid && otherAdmin.openid.indexOf('qa_mm_')!==0){
+      // 线上真实第二管理员：不动它，只复验唯一管理员保护（删自己 400）
+      ok(code(await asAdmin('users','remove',{userId:ADMIN}))===400,'（存在非QA第二管理员，不动它，复验删自己 400）');
     } else {
-      ok(code(await asAdmin('users','remove',{userId:ADMIN}))===400,'（无第二管理员，复验删自己 400）');
+      // 新建 QA 第二管理员验证新口径：管理员数≥2 时可删其他 admin（原型"至少保留一名"）
+      const addA2=await asAdmin('users','add',{name:'QA_MM_第二管理员',role:'admin'});
+      const a2id=addA2.data&&addA2.data._id;
+      ok(!!a2id,'准备 QA 第二管理员');
+      ok(code(await asAdmin('users','remove',{userId:a2id}))===0,'管理员数≥2 时可删除其他管理员（防锁死口径）');
+      const l4b=await db.collection('users').limit(100).get();
+      ok(!l4b.data.some(u=>u._id===a2id),'第二管理员已删库');
     }
   }
 
@@ -135,9 +157,13 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const addWh=await asAdmin('users','add',{name:'QA_MM_切换对象',role:'warehouse'});
   // 该账号无 openid，业务函数无法实测 → 用「给 QA 用户直接写库改 openid」方式：把 add 的账号补一个 openid 后实测
   const whId=addWh.data&&addWh.data._id;
-  if(whId){ await db.collection('users').doc(whId).update({openid:NEW_WH}); } // node-sdk update 用顶层字段
+  if(whId){
+    // add 未传 openid → 文档 status=pending；补 openid 等价员工扫码绑定，须同步激活为 active
+    // （真实场景由 auth.login 的 pending 激活分支完成；此处手动对齐，避免业务函数误判「账号已被禁用」403）
+    await db.collection('users').doc(whId).update({openid:NEW_WH, status:'active'}); // node-sdk update 用顶层字段
+  }
   await delay(800);
-  ok(allowed(await callAs('receivable','confirmPayment',NEW_WH,{})),'前置：warehouse 确认收款 放行');
+  ok(allowed(await allowedRetry('receivable','confirmPayment',NEW_WH,{})),'前置：warehouse 确认收款 放行');
   ok(denied(await callAs('receivable','collect',NEW_WH,{})),'前置：warehouse 登记收款 403');
   ok(code(await asAdmin('users','update-role',{userId:ADMIN,role:'orderer'}))===400,'改自己角色 400');
   const selfDoc4=(await cfFindUser(ADMIN))||{};
@@ -148,29 +174,29 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const r1=await asAdmin('users','update-role',{userId:whId,role:'orderer'});
   ok(code(r1)===0,'warehouse→orderer 切换成功');
   await delay(300);
-  ok(allowed(await callAs('receivable','collect',NEW_WH,{})),'切换后：orderer 登记收款 放行（即时）');
-  ok(denied(await callAs('receivable','confirmPayment',NEW_WH,{})),'切换后：orderer 确认收款 403（即时）');
+  ok(allowed(await allowedRetry('receivable','collect',NEW_WH,{})),'切换后：orderer 登记收款 放行（即时）');
+  ok(denied(await deniedRetry('receivable','confirmPayment',NEW_WH,{})),'切换后：orderer 确认收款 403（有界重试）');
   const r2=await asAdmin('users','update-role',{userId:whId,role:'sorter'});
   ok(code(r2)===0,'orderer→sorter 切换成功');
   await delay(300);
-  ok(allowed(await callAs('receivable','collect',NEW_WH,{})),'sorter 登记收款 放行');
-  ok(allowed(await callAs('outbound','pendingSortList',NEW_WH,{})),'sorter 分拣列表 放行');
+  ok(allowed(await allowedRetry('receivable','collect',NEW_WH,{})),'sorter 登记收款 放行');
+  ok(allowed(await allowedRetry('outbound','pendingSortList',NEW_WH,{})),'sorter 分拣列表 放行');
 
   console.log('\n【5】users.update-status 禁用/启用（云端拦截）');
-  ok(allowed(await callAs('orders','list',NEW_WH,{})),'前置：sorter 查订单 放行');
+  ok(allowed(await allowedRetry('orders','list',NEW_WH,{})),'前置：sorter 查订单 放行');
   const selfDoc5=(await cfFindUser(ADMIN))||{};
   ok(code(await asAdmin('users','update-status',{userId:ADMIN,status:'disabled'}))===400,'禁用自己 400（openid 口径）');
   if(selfDoc5._id){ ok(code(await asAdmin('users','update-status',{userId:selfDoc5._id,status:'disabled'}))===400,'禁用自己 400（_id 口径）'); }
   ok(code(await asAdmin('users','update-status',{userId:whId,status:'weird'}))===400,'非法状态值 400');
   ok(code(await asAdmin('users','update-status',{userId:whId,status:'disabled'}))===0,'禁用成功');
   await delay(300);
-  const d1=await callAs('orders','list',NEW_WH,{});
+  const d1=await deniedRetry('orders','list',NEW_WH,{});
   ok(code(d1)===403 && disabledMsg(d1),'禁用后：查订单 403「账号已被禁用」（实际 code='+code(d1)+' msg='+(d1&&d1.message)+'）');
-  const d2=await callAs('receivable','collect',NEW_WH,{});
-  ok(code(d2)===403 && disabledMsg(d2),'禁用后：登记收款 403「账号已被禁用」');
+  const d2=await deniedRetry('receivable','collect',NEW_WH,{});
+  ok(code(d2)===403 && disabledMsg(d2),'禁用后：登记收款 403「账号已被禁用」（有界重试）');
   ok(code(await asAdmin('users','update-status',{userId:whId,status:'active'}))===0,'启用成功');
   await delay(300);
-  ok(allowed(await callAs('orders','list',NEW_WH,{})),'启用后：查订单 恢复放行');
+  ok(allowed(await allowedRetry('orders','list',NEW_WH,{})),'启用后：查订单 恢复放行');
 
   console.log('\n【6】权限矩阵闭环 perm-config / save-perm / reset-perm');
   const pc0=await asAdmin('users','perm-config',{});
@@ -180,7 +206,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const sp1=await asAdmin('users','save-perm',{role:'sorter',permissions:sorterNoCollect});
   ok(code(sp1)===0 && (sp1.data&&sp1.data.syncedUsers)>=1,'save-perm 关闭 sorter collect，返回 syncedUsers='+JSON.stringify(sp1.data&&sp1.data.syncedUsers));
   await delay(300);
-  ok(denied(await callAs('receivable','collect',NEW_WH,{})),'save-perm 后 sorter（含 qa_mm 用户）立即 403');
+  ok(denied(await deniedRetry('receivable','collect',NEW_WH,{})),'save-perm 后 sorter（含 qa_mm 用户）403（有界重试）');
   // 锁定项：非 admin 提 member:manage 必须被剥离
   const sp2=await asAdmin('users','save-perm',{role:'warehouse',permissions:pm.defaultPermsForRole('warehouse').concat('member:manage','fake:perm')});
   ok(code(sp2)===0 && (sp2.data.permissions||[]).indexOf('member:manage')<0,'非 admin 提交 member:manage 被强制剥离');
@@ -193,7 +219,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const rp2=await asAdmin('users','reset-perm',{role:'sorter'});
   ok(code(rp2)===0,'reset-perm sorter 成功');
   await delay(300);
-  ok(allowed(await callAs('receivable','collect',NEW_WH,{})),'reset 后 sorter 登记收款 恢复放行');
+  ok(allowed(await allowedRetry('receivable','collect',NEW_WH,{})),'reset 后 sorter 登记收款 恢复放行');
 
   console.log('\n【7】checkAuth 权限门（前端鉴权入口）');
   const ca1=await callAs('auth','checkAuth',NEW_WH,{requiredPermission:'receivable:collect'});
@@ -201,7 +227,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
   const ca2=await callAs('auth','checkAuth',NEW_WH,{requiredPermission:'receivable:confirm'});
   ok(code(ca2)===0 && ca2.data&&ca2.data.hasPermission===false,'checkAuth：sorter 无 confirm');
   await asAdmin('users','update-status',{userId:whId,status:'disabled'});
-  const ca3=await callAs('auth','checkAuth',NEW_WH,{requiredPermission:'receivable:collect'});
+  const ca3=await deniedRetry('auth','checkAuth',NEW_WH,{requiredPermission:'receivable:collect'});
   ok(code(ca3)===403,'checkAuth：禁用用户 403');
 
   console.log('\n【8】activateByInvite 直连路径 + 过期/无效码');

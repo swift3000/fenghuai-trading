@@ -60,49 +60,6 @@ async function syncUsersPermissionsForRole(role) {
   return { role, effective: effective, updated: n }
 }
 
-/**
- * 共享角色权限表（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
- */
-const ROLE_PERMISSIONS = {
-  admin: [
-    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-    'product:view', 'product:edit',
-    'customer:view', 'customer:edit',
-    'sort:task',
-    'warehouse:confirm',
-    'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount',
-    'report:view', 'report:export', 'report:ledger',
-    'member:manage'
-  ],
-  orderer: [
-    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-    'product:view', 'product:edit',
-    'customer:view', 'customer:edit',
-    'sort:task',
-    'warehouse:confirm',
-    'receivable:view', 'receivable:collect', 'receivable:discount',
-    'report:view', 'report:export', 'report:ledger'
-  ],
-  sorter: [
-    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-    'product:view', 'product:edit',
-    'customer:view', 'customer:edit',
-    'sort:task',
-    'warehouse:confirm',
-    'receivable:view', 'receivable:collect', 'receivable:discount',
-    'report:view', 'report:export', 'report:ledger'
-  ],
-  warehouse: [
-    'order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export',
-    'product:view', 'product:edit',
-    'customer:view', 'customer:edit',
-    'sort:task',
-    'warehouse:confirm',
-    'receivable:view', 'receivable:confirm', 'receivable:discount',
-    'report:view', 'report:export', 'report:ledger'
-  ]
-}
-
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const wxContext = cloud.getWXContext()
@@ -147,21 +104,28 @@ exports.main = async (event, context) => {
 
     case 'add': {
       // 创建新用户（管理员创建）
-      const { name, phone, region, role } = event
+      // 对齐原型二级「添加成员」弹窗：openid 选填——填则直接激活，留空为 pending（邀请扫码绑定）
+      const { name, phone, region, role, openid: newOpenid } = event
+      const hasOpenid = !!(newOpenid && String(newOpenid).trim())
+      if (hasOpenid) {
+        const dup = await db.collection('users').where({ openid: String(newOpenid).trim() }).count()
+        if (dup.total > 0) return { code: 400, message: '该微信已绑定成员' }
+      }
       const newUser = {
         name,
         phone: phone || '',
         region: region || '',
         role: role || 'orderer',
-        status: 'active',
+        status: hasOpenid ? 'active' : 'pending',
+        openid: hasOpenid ? String(newOpenid).trim() : '',
         permissions: [], // 根据角色自动分配
         createdBy: openid,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()
       }
 
-      // 根据角色自动分配权限（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
-      newUser.permissions = ROLE_PERMISSIONS[role] || []
+      // 权限单一事实源：共享矩阵（perm-matrix-shared.js）
+      newUser.permissions = pm.defaultPermsForRole(role) || []
 
       const res = await db.collection('users').add({ data: newUser })
       return { code: 0, data: { _id: res._id } }
@@ -179,8 +143,12 @@ exports.main = async (event, context) => {
       } catch (e) {
         return { code: 404, message: '用户不存在' }
       }
+      // 防锁死（对齐原型 deleteMember）：管理员可删，但须至少保留一名管理员
       if (target.role === 'admin') {
-        return { code: 400, message: '无法移除管理员' }
+        const adminRes = await db.collection('users').where({ role: 'admin' }).get()
+        if (adminRes.data.length <= 1) {
+          return { code: 400, message: '至少保留一名管理员，无法删除' }
+        }
       }
 
       await db.collection('users').doc(event.userId).remove()
@@ -203,11 +171,11 @@ exports.main = async (event, context) => {
         return { code: 400, message: '无法移除管理员权限' }
       }
 
-      // 根据新角色自动分配权限（口径与 auth/DEFAULT_ROLE_PERMISSIONS 对齐）
+      // 权限单一事实源：共享矩阵
       await db.collection('users').doc(event.userId).update({
         data: {
           role: event.role,
-          permissions: ROLE_PERMISSIONS[event.role] || [],
+          permissions: pm.defaultPermsForRole(event.role) || [],
           updatedAt: db.serverDate()
         }
       })

@@ -29,46 +29,81 @@
     </view>
   </view>
 
-  <!-- 成员列表 -->
-  <view class="members-section">
-    <text class="section-title">团队成员 ({{members.length}})</text>
-    
+  <!-- 成员列表（对齐原型：按角色分组，组头=角色标签+N人+添加成员） -->
+  <view class="members-section card">
+    <view class="sec-head-line">
+      <text class="section-title">团队成员</text>
+      <text class="sec-hint">微信 openid 即身份</text>
+    </view>
+
     <view class="empty-tip" wx:if="{{members.length === 0}}">
       <text>暂无成员，请邀请新成员加入</text>
     </view>
 
-    <view class="member-list">
-      <view class="member-item card" wx:for="{{members}}" wx:key="_id">
-        <view class="member-header">
-          <view class="member-info">
-            <text class="member-name">{{item.name || '待加入成员'}}</text>
-            <text class="member-phone" wx:if="{{item.phone}}">{{item.phone}}</text>
-            <text class="member-region" wx:if="{{item.region}}">{{item.region}}</text>
+    <view class="role-group" wx:for="{{roleGroups}}" wx:key="role" wx:for-item="grp">
+      <view class="role-group-head">
+        <text class="member-role" style="background:{{grp.color}}">{{grp.label}}</text>
+        <text class="member-count">{{grp.count}} 人</text>
+        <button class="add-member-btn" data-role="{{grp.role}}" bindtap="openMemberForm">＋ 添加成员</button>
+      </view>
+      <view class="role-empty" wx:if="{{grp.count === 0}}">该角色暂无成员，点击右上角添加</view>
+      <view class="member-item" wx:for="{{grp.items}}" wx:key="_id" wx:for-item="m">
+        <view class="member-avatar" style="background:{{grp.color}}">{{m.initial}}</view>
+        <view class="member-info">
+          <view class="mn-line">
+            <text class="mn">{{m.name || '待加入成员'}}</text>
+            <text class="member-pending" wx:if="{{m.pending}}">待确认</text>
           </view>
-          <view class="role-actions">
-            <text class="role-tag role-{{item.role}}">{{roleMap[item.role]}}</text>
-            <picker bindchange="changeRole" data-id="{{item._id}}" value="{{roleIndex}}" range="{{roleOptions}}" range-key="label" wx:if="{{item.role !== 'admin'}}">
-              <text class="change-role">切换</text>
-            </picker>
-            <text class="text-danger" data-id="{{item._id}}" bindtap="handleRemove" wx:if="{{item.role !== 'admin'}}">移除</text>
-          </view>
+          <text class="ms">{{m.subText}}</text>
         </view>
-        <view class="member-status">
-          <text class="status-{{item.status}}">{{statusMap[item.status]}}</text>
-          <text class="member-date">加入：{{item.dateText}}</text>
+        <picker class="change-role-picker" bindchange="changeRole" data-id="{{m._id}}" value="{{roleIndex}}" range="{{roleOptions}}" range-key="label" wx:if="{{m.role !== 'admin'}}">
+          <text class="change-role">切换</text>
+        </picker>
+        <view class="member-del" data-id="{{m._id}}" bindtap="handleRemove">✕</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加成员弹窗（对齐原型二级 memberFormModal） -->
+  <view class="modal-mask" wx:if="{{showMemberForm}}" bindtap="closeMemberForm">
+    <view class="modal" catchtap="noop">
+      <view class="modal-header">
+        <text class="modal-title">添加成员</text>
+        <text class="modal-close" bindtap="closeMemberForm">✕</text>
+      </view>
+      <view class="modal-body">
+        <view class="mf-row">
+          <text class="mf-label">姓名 / 昵称</text>
+          <input class="mf-input" value="{{addMemberName}}" bindinput="onAddMemberField" data-field="addMemberName" placeholder="如：赵报价" maxlength="20" />
         </view>
-        <view class="member-invite" wx:if="{{item.status === 'pending' && item.inviteCode}}">
-          <text class="invite-code-text">邀请码：{{item.inviteCode}}</text>
-          <text class="invite-copy" data-code="{{item.inviteCode}}" bindtap="copyInvite">复制</text>
+        <view class="mf-row">
+          <text class="mf-label">角色</text>
+          <picker class="mf-picker" bindchange="changeAddMemberRole" value="{{addMemberRole}}" range="{{roleOptions}}" range-key="label">
+            <view class="mf-picker-value">{{addMemberRoleLabel}}<text class="mf-arrow">▾</text></view>
+          </picker>
         </view>
+        <view class="mf-row">
+          <text class="mf-label">微信 openid / 微信号（选填）</text>
+          <input class="mf-input" value="{{addMemberOpenid}}" bindinput="onAddMemberField" data-field="addMemberOpenid" placeholder="填写则直接激活，留空为待确认（邀请扫码绑定）" />
+        </view>
+        <view class="mf-row">
+          <text class="mf-label">手机号（选填）</text>
+          <input class="mf-input" type="number" value="{{addMemberPhone}}" bindinput="onAddMemberField" data-field="addMemberPhone" placeholder="如：13800000000" maxlength="11" />
+        </view>
+        <button class="btn-primary mf-submit" bindtap="submitMemberForm">确认添加</button>
       </view>
     </view>
   </view>
 
   <!-- 角色权限配置（权限矩阵）：仅管理员 -->
   <view class="perm-section card" wx:if="{{permGroups.length > 0}}">
-    <view class="perm-header">
+    <view class="perm-sec-head" bindtap="togglePermSection">
       <text class="perm-title">角色权限配置</text>
+      <text class="perm-hint">点击展开/收起 · 仅管理员可调整</text>
+      <text class="sec-arrow {{permCollapsed ? 'collapsed' : ''}}">▾</text>
+    </view>
+    <block wx:if="{{!permCollapsed}}">
+    <view class="perm-header">
       <text class="perm-sub">管理员可逐项调整每个角色的<text class="perm-note-strong">功能权限</text>。默认全员开放，仅「登记收款 / 确认收款」分工、<text class="perm-note-strong">成员管理固定管理员独占</text>（不可改，防锁死）。</text>
       <button class="perm-reset" bindtap="resetPerms" size="mini">↺ 恢复默认（全员开放）</button>
     </view>
@@ -111,5 +146,6 @@
         </view>
       </view>
     </view>
+    </block>
   </view>
 </view>

@@ -212,6 +212,17 @@ async function handleLogin(openid, event) {
       const user = userResult.data[0]
       console.log('老用户登录，role:', user.role)
 
+      // 待确认成员（管理端预建、已绑 openid）登录即自动激活；禁用账号拦截
+      if (user.status === 'pending') {
+        await db.collection('users').doc(user._id).update({
+          data: { status: 'active', activatedAt: db.serverDate(), updatedAt: db.serverDate() }
+        })
+        user.status = 'active'
+      }
+      if (user.status === 'disabled') {
+        return { code: 403, message: '账号已被禁用' }
+      }
+
       // 同步权限
       try {
         const currentPermissions = await effectivePermsForRole(user.role)

@@ -8,6 +8,9 @@ Page({
   data: {
     uiStyle: '',
     members: [],
+    // 按角色分组（对齐原型 renderMembers：组头=角色标签+N人+添加成员）
+    roleGroups: [],
+    roleColorMap: { orderer: '#67C23A', sorter: '#F8A44C', warehouse: '#409EFF', admin: '#F56C6C' },
     inviteRole: 'orderer',
     roleOptions: [
       { label: '下单员', value: 'orderer' },
@@ -31,6 +34,15 @@ Page({
     inviteRoleLabel: '下单员',
     inviteQr: '',
     lastInvite: null,
+    // 添加成员弹窗（对齐原型二级 memberFormModal）
+    showMemberForm: false,
+    addMemberRole: 'orderer',
+    addMemberRoleLabel: '下单员',
+    addMemberName: '',
+    addMemberOpenid: '',
+    addMemberPhone: '',
+    // 权限配置折叠（对齐原型三级 sec-head collapsible）
+    permCollapsed: false,
     // 权限矩阵
     roleCols: ROLE_ORDER.map(r => ({ role: r, label: ROLE_LABELS[r] })),
     permGroups: [],
@@ -56,14 +68,25 @@ Page({
     try {
       const members = await callCloud('users', { action: 'list' })
       // WXML 不能调用页面方法，这里预格式化加入日期（serverDate 可能为 {\$date} 对象）
-      const list = (members || []).map(m => Object.assign({}, m, { dateText: this.formatDate(m.createdAt) }))
+      const list = (members || []).map(m => Object.assign({}, m, {
+        dateText: this.formatDate(m.createdAt),
+        initial: (m.name || '?').charAt(0),
+        subText: (m.openid ? m.openid : '微信 openid') + ' · ' + (m.phone || '未填手机'),
+        pending: m.status === 'pending'
+      }))
+      // 按角色分组（原型顺序：下单员/分拣员/库管/管理员）
+      const groups = ROLE_ORDER.map(role => {
+        const items = list.filter(m => m.role === role)
+        return { role, label: this.data.roleMap[role], color: this.data.roleColorMap[role], count: items.length, items }
+      })
       this.setData({
         members: list,
+        roleGroups: groups,
         roleIndex: this.data.roleOptions.findIndex(r => r.value === this.data.inviteRole)
       })
     } catch (e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
-      this.setData({ members: [] })
+      this.setData({ members: [], roleGroups: [] })
     } finally {
       wx.hideLoading()
     }
@@ -77,6 +100,66 @@ Page({
       inviteRoleLabel: label
     })
   },
+
+  // ===== 添加成员弹窗（对齐原型二级 memberFormModal） =====
+  openMemberForm(e) {
+    const role = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.role) || 'orderer'
+    this.setData({
+      showMemberForm: true,
+      addMemberRole: role,
+      addMemberRoleLabel: this.data.roleMap[role] || '下单员',
+      addMemberName: '',
+      addMemberOpenid: '',
+      addMemberPhone: ''
+    })
+  },
+
+  onAddMemberField(e) {
+    const field = e.currentTarget.dataset.field
+    this.setData({ [field]: e.detail.value })
+  },
+
+  changeAddMemberRole(e) {
+    const value = e.detail.value
+    const label = this.data.roleOptions.find(r => r.value === value)?.label || value
+    this.setData({ addMemberRole: value, addMemberRoleLabel: label })
+  },
+
+  closeMemberForm() {
+    this.setData({ showMemberForm: false })
+  },
+
+  submitMemberForm() {
+    const name = (this.data.addMemberName || '').trim()
+    if (!name) {
+      wx.showToast({ title: '请输入成员姓名', icon: 'none' })
+      return
+    }
+    wx.showLoading({ title: '添加中...' })
+    callCloud('users', {
+      action: 'add',
+      name,
+      role: this.data.addMemberRole,
+      openid: (this.data.addMemberOpenid || '').trim(),
+      phone: (this.data.addMemberPhone || '').trim()
+    }).then(() => {
+      wx.showToast({ title: '已添加成员', icon: 'success' })
+      this.closeMemberForm()
+      this.loadMembers()
+    }).catch(e => {
+      wx.showToast({ title: (e && e.message) || '添加失败', icon: 'none' })
+    }).finally(() => {
+      wx.hideLoading()
+    })
+  },
+
+  // 权限配置折叠（对齐原型 togglePermSection）
+  togglePermSection() {
+    this.setData({ permCollapsed: !this.data.permCollapsed })
+  },
+
+  // 弹窗遮罩阻止冒泡占位
+  noop() {},
 
   async changeRole(e) {
     const userId = e.currentTarget.dataset.id

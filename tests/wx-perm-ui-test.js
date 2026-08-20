@@ -28,27 +28,39 @@ const ROLES=['admin','orderer','sorter','warehouse'];
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
+  // auto-sim may not run onLaunch->wx.cloud.init; idempotent bootstrap (no-op on real launch)
+  try{ await s.evaluate(async ()=>{ try{ if(!wx.cloud.config){ wx.cloud.init({env:'cloud1-d6g75loi673b1e039'}); } }catch(e){} return 'ok'; }); await delay(1500); }catch(e){}
   // 登录自举：不依赖开发者工具残留登录态，干净环境也能过（admin 角色才能访问成员/权限矩阵页）
   // 注意：对象须内联在 evaluate 回调内（回调被序列化到小程序上下文执行，取不到 Node 侧变量）
-  await s.evaluate(()=>new Promise(r=>{try{const u={openid:'qa_permui_admin',name:'测试',role:'admin',tenantName:'丰淮商贸',permissions:['order:view','order:create','order:edit','order:delete','order:print','order:export','product:view','product:edit','customer:view','customer:edit','sort:task','warehouse:confirm','receivable:view','receivable:collect','receivable:confirm','receivable:discount','report:view','report:export','report:ledger','member:manage']};wx.setStorageSync('currentUser',u);wx.setStorageSync('userInfo',u);wx.setStorageSync('userRole','admin');wx.reLaunch({url:'/pages/index/index'});r('ok');}catch(e){r('THROW '+e.message);}}));
+  await s.evaluate(()=>new Promise(r=>{try{const u={openid:'qa_permui_admin',name:'测试',role:'admin',tenantName:'丰淮商贸',permissions:['order:view','order:create','order:edit','order:delete','order:print','order:export','product:view','product:edit','customer:view','customer:edit','sort:task','warehouse:confirm','receivable:view','receivable:collect','receivable:confirm','receivable:discount','report:view','report:export','report:ledger','member:manage']};wx.setStorageSync('currentUser',u);wx.setStorageSync('userInfo',u);wx.setStorageSync('userRole','admin');// 同时写 globalData：onLaunch 只跑一次，reLaunch 不再触发，必须直接置位才能让路由守卫放行
+try{const app=getApp();if(app){app.globalData.userInfo=u;app.globalData.userRole='admin';}}catch(e){}
+wx.reLaunch({url:'/pages/index/index'});r('ok');}catch(e){r('THROW '+e.message);}}));
   await delay(3500);
   await s.evaluate(()=>new Promise(r=>{try{wx.navigateTo({url:'/pages/members/members',fail:(e)=>r('FAIL '+e.errMsg)});setTimeout(()=>r('ok'),2500);}catch(e){r('THROW');}}));
   await delay(3500);
+  // 稳健取页：CDP webview 句柄偶发竞态（末位可能是已销毁页），按 route 找页 + 重试
+  let settled=false;
+  for(let i=0;i<5;i++){
+    settled=await s.evaluate(()=>{const m=getCurrentPages().find(x=>x.route==='pages/members/members');return !!(m&&typeof m.loadPermConfig==='function');});
+    if(settled)break;
+    await delay(2000);
+  }
+  if(!settled){console.log('FATAL members 页未就绪');process.exit(1);}
 
   // A. 触发真实 loadPermConfig（内部取页面）
-  const loaded=await s.evaluate(async()=>{try{const p=getCurrentPages()[getCurrentPages().length-1];await p.loadPermConfig();return {route:p.route,groups:p.data.permGroups.length};}catch(e){return {err:e.message};}});
+  const loaded=await s.evaluate(async()=>{try{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');await p.loadPermConfig();return {route:p.route,groups:p.data.permGroups.length};}catch(e){return {err:e.message};}});
   console.log('A) loadPermConfig => '+JSON.stringify(loaded));
   ok(loaded.groups===8,'权限矩阵渲染 8 个分组（'+(loaded.err||'')+'）');
-  const shape=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return {cols:p.data.roleCols.map(c=>c.role), orderKeys:p.data.permGroups[0].rows.map(r=>r.key), orderCount:p.data.permGroups[0].count};});
+  const shape=await s.evaluate(()=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');return {cols:p.data.roleCols.map(c=>c.role), orderKeys:p.data.permGroups[0].rows.map(r=>r.key), orderCount:p.data.permGroups[0].count};});
   ok(shape.cols.join(',')==='orderer,sorter,warehouse,admin','列顺序对齐原型：下单员/分拣员/库管/管理员（'+shape.cols.join(',')+'）');
   ok(shape.orderCount===5 && shape.orderKeys.indexOf('order:view')<0,'订单管理 5 项且不含 查看订单（基线权限不展示）');
-  const init=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];const g=p.data.permGroups[5];const row=g.rows.find(r=>r.key==='receivable:collect');return {route:p.route, onSorter:row.cells[1].on, onWarehouse:row.cells[2].on};});
+  const init=await s.evaluate(()=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');const g=p.data.permGroups[5];const row=g.rows.find(r=>r.key==='receivable:collect');return {route:p.route, onSorter:row.cells[1].on, onWarehouse:row.cells[2].on};});
   ok(init.route==='pages/members/members' && init.onSorter===true,'初始 分拣员.登记收款 = 开（默认）');
   ok(init.onWarehouse===false,'初始 库管.登记收款 = 关（默认两步分离）');
 
   // B. UI togglePerm 关闭 分拣员.receivable:collect
-  const ri=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return p.data.permGroups[5].rows.findIndex(r=>r.key==='receivable:collect');});
-  const resB=await s.evaluate(async ri2=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'5',row:String(ri2),role:'1'}}});return {done:true};}catch(e){return {err:e.message};}}, ri);
+  const ri=await s.evaluate(()=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');return p.data.permGroups[5].rows.findIndex(r=>r.key==='receivable:collect');});
+  const resB=await s.evaluate(async ri2=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');try{await p.togglePerm({currentTarget:{dataset:{group:'5',row:String(ri2),role:'1'}}});return {done:true};}catch(e){return {err:e.message};}}, ri);
   await delay(1800);
   ok(resB.done===true,'UI togglePerm 调用成功（'+JSON.stringify(resB)+'）');
   const cloudB=await cloudRolePerms();
@@ -57,8 +69,8 @@ const ROLES=['admin','orderer','sorter','warehouse'];
   // C. 锁定项 admin.member:manage 点击应被忽略
   const beforeC=await cloudRolePerms();
   ok(beforeC.admin.includes('member:manage'),'点击前 admin.member:manage = 开');
-  const lockedRow=await s.evaluate(()=>{const p=getCurrentPages()[getCurrentPages().length-1];return p.data.permGroups[7].rows.findIndex(r=>r.key==='member:manage');});
-  const resC=await s.evaluate(async ri3=>{const p=getCurrentPages()[getCurrentPages().length-1];try{await p.togglePerm({currentTarget:{dataset:{group:'7',row:String(ri3),role:'3'}}});return {done:true};}catch(e){return {err:e.message};}}, lockedRow);
+  const lockedRow=await s.evaluate(()=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');return p.data.permGroups[7].rows.findIndex(r=>r.key==='member:manage');});
+  const resC=await s.evaluate(async ri3=>{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');try{await p.togglePerm({currentTarget:{dataset:{group:'7',row:String(ri3),role:'3'}}});return {done:true};}catch(e){return {err:e.message};}}, lockedRow);
   await delay(1500);
   const afterC=await cloudRolePerms();
   ok(afterC.admin.includes('member:manage'),'锁定项保护：UI 点 admin.member:manage 被忽略，云端仍为开（'+JSON.stringify(resC)+'）');
