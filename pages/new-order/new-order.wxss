@@ -159,15 +159,6 @@
   color: #999999;
 }
 
-.empty-tip {
-  text-align: center;
-  padding: 80rpx 0;
-  color: #999999;
-  font-size: calc(28rpx * var(--font-scale));
-  background: #fafafa;
-  border-radius: 16rpx;
-  border: 1rpx dashed #e0e0e0;
-}
 
 .order-footer {
   display: flex;
