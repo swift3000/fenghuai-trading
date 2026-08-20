@@ -105,10 +105,6 @@
       </view>
     </view>
 
-    <view class="empty-tip" wx:if="{{!items.length}}">
-      <text>点击"添加商品"或"智能录入"开始</text>
-    </view>
-
     <view class="add-product-btn" bindtap="addProduct">+ 添加商品 ▾</view>
 
   <view class="order-footer">
