@@ -70,6 +70,20 @@ const denied=(r)=> code(r)===403;
   ok(allowed(await C('report','summary','warehouse')),'warehouse 查报表 放行');
   ok(denied(await C('users','list','sorter')),'sorter 访问成员管理 403');
   ok(denied(await C('users','list','warehouse')),'warehouse 访问成员管理 403');
+  // T22：出库页可达角色（sort:task 或 warehouse:confirm 任一）才能触发定时自动确认；
+  // 临时剥离 orderer 的出库权限验证 403 守卫，随后恢复默认
+  ok(allowed(await C('orders','autoConfirmTrigger','orderer')),'T22前置：orderer 默认有出库权限，autoConfirmTrigger 放行（定时关闭→skipped）');
+  {
+    const acStripped=pm.defaultPermsForRole('orderer').filter(k=>k!=='sort:task'&&k!=='warehouse:confirm');
+    await db.collection('perm_configs').where({role:'orderer'}).get().then(async c=>{for(const d of c.data){await db.collection('perm_configs').doc(d._id).remove();}});
+    await s.evaluate(async (perms)=>{ try{ await wx.cloud.callFunction({name:'users',data:{action:'save-perm',role:'orderer',permissions:perms}}); }catch(e){} }, acStripped);
+    await delay(600);
+    ok(denied(await C('orders','autoConfirmTrigger','orderer')),'T22守卫：无出库权限(orderer剥离sort:task/warehouse:confirm) autoConfirmTrigger 403');
+    await db.collection('perm_configs').where({role:'orderer'}).get().then(async c=>{for(const d of c.data){await db.collection('perm_configs').doc(d._id).remove();}});
+    await s.evaluate(async ()=>{ try{ await wx.cloud.callFunction({name:'users',data:{action:'reset-perm',role:'orderer'}}); }catch(e){} });
+    await delay(400);
+    ok(allowed(await C('orders','autoConfirmTrigger','orderer')),'T22恢复：reset-perm 后 orderer autoConfirmTrigger 重新放行');
+  }
 
   console.log('\n【B】开关即时生效（管理员 save-perm 后该角色应立即被拦）');
   ok(allowed(await C('receivable','collect','sorter')),'B前置：sorter 默认可登记收款');

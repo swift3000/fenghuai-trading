@@ -777,6 +777,22 @@ exports.main = async (event, context) => {
     }
 
     case 'autoConfirmTrigger': {
+      // T22 守卫：带身份调用（小程序/QA模拟）须有出库页可达权限（sort:task 或 warehouse:confirm，与出库页口径一致）；
+      // 无身份的 cron 定时触发为内部系统调用，直接放行（时间门/幂等/配置三道限制仍在）
+      {
+        if (__impersonatedOpenid) {
+          const __g = await checkPermission('sort:task');
+          const __g2 = __g.code === 0 ? __g : await checkPermission('warehouse:confirm');
+          if (__g2.code !== 0) return { code: 403, message: '无权限执行自动确认' }
+        } else {
+          const { OPENID } = cloud.getWXContext()
+          if (OPENID) {
+            const __g = await checkPermission('sort:task');
+            const __g2 = __g.code === 0 ? __g : await checkPermission('warehouse:confirm');
+            if (__g2.code !== 0) return { code: 403, message: '无权限执行自动确认' }
+          }
+        }
+      }
       // 定时触发器入口（每5分钟轮询）：到点且当天未跑过 → 批量确认当天未处理订单（幂等）
       const cfg = await getAutoConfirmCfg()
       const now = new Date()
