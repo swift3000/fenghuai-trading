@@ -140,11 +140,11 @@
   <view class="empty-state" wx:if="{{!hasData}}">
     <text class="empty-icon">📊</text>
     <text class="empty-text">暂无数据</text>
-    <text class="empty-hint">当前时间范围内没有统计数据</text>
+    <text class="empty-hint">当前时间范围内暂无统计数据，可切换时间范围后查看</text>
   </view>
 
   <!-- 导出按钮（对齐原型三个导出） -->
-  <view wx:if="{{canExport && hasData}}" class="export-buttons">
+  <view wx:if="{{canExport}}" class="export-buttons">
     <button class="btn-primary export-btn" bindtap="handleExport">📥 导出报表Excel</button>
     <button class="export-btn export-btn-orange" bindtap="handleExportDailySummary">📋 客户汇总表(外县台账式)</button>
     <button class="export-btn export-btn-ledger" bindtap="handleExportLedger">📒 导出收款台账(外县格式)</button>

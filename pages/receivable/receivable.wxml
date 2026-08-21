@@ -47,37 +47,104 @@
 
   <!-- 客户列表 -->
   <view class="customer-list" wx:if="{{customers.length > 0}}">
-    <view class="customer-card card" wx:for="{{customers}}" wx:key="_id" bindtap="viewCustomerDetail" data-item="{{item}}">
-      <view class="customer-header">
-        <view class="customer-info">
-          <text class="customer-name">{{item.name}}</text>
-          <text class="customer-region" wx:if="{{item.region}}">{{item.region}}</text>
+    <!-- ========== 视图1：客户台账（对齐原型 buildLedgerCards） ========== -->
+    <block wx:if="{{viewTab === 'ledger'}}">
+      <view class="customer-card card" wx:for="{{customers}}" wx:key="_id" bindtap="viewCustomerDetail" data-item="{{item}}">
+        <view class="customer-header">
+          <view class="customer-info">
+            <text class="customer-name">{{item.name}}</text>
+            <text class="customer-region">{{item.region || '-'}} · {{item.orderCount || 0}} 笔订单</text>
+          </view>
+          <view class="customer-amount">
+            <text wx:if="{{item.unpaidAmount > 0.001}}" class="unpaid-amount text-danger">欠 ¥{{item.unpaidAmount}}</text>
+            <text wx:else class="ledger-check">✓</text>
+            <view class="dc-status" style="color:{{item.statusColor}};border-color:{{item.statusColor}}">{{item.statusText}}</view>
+          </view>
         </view>
-        <view class="customer-amount">
-          <text class="unpaid-amount text-danger">欠 ¥{{item.unpaidAmount}}</text>
+        <view class="cc-summary">
+          <view class="cc-col"><text class="cc-col-lbl">应收总额</text><text class="cc-col-val">¥{{item.totalAmount}}</text></view>
+          <view class="cc-col"><text class="cc-col-lbl" style="color:#16A34A">已收</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
+          <view class="cc-col"><text class="cc-col-lbl" style="color:#EA580C">未结清</text><text class="cc-col-val {{item.unpaidAmount > 0.001 ? 'cc-due' : ''}}">¥{{item.unpaidAmount}}</text></view>
+        </view>
+        <view class="cc-orders">
+          <view class="cc-o-row" wx:for="{{item.orders}}" wx:key="_id" wx:for-item="o">
+            <text class="cc-o-no">{{o.orderNo}}</text>
+            <text class="cc-o-amt">¥{{o.amtText}}</text>
+            <text class="cc-o-st {{o.statusPending ? 'st-pending' : (o.statusText === '已结清' ? 'st-paid' : 'st-due')}}">{{o.statusText}}</text>
+            <text class="cc-o-bal" wx:if="{{o.unpaidAmount > 0.001}}">欠¥{{o.balText}}</text>
+          </view>
         </view>
       </view>
-      
-      <view class="cc-summary">
-        <view class="cc-col"><text class="cc-col-lbl">应收总额</text><text class="cc-col-val">¥{{item.totalAmount}}</text></view>
-        <view class="cc-col"><text class="cc-col-lbl">已收</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
-        <view class="cc-col"><text class="cc-col-lbl">未结清</text><text class="cc-col-val {{item.unpaidAmount > 0 ? 'cc-due' : ''}}">¥{{item.unpaidAmount}}</text></view>
-      </view>
+    </block>
 
-      <view class="cc-orders">
-        <view class="cc-o-row" wx:for="{{item.orders}}" wx:key="_id" wx:for-item="o">
-          <text class="cc-o-no">{{o.orderNo}}</text>
-          <text class="cc-o-amt">¥{{o.totalAmount}}</text>
-          <text class="cc-o-st {{o.statusPending ? 'st-pending' : (o.statusText === '已结清' ? 'st-paid' : 'st-due')}}">{{o.statusText}}</text>
-          <text class="cc-o-bal" wx:if="{{o.unpaidAmount > 0.001}}">欠¥{{o.balText}}</text>
+    <!-- ========== 视图2：未结清（对齐原型 buildDebtCards：账龄+月度账期条） ========== -->
+    <block wx:elif="{{viewTab === 'unpaid'}}">
+      <view class="customer-card card debt-view-card" wx:for="{{customers}}" wx:key="_id" bindtap="viewCustomerDetail" data-item="{{item}}">
+        <view class="customer-header">
+          <view class="customer-info">
+            <text class="customer-name">{{item.name}}</text>
+            <text class="customer-region">{{item.region || '-'}} · {{item.orderCount || 0}} 笔未结清</text>
+          </view>
+          <view class="customer-amount">
+            <text class="unpaid-amount text-danger">¥{{item.unpaidAmount}}</text>
+            <view class="dc-status" style="color:{{item.statusColor}};border-color:{{item.statusColor}}">{{item.statusText}}</view>
+          </view>
+        </view>
+        <view class="dc-aging" wx:if="{{item.maxAge > 0}}">
+          <text class="aging-dot" style="background:{{item.agingColor}}"></text>
+          <text class="aging-text">最长欠款 {{item.maxAge}} 天</text>
+        </view>
+        <view class="aging-dist" wx:if="{{item.months.length > 0}}">
+          <view class="ad-month" wx:for="{{item.months}}" wx:key="key" wx:for-item="m">
+            <text class="ad-label">{{m.key}}</text>
+            <view class="ad-bar"><view class="ad-fill" style="width:{{m.pct}}%;background:{{m.color}}"></view></view>
+            <text class="ad-amt">¥{{m.amt}}</text>
+          </view>
+        </view>
+        <view class="cc-orders">
+          <view class="cc-o-row" wx:for="{{item.orders}}" wx:key="_id" wx:for-item="o">
+            <view class="cc-o-l">
+              <text class="cc-o-statusline {{o.statusPending ? 'st-pending' : (o.statusText === '已结清' ? 'st-paid' : 'st-due')}}">{{o.statusText}} · 欠 ¥{{o.balText}}</text>
+              <text class="cc-o-no">{{o.orderNo}}</text>
+            </view>
+            <view class="cc-o-r" wx:if="{{o.unpaidAmount > 0.001}}">
+              <text class="age-badge">{{o.ageBadge}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="customer-actions" wx:if="{{item.unpaidAmount > 0.001}}">
+          <button class="btn-action btn-collect" wx:if="{{canCollect}}" size="mini" catchtap="handleCollect" data-item="{{item}}">💰 登记收款</button>
         </view>
       </view>
+    </block>
 
-      <view class="customer-actions" wx:if="{{item.unpaidAmount > 0}}">
-        <button class="btn-action btn-collect" wx:if="{{canCollect}}" size="mini" bindtap="handleCollect" data-item="{{item}}">登记收款</button>
+    <!-- ========== 视图3：已结清（对齐原型 buildSettledCards：绿色卡） ========== -->
+    <block wx:else>
+      <view class="customer-card card settled-card" wx:for="{{customers}}" wx:key="_id" bindtap="viewCustomerDetail" data-item="{{item}}">
+        <view class="customer-header">
+          <view class="customer-info">
+            <text class="customer-name">{{item.name}} <text class="settled-check">✓</text></text>
+            <text class="customer-region">{{item.region || '-'}} · {{item.orderCount || 0}} 笔已结清</text>
+          </view>
+          <view class="customer-amount settled-amount">
+            <text class="settled-received">¥{{item.paidAmount}}</text>
+            <view class="dc-status" style="color:#16A34A;border-color:#16A34A">已结清</view>
+          </view>
+        </view>
+        <view class="sc-orders">
+          <view class="sc-order-row" wx:for="{{item.orders}}" wx:key="_id" wx:for-item="o">
+            <view class="sc-order-info">
+              <text class="sc-order-no">{{o.orderNo}}</text>
+              <text class="sc-order-amt">应收 ¥{{o.amtText}}</text>
+            </view>
+            <view class="sc-order-meta">
+              实收 <text class="sc-paid">¥{{o.paidText}}</text>
+            </view>
+          </view>
+        </view>
       </view>
-    </view>
-  </view>
+    </block>
+  </view> <!-- /customer-list -->
   </view> <!-- /recv-body -->
 
   <!-- 空状态 -->

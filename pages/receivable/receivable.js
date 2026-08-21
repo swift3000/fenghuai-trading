@@ -129,13 +129,23 @@ Page({
           if (Number(o.debtAgeDays) > monthMap[key].maxAge) monthMap[key].maxAge = Number(o.debtAgeDays)
           if (o.paymentStatus === 'pending') monthMap[key].pending = true
         })
-        // 订单行展示（对齐原型：单号/金额/状态/欠款）
+        // 订单行展示（对齐原型：单号/金额/状态/欠款/已收）
         customer.orders = (c.orders || []).map(o => {
           const ps = o.paymentStatus || 'unpaid'
           const bal = Number(o.unpaidAmount) || 0
           const statusText = bal <= 0.001 ? '已结清' : (ps === 'pending' ? '待确认' : '未结清')
-          return Object.assign({}, o, { statusText, statusPending: ps === 'pending' && bal > 0.001, balText: bal.toFixed(2) })
+          const paid = Number(o.paidAmount) || 0
+          const amt = Number(o.totalAmount) || 0
+          return Object.assign({}, o, {
+            statusText, statusPending: ps === 'pending' && bal > 0.001, balText: bal.toFixed(2),
+            paidText: paid.toFixed(2), amtText: amt.toFixed(2),
+            ageBadge: bal > 0.001 ? ('欠' + (Number(o.debtAgeDays) || 0) + '天') : ''
+          })
         })
+        // 客户级状态（对齐原型 buildDebtCards：有 pending 单 → 部分结清·待确认）
+        customer.hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending' && (Number(o.unpaidAmount) || 0) > 0.001)
+        customer.statusText = (Number(c.unpaidAmount) || 0) <= 0.001 ? '已结清' : (customer.hasPending ? '部分结清·待确认' : '未结清')
+        customer.statusColor = (Number(c.unpaidAmount) || 0) <= 0.001 ? '#16A34A' : (customer.hasPending ? '#2563EB' : '#DC2626')
         const months = Object.keys(monthMap).sort().map(k => {
           const m = monthMap[k]
           // 颜色：pending 蓝，否则按该月最长账龄分色（对齐原型 agingSeverity）

@@ -298,6 +298,105 @@
   margin-right: 16rpx;
 }
 
+
+/* ========== 三视图卡片增强（对齐原型 buildLedgerCards/buildDebtCards/buildSettledCards） ========== */
+.customer-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6rpx;
+}
+.dc-status {
+  display: inline-block;
+  font-size: 20rpx;
+  line-height: 1;
+  padding: 6rpx 14rpx;
+  border: 1rpx solid #999;
+  border-radius: 999rpx;
+  background: #fff;
+}
+.ledger-check {
+  font-size: 40rpx;
+  color: #16A34A;
+  font-weight: 700;
+  line-height: 1;
+}
+.debt-view-card .cc-o-l {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cc-o-statusline {
+  font-size: 24rpx;
+  color: #374151;
+  margin-bottom: 4rpx;
+}
+.cc-o-statusline.st-paid { color: #16A34A; }
+.cc-o-statusline.st-due { color: #EA580C; }
+.cc-o-statusline.st-pending { color: #2563EB; }
+.cc-o-r {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+.age-badge {
+  font-size: 20rpx;
+  color: #DC2626;
+  background: #FEF2F2;
+  border: 1rpx solid #FECACA;
+  border-radius: 999rpx;
+  padding: 4rpx 14rpx;
+  line-height: 1.3;
+}
+.settled-card {
+  border-left: 6rpx solid #16A34A;
+  background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 45%);
+}
+.settled-check {
+  font-size: 24rpx;
+  color: #16A34A;
+  font-weight: 400;
+}
+.settled-amount .settled-received {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #16A34A;
+}
+.sc-orders {
+  margin-top: 8rpx;
+}
+.sc-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-top: 1rpx dashed #E5E7EB;
+}
+.sc-order-row:first-child { border-top: none; }
+.sc-order-info {
+  display: flex;
+  flex-direction: column;
+}
+.sc-order-no {
+  font-size: 24rpx;
+  color: #374151;
+  margin-bottom: 4rpx;
+}
+.sc-order-amt {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+.sc-order-meta {
+  font-size: 22rpx;
+  color: #6B7280;
+  text-align: right;
+}
+.sc-paid {
+  color: #16A34A;
+  font-weight: 700;
+}
 /* 操作按钮 */
 .customer-actions {
   display: flex;
@@ -1013,10 +1112,11 @@
 .recv-search input { flex: 1; font-size: 13px; }
 
 /* 时间 chips */
-.recv-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.recv-chips { display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 8px; align-items: center; }
 .recv-chip {
-  font-size: 12px;
-  padding: 6px 13px;
+  font-size: 11px;
+  padding: 6px 10px;
+  flex-shrink: 0;
   border-radius: 999px;
   background: #fff;
   border: 1px solid var(--border, #E5E7EB);
@@ -1030,6 +1130,8 @@
   box-shadow: 0 4px 12px rgba(234, 88, 12, 0.26);
 }
 .recv-chip .drp-icon { margin-right: 4px; font-size: 11px; }
+.recv-chip.drp { flex-shrink: 1; min-width: 0; max-width: 42%; }
+.recv-chip.drp text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 三栏视图 Tab */
 .recv-view-tabs {
