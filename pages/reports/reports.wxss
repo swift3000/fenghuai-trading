@@ -283,6 +283,19 @@
   color: var(--text-2, #999);
 }
 /* 导出按钮配色（对齐原型：主色 / 橙 / 紫） */
-.export-buttons .export-btn { border-radius: 16rpx; }
+.export-buttons .export-btn,
+.export-buttons .btn-primary {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 22rpx 0;
+  margin: 0;
+  justify-content: center;
+  border-radius: 48rpx;
+  box-shadow: none;
+}
+.export-buttons .btn-primary {
+  background: var(--theme-primary, #06ad56);
+}
 .export-buttons .export-btn-orange { background: #FF7A1A; }
 .export-buttons .export-btn-ledger { background: #534AB7; }
