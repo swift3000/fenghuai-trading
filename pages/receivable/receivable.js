@@ -481,11 +481,11 @@ Page({
       
       // 口径（A 方案，与看板汇总同口径，折价已正确扣除）：
       //   总欠款(¥)=赊销总额(Σ应收 totalAmount)
-      //   已确认收款(¥)=已到账实收(Σ receivedAmount，不含折价)
-      //   未收余额(¥)=Σ unpaidAmount，云端已按 max(0, 应收-实收-折价) 计算，折价/减免已扣除，永不出现负数
-      //   差额 = 折价/减免（应收 = 实收 + 折价 + 未收余额）
+      //   已确认收款(¥)=已到账已收(Σ paidAmount = 实收 + 已确认折价，对齐看板/原型)
+      //   未收余额(¥)=Σ unpaidAmount，云端已按 max(0, 应收-实收-已确认折价) 计算，永不出现负数
+      //   守恒：应收(总欠款) = 已收(实收+已确认折价) + 未收余额
       const custReceivable = (c) => (c.orders || []).reduce((s, o) => s + (o.totalAmount || 0), 0)
-      const custConfirmed = (c) => (c.orders || []).reduce((s, o) => s + (o.receivedAmount || 0), 0)
+      const custConfirmed = (c) => (c.orders || []).reduce((s, o) => s + (o.paidAmount || 0), 0)
       const custBalance = (c) => (c.orders || []).reduce((s, o) => s + (o.unpaidAmount || 0), 0)
       const payText = (ps) => ps === 'paid' ? '已结清' : (ps === 'pending' ? '未结清' : '未付款')
 
@@ -516,7 +516,7 @@ Page({
         ])
         ;(c.orders || []).forEach(o => {
           const oTotal = o.totalAmount || 0
-          const oConfirmed = o.receivedAmount || 0
+          const oConfirmed = o.paidAmount || 0
           const oBalance = o.unpaidAmount || 0
           rows.push([
             '  └ ' + o.orderNo,

@@ -165,6 +165,29 @@ function buildLedgerData(orders) {
 
 // 0 值不显示：导出件数为 0 时留空（与界面口径一致）
 function pkShow(v) { return Number(v) > 0 ? Number(v) : '' }
+// 关联各订单的已确认收款：注入 o.confirmedPays = { amount, discountCents }
+// 口径对齐原型/赊销：已收 = 实收 + 已确认折价；未结清 = 应收 - 已收（守恒）
+async function attachConfirmedPayments(orders) {
+  const ids = orders.map(o => o._id).filter(Boolean)
+  if (ids.length === 0) return
+  const confirmedByOrder = {}
+  try {
+    const payRes = await db.collection('payments').where({
+      orderId: db.command.in(ids),
+      status: 'confirmed'
+    }).get()
+    payRes.data.forEach(p => {
+      const oid = p.orderId || p.order_id
+      if (!oid) return
+      if (!confirmedByOrder[oid]) confirmedByOrder[oid] = { amount: 0, discountCents: 0 }
+      confirmedByOrder[oid].amount += (p.amount || 0)
+      confirmedByOrder[oid].discountCents += Math.round((p.discount || 0) * 100)
+    })
+  } catch (e) { console.error('关联订单已确认收款失败', e) }
+  orders.forEach(o => {
+    o.confirmedPays = confirmedByOrder[o._id] || { amount: 0, discountCents: 0 }
+  })
+}
 function sanitizeCell(v) {
   if (v === null || v === undefined) return ''
   let s = String(v)
@@ -303,6 +326,9 @@ exports.main = async (event, context) => {
         const ordersResult = await query.get()
         const orders = ordersResult.data
         
+        // 对齐原型/赊销口径：已收 = 实收 + 已确认折价（守恒）
+        await attachConfirmedPayments(orders)
+        
         // 按客户聚合统计
         const customerMap = {}
         orders.forEach(order => {
@@ -322,9 +348,10 @@ exports.main = async (event, context) => {
           }
           const customer = customerMap[customerId]
           const received = order.received_amount || order.receivedAmount || 0
+          const confDisc = Math.round((order.confirmedPays || { discountCents: 0 }).discountCents) / 100
           customer.totalAmount += order.totalAmount || 0
-          customer.paidAmount += received
-          customer.unpaidAmount += Math.max(0, (order.totalAmount || 0) - received - (order.total_discount || order.totalDiscount || 0))
+          customer.paidAmount += received + confDisc
+          customer.unpaidAmount += Math.max(0, (order.totalAmount || 0) - received - confDisc)
           customer.orderCount += 1
           customer.itemCount += (order.items || []).length
         })

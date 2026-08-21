@@ -38,6 +38,30 @@ function toCents(n) {
 function remainingCents(total, received, discount) {
   return Math.max(0, toCents(total) - toCents(received) - toCents(discount))
 }
+
+// 关联各订单的已确认收款（payments 独立集合）：注入 o.confirmedPays = { amount, discountCents }
+// 口径对齐原型：已收 = 实收 + 已确认折价；未结清 = 应收 - 已收（守恒）
+async function attachConfirmedPayments(orders) {
+  const ids = orders.map(o => o._id).filter(Boolean)
+  if (ids.length === 0) return
+  const confirmedByOrder = {}
+  try {
+    const payRes = await db.collection('payments').where({
+      orderId: db.command.in(ids),
+      status: 'confirmed'
+    }).get()
+    payRes.data.forEach(p => {
+      const oid = p.orderId || p.order_id
+      if (!oid) return
+      if (!confirmedByOrder[oid]) confirmedByOrder[oid] = { amount: 0, discountCents: 0 }
+      confirmedByOrder[oid].amount += (p.amount || 0)
+      confirmedByOrder[oid].discountCents += toCents(p.discount || 0)
+    })
+  } catch (e) { console.error('关联订单已确认收款失败', e) }
+  orders.forEach(o => {
+    o.confirmedPays = confirmedByOrder[o._id] || { amount: 0, discountCents: 0 }
+  })
+}
 // 账龄（天）：订单创建时间到现在的整天数（对齐原型 debtAgeDays）
 function debtAgeDays(order) {
   const t = new Date(order.created_at).getTime()
@@ -167,8 +191,9 @@ exports.main = async (event, context) => {
       
       const ordersResult = await query.get()
       const orders = ordersResult.data
+      await attachConfirmedPayments(orders)
       
-      // 按客户维度聚合统计（已收口径 = received_amount，含折价）
+      // 按客户维度聚合统计（已收口径 = 实收 + 已确认折价，守恒：应收=已收+未结清）
       const customerMap = {}
       orders.forEach(order => {
         const customerId = order.customerId
@@ -193,22 +218,25 @@ exports.main = async (event, context) => {
         const customer = customerMap[customerId]
         const total = order.totalAmount || 0
         const received = order.received_amount || order.receivedAmount || 0
-        const discount1 = order.total_discount || order.totalDiscount || 0
+        // 已确认折价（分）：只认 payments.status=confirmed，口径对齐原型 orderPaidAmount
+        const confDiscCents = (order.confirmedPays && order.confirmedPays.discountCents) || 0
+        // 已收（分）= 实收 + 已确认折价；未结清（分）= 应收 - 已收（守恒，不为负）
+        const receivedCents = toCents(received) + confDiscCents
         // 以「分」为单位整数累加，避免浮点误差（0.1+0.2 类问题）
         customer.totalCents = (customer.totalCents || 0) + toCents(total)
-        customer.receivedCents = (customer.receivedCents || 0) + toCents(received)
-        customer.unpaidCents = (customer.unpaidCents || 0) + remainingCents(total, received, discount1)
+        customer.receivedCents = (customer.receivedCents || 0) + receivedCents
+        customer.unpaidCents = (customer.unpaidCents || 0) + Math.max(0, toCents(total) - receivedCents)
         customer.orderCount += 1
         // 最长欠款账龄：仅统计未结清订单（剩余欠款>0），对齐原型 maxAge
-        const unpaidNow = remainingCents(total, received, discount1)
+        const unpaidNow = Math.max(0, toCents(total) - receivedCents)
         if (unpaidNow > 0) customer.maxAge = Math.max(customer.maxAge, debtAgeDays(order))
         customer.orders.push({
           _id: order._id,
           orderNo: order.orderNo,
           totalAmount: total,
           receivedAmount: received,
-          paidAmount: received,
-          unpaidAmount: Math.max(0, total - received - (order.total_discount || order.totalDiscount || 0)),
+          paidAmount: Math.round(receivedCents) / 100,
+          unpaidAmount: Math.max(0, Math.round(toCents(total) - receivedCents) / 100),
           status: order.status,
           paymentStatus: order.paymentStatus,
           createdAt: order.created_at,
@@ -269,17 +297,20 @@ exports.main = async (event, context) => {
         .get()
       
       const orders = ordersResult.data
-      const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
-      const paidAmount = orders.reduce((sum, o) => sum + (o.received_amount || o.receivedAmount || 0), 0)
-      const discountAmount = orders.reduce((sum, o) => sum + (o.total_discount || o.totalDiscount || 0), 0)
+      await attachConfirmedPayments(orders)
+      // 口径对齐 dashboard：已收 = 实收 + 已确认折价；未结清 = 应收 - 已收（守恒）
+      const totalAmount = orders.reduce((sum, o) => sum + toCents(o.totalAmount || 0), 0)
+      const paidCents = orders.reduce((sum, o) => sum + toCents(o.received_amount || o.receivedAmount || 0) + ((o.confirmedPays && o.confirmedPays.discountCents) || 0), 0)
+      const paidAmount = Math.round(paidCents) / 100
+      const total = Math.round(totalAmount) / 100
       
       return {
         code: 0,
         data: {
           orders,
-          totalAmount,
+          totalAmount: total,
           paidAmount,
-          unpaidAmount: Math.max(0, totalAmount - paidAmount - discountAmount)
+          unpaidAmount: Math.max(0, Math.round(totalAmount - paidCents) / 100)
         }
       }
     }
@@ -441,9 +472,10 @@ exports.main = async (event, context) => {
           .where({ orderId: targetOrderId, status: 'confirmed' })
           .get()
         const confirmedAmount = confirmedList.data.reduce((sum, p) => sum + (p.amount || 0), 0)
-        const totalDiscount = order.total_discount || order.totalDiscount || 0
+        // 只认已确认折价（对齐原型 orderDiscount），不再用登记即累加的 total_discount
+        const confirmedDiscount = confirmedList.data.reduce((sum, p) => sum + (p.discount || 0), 0)
         const total = order.totalAmount || 0
-        const newStatus = remainingCents(total, confirmedAmount, totalDiscount) <= 0 ? 'paid' : 'pending'
+        const newStatus = remainingCents(total, confirmedAmount, confirmedDiscount) <= 0 ? 'paid' : 'pending'
         await db.collection('orders').doc(targetOrderId).update({
           data: {
             received_amount: confirmedAmount,

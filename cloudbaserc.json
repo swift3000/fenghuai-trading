@@ -69,7 +69,7 @@
     {
       "name": "receivable",
       "runtime": "Nodejs20.19",
-      "timeout": 30,
+      "timeout": 60,
       "envVariables": {
         "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
