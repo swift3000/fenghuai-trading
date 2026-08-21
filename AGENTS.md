@@ -65,7 +65,7 @@
   - shipping：7 处（包裹件数编辑）
   - members：6 处（添加成员弹窗/邀请弹窗）
 - 测试深度=3 层；深层无数据时 API 造一条 TEST 数据实测后清理，不以无数据跳过
-- 回归脚本：L1=tests/wx-pagewalk-test.js；L2/L3=tests/wx-deepwalk-test.js（2026-08-20 已建，24/24 全绿，挂在 test-all.sh 第 4/9 步）
+- 回归脚本：L1=tests/wx-pagewalk-test.js；L2/L3=tests/wx-deepwalk-test.js（2026-08-20 已建，24/24 全绿，挂在 test-all.sh 第 4 步（全量共 11 步，幂等专项=第 9 步））
 
 ## 测试
 - 一键全量：`npm run test:all`（scripts/test-all.sh）；单项 `npm run test:wx-e2e` 等，入口 scripts 见 package.json
