@@ -1,4 +1,4 @@
-<view class="tab-bar" style="--active-color: {{activeColor}};">
+<view class="tab-bar" style="--active-color: {{activeColor}}; {{tabStyle}}">
   <view class="tab-item {{active==='home' ? 'active' : ''}}" data-key="home" bindtap="goHome">
     <image class="tab-icon" src="{{active==='home' ? '/assets/icons/home-active.png' : '/assets/icons/home.png'}}" mode="aspectFit"></image>
     <text class="tab-label">首页</text>

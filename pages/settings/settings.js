@@ -36,16 +36,51 @@ Page({
     printerWidthIndex: 0,
   },
 
-  onLoad() {
+  onLoad(options) {
     uiStyle.applyUiStyle(this)
     if (!guardPageLoad(this)) {
       return
     }
+    this._pendingSection = (options && options.section) || ''
     this.loadUserRole()
     this.loadConfig()
     if (this.data.userRole === 'admin' || wx.getStorageSync('userRole') === 'admin') {
       this.loadAutoConfirm()
     }
+  },
+
+  onShow() {
+    uiStyle.applyUiStyle(this)
+    if (this.data.userRole === 'admin') this.scrollToSection()
+  },
+
+  // 从「我的-定时自动确认」入口带 section 参数进入时，滚动定位到对应区块
+  scrollToSection(retry) {
+    const sec = this._pendingSection
+    if (!sec || this.data.userRole !== 'admin') return
+    const map = { timer: 'sec-timer' }
+    const elId = map[sec]
+    if (!elId) return
+    const tryScroll = (attempt) => {
+      const q = wx.createSelectorQuery()
+      q.select('#' + elId).boundingClientRect()
+            q.selectViewport().scrollOffset()
+            q.exec(res => {
+        const rect = res && res[0]
+        const off = res && res[1]
+        const curTop = off ? off.scrollTop : 0
+        if (rect && rect.width > 0) {
+          this._pendingSection = ''
+          wx.pageScrollTo({ scrollTop: Math.max(curTop + rect.top - 120, 0), duration: 200 })
+        } else if (attempt < 5) {
+          setTimeout(() => tryScroll(attempt + 1), 150)
+        } else {
+          this._pendingSection = ''
+        }
+      })
+    }
+    // 延迟执行，等待 admin 区块渲染完成（onShow 可能早于 setData 渲染）
+    setTimeout(() => tryScroll(0), retry ? 0 : 300)
   },
 
   // 加载 AI 配置

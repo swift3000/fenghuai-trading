@@ -35,7 +35,7 @@
 }
 
 .tab-label {
-  font-size: 20rpx;
+  font-size: calc(20rpx * var(--font-scale, 1));
   line-height: 1;
   white-space: nowrap;
 }
@@ -112,6 +112,6 @@
 
 .tab-new-label {
   margin-top: 2rpx;
-  font-size: 20rpx;
+  font-size: calc(20rpx * var(--font-scale, 1));
   color: #98A2B3;
 }

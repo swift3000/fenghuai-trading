@@ -263,7 +263,7 @@
 }
 
 .fab-btn text {
-  font-size: 56rpx;
+  font-size: calc(56rpx * var(--font-scale, 1));
   color: #ffffff;
   font-weight: 300;
 }

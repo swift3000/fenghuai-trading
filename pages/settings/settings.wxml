@@ -105,7 +105,7 @@
     </view>
   </view>
 
-  <view class="sec-card" wx:if="{{userRole === 'admin'}}">
+  <view class="sec-card" id="sec-timer" wx:if="{{userRole === 'admin'}}">
     <view class="sec-head">⏰ 定时自动确认（分拣 / 出库）</view>
     <view class="sec-body">
       <view class="ag-step">开启后，每天到点自动把「未人工确认」的分拣、出库订单批量确认，避免隔夜订单堆积。关闭 = 不限时，纯人工确认。超时未确认的订单会在分拣员 / 库管工作台标红提醒。</view>

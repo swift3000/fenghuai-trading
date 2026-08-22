@@ -39,7 +39,7 @@ Page({
   goToReports() { wx.navigateTo({ url: '/pages/reports/reports' }) },
   goToMembers() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/members/members' }) },
   goToSettings() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/settings/settings' }) },
-  goToAutoConfirm() { wx.navigateTo({ url: '/pages/settings/settings' }) },
+  goToAutoConfirm() { wx.navigateTo({ url: '/pages/settings/settings?section=timer' }) },
   openFontPanel() {
     const current = this.data.fontSizeScale
     const presets = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]

@@ -457,19 +457,19 @@
 }
 
 .smart-voice-notice .notice-icon {
-  font-size: 48rpx;
+  font-size: calc(48rpx * var(--font-scale, 1));
   margin-bottom: 10rpx;
 }
 
 .smart-voice-notice .notice-text {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale, 1));
   color: #2563eb;
   font-weight: 600;
   margin-bottom: 6rpx;
 }
 
 .smart-voice-notice .notice-sub {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale, 1));
   color: #6b7280;
 }
 
@@ -479,7 +479,7 @@
   justify-content: center;
   margin: 20rpx 0;
   color: #9ca3af;
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale, 1));
 }
 
 .smart-divider::before,
@@ -503,7 +503,7 @@
   box-shadow: 0 6rpx 16rpx rgba(7,193,96,.35);
 }
 .smart-voice-notice .voice-btn:active { transform: scale(.94); }
-.smart-voice-notice .voice-btn-icon { font-size: 44rpx; }
+.smart-voice-notice .voice-btn-icon { font-size: calc(44rpx * var(--font-scale, 1)); }
 .smart-voice-notice.voice-recording { background: #FFF3F0; border: 2rpx solid #FF6B4A; }
 .smart-voice-notice.voice-recording .voice-btn { background: #FF6B4A; box-shadow: 0 6rpx 16rpx rgba(255,107,74,.35); }
 

@@ -1,19 +1,32 @@
 Component({
   data: {
     active: '',
-    activeColor: '#07C160'
+    activeColor: '#07C160',
+    tabStyle: ''
   },
 
   lifetimes: {
     attached() {
       this.refresh()
+      this.applyFontScale()
     }
   },
 
   methods: {
+    // 字号缩放跟随（tabbar 是组件，页面根变量的级联不生效，需自身注入 --font-scale）
+    applyFontScale() {
+      let fs = Number(wx.getStorageSync('fontScale'))
+      if (isNaN(fs)) fs = 1
+      fs = Math.min(1.3, Math.max(0.7, fs))
+      this.setData({ tabStyle: '--font-scale:' + fs + ';' })
+    },
+    onFontScaleChange() {
+      this.applyFontScale()
+    },
     // 刷新（页面 onShow 时调用）
     refresh() {
       this.setData({ activeColor: '#07C160' })
+      this.applyFontScale()
     },
 
     goHome() { wx.switchTab({ url: '/pages/index/index' }) },

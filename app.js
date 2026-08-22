@@ -114,10 +114,18 @@ App({
     // 实时通知所有页面刷新字号样式
     const pages = getCurrentPages()
     pages.forEach(page => {
-      if (page.onFontScaleChange) {
+      if (typeof page.onFontScaleChange === 'function') {
         page.onFontScaleChange(scale)
       }
     })
+    // 自定义 TabBar 组件同步缩放（组件不在页面 data 级联链上）
+    if (pages && pages.length) {
+      const page = pages[pages.length - 1]
+      if (typeof page.getTabBar === 'function') {
+        const bar = page.getTabBar()
+        if (bar && typeof bar.onFontScaleChange === 'function') bar.onFontScaleChange(scale)
+      }
+    }
   },
 
   // 更新全局样式（字号）

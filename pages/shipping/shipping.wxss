@@ -462,16 +462,16 @@
   padding: 120rpx 40rpx;
 }
 .empty-state .empty-icon {
-  font-size: 72rpx;
+  font-size: calc(72rpx * var(--font-scale, 1));
   margin-bottom: 24rpx;
 }
 .empty-state .empty-text {
-  font-size: 30rpx;
+  font-size: calc(30rpx * var(--font-scale, 1));
   color: #666;
   font-weight: 500;
 }
 .empty-state .empty-tip {
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale, 1));
   color: #999;
   margin-top: 12rpx;
 }

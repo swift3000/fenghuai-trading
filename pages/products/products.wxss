@@ -435,7 +435,7 @@
 }
 
 .filter-label {
-  font-size: 28rpx;
+  font-size: calc(28rpx * var(--font-scale, 1));
   color: #666;
   margin-right: 16rpx;
 }
@@ -452,7 +452,7 @@
   padding: 8rpx 20rpx;
   background: #f5f5f5;
   border-radius: 20rpx;
-  font-size: 24rpx;
+  font-size: calc(24rpx * var(--font-scale, 1));
   color: #666;
   border: 1rpx solid #e0e0e0;
 }
