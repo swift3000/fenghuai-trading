@@ -186,8 +186,8 @@
         <view class="epp-s-row red"><text class="epp-s-label">未结清</text><text class="epp-s-val">¥{{previewUnpaid}}</text></view>
         <view class="epp-s-row muted"><text class="epp-s-label">客户数</text><text class="epp-s-val">{{previewCount}}</text></view>
       </view>
-      <view class="epp-hint">按当前视图（{{viewTab==='ledger'?'客户台账':(viewTab==='unpaid'?'未结清':'已结清')}}）导出 CSV</view>
-      <button class="epp-btn" bindtap="confirmExport" loading="{{exporting}}">{{exporting ? '导出中...' : '确认导出 CSV'}}</button>
+      <view class="epp-hint">按当前视图（{{viewTab==='ledger'?'客户台账':(viewTab==='unpaid'?'未结清':'已结清')}}）导出，支持 Excel / CSV 两种格式</view>
+      <button class="epp-btn" bindtap="confirmExport" loading="{{exporting}}">{{exporting ? '导出中...' : '确认导出（Excel/CSV）'}}</button>
     </view>
   </view>
 

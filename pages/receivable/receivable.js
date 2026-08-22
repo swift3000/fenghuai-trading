@@ -411,7 +411,18 @@ Page({
     return { period, start, end }
   },
 
-  // 确认导出：按预览弹窗所选周期重新取数生成 CSV，保证与预览一致
+  // 选择导出格式（默认 Excel，与报表页一致）
+  pickExportFormat() {
+    return new Promise(resolve => {
+      wx.showActionSheet({
+        itemList: ['Excel 表格（推荐）', 'CSV 文本'],
+        success: res => resolve(res.tapIndex === 0 ? 'excel' : 'csv'),
+        fail: () => resolve('excel')
+      })
+    })
+  },
+
+  // 确认导出：按预览弹窗所选周期取数，支持 Excel / CSV 双格式（与预览一致）
   async confirmExport() {
     if (this.data.exporting) return
     const { period, start, end } = this.exportRangeParams()
@@ -419,20 +430,60 @@ Page({
       wx.showToast({ title: '请选择完整日期范围', icon: 'none' })
       return
     }
+    const fmt = await this.pickExportFormat()
     this.setData({ exporting: true })
     try {
       const { callCloud } = require('../../utils/request')
-      const data = await callCloud('receivable', {
-        action: 'dashboard',
-        viewTab: this.data.viewTab,
-        timeTab: period,
-        searchKey: '',
-        startDate: start,
-        endDate: end
-      })
-      this.buildExportCsv(data.customers || [], period, start, end)
+      if (fmt === 'excel') {
+        // Excel：云端生成 xlsx 上传云存储，前端下载打开（可转发/保存）
+        wx.showLoading({ title: '导出中...' })
+        const result = await callCloud('receivable', {
+          action: 'exportReceivable',
+          viewTab: this.data.viewTab,
+          period, start, end,
+          format: 'excel'
+        })
+        wx.hideLoading()
+        if (!result || !result.fileID) {
+          wx.showToast({ title: '没有可导出的数据', icon: 'none' })
+          return
+        }
+        wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
+        wx.showLoading({ title: '打开 Excel...' })
+        await new Promise((resolve, reject) => {
+          wx.downloadFile({
+            url: result.fileID,
+            success: d => {
+              if (d.statusCode !== 200) return reject(new Error('download fail'))
+              wx.openDocument({
+                filePath: d.tempFilePath,
+                showMenu: true,
+                fileName: result.filename || 'export.xlsx',
+                success: () => resolve(true),
+                fail: () => resolve(d.tempFilePath)
+              })
+            },
+            fail: reject
+          })
+        })
+        wx.hideLoading()
+        this.setData({ showExportPreview: false })
+        wx.showToast({ title: '已打开 Excel，可转发', icon: 'success' })
+      } else {
+        // CSV：保持本地生成（与预览数据同源 dashboard）
+        const data = await callCloud('receivable', {
+          action: 'dashboard',
+          viewTab: this.data.viewTab,
+          timeTab: period,
+          searchKey: '',
+          startDate: start,
+          endDate: end
+        })
+        this.buildExportCsv(data.customers || [], period, start, end)
+      }
     } catch (e) {
       console.error('导出失败', e)
+      wx.hideLoading()
       wx.showToast({ title: '导出失败', icon: 'none' })
     } finally {
       this.setData({ exporting: false })

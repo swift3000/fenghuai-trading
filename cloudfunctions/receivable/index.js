@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk')
+const XLSX = require('xlsx')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 
@@ -552,6 +553,66 @@ exports.main = async (event, context) => {
         data: payments
       }
     }
+    case 'exportReceivable': {
+      const __p = await checkPermission('report:export'); if (__p.code !== 0) return __p
+      // 赊销报表双格式导出（行结构与前端 buildExportCsv 完全一致，口径复用 dashboard 聚合）
+      const { viewTab, timeTab, format = 'csv', period, start, end } = event
+      // 时间口径与前端导出预览一致：period 来自导出弹窗（all/today/week/month/custom）
+      const dash = await exports.main({ action: 'dashboard', viewTab, timeTab: period || timeTab, searchKey: '', startDate: start, endDate: end })
+      if (dash.code !== 0) return dash
+      const customers = (dash.data && dash.data.customers) || []
+      if (customers.length === 0) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
+
+      const dateStr = () => { const d = bjNow(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+      const timeLabel = { all: '全部', today: '今日', week: '本周', month: '本月', custom: '自定义' }[period || timeTab] || (period || timeTab)
+      const finalLabel = (period === 'custom' && start && end) ? ('自定义 (' + start + ' ~ ' + end + ')') : timeLabel
+      const viewLabel = { ledger: '客户台账', unpaid: '未结清', settled: '已结清' }[viewTab] || viewTab
+      const custReceivable = (c) => (c.orders || []).reduce((s, o) => s + (o.totalAmount || 0), 0)
+      const custConfirmed = (c) => (c.orders || []).reduce((s, o) => s + (o.paidAmount || 0), 0)
+      const custBalance = (c) => (c.orders || []).reduce((s, o) => s + (o.unpaidAmount || 0), 0)
+      const payText = (ps) => ps === 'paid' ? '已结清' : (ps === 'pending' ? '未结清' : '未付款')
+
+      const rows = []
+      rows.push(['丰淮商贸赊销报表'])
+      rows.push(['导出时间：' + new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 16)])
+      rows.push(['筛选周期：' + finalLabel + ' · 视图：' + viewLabel])
+      rows.push([])
+      rows.push(['客户', '区域', '订单数', '总欠款(¥)', '状态', '最长欠款(天)', '已确认收款(¥)', '未收余额(¥)'])
+      let grandTotal = 0, grandConfirmed = 0, grandBalance = 0
+      customers.forEach(c => {
+        const receivable = custReceivable(c), confirmed = custConfirmed(c), balance = custBalance(c)
+        const hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending')
+        const status = balance <= 0.001 ? '已结清' : (hasPending ? '部分结清·待确认' : '未结清')
+        grandTotal += receivable; grandConfirmed += confirmed; grandBalance += balance
+        rows.push([c.name, c.region || '', c.orderCount, receivable.toFixed(2), status, c.maxAge > 0 ? c.maxAge : '', confirmed.toFixed(2), balance.toFixed(2)])
+        ;(c.orders || []).forEach(o => {
+          const oTotal = o.totalAmount || 0, oConfirmed = o.paidAmount || 0, oBalance = o.unpaidAmount || 0
+          rows.push(['  └ ' + o.orderNo, '', '', oTotal.toFixed(2), payText(o.paymentStatus), oBalance > 0.001 ? (o.debtAgeDays || 0) : '', oConfirmed.toFixed(2), oBalance.toFixed(2)])
+        })
+      })
+      rows.push([])
+      rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), grandBalance.toFixed(2)])
+      rows.push([])
+      rows.push(['周期汇总  应收总额：¥' + grandTotal.toFixed(2) + ' | 已收：¥' + grandConfirmed.toFixed(2) + ' | 未结清：¥' + grandBalance.toFixed(2)])
+
+      const baseName = '丰淮商贸赊销报表_' + dateStr()
+      if (format === 'excel') {
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+        const wb = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(wb, ws, '赊销报表')
+        const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
+        const cloudPath = 'exports/' + baseName + '_' + Date.now() + '.xlsx'
+        const up = await cloud.uploadFile({ cloudPath, fileContent: buffer })
+        return { code: 0, data: { format: 'excel', fileID: up.fileID, filename: baseName + '.xlsx' } }
+      }
+      const csvContent = rows.map(r => r.map(c => {
+        let s = (c === null || c === undefined) ? '' : String(c)
+        if (/^[=+\-@]/.test(s)) s = "'" + s
+        return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+      }).join(',')).join('\n')
+      return { code: 0, data: { format: 'csv', csvContent, filename: baseName + '.csv' } }
+    }
+
     default:
       return { code: 1001, message: '未知 action' }
   }
