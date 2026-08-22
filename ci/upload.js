@@ -25,6 +25,12 @@ const project = new ci.Project({
     '**/*.sh',
     '**/*.log',
     '**/*.jsonl',
+    'output/**/*',
+    'screenshots/**/*',
+    '.workbuddy/**/*',
+    '.env',
+    '.DS_Store',
+    'b7fbab622776d6a24ac2ff94bb759960/**/*',
     'project.private.config.json',
     'package.json',
     'package-lock.json'
