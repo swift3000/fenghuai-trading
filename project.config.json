@@ -73,6 +73,18 @@
       },
       {
         "type": "folder",
+        "value": "output"
+      },
+      {
+        "type": "folder",
+        "value": "screenshots"
+      },
+      {
+        "type": "folder",
+        "value": "b7fbab622776d6a24ac2ff94bb759960"
+      },
+      {
+        "type": "folder",
         "value": "loop_project"
       },
       {
