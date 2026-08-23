@@ -38,6 +38,7 @@ async function loadSmartRun() {
   const https = require('https')
   const origRequest = https.request
   global.__SMART_PRODUCTS__ = [{ _id: 'p1', material_code: '001', name: '乐事薯片', spec: '1x60', price_piece: 45, price_unit: 0.75, pricing_mode: 'case', unit: '包' }]
+  global.__SMART_OPENID__ = 'test-openid-admin'
 
   return (opts) => {
     const byHost = opts.byHost || {}
@@ -85,17 +86,17 @@ async function loadSmartRun() {
     assert.ok(r.res.data.items.length > 0, '应有解析结果')
   })
 
-  // 3. 中转站失败 -> 降级千问，AI 兜底
-  await test('中转站失败(网络错) -> 降级千问，AI 兜底', async () => {
+  // 3. 中转站失败 -> 降级 TokenHub，AI 兜底（NLP 引擎已迁移 TokenHub，降级链 = relay -> tokenhub）
+  await test('中转站失败(网络错) -> 降级TokenHub，AI 兜底', async () => {
     const r = await run({
       action: 'parseWithAI', text: '洋芋片来三件',
       ai: {
         relay: { enabled: true, baseUrl: 'https://relay.com/v1', apiKey: 'k1', model: 'qwen-0810' },
-        qwen: { enabled: true, apiKey: 'kq', baseUrl: 'https://dashscope.com/v1', model: 'qwen-max' }
+        tokenhub: { enabled: true, apiKey: 'kth', baseUrl: 'https://tokenhub.com/v1', models: ['hy3'] }
       },
-      byHost: { 'relay.com': { error: 'boom' }, 'dashscope.com': { content: '[{"name":"洋芋片","qty":3,"unit":"件"}]' } }
+      byHost: { 'relay.com': { error: 'boom' }, 'tokenhub.com': { content: '[{"name":"洋芋片","qty":3,"unit":"件"}]' } }
     })
-    assert.ok(r.calls.includes('dashscope.com'), '中转站失败后应降级千问，实际 ' + JSON.stringify(r.calls))
+    assert.ok(r.calls.includes('tokenhub.com'), '中转站失败后应降级TokenHub，实际 ' + JSON.stringify(r.calls))
     assert.strictEqual(r.res.data.engine, 'ai', '最终由 AI 兜底')
     assert.ok(r.res.data.items.length > 0, '应有解析结果')
   })
@@ -106,9 +107,9 @@ async function loadSmartRun() {
       action: 'parseWithAI', text: '洋芋片来三件',
       ai: {
         relay: { enabled: true, baseUrl: 'https://relay.com/v1', apiKey: 'k1', model: 'qwen-0810' },
-        qwen: { enabled: true, apiKey: 'kq', baseUrl: 'https://dashscope.com/v1', model: 'qwen-max' }
+        tokenhub: { enabled: true, apiKey: 'kth', baseUrl: 'https://tokenhub.com/v1', models: ['hy3'] }
       },
-      byHost: { 'relay.com': { error: 'boom' }, 'dashscope.com': { error: 'boom2' } }
+      byHost: { 'relay.com': { error: 'boom' }, 'tokenhub.com': { error: 'boom2' } }
     })
     assert.strictEqual(r.res.data.engine, 'rule', '引擎全失败应回落规则引擎')
   })
