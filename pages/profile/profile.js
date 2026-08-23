@@ -1,7 +1,7 @@
 const tabbarHelper = require('../../utils/tabbar-helper')
 const uiStyle = require('../../utils/ui-style');
 Page({
-  data: { uiStyle: '', userInfo: null, userRole: '', roleText: '', userInitial: '', fontSizeScale: 0.9, fontScalePct: 90,
+  data: { uiStyle: '', userInfo: null, userRole: '', roleText: '', userInitial: '', fontSizeScale: 1.0, fontScalePct: 100,
     autoConfirmEnabled: false, autoConfirmTime: '',
     canViewProducts: false, canViewCustomers: false, canViewReports: false, canManageMembers: false },
   onShow() {
@@ -10,7 +10,7 @@ Page({
     const userInfo = wx.getStorageSync('userInfo')
     const userRole = wx.getStorageSync('userRole')
     const roleTextMap = { orderer: '下单员', sorter: '分拣员', warehouse: '库管', admin: '管理员' }
-    const fontSizeScale = wx.getStorageSync('fontScale') || 0.9
+    const fontSizeScale = wx.getStorageSync('fontScale') || 1.0
     const perms = (userInfo && userInfo.permissions) || []
     const name = (userInfo && userInfo.name) || '用户'
     this.setData({

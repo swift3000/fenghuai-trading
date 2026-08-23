@@ -2,7 +2,7 @@ App({
   globalData: {
     userInfo: null,
     userRole: null,
-    fontScale: 0.9,
+    fontScale: 1.0,
   },
 
   onLaunch() {
@@ -33,7 +33,13 @@ App({
     }
 
     // 加载字号设置
-    const fontScale = wx.getStorageSync('fontScale')
+    let fontScale = wx.getStorageSync('fontScale')
+    // T36 迁移：旧默认 0.9 → 1.0（一次性幂等，用户迁移后仍可在字号选择器调回 0.9）
+    if (fontScale === 0.9 && !wx.getStorageSync('fontScaleMigratedV2')) {
+      fontScale = 1.0
+      wx.setStorageSync('fontScale', fontScale)
+      wx.setStorageSync('fontScaleMigratedV2', true)
+    }
     if (fontScale !== undefined) {
       this.globalData.fontScale = fontScale
     }
