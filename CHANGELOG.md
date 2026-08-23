@@ -6,7 +6,19 @@
 
 ---
 
+## [1.5] - 2026-08-23
+
+### Changed
+- 字号跟随微信系统设置：移除应用内独立字号设置（我的页字体大小入口、auth set-font-scale 死字段），全局 font-scale 由 onLaunch 按系统字号映射（70%–130% 截断），跟随微信 设置→通用→字体大小
+- 原型同步删除字号调节相关 CSS/JS/入口；测试脚本断言、用户手册/测试用例/README 文案同步
+
+### Removed
+- tests/wx-fontscale-shot.js（字号专项截图脚本，入口已移除）
+
+---
+
 ## [1.4] - 2026-08-19
+
 
 ### Changed
 - **目录按全局目录纪律归位**：文档/→docs/、指南/→docs/guide/、报告/与 GIT/→docs/reports/、原型/→docs/ui/、需求/→docs/prd/、经验库/编程错误经验.md→docs/reports/项目级错误经验.md；根部署脚本→deploy/scripts/；output/logs/screenshots→.local/（不入库）。同步更新 README/PROJECT_STRUCTURE/AGENTS.md 路径引用，修正脚本与测试里的硬编码旧路径

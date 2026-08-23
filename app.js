@@ -32,17 +32,8 @@ App({
       this.updateTabBarByRole(userInfo.role, userInfo.permissions)
     }
 
-    // 加载字号设置
-    let fontScale = wx.getStorageSync('fontScale')
-    // T36 迁移：旧默认 0.9 → 1.0（一次性幂等，用户迁移后仍可在字号选择器调回 0.9）
-    if (fontScale === 0.9 && !wx.getStorageSync('fontScaleMigratedV2')) {
-      fontScale = 1.0
-      wx.setStorageSync('fontScale', fontScale)
-      wx.setStorageSync('fontScaleMigratedV2', true)
-    }
-    if (fontScale !== undefined) {
-      this.globalData.fontScale = fontScale
-    }
+    // 字号跟随微信系统设置（微信 设置→通用→字体大小），不再提供应用内调节
+    this.globalData.fontScale = this.systemFontScale()
 
     // 检查是否需要自动登录
     this.checkAutoLogin()
@@ -113,10 +104,20 @@ App({
     return this.globalData.userInfo
   },
 
+  // 系统字号映射：微信 设置→通用→字体大小 → --font-scale 系数
+  systemFontScale() {
+    try {
+      const s = wx.getSystemInfoSync().fontSizeSetting
+      const map = { mini: 0.85, small: 0.92, standard: 1.0, large: 1.1, extraLarge: 1.2 }
+      return map[s] || 1.0
+    } catch (e) {
+      return 1.0
+    }
+  },
+
   // 更新字号设置
   setFontScale(scale) {
     this.globalData.fontScale = scale
-    wx.setStorageSync('fontScale', scale)
     // 实时通知所有页面刷新字号样式
     const pages = getCurrentPages()
     pages.forEach(page => {
@@ -134,14 +135,4 @@ App({
     }
   },
 
-  // 更新全局样式（字号）
-  updateGlobalStyle() {
-    const scale = this.globalData.fontScale
-    const rootFontSize = 32 * (1 + scale) // 基础字号 32px，按缩放比例调整
-    
-    // 设置全局样式
-    wx.setStorageSync('globalStyle', {
-      rootFontSize
-    })
-  }
 })

@@ -20,11 +20,6 @@
       <view class="mi-left"><view class="mi-icon m3">📊</view><text class="mi-lbl">报表统计</text></view>
       <text class="mi-arrow">›</text>
     </view>
-    <view class="menu-item" bindtap="openFontPanel">
-      <view class="mi-left"><view class="mi-icon m4">🔤</view><text class="mi-lbl">字体大小</text></view>
-      <text class="mi-fontval">{{fontScalePct}}%</text>
-      <text class="mi-arrow">›</text>
-    </view>
     <view class="menu-item" wx:if="{{canManageMembers}}" bindtap="goToMembers">
       <view class="mi-left"><view class="mi-icon m6">👥</view><text class="mi-lbl">成员管理</text></view>
       <text class="mi-arrow">›</text>

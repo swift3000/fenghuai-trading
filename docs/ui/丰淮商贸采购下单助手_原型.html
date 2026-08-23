@@ -807,18 +807,6 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 .fso-summary{padding:6px 16px;font-size:calc(11.5px * var(--font-scale));display:flex;flex-wrap:wrap;gap:4px}
 .fso-summary span{flex:1;min-width:45%}
 .fso-footer{padding:8px 16px 14px;font-size:calc(11px * var(--font-scale));color:#888;border-top:1px solid #eee}
-/* 全局字号调节（适老化） */
-.fz-toggle{font-size:calc(13px * var(--font-scale));font-weight:700;color:#000;background:rgba(0,0,0,.06);border-radius:6px;padding:1px 6px;margin-right:6px;cursor:pointer;user-select:none}
-.fz-toggle:active{background:rgba(0,0,0,.12)}
-#font-zoom-panel{position:absolute;top:46px;right:10px;z-index:80;background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.18);padding:12px 14px;display:none;flex-direction:column;gap:10px;width:180px}
-#font-zoom-panel.show{display:flex}
-.fz-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.fz-title{font-size:calc(13px * var(--font-scale));color:var(--text-2)}
-.fz-ctrl{display:flex;align-items:center;gap:12px}
-.fz-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:#fff;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:calc(16px * var(--font-scale));font-weight:700;cursor:pointer;user-select:none}
-.fz-btn:active{background:#f5f5f5}
-.fz-val{font-size:calc(14px * var(--font-scale));font-weight:600;min-width:44px;text-align:center}
-.fz-reset{font-size:calc(12px * var(--font-scale));color:var(--green);text-align:center;cursor:pointer;padding-top:8px;border-top:1px solid var(--border);user-select:none}
 
 /* Smart Input Floating Ball (首页右下角悬浮球) */
 .smart-fab{position:absolute;right:16px;bottom:72px;z-index:60;display:none;flex-direction:column;align-items:center;gap:6px;cursor:pointer;user-select:none}
@@ -831,16 +819,7 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
 <div id="phone">
   <div id="status-bar">
     <span id="clock">9:41</span>
-    <div class="right"><span class="fz-toggle" id="fontZoomToggle" onclick="toggleFontZoomPanel()" title="调节字体大小">字</span><span class="signal"></span><span class="wifi">5G</span><span class="battery"></span></div>
-  </div>
-  <!-- 全局字号调节面板（适老化） -->
-  <div id="font-zoom-panel">
-    <div class="fz-row"><span class="fz-title">字体大小</span><span class="fz-val" id="fontZoomVal">90%</span></div>
-    <div class="fz-row"><div class="fz-ctrl">
-      <div class="fz-btn" onclick="changeFontScale(-0.05)">A−</div>
-      <div class="fz-btn" onclick="changeFontScale(0.05)">A+</div>
-    </div></div>
-    <div class="fz-reset" onclick="resetFontScale()">恢复默认</div>
+    <div class="right"><span class="signal"></span><span class="wifi">5G</span><span class="battery"></span></div>
   </div>
   <div id="nav-bar" style="display:none"><div class="back" id="navBack">‹</div><div class="title" id="navTitle">首页</div></div>
   <div id="page-container">
@@ -1230,7 +1209,6 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
         <div class="menu-item" id="menuProducts" onclick="navigateTo('products')"><div class="left"><div class="icon m1">📦</div><span class="lbl">商品管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuCustomers" onclick="navigateTo('customers')"><div class="left"><div class="icon m2">🏪</div><span class="lbl">客户管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuReports" onclick="navigateTo('reports')"><div class="left"><div class="icon m3">📊</div><span class="lbl">报表统计</span></div><span class="arrow">›</span></div>
-        <div class="menu-item" onclick="toggleFontZoomPanel()"><div class="left"><div class="icon" style="background:#5B8DEF">🔠</div><span class="lbl">字体大小</span></div><span style="font-size:calc(12px * var(--font-scale));color:var(--text-2);margin-right:8px" id="profileFontScale">90%</span><span class="arrow">›</span></div>
         <div class="menu-item" id="menuMembers" onclick="openMembers()"><div class="left"><div class="icon" style="background:#534AB7">👥</div><span class="lbl">成员管理</span></div><span class="arrow">›</span></div>
         <div class="menu-item" id="menuSettings" onclick="navigateTo('settings')"><div class="left"><div class="icon" style="background:#0EA5E9">⚙️</div><span class="lbl">系统设置</span></div><span class="arrow">›</span></div>
       </div>
@@ -5787,38 +5765,6 @@ function exportSingleOrder(){
   rows.push([],['合计','','','', grandTotal,'']);
   downloadCSV(`${o.customer}_送货单_${o.orderNo}.csv`, rows);
 }
-
-// ============ 全局字号调节（适老化）============
-function getFontScale(){ const v = document.documentElement.style.getPropertyValue('--font-scale'); return v ? parseFloat(v) : 0.9; }
-function applyFontScale(scale){
-  scale = Math.max(0.7, Math.min(1.3, Math.round(scale * 100) / 100));
-  document.documentElement.style.setProperty('--font-scale', scale);
-  const txt = Math.round(scale * 100) + '%';
-  const v = $('fontZoomVal'); if(v) v.textContent = txt;
-  const p = $('profileFontScale'); if(p) p.textContent = txt;
-  try{ localStorage.setItem('fh_font_scale', String(scale)); }catch(e){}
-}
-function changeFontScale(delta){ applyFontScale(getFontScale() + delta); }
-function resetFontScale(){ applyFontScale(0.9); }
-function toggleFontZoomPanel(){
-  const p = $('font-zoom-panel'); if(p) p.classList.toggle('show');
-  setTimeout(() => {
-    document.addEventListener('click', function ec(e){
-      const panel = $('font-zoom-panel');
-      if(!panel) return;
-      if(!panel.contains(e.target) && e.target.id !== 'fontZoomToggle' && !(e.target.closest && e.target.closest('#fontZoomToggle'))){
-        panel.classList.remove('show'); document.removeEventListener('click', ec);
-      }
-    });
-  }, 0);
-}
-// 启动时应用已保存的字号偏好
-(function(){
-  try{
-    const saved = localStorage.getItem('fh_font_scale');
-    applyFontScale(saved ? parseFloat(saved) : 0.9);
-  }catch(e){ applyFontScale(0.9); }
-})();
 
 // Init
 document.querySelectorAll('.modal-mask').forEach(m => {

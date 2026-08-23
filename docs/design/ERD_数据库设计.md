@@ -2,7 +2,7 @@
 
 > **项目名称**：丰淮商贸采购下单助手
 > **数据库类型**：MongoDB 兼容（微信云开发自带数据库）
-> **版本**：MVP v1.0（2026-08-05 定稿：payments 集合 + 收款状态机 + 全员订单权限 + 订单内自定义价格 + 全局字号缩放 + 0 元订单约束）
+> **版本**：MVP v1.0（2026-08-05 定稿：payments 集合 + 收款状态机 + 全员订单权限 + 订单内自定义价格 + 字号跟随微信系统设置 + 0 元订单约束）
 > **创建日期**：2026-07-28
 > **更新日期**：2026-08-04
 > **对应产品版本**：MVP v1.0（2026-08-05 定稿，最终功能范围）
@@ -10,7 +10,7 @@
 
 > 本文档已按 MVP（v1.0，2026-08-05）口径修订，MVP 为最终功能范围，无二期增强；功能清单与范围以《小程序 MVP 落地计划与技术架构》为准。
 
-> **MVP 数据模型增量**：`users` 新增 `fontScale`（全局字号缩放 0.7–1.3，持久化）；`orders` 增加 **0 元订单不落库**约束（`total_amount > 0`）；`users.name` / `users.phone` 作为销售单模板"制单人 / 制单人电话"的取值来源。详见 §MVP 字段增量。
+> **MVP 数据模型增量**：字号跟随微信系统设置（无新增字段）；`orders` 增加 **0 元订单不落库**约束（`total_amount > 0`）；`users.name` / `users.phone` 作为销售单模板"制单人 / 制单人电话"的取值来源。详见 §MVP 字段增量。
 
 ---
 
@@ -35,7 +35,6 @@ erDiagram
         string region "区域"
         string role "角色 admin/orderer/sorter/warehouse"
         string wx_openid UK "微信OpenID（唯一身份锚点，无密码）"
-        string fontScale "字号档 0.7-1.3"
         string status "状态 pending/active/disabled"
         string invitedBy "邀请人 openid"
         datetime created_at "创建时间"
@@ -184,7 +183,6 @@ erDiagram
 | `region` | String | 否 | null | 所属区域 | 普通索引（sparse） |
 | `role` | String | 是 | — | `admin`/`orderer`/`sorter`/`warehouse` | 普通索引 |
 | `wx_openid` | String | 是 | — | 微信 OpenID（唯一身份锚点，无密码） | UK（唯一） |
-| `fontScale` | Number | 否 | 0.9 | 字号档 0.7-1.3 | — |
 | `status` | String | 是 | `pending` | `pending`/`active`/`disabled` | 普通索引 |
 | `invitedBy` | String | 否 | null | 邀请人 openid | — |
 | `created_at` | DateTime | 是 | 自动生成 | 创建时间 | — |

@@ -333,7 +333,7 @@
 | `name` | String | ✅ | — | 真实姓名（**销售单模板"制单人"取此字段**） |
 | `phone` | String | ❌ | `""` | 手机号（**销售单模板"制单人电话"自动取此字段**） |
 | `role` | String | ✅ | `"orderer"` | admin / orderer / sorter / warehouse |
-| **`fontScale`** | Number | ❌ | `1` | **【MVP 新增】全局字号缩放比例，取值 0.7–1.3（70%–130%），跨设备持久化** |
+| ~~`fontScale`~~ | Number | ❌ | - | **已废弃（v1.5）**：应用内字号设置已移除，字号跟随微信系统设置，运行时映射 0.7–1.3，不再落库 |
 | `is_inherited` | Boolean | ✅ | `false` | 是否继承账号 |
 | `inherited_from` | String | ❌ | `null` | 继承自哪个用户ID |
 | `status` | String | ✅ | `"active"` | active / disabled |
@@ -656,29 +656,13 @@ const visibleItems = order.items_snapshot.filter(
 | 备注来源 | 逐行取 `items_snapshot[].remark`，与商品名分列显示 |
 | 行过滤 | 0件+0个 商品行不输出（见 6.1A） |
 
-### 6.1C 【MVP】全局字号缩放（适老化）
+### 6.1C 字号跟随微信系统设置（适老化，v1.5 起）
 
-```javascript
-// utils/fontScale.js
-const MIN = 0.7, MAX = 1.3, STEP = 0.1;   // 70% ~ 130%
-
-function applyScale(scale) {
-  const s = Math.min(MAX, Math.max(MIN, scale));
-  wx.setStorageSync('fontScale', s);       // 本地即时生效
-  getApp().globalData.fontScale = s;       // 驱动 CSS 变量 --font-scale
-  return s;
-}
-
-// 变更后异步落库，跨设备持久化
-async function persist(scale) {
-  await wx.cloud.callFunction({
-    name: 'auth', data: { action: 'set-font-scale', fontScale: scale }
-  });
-}
-```
-- **入口**：① 状态栏「字」按钮（全局组件 `fontZoomPanel`，任意页面可唤起）；② 「我的」页 → 字号设置。
-- **实现**：`app.wxss` 定义 `--font-scale`，各页面字号以 `calc(28rpx * var(--font-scale))` 形式书写，切换即时全局生效。
-- **持久化**：`wx.setStorageSync` 本地兜底 + `users.fontScale` 云端落库；登录后以云端值为准回写本地。
+- **来源**：`wx.getSystemInfo().fontSizeSetting`（微信系统字号设置）。
+- **映射**：`app.js` onLaunch 时将系统字号映射为 `globalData.fontScale`，并夹取在 **0.7–1.3（70%–130%）** 区间内，拿不到系统值时兜底 1.0。
+- **生效**：驱动 CSS 变量 `--font-scale`，各页面字号以 `calc(Nrpx * var(--font-scale))` 书写，系统字号变化后下次启动即时生效。
+- **入口**：无应用内字号入口（v1.5 起已移除「我的」页字体大小项与状态栏「字」按钮）；用户如需调字号，直接在手机/微信系统设置中调整。
+- **持久化**：无（系统设置天然跨设备一致），`users` 集合不再落 `fontScale` 字段。
 - **兼容性要求**：70%–130% 全区间内页面不得溢出/错行（见 PRD §5.4）。
 
 ### 6.2 Excel 导出（前端 SheetJS，不写云函数）
@@ -1230,7 +1214,7 @@ cloudfunctions/
 | **v2.0** | **2026-07-30** | **方案B（极简版）：3周 5000元；架构→小程序+单HTML→云函数(8个)→MongoDB(6集合)；砍 Element/Pinia/Router/ECharts/ExcelJS/Docker/Nginx；Excel导出改 SheetJS 前端；蓝牙打印升级为 v1.0 必做，新增 ESC/POS 指令、三款机型参数、二维码/条形码详解** |
 | **v3.0** | **2026-07-30** | **纯小程序双方案版：砍Web后台、砍蓝牙打印；新增方案A(云开发)/方案B(轻量服务器)双选；技术服务费5,000元包干不细化；甲方最少费用方案A首年仅840元** |
 | **v4.0** | **2026-07-30** | **方案A唯一方案定稿：砍Web后台，保留蓝牙打印；微信云开发后端；技术服务费5,000元包干；甲方首年仅840元** |
-| **MVP v1.0** | **2026-08-05** | **MVP 口径修订（最终功能范围，无二期增强）**：新增 §6.1A 0元订单拦截与0件0个过滤、§6.1B 销售单模板（西安迈尚版）、§6.1C 全局字号缩放；`users` 新增 `fontScale` 字段；商品/客户 write 云函数放开为**全角色 CRUD**；Web 后台相关章节（§3.3、附录 C、`username`/`password_hash`）标注为不适用；催收闭环/审计日志/趋势报表改为 MVP 不含的独立升级模块；工期口径统一为 **MVP 约 33 人天** |
+| **MVP v1.0** | **2026-08-05** | **MVP 口径修订（最终功能范围，无二期增强）**：新增 §6.1A 0元订单拦截与0件0个过滤、§6.1B 销售单模板（西安迈尚版）、§6.1C 字号跟随微信系统设置；商品/客户 write 云函数放开为**全角色 CRUD**；Web 后台相关章节（§3.3、附录 C、`username`/`password_hash`）标注为不适用；催收闭环/审计日志/趋势报表改为 MVP 不含的独立升级模块；工期口径统一为 **MVP 约 33 人天** |
 | **v4.1** | **2026-08-03** | **同步需求变更清单 v2.0（10条）：订单流程改并行（分拣确认发货∥库管配货）、新增 checked 状态、配货暂存 pick_large/medium/small（不改状态）、"配完"确认 confirm（ship_large/medium/small）、收款登记 collect、库管价格脱敏、订单号前缀"丰淮商贸-YYYYMMDD-NNNN"、仓库精简视图、打印模板合并行/去规格列/数量字体放大/收款状态、商品默认数量0、products.usage 排序、单位"零包"→"包"、提交二次确认文案** |
 | **v4.2** | **2026-08-03** | **新增已确认需求#11「订单转发给客户」：下单员/管理员在订单详情弹窗/送货单预览页点「📤 转发给客户」，前端基于订单详情数据生成「订单收款卡片」（丰淮商贸抬头+订单号+客户+商品件包明细+应付金额+商户收款码+付款提示）转发微信，客户扫码付款后复用 collect-payment「确认收款」；纯前端动作不新增后端接口（扩展点：orders.shared_at 可选）；草稿/取消订单不可转发；新增验收用例 AC-21。另含需求#12「物流包裹展示与导出」（ship_large/medium/small 列表卡片+详情展示，主报表/出库单/单订单导出，新增 AC-22）** |
 | **v4.3** | **2026-08-04** | **赊销收款管理版（对齐产品 v4.3）：①取消商户收款码与央行259号文合规（送货单/订单/卡片不再印制，转发收款卡片 4.3.8/6.5 整体下线）；②全员订单权限：下单/改单/删单放开至 4 角色（含订单内改价），取消分拣员只读与库管价格脱敏（完整视图）；③订单内自定义价格：全商品可改仅当前订单有效（is_price_modified + original_price_*），不限可调价档位；④客户上次价格：新开单默认取该客户最近订单成交价，无历史回退商品默认价；⑤录单页单栏布局（通过「+ 添加商品」弹窗选品）；⑥订单列表当日按客户分组完整卡片 + 历史折叠单行；⑦收款改两步：payments 独立集合（registered_by→库管 confirmed_by），新增 collect-confirm（确认收款）与 receivable（赊销看板）action，orders.collect → payment_status（unpaid/pending/paid）+ received_amount，支持部分收款累计与折价/货损（discount）；⑧赊销收款管理独立Tab「赊销」（客户维度每日欠款+累计总欠款，全角色可见）；⑨订单备注修改、标记已打印放开至全员；⑩更新收款/转发相关验收用例，新增 AC-23~26** |

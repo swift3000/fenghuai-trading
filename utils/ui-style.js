@@ -1,7 +1,7 @@
 /**
  * 运行时字号样式工具
  * 为每个页面根容器生成内联 CSS 变量串：
- *  - 全局字号缩放 70%-130% 实时生效（--font-scale）
+ *  - 全局字号跟随微信系统设置（--font-scale，0.7-1.3 夹取）
  * 主题配色已锁定为默认绿色（见 app.wxss page 变量），不再提供切换。
  */
 const MIN_SCALE = 0.7
@@ -16,9 +16,15 @@ function buildVarStyle(themeKey, fontScale) {
 }
 
 // 当前应注入的变量串（供页面 onShow/onLoad 调用）
+// 字号跟随微信系统设置：从 app.globalData.fontScale 取（onLaunch 时按系统字号映射），不再读本地 storage
 function currentVarStyle() {
-  let fs = Number(wx.getStorageSync('fontScale'))
-  if (isNaN(fs)) fs = 0.9
+  let fs = 1.0
+  try {
+    const app = getApp()
+    if (app && app.globalData && Number.isFinite(Number(app.globalData.fontScale))) {
+      fs = Number(app.globalData.fontScale)
+    }
+  } catch (e) {}
   return buildVarStyle('', fs)
 }
 

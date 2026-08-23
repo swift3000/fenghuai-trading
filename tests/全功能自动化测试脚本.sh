@@ -50,7 +50,7 @@ declare -A TEST_PLAN=(
     ["pages/reports/reports"]="报表导出|商品统计 | 客户统计 | 收款统计 | 导出"
     ["pages/members/members"]="成员管理|成员列表 | 邀请新成员 | 生成二维码 | 角色切换"
     ["pages/profile/profile"]="个人中心|用户信息 | 设置入口 | 退出登录"
-    ["pages/settings/settings"]="设置|主题切换 | 字号设置 | 系统配置"
+    ["pages/settings/settings"]="设置|AI 配置 | 打印机配置 | 定时自动确认"
 )
 
 # 测试每个页面

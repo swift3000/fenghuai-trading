@@ -144,7 +144,6 @@ async function handleLogin(openid, event) {
             region: region || pre.region || '',
             role: finalRole,
             status: 'active',
-            fontScale: 0.9,
             inviteStatus: 'activated',
             activatedAt: db.serverDate(),
             permissions,
@@ -188,7 +187,6 @@ async function handleLogin(openid, event) {
         region: region || '',
         role: finalRole,
         status: 'active',
-        fontScale: 0.9,
         permissions,
         createdAt: db.serverDate(),
         updatedAt: db.serverDate()

@@ -1,7 +1,7 @@
 const tabbarHelper = require('../../utils/tabbar-helper')
 const uiStyle = require('../../utils/ui-style');
 Page({
-  data: { uiStyle: '', userInfo: null, userRole: '', roleText: '', userInitial: '', fontSizeScale: 1.0, fontScalePct: 100,
+  data: { uiStyle: '', userInfo: null, userRole: '', roleText: '', userInitial: '',
     autoConfirmEnabled: false, autoConfirmTime: '',
     canViewProducts: false, canViewCustomers: false, canViewReports: false, canManageMembers: false },
   onShow() {
@@ -10,12 +10,10 @@ Page({
     const userInfo = wx.getStorageSync('userInfo')
     const userRole = wx.getStorageSync('userRole')
     const roleTextMap = { orderer: '下单员', sorter: '分拣员', warehouse: '库管', admin: '管理员' }
-    const fontSizeScale = wx.getStorageSync('fontScale') || 1.0
     const perms = (userInfo && userInfo.permissions) || []
     const name = (userInfo && userInfo.name) || '用户'
     this.setData({
-      userInfo: userInfo, userRole: userRole, roleText: roleTextMap[userRole] || '', fontSizeScale: fontSizeScale,
-      fontScalePct: Math.round(fontSizeScale * 100),
+      userInfo: userInfo, userRole: userRole, roleText: roleTextMap[userRole] || '',
       userInitial: (name || '用').slice(0, 1),
       canViewProducts: perms.includes('product:view'),
       canViewCustomers: perms.includes('customer:view'),
@@ -40,26 +38,6 @@ Page({
   goToMembers() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/members/members' }) },
   goToSettings() { if (this.data.userRole === 'admin') wx.navigateTo({ url: '/pages/settings/settings' }) },
   goToAutoConfirm() { wx.navigateTo({ url: '/pages/settings/settings?section=timer' }) },
-  openFontPanel() {
-    const current = this.data.fontSizeScale
-    const presets = [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]
-    const that = this
-    const items = []
-    for (let i = 0; i < presets.length; i++) {
-      const p = presets[i]
-      items.push((p * 100) + (p === current ? '（当前）' : ''))
-    }
-    wx.showActionSheet({
-      itemList: items,
-      success: function (res) {
-        const scale = presets[res.tapIndex]
-        that.setData({ fontSizeScale: scale, fontScalePct: Math.round(scale * 100) })
-        wx.setStorageSync('fontScale', scale)
-        getApp().globalData.fontScale = scale
-        uiStyle.applyUiStyle(that)
-      }
-    })
-  },
   handleLogout() {
     wx.showModal({
       title: '确认退出',
