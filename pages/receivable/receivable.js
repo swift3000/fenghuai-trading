@@ -313,7 +313,7 @@ Page({
         amount: amount,
         paymentMethod: this.data.paymentMethods[this.data.paymentMethodIndex],
         note: this.data.collectNote,
-        discount: this.data.canDiscount ? discount : 0,
+        discount,
         clientToken: this.data.collectClientToken
       })
 

@@ -220,10 +220,6 @@ Page({
       wx.showToast({ title: `收款+折价不能超过剩余欠款 ¥${remaining}`, icon: 'none' })
       return
     }
-    if (discount > 0 && !this.data.canDiscount) {
-      wx.showToast({ title: '无折价/减免权限', icon: 'none' })
-      return
-    }
 
     this.setData({ collectLoading: true })
     try {

@@ -237,13 +237,13 @@
         <text class="form-hint">该订单最多可收 ¥{{collectUnpaidAmount}}<text class="quick-fill" bindtap="fillCollectAll"> 全部收</text></text>
       </view>
 
-      <view class="form-group" wx:if="{{canDiscount}}">
+      <view class="form-group">
         <text class="form-label">折价/货损金额</text>
         <view class="amount-input">
           <text class="currency-symbol">¥</text>
           <input class="form-input amount-input" type="digit" placeholder="折价/货损（可选）" value="{{collectDiscount}}" bindinput="onCollectDiscountChange" />
         </view>
-        <text class="form-hint">需折价/减免权限</text>
+        <text class="form-hint">如货品损坏折扣，确认入账后按最终价计入</text>
       </view>
 
       <view class="form-group">
