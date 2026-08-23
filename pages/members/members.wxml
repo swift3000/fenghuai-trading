@@ -9,14 +9,20 @@
         <text class="value">{{inviteRoleLabel}}</text>
       </view>
     </picker>
-    <view class="invite-actions">
-      <button class="btn-primary invite-btn" bindtap="handleInvite">🔗 生成邀请</button>
-      <button class="invite-btn refresh" bindtap="handleInvite">🔄 刷新</button>
+    <!-- 对齐原型 qr-row：左 QR + 右侧竖排双按钮 -->
+    <view class="qr-row">
+      <view class="qr-box">
+        <image wx:if="{{inviteQr}}" class="qr-img" src="{{inviteQr}}" mode="aspectFit" />
+        <text wx:else class="qr-placeholder">🔗</text>
+      </view>
+      <view class="ic-actions">
+        <button class="btn-invite primary" bindtap="handleInvite">🔗 生成邀请</button>
+        <button class="btn-invite" bindtap="handleInvite">🔄 刷新</button>
+      </view>
     </view>
 
     <!-- 生成的邀请卡片 -->
     <view class="invite-result" wx:if="{{inviteQr || lastInvite}}">
-      <image class="invite-qr" wx:if="{{inviteQr}}" src="{{inviteQr}}" mode="aspectFit" />
       <view class="invite-result-info" wx:if="{{lastInvite}}">
         <text class="invite-result-role">角色：{{lastInvite.roleLabel}}</text>
         <view class="invite-result-code-row">
