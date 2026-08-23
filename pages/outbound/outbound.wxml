@@ -1,7 +1,7 @@
 <view class="container" style="{{uiStyle}}">
   <view class="sub-tabs">
     <view wx:if="{{canSort}}" class="tab {{subTab==='sort'?'active':''}}" data-tab="sort" bindtap="switchSub"><text>🔍 分拣</text></view>
-    <view wx:if="{{canOut}}" class="tab {{subTab==='out'?'active':''}}" data-tab="out" bindtap="switchSub"><text> 出库</text></view>
+    <view wx:if="{{canOut}}" class="tab {{subTab==='out'?'active':''}}" data-tab="out" bindtap="switchSub"><text>📦 出库</text></view>
   </view>
   <view wx:if="{{subTab==='sort'}}">
     <!-- 分拣子区 tabs（对齐原型：待分拣/已分拣 badge） -->
@@ -16,16 +16,51 @@
     <view class="ac-notice" wx:if="{{autoPolicy.enabled && autoPolicy.duePassed && !autoPolicy.alreadyRan}}">⏰ 已过定时确认时间（{{autoPolicy.time}}），以下未确认订单已超时，请尽快处理</view>
     <view class="ac-notice ac-notice-off" wx:elif="{{autoPolicy.enabled}}">🕐 定时自动确认已开启：每天 {{autoPolicy.time}} 自动确认未处理订单</view>
     <block wx:if="{{sortTab==='pending'}}">
-      <view class="order-card card {{item.overdue ? 'overdue-card' : ''}}" wx:for="{{pendingSort}}" wx:key="_id">
-        <text>{{item.customerName}}<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></text>
-        <view class="order-actions"><button size="mini" data-id="{{item._id}}" bindtap="handleSort">分拣确认</button></view>
+      <view class="wh-item {{item.overdue ? 'overdue-card' : ''}}" wx:for="{{pendingSort}}" wx:key="_id">
+        <view class="wh-main">
+          <view class="wh-header">
+            <text class="wh-no">{{item.orderNo}}</text>
+            <view class="wh-status st-pending">待分拣<text class="overdue-badge" wx:if="{{item.overdue}}">超时</text></view>
+          </view>
+          <view class="wh-customer">{{item.customerName}}</view>
+          <view class="wh-meta">
+            <text>📍 {{item.customerRegion || '-'}}</text>
+            <text>⏰ {{item.timeText}}</text>
+          </view>
+          <view class="wh-footer">
+            <text class="wh-amount">¥{{item.totalAmount}}</text>
+            <button class="sort-done-btn" size="mini" data-id="{{item._id}}" bindtap="handleSort">✅ 分拣完成</button>
+          </view>
+        </view>
+        <view class="wh-products">
+          <view class="wh-line" wx:for="{{item.items}}" wx:for-item="it" wx:key="name">
+            <text>{{it.name}} × {{it.qtyText}}{{it.remark ? '（' + it.remark + '）' : ''}}</text>
+          </view>
+        </view>
       </view>
       <view class="out-empty" wx:if="{{!pendingSort.length}}">暂无待分拣订单</view>
     </block>
     <block wx:else>
-      <view class="order-card card done-card" wx:for="{{doneSort}}" wx:key="_id">
-        <text>{{item.customerName}}</text>
-        <text class="done-tag">✓ 已分拣</text>
+      <view class="wh-item confirmed" wx:for="{{doneSort}}" wx:key="_id">
+        <view class="wh-main">
+          <view class="wh-header">
+            <text class="wh-no">{{item.orderNo}}</text>
+            <view class="wh-status st-done">⏳ 待库管出库</view>
+          </view>
+          <view class="wh-customer">{{item.customerName}}</view>
+          <view class="wh-meta">
+            <text>📍 {{item.customerRegion || '-'}}</text>
+            <text>⏰ {{item.timeText}}</text>
+          </view>
+          <view class="wh-footer">
+            <text class="wh-amount">¥{{item.totalAmount}}</text>
+          </view>
+        </view>
+        <view class="wh-products">
+          <view class="wh-line" wx:for="{{item.items}}" wx:for-item="it" wx:key="name">
+            <text>{{it.name}} × {{it.qtyText}}{{it.remark ? '（' + it.remark + '）' : ''}}</text>
+          </view>
+        </view>
       </view>
       <view class="out-empty" wx:if="{{!doneSort.length}}">暂无已分拣订单</view>
     </block>
@@ -59,17 +94,19 @@
           <view class="wh-footer">
             <text class="wh-confirmed" wx:if="{{item.outStatus==='done'}}">✓ 已确认</text>
             <text class="wh-amount">¥{{item.totalAmount}}</text>
+            <button class="sort-done-btn" size="mini" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick" wx:if="{{outTab==='pending'}}">✅ 确认并填件型</button>
           </view>
         </view>
         <view class="wh-products">
-          <view class="wh-line" wx:for="{{item.items}}" wx:for-item="it" wx:if="{{it.show}}">
+          <view class="wh-line" wx:for="{{item.items}}" wx:for-item="it" wx:key="name">
             <text>{{it.name}} × {{it.qtyText}}</text>
           </view>
-          <view class="wh-pkg-row" wx:if="{{item.pkgText}}">
+          <!-- 件型行只在已出库 tab 显示（对齐原型：库管填完件数后在卡片内显示） -->
+          <view class="wh-pkg-row" wx:if="{{outTab==='done' && item.pkgText}}">
             <text class="pkg-vals">{{item.pkgText}}</text>
             <text class="pkg-edit" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick">修改</text>
           </view>
-          <view class="wh-pkg-row empty" wx:else>
+          <view class="wh-pkg-row empty" wx:elif="{{outTab==='done'}}">
             <text class="pkg-fill" data-id="{{item._id}}" data-customer="{{item.customerName}}" data-items="{{item.items}}" bindtap="handleOutClick">＋填写件数</text>
           </view>
         </view>

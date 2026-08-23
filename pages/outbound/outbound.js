@@ -68,13 +68,18 @@ Page({
     }
     const app = getApp()
     const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) || []
-    const canSort = perms.includes('sort:task')
-    const canOut = perms.includes('warehouse:confirm')
+    // 段显隐按角色（对齐原型 applyOutboundPermGates：按 currentRole 而非权限位）
+    // 权限矩阵本身不改（各角色权限放得很大是设计意图），仅显示层按原型
+    const role = (app.globalData.userInfo && app.globalData.userInfo.role) || 'orderer'
+    const canSort = role !== 'warehouse'
+    const canOut = role !== 'sorter'
     this.setData({
       canSort,
       canOut,
-      canExport: perms.includes('warehouse:confirm'),
-      subTab: canOut ? 'out' : 'sort'
+      // 原型：导出库单(不含价格)对可见出库区的角色均可用
+      canExport: canOut,
+      // 双段角色（下单员/管理员）默认显示分拣段（原型口径）；单段角色默认该段
+      subTab: canSort ? 'sort' : 'out'
     })
   },
   

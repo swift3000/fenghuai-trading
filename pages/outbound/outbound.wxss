@@ -2,8 +2,8 @@
 .tab{flex:1;text-align:center;padding:16rpx;background:#fff;border-radius:8rpx;font-size: calc(26rpx * var(--font-scale))}
 .tab.active{background:#1a73e8;color:#fff}
 .section-title{font-size: calc(28rpx * var(--font-scale));font-weight:bold;margin-bottom:12rpx}
-.order-card{padding:20rpx 24rpx;margin-bottom:12rpx}
-.order-actions{margin-top:12rpx}
+.sort-done-btn{background:#22B14C;color:#fff;border:none;border-radius:40rpx;font-size:calc(24rpx * var(--font-scale));padding:0 24rpx;line-height:52rpx;height:52rpx;flex-shrink:0;margin:0}
+.sort-done-btn::after{border:none}
 
 /* 自定义底部 TabBar 占位，防止内容被遮挡 */
 .container {
@@ -79,7 +79,3 @@
 /* 数字 badge（对齐原型 .badge） */
 .wh-badge{display:inline-block;min-width:36rpx;padding:2rpx 12rpx;border-radius:20rpx;background:#FF3B30;color:#fff;font-size:calc(22rpx * var(--font-scale));margin-left:8rpx;text-align:center}
 .wh-badge.blue{background:#2563EB}
-/* 已分拣卡片 */
-.done-card{border-left:6rpx solid #22B14C}
-.done-card text:first-child{font-size:calc(28rpx * var(--font-scale));font-weight:600}
-.done-tag{color:#22B14C;font-size:calc(24rpx * var(--font-scale));margin-top:8rpx;display:block}
