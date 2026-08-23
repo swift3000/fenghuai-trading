@@ -6,7 +6,7 @@
     "sharp": "^0.35.3"
   },
   "scripts": {
-    "test": "node tests/automated-test.js && node tests/smart-ai-test.js",
+    "test": "node tests/automated-test.js && node tests/smart-ai-test.js && node tests/smart-dialect-test.js",
     "test:ui": "node tests/ui-automation-test.js",
     "check:perms": "node scripts/sync-perm-matrix.js",
     "test:wx-pages": "node tests/wx-pagewalk-test.js",

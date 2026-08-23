@@ -132,6 +132,55 @@ async function asrTranscribe(tc, audioUrl) {
 }
 
 
+// ============ 方言适配（本地方言口语 + ASR 同音字容错） ============
+// 仅"罕见 ASR 错字→商品库标准字"单向映射；商品库标准字（饼/肠/桶/袋/堡/角/馍/头/盐/奶/油/鸡…）一律不做反向，避免误伤真实商品名
+const HOMO_MAP = {
+  魔: '馍', 幕: '馍',
+  病: '饼',
+  常: '肠',
+  脚: '饺',
+  通: '桶',
+  代: '袋',
+  投: '头',
+  跳: '条',
+  乃: '奶',
+  周: '粥',
+  言: '盐',
+  弹: '蛋',
+  惯: '灌',
+  基: '鸡',
+  退: '腿',
+  跟: '根',
+  漏: '肉',
+  蛮: '馒'
+}
+function normalizeHomophones(t) {
+  if (!t) return t
+  let out = ''
+  for (const ch of String(t)) {
+    out += (Object.prototype.hasOwnProperty.call(HOMO_MAP, ch) && ch !== HOMO_MAP[ch]) ? HOMO_MAP[ch] : ch
+  }
+  return out
+}
+
+const CN_DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 }
+function cnNumToInt(str) {
+  const s = String(str || '')
+  if (!s) return 0
+  if (/^[0-9.]+$/.test(s)) return parseFloat(s)
+  if (s === '两' || s === '俩') return 2
+  if (s === '十') return 10
+  if (CN_DIGITS[s] !== undefined) return CN_DIGITS[s]
+  if (s.length === 2 && s[0] === '十') return 10 + (CN_DIGITS[s[1]] || 0)
+  if (s.length === 2 && s[1] === '十') return (CN_DIGITS[s[0]] || 0) * 10
+  if (s.length === 3 && s[1] === '十') return (CN_DIGITS[s[0]] || 0) * 10 + (CN_DIGITS[s[2]] || 0)
+  return 0
+}
+
+const QTY_UNITS = '件|箱|包|个|瓶|罐|袋|盒|桶|打|捆|条'
+// 量词短语："三件""两个""10包"（数字+量词须紧邻，避免误吞商品名里的数字如 400克）
+const QTY_PHRASE_RE = new RegExp('([0-9]+(?:\\.[0-9]+)?|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?|[一二三四五六七八九两俩])\\s*(' + QTY_UNITS + ')', 'g')
+
 function levenshtein(a, b) {
   const matrix = []
   for (let i = 0; i <= b.length; i++) matrix[i] = [i]
@@ -167,6 +216,8 @@ function fuzzyMatch(text, candidates, threshold) {
 }
 
 function extractQuantity(text) {
+  const cn = String(text || '').match(new RegExp('([0-9]+(?:\\.[0-9]+)?|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?|[一二三四五六七八九两俩])\\s*(' + QTY_UNITS + ')'))
+  if (cn) return cnNumToInt(cn[1]) || 1
   const qtyPatterns = [
     /(\d+(?:\.\d+)?)\s*件/,
     /(\d+(?:\.\d+)?)\s*箱/,
@@ -182,9 +233,7 @@ function extractQuantity(text) {
     /(\d+(?:\.\d+)?)\s*包/,
     /(\d+(?:\.\d+)?)\s*包/,
     /(\d+(?:\.\d+)?)\s*箱/,
-    /(\d+(?:\.\d+)?)\s*条/,
-    /(\d+(?:\.\d+)?)\s*包/,
-    /(\d+(?:\.\d+)?)\s*包/
+    /(\d+(?:\.\d+)?)\s*条/
   ]
   
   for (const pattern of qtyPatterns) {
@@ -202,7 +251,40 @@ function extractQuantity(text) {
   return 1
 }
 
+// 在文本片段中匹配商品：同音字归一化精确/模糊匹配 + 最长子串滑窗兜底（方言整句无空格场景）
+function matchProductInSegment(seg, products) {
+  const s = normalizeHomophones(String(seg || '').trim())
+  if (!s) return null
+  const byName = (products || []).map(pp => ({ pp, name: pp.name || '', norm: normalizeHomophones(pp.name || '') }))
+  for (const b of byName) {
+    if (b.norm && (s === b.norm || s === b.name)) return b.pp
+  }
+  const fw = fuzzyMatch(s, products, 0.65)
+  if (fw.length > 0 && fw[0].score >= 0.65) {
+    const cand = byName.filter(b => b.pp._id === fw[0]._id)
+    if (cand.length) {
+      const dist = levenshtein(s, cand[0].norm || cand[0].name)
+      const maxLen = Math.max(s.length, (cand[0].norm || cand[0].name).length)
+      if (maxLen > 0 && 1 - dist / maxLen >= 0.65 && Math.abs(s.length - (cand[0].norm || '').length) <= 3) return cand[0].pp
+    }
+  }
+  for (const b of byName) {
+    if (b.norm.length < 2 || b.norm.length > 6) continue
+    // 段若是商品名片段（如商品名 400克晶纯盐 里的 晶纯盐），不作为独立命中
+    if (byName.some(o => o.pp._id !== b.pp._id && o.name && (o.name.includes(s) || s.includes(o.name)))) continue
+    for (let w = b.norm.length; w >= 2; w--) {
+      for (let i = 0; i + w <= s.length; i++) {
+        const sub = s.slice(i, i + w)
+        if (sub === b.norm) return b.pp
+      }
+    }
+  }
+  return null
+}
+
 function extractProductName(text, products) {
+  const fullHit = matchProductInSegment(text, products)
+  if (fullHit) return fullHit
   const commonWords = ['给', '发', '要', '买', '订', '货', '的', '了', '个', '件', '箱', '包', '瓶', '罐', '袋', '盒', '桶', '打', '捆', '条']
   let cleanText = text
   for (const word of commonWords) {
@@ -213,12 +295,10 @@ function extractProductName(text, products) {
   cleanText = cleanText.trim()
   
   const words = cleanText.split(/\s+/).filter(w => w.length > 1)
-  
+
   for (const word of words) {
-    const matches = fuzzyMatch(word, products, 0.7)
-    if (matches.length > 0 && matches[0].score >= 0.7) {
-      return matches[0]
-    }
+    const hit = matchProductInSegment(word, products)
+    if (hit) return hit
   }
   
   for (const product of products) {
@@ -235,6 +315,54 @@ function extractProductName(text, products) {
   return null
 }
 
+// 多商品/方言整句解析：按量词短语切分，商品-数量按位置配对（商品前/商品后均可）
+function parseMultiProductText(text, products) {
+  const items = []
+  const seen = {}
+  // 1) 定位全部商品出现位置（同音归一化后查找）
+  const byName = (products || []).map(pp => ({ pp, norm: normalizeHomophones(pp.name || '') })).filter(b => b.norm.length >= 2)
+  const normText = normalizeHomophones(text)
+  const occ = []
+  for (const b of byName) {
+    let idx = normText.indexOf(b.norm)
+    while (idx !== -1) {
+      if (!occ.some(o => o.pp._id === b.pp._id && Math.abs(o.start - idx) < b.norm.length)) occ.push({ pp: b.pp, start: idx, end: idx + b.norm.length })
+      idx = normText.indexOf(b.norm, idx + 1)
+    }
+  }
+  if (occ.length === 0) return items
+  // 2) 定位全部量词短语
+  const qtyPhrases = []
+  QTY_PHRASE_RE.lastIndex = 0
+  let m
+  while ((m = QTY_PHRASE_RE.exec(text)) !== null) qtyPhrases.push({ pos: m.index, len: m[0].length, qty: cnNumToInt(m[1]) || 1, used: false })
+  // 3) 商品后优先、距离就近的贪心配对
+  const pairs = []
+  for (const o of occ) {
+    let best = null, bestScore = Infinity
+    for (const qp of qtyPhrases) {
+      if (qp.used) continue
+      const dAfter = qp.pos - o.end
+      const dBefore = o.start - (qp.pos + qp.len)
+      let score
+      if (dAfter >= 0) score = dAfter // 量词在商品名后
+      else if (dBefore >= 0) score = dBefore + 1 // 量词在商品名前（紧邻，如"两个白吉馍"）
+      else score = 999 // 重叠，视为不属于该商品
+      if (score < bestScore) { best = qp; bestScore = score }
+    }
+    if (best && bestScore <= 10) { best.used = true; pairs.push({ occ: o, qty: best.qty }) }
+  }
+  for (const o of occ) { if (!pairs.some(p => p.occ === o)) pairs.push({ occ: o, qty: 1 }) }
+  // 4) 去重输出
+  for (const pr of pairs) {
+    const pp = pr.occ.pp
+    if (seen[pp._id]) continue
+    seen[pp._id] = true
+    items.push({ _id: pp._id, name: pp.name, spec: pp.spec || '', price: pp.price_piece || 0, qty: pr.qty })
+  }
+  return items
+}
+
 function parseOrderText(text, products) {
   const items = []
   const patterns = [
@@ -245,6 +373,8 @@ function parseOrderText(text, products) {
   let match
   const regex = /(\d+(?:\.\d+)?)\s*(件 | 箱 | 包 | 个 | 瓶 | 罐 | 袋 | 盒 | 桶 | 打 | 捆 | 条)([^件箱包包个瓶罐袋盒桶打捆条]+)/g
   while ((match = regex.exec(text)) !== null) {
+    const head = text.slice(Math.max(0, match.index - 8), match.index).trim()
+    if (head && products.some(pp => pp.name && (head.includes(pp.name) || pp.name.includes(head)))) continue // 数字属于商品名（如 400克晶纯盐），不是数量
     const qty = parseFloat(match[1])
     const unit = match[2]
     const productName = match[3].trim()
@@ -276,22 +406,7 @@ function parseOrderText(text, products) {
   }
   
   if (items.length === 0) {
-    const words = text.split(/[\s，,、]+/).filter(w => w.length > 1)
-    for (const word of words) {
-      if (word.match(/\d/)) continue
-      const product = extractProductName(word, products)
-      if (product) {
-        const qty = extractQuantity(text)
-        items.push({
-          _id: product._id,
-          name: product.name,
-          spec: product.spec || '',
-          price: product.price_piece || 0,
-          qty: qty
-        })
-        break
-      }
-    }
+    items.push.apply(items, parseMultiProductText(text, products))
   }
   
   return items
@@ -374,9 +489,7 @@ async function parseWithAI(text, products, ai) {
   const model = ai.model || 'qwen-0810'
   const productNames = (products || []).map(pp => pp.name || '').filter(Boolean).slice(0, 200)
   const allNames = '[' + productNames.map(n => JSON.stringify(n)).join(', ') + ']'
-  const system = '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
-    'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
-    '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
+  const system = dialectParseSystem(allNames)
   const user = '订单：' + text
   const content = await chatCompletions(ai.baseUrl, ai.apiKey, model, [
     { role: 'system', content: system },
@@ -392,9 +505,7 @@ async function parseWithTokenhub(text, products, th) {
   if (!th || !th.enabled || !th.apiKey || !th.baseUrl) return { used: false, items: [] }
   const productNames = (products || []).map(pp => pp.name || '').filter(Boolean).slice(0, 200)
   const allNames = '[' + productNames.map(n => JSON.stringify(n)).join(', ') + ']'
-  const system = '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
-    'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
-    '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
+  const system = dialectParseSystem(allNames)
   const models = Array.isArray(th.models) && th.models.length ? th.models
     : (th.model ? [th.model] : [])
   if (models.length === 0) return { used: false, items: [] }
@@ -414,6 +525,14 @@ async function parseWithTokenhub(text, products, th) {
     }
   }
   return { used: true, items: [], error: lastErr }
+}
+
+// 方言感知提示词（用户以本地方言口述，AI 需把同音字/方言词对应到标准商品名）
+function dialectParseSystem(allNames) {
+  return '你是采购下单助手。根据用户口语订单，把每行解析为 {name, qty, unit, spec} 结构。' +
+    'name 务必尽量匹配商品表中的标准名称（可用最接近的别名），unit 用 件/包/箱/个 等，qty 为数字。' +
+    '注意：用户可能用本地方言口述，可能出现同音字或方言说法（如"两"=2、"馍"写成"魔/磨"、"包子"说成"包包"），请对应到商品表中的标准名称。' +
+    '商品表：' + allNames + '。只输出 JSON 数组，不要解释。'
 }
 
 // 把 AI 返回的 JSON 行对回商品库（各 NLP 引擎共用）
@@ -573,3 +692,13 @@ exports.main = async (event, context) => {
       return { code: 1001, message: '未知 action' }
   }
 }
+
+// 纯函数导出（本地单元测试用，云运行时忽略）
+exports.fuzzyMatch = fuzzyMatch
+exports.levenshtein = levenshtein
+exports.extractQuantity = extractQuantity
+exports.extractProductName = extractProductName
+exports.parseOrderText = parseOrderText
+exports.parseMultiProductText = parseMultiProductText
+exports.cnNumToInt = cnNumToInt
+exports.normalizeHomophones = normalizeHomophones
