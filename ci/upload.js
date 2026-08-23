@@ -9,7 +9,7 @@ const project = new ci.Project({
   appid,
   type: 'miniProgram',
   projectPath: process.cwd(),
-  privateKeyPath: 'ci/private.key',
+  privateKeyPath: 'ci/private.wxe4ab72773abd200f.key',
   // 项目根即小程序根，混入大量非运行时文件，必须全部忽略
   ignores: [
     'node_modules/**/*',
