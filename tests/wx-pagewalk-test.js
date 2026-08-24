@@ -31,6 +31,9 @@ const AUTOMATOR_LIB =
 const { launchSession } = require(path.join(AUTOMATOR_LIB, 'devtools_client.js'));
 const { delay, ensureDirFor } = require(path.join(AUTOMATOR_LIB, 'common.js'));
 
+const TEST_PGWK_TAG = 'TEST_PGWK';
+let createdTestOrderId = null;
+let testDb = null;
 async function resolveLatestOrderId() {
   try {
     const env = {};
@@ -43,6 +46,27 @@ async function resolveLatestOrderId() {
     const db = app.database();
     const res = await db.collection('orders').orderBy('createdAt', 'desc').limit(1).get();
     if (res.data && res.data.length) return res.data[0]._id;
+    // T12 清数据后 orders 可能为空：造一条 TEST 订单实测深层页，脚本结束清理
+    const cRes = await db.collection('customers').limit(1).get();
+    const cust = cRes.data && cRes.data[0];
+    const d = new Date();
+    const dateStr = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
+    const order = {
+      orderNo: '丰淮商贸-' + dateStr + '-TEST0',
+      customerId: cust ? cust._id : undefined,
+      customerName: TEST_PGWK_TAG + '客户',
+      customerRegion: cust ? (cust.region || '') : '',
+      items: [{ name: TEST_PGWK_TAG + '商品', pricing_mode: 'piece', piece_qty: 1, package_qty: 0, price_piece: 50, price_unit: 0, qty: 1, price: 50, amount: 50 }],
+      totalAmount: 50, status: 'submitted',
+      payment_status: 'unpaid', paymentStatus: 'unpaid',
+      received_amount: 0, receivedAmount: 0,
+      sortStatus: 'pending', outStatus: 'pending',
+      created_at: new Date(), createdAt: new Date()
+    };
+    const addRes = await db.collection('orders').add(order);
+    createdTestOrderId = (addRes && (addRes._id || addRes.id)) || null;
+    testDb = db;
+    return createdTestOrderId;
   } catch (e) { console.warn('[warn] 取最新订单 id 失败：' + e.message); }
   return '3186bc486a7d87df002679e379929038';
 }
@@ -161,6 +185,13 @@ const PAGES = (ORDER_ID) => {
   console.log(`总页面 ${results.length}，通过 ${results.length - failed.length}，失败 ${failed.length}`);
   failed.forEach((f) => console.log(`  X ${f.name} routeOk=${f.routeOk} checkOk=${f.checkOk} ${f.checkMsg} bytes=${f.bytes} data=${JSON.stringify(f.data)}`));
   console.log('截图目录 ' + OUT_DIR);
+
+  try {
+    if (createdTestOrderId && testDb) {
+      await testDb.collection('orders').where({ customerName: TEST_PGWK_TAG + '客户' }).remove().catch(() => {});
+      console.log('[cleanup] TEST 订单已清理 createdId=' + createdTestOrderId);
+    }
+  } catch (e) { console.warn('[warn] 清理 TEST 订单失败：' + e.message); }
 
   await session.close();
   process.exit(failed.length ? 1 : 0);
