@@ -23,6 +23,11 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },
+  "permission": {
+    "scope.record": {
+      "desc": "语音录入订单时需要使用麦克风录音"
+    }
+  },
   "tabBar": {
     "color": "#999999",
     "selectedColor": "#07C160",

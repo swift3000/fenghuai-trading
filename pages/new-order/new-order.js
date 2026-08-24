@@ -407,10 +407,24 @@ onCustomerSearch(e) {
     // 录音权限
     try {
       const setting = await wx.getSetting()
+      if (setting.authSetting['scope.record'] === false) {
+        wx.showModal({
+          title: '需要录音权限',
+          content: '请在小程序设置中允许录音后重试',
+          confirmText: '去设置',
+          success: (m) => { if (m.confirm) wx.openSetting() }
+        })
+        return
+      }
       if (!setting.authSetting['scope.record']) {
-        const res = await wx.authorize({ scope: 'scope.record' })
+        const res = await wx.authorize({ scope: 'record' })
         if (!res.auth) {
-          wx.showModal({ title: '需要录音权限', content: '请在设置中允许录音后重试', showCancel: false })
+          wx.showModal({
+            title: '需要录音权限',
+            content: '请在小程序设置中允许录音后重试',
+            confirmText: '去设置',
+            success: (m) => { if (m.confirm) wx.openSetting() }
+          })
           return
         }
       }
