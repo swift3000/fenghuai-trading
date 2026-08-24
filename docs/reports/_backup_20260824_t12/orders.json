@@ -1,0 +1,676 @@
+[
+ {
+  "_id": "3186bc486a7d87df002679e379929038",
+  "orderNo": "丰淮商贸-20260813-0001",
+  "customerId": "3186bc486a7ee3870039bce4537030a6",
+  "customerName": "万友超市",
+  "customerRegion": "汉阴",
+  "items": [
+   {
+    "_id": "5ac99ce06a7bfbb30051e87006c9e984",
+    "is_adjustable": false,
+    "material_code": "26",
+    "name": "曹氏箱水饺",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 804,
+    "price_unit": 20,
+    "pricing_mode": "case",
+    "remark": "",
+    "spec": "1×4",
+    "unit": "包",
+    "qty": 1,
+    "price": 804,
+    "amount": 824
+   }
+  ],
+  "totalAmount": 824,
+  "status": "submitted",
+  "payment_status": "unpaid",
+  "paymentStatus": "unpaid",
+  "received_amount": 0,
+  "receivedAmount": 0,
+  "sortStatus": "pending",
+  "outStatus": "pending",
+  "created_at": "2026-08-13T09:01:19.651Z",
+  "createdByName": "测试",
+  "createdByRole": "admin",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1786611679700
+   }
+  ],
+  "data": {
+   "customerId": "3186bc486a7ee3870039bce4537030a6"
+  }
+ },
+ {
+  "_id": "5ac99ce06a7d9de400d0614258fdc938",
+  "orderNo": "丰淮商贸-20260813-0002",
+  "customerId": "9b54dbe16a7ee387005152cc6d093607",
+  "customerName": "东一路刀削面",
+  "customerRegion": "平利",
+  "items": [
+   {
+    "_id": "9b54dbe16a7bfbb2001492c22419ce64",
+    "is_adjustable": false,
+    "material_code": "3",
+    "name": "淮盐 500g",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 70,
+    "price_unit": 1.75,
+    "pricing_mode": "case",
+    "remark": "付费分身乏术方式",
+    "spec": "1×40",
+    "unit": "包",
+    "qty": 1,
+    "price": 70,
+    "amount": 71.75
+   },
+   {
+    "_id": "5ac99ce06a7bfbb20051e8640390ed1c",
+    "is_adjustable": false,
+    "material_code": "6",
+    "name": "西安小包包子",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 41,
+    "price_unit": 0.41,
+    "pricing_mode": "case",
+    "remark": "发生地方是的分是的分是的分",
+    "spec": "1×100",
+    "unit": "包",
+    "qty": 1,
+    "price": 41,
+    "amount": 41.41
+   }
+  ],
+  "totalAmount": 113.16,
+  "status": "submitted",
+  "payment_status": "unpaid",
+  "paymentStatus": "unpaid",
+  "received_amount": 0,
+  "receivedAmount": 0,
+  "sortStatus": "pending",
+  "outStatus": "pending",
+  "created_at": "2026-08-13T10:35:16.539Z",
+  "createdByName": "测试",
+  "createdByRole": "admin",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1786617316600
+   }
+  ]
+ },
+ {
+  "_id": "9b54dbe16a7d9de5003b0c4126963f3d",
+  "orderNo": "丰淮商贸-20260813-0003",
+  "customerId": "9b54dbe16a7ee387005152cc6d093607",
+  "customerName": "东一路刀削面",
+  "customerRegion": "平利",
+  "items": [
+   {
+    "_id": "9b54dbe16a7bfbb2001492c22419ce64",
+    "is_adjustable": false,
+    "material_code": "3",
+    "name": "淮盐 500g",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 70,
+    "price_unit": 1.75,
+    "pricing_mode": "case",
+    "remark": "付费分身乏术方式",
+    "spec": "1×40",
+    "unit": "包",
+    "qty": 1,
+    "price": 70,
+    "amount": 71.75
+   },
+   {
+    "_id": "5ac99ce06a7bfbb20051e8640390ed1c",
+    "is_adjustable": false,
+    "material_code": "6",
+    "name": "西安小包包子",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 41,
+    "price_unit": 0.41,
+    "pricing_mode": "case",
+    "remark": "发生地方是的分是的分是的分",
+    "spec": "1×100",
+    "unit": "包",
+    "qty": 1,
+    "price": 41,
+    "amount": 41.41
+   }
+  ],
+  "totalAmount": 113.16,
+  "status": "submitted",
+  "payment_status": "unpaid",
+  "paymentStatus": "unpaid",
+  "received_amount": 0,
+  "receivedAmount": 0,
+  "sortStatus": "pending",
+  "outStatus": "pending",
+  "created_at": "2026-08-13T10:35:17.122Z",
+  "createdByName": "测试",
+  "createdByRole": "admin",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1786617317168
+   },
+   {
+    "action": "share",
+    "desc": "转发销售单到微信",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1786618365845
+   },
+   {
+    "action": "share",
+    "desc": "转发销售单到微信",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1786934035429
+   }
+  ],
+  "shared_at": "2026-08-17T02:33:55.365Z",
+  "shared_to_wechat": true
+ },
+ {
+  "_id": "3186bc486a841f29007e996d0ae3e7c2",
+  "orderNo": "丰淮商贸-20260818-0001",
+  "customerId": "3186bc486a7ee3870039bce271fdb805",
+  "customerName": "0088",
+  "customerRegion": "付家河",
+  "items": [
+   {
+    "amount": 10,
+    "material_code": "1",
+    "name": "测试A",
+    "piece_qty": 1,
+    "price": 10,
+    "price_piece": 10,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   },
+   {
+    "amount": 20,
+    "material_code": "2",
+    "name": "测试B",
+    "piece_qty": 1,
+    "price": 20,
+    "price_piece": 20,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   }
+  ],
+  "totalAmount": 30,
+  "status": "confirmed",
+  "payment_status": "pending",
+  "paymentStatus": "pending",
+  "received_amount": 20,
+  "receivedAmount": 20,
+  "sortStatus": "done",
+  "outStatus": "done",
+  "created_at": "2026-08-18T09:00:25.473Z",
+  "createdByName": "系统",
+  "createdByRole": "system",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043625482
+   },
+   {
+    "action": "update",
+    "desc": "编辑订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043626994
+   },
+   {
+    "action": "sort",
+    "desc": "完成分拣",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043628400
+   },
+   {
+    "action": "out",
+    "desc": "确认出库",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043628747
+   },
+   {
+    "action": "share",
+    "desc": "转发销售单到微信",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043629350
+   },
+   {
+    "action": "collect",
+    "desc": "登记收款 ¥20.00（待确认）",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043630471
+   },
+   {
+    "action": "confirm",
+    "desc": "确认收款 ¥20.00",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043631446
+   }
+  ],
+  "sortTime": "2026-08-18T09:00:28.391Z",
+  "outTime": "2026-08-18T09:00:28.739Z",
+  "ship_large": 2,
+  "ship_medium": 1,
+  "ship_small": 0,
+  "shared_at": "2026-08-18T09:00:29.341Z",
+  "shared_to_wechat": true,
+  "totalDiscount": 5,
+  "total_discount": 5,
+  "paymentConfirmNote": "",
+  "paymentConfirmedAt": "2026-08-18T09:00:31.437Z"
+ },
+ {
+  "_id": "3186bc486a841fc7007ea21f07c39373",
+  "orderNo": "丰淮商贸-20260818-0002",
+  "customerId": "3186bc486a7ee3870039bce271fdb805",
+  "customerName": "0088",
+  "customerRegion": "付家河",
+  "items": [
+   {
+    "amount": 10,
+    "material_code": "1",
+    "name": "测试A",
+    "piece_qty": 1,
+    "price": 10,
+    "price_piece": 10,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   },
+   {
+    "amount": 20,
+    "material_code": "2",
+    "name": "测试B",
+    "piece_qty": 1,
+    "price": 20,
+    "price_piece": 20,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   }
+  ],
+  "totalAmount": 30,
+  "status": "confirmed",
+  "payment_status": "pending",
+  "paymentStatus": "pending",
+  "received_amount": 20,
+  "receivedAmount": 20,
+  "sortStatus": "done",
+  "outStatus": "done",
+  "created_at": "2026-08-18T09:03:03.468Z",
+  "createdByName": "系统",
+  "createdByRole": "system",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043783478
+   },
+   {
+    "action": "update",
+    "desc": "编辑订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043784229
+   },
+   {
+    "action": "sort",
+    "desc": "完成分拣",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043785318
+   },
+   {
+    "action": "out",
+    "desc": "确认出库",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043785658
+   },
+   {
+    "action": "share",
+    "desc": "转发销售单到微信",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043786260
+   },
+   {
+    "action": "collect",
+    "desc": "登记收款 ¥20.00（待确认）",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043790291
+   },
+   {
+    "action": "confirm",
+    "desc": "确认收款 ¥20.00",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043791251
+   }
+  ],
+  "sortTime": "2026-08-18T09:03:05.307Z",
+  "outTime": "2026-08-18T09:03:05.649Z",
+  "ship_large": 2,
+  "ship_medium": 1,
+  "ship_small": 0,
+  "shared_at": "2026-08-18T09:03:06.250Z",
+  "shared_to_wechat": true,
+  "totalDiscount": 5,
+  "total_discount": 5,
+  "paymentConfirmNote": "",
+  "paymentConfirmedAt": "2026-08-18T09:03:11.251Z"
+ },
+ {
+  "_id": "5ac99ce06a84200202bbca101040d673",
+  "orderNo": "丰淮商贸-20260818-0003",
+  "customerId": "3186bc486a7ee3870039bce271fdb805",
+  "customerName": "0088",
+  "customerRegion": "付家河",
+  "items": [
+   {
+    "amount": 10,
+    "material_code": "1",
+    "name": "测试A",
+    "piece_qty": 1,
+    "price": 10,
+    "price_piece": 10,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   },
+   {
+    "amount": 20,
+    "material_code": "2",
+    "name": "测试B",
+    "piece_qty": 1,
+    "price": 20,
+    "price_piece": 20,
+    "price_unit": 0,
+    "pricing_mode": "case",
+    "qty": 1,
+    "spec": "1",
+    "unit": "件",
+    "unit_piece_qty": 1,
+    "zero_qty": 0
+   }
+  ],
+  "totalAmount": 30,
+  "status": "confirmed",
+  "payment_status": "pending",
+  "paymentStatus": "pending",
+  "received_amount": 20,
+  "receivedAmount": 20,
+  "sortStatus": "done",
+  "outStatus": "done",
+  "created_at": "2026-08-18T09:04:02.076Z",
+  "createdByName": "系统",
+  "createdByRole": "system",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043842085
+   },
+   {
+    "action": "update",
+    "desc": "编辑订单",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043842747
+   },
+   {
+    "action": "sort",
+    "desc": "完成分拣",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043843825
+   },
+   {
+    "action": "out",
+    "desc": "确认出库",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043844172
+   },
+   {
+    "action": "share",
+    "desc": "转发销售单到微信",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043844797
+   },
+   {
+    "action": "collect",
+    "desc": "登记收款 ¥20.00（待确认）",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043845952
+   },
+   {
+    "action": "confirm",
+    "desc": "确认收款 ¥20.00",
+    "operatorName": "系统",
+    "role": "system",
+    "time": 1787043846985
+   }
+  ],
+  "sortTime": "2026-08-18T09:04:03.815Z",
+  "outTime": "2026-08-18T09:04:04.161Z",
+  "ship_large": 2,
+  "ship_medium": 1,
+  "ship_small": 0,
+  "shared_at": "2026-08-18T09:04:04.787Z",
+  "shared_to_wechat": true,
+  "totalDiscount": 5,
+  "total_discount": 5,
+  "paymentConfirmNote": "",
+  "paymentConfirmedAt": "2026-08-18T09:04:06.980Z"
+ },
+ {
+  "_id": "c1dc89f26a893d2900355c1930696f9e",
+  "orderNo": "丰淮商贸-20260822-0001",
+  "customerId": "5ac99ce06a7ee38e0130b3a12d7cc621",
+  "customerName": "石磨豆浆",
+  "customerRegion": "五里",
+  "items": [
+   {
+    "_id": "5ac99ce06a7ee3990130b46727d35de2",
+    "is_adjustable": false,
+    "material_code": "6",
+    "name": "西安小包包子",
+    "package_qty": 20,
+    "piece_qty": 0,
+    "price_piece": 41,
+    "price_unit": 0.41,
+    "pricing_mode": "case",
+    "remark": "",
+    "spec": "1×100",
+    "subtotal": "8.20",
+    "unit": "包",
+    "qty": 20,
+    "price": 41,
+    "amount": 8.2
+   },
+   {
+    "_id": "5ac99ce06a7ee3990130b46d515c3216",
+    "is_adjustable": false,
+    "material_code": "16",
+    "name": "久念麻球",
+    "package_qty": 0,
+    "piece_qty": 1,
+    "price_piece": 80,
+    "price_unit": 20,
+    "pricing_mode": "case",
+    "remark": "",
+    "spec": "1×4",
+    "subtotal": "80.00",
+    "unit": "包",
+    "qty": 1,
+    "price": 80,
+    "amount": 80
+   }
+  ],
+  "totalAmount": 88.2,
+  "status": "submitted",
+  "payment_status": "unpaid",
+  "paymentStatus": "unpaid",
+  "received_amount": 0,
+  "receivedAmount": 0,
+  "sortStatus": "pending",
+  "outStatus": "pending",
+  "created_at": "2026-08-22T06:09:45.477Z",
+  "createdByName": "测试",
+  "createdByRole": "admin",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1787378985546
+   }
+  ]
+ },
+ {
+  "_id": "932125986a8bce52004d8d062ae0b36a",
+  "orderNo": "丰淮商贸-20260824-0001",
+  "customerId": "3186bc486a7ee3870039bce4537030a6",
+  "customerName": "万友超市",
+  "customerRegion": "汉阴",
+  "items": [
+   {
+    "_id": "3186bc486a85ba0200952d961b110877",
+    "is_adjustable": false,
+    "material_code": "177",
+    "name": "学子膳-小炒肉丝",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 145,
+    "price_unit": 14.5,
+    "pricing_mode": "case",
+    "remark": "",
+    "spec": "1×10",
+    "unit": "包",
+    "qty": 1,
+    "price": 145,
+    "amount": 159.5
+   },
+   {
+    "_id": "1aeaf3576a85ba0100d8d66b386250e5",
+    "is_adjustable": false,
+    "material_code": "139",
+    "name": "思念水饺(韭菜鸡蛋)",
+    "package_qty": 1,
+    "piece_qty": 1,
+    "price_piece": 90,
+    "price_unit": 22.5,
+    "pricing_mode": "case",
+    "remark": "",
+    "spec": "1×4",
+    "unit": "包",
+    "qty": 1,
+    "price": 90,
+    "amount": 112.5
+   }
+  ],
+  "totalAmount": 272,
+  "status": "confirmed",
+  "payment_status": "unpaid",
+  "paymentStatus": "unpaid",
+  "received_amount": 0,
+  "receivedAmount": 0,
+  "sortStatus": "done",
+  "outStatus": "done",
+  "created_at": "2026-08-24T04:53:38.602Z",
+  "createdByName": "测试",
+  "createdByRole": "admin",
+  "logs": [
+   {
+    "action": "create",
+    "desc": "创建订单",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1787547218664
+   },
+   {
+    "action": "sort",
+    "desc": "完成分拣",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1787547230395
+   },
+   {
+    "action": "out",
+    "desc": "确认出库",
+    "operatorName": "测试",
+    "role": "admin",
+    "time": 1787547248412
+   }
+  ],
+  "sortTime": "2026-08-24T04:53:50.339Z",
+  "outTime": "2026-08-24T04:54:08.365Z",
+  "ship_large": 1,
+  "ship_medium": 1,
+  "ship_small": 1
+ }
+]
