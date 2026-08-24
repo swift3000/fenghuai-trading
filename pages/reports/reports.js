@@ -103,15 +103,26 @@ Page({
         : reportTab === 'customer'
           ? (data.customers || []).length > 0
           : (data.methods || []).length > 0
-      // 订单总数：product/customer 取云端去重订单数 totalOrders；payment 取收款笔数（对齐原型汇总卡口径）
-      const totalOrders = reportTab === 'payment'
-        ? (data.paymentCount != null ? data.paymentCount : 0)
-        : (data.totalOrders != null ? data.totalOrders : 0)
+      // T46: 汇总卡与 tab 解耦——独立走 main 口径（该时间段订单总数+订单总金额），
+      // 不再随 tab 切换变化，避免「收款台账 tab 今日=0」的口径困惑
+      let main = { totalOrders: 0, totalAmount: 0 }
+      try {
+        const mainParams = { action: 'summary', reportTab: 'main', timeTab: this.data.timeTab, region }
+        if (this.data.timeTab === 'custom') {
+          mainParams.startDate = this.data.startDate
+          mainParams.endDate = this.data.endDate
+        }
+        main = await callCloud('report', mainParams)
+      } catch (e) {
+        // main 口径失败时回退当前 tab 数据，不阻塞列表展示
+        main = { totalOrders: data.totalOrders != null ? data.totalOrders : 0, totalAmount: data.totalAmount != null ? data.totalAmount : 0 }
+      }
       this.setData({
         ...data,
         data: data, // 保持 WXML 读取 data.products/customers/methods
         hasData,
-        totalOrders,
+        totalOrders: main.totalOrders != null ? main.totalOrders : 0,
+        totalAmount: main.totalAmount != null ? main.totalAmount : 0,
         loading: false
       })
     } catch (e) {

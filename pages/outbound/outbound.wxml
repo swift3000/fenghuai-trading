@@ -29,7 +29,7 @@
           </view>
           <view class="wh-footer">
             <text class="wh-amount">¥{{item.totalAmount}}</text>
-            <button class="sort-done-btn" size="mini" data-id="{{item._id}}" bindtap="handleSort">✅ 分拣完成</button>
+            <view class="sort-done-btn" data-id="{{item._id}}" bindtap="handleSort">✅ 分拣完成</view>
           </view>
         </view>
         <view class="wh-products">

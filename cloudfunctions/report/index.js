@@ -250,6 +250,19 @@ exports.main = async (event, context) => {
       // 区域过滤
       const regionFilter = region ? { customerRegion: region } : null
       
+      if (reportTab === 'main') {
+        // T46: 汇总卡专用口径——不随 tab 切换，始终=所选时间段内订单总数+订单总金额
+        const conds = []
+        if (dateFilter) conds.push(dateFilter)
+        if (regionFilter) conds.push(regionFilter)
+        let query = db.collection('orders')
+        if (conds.length === 1) query = query.where(conds[0])
+        else if (conds.length > 1) query = query.where(db.command.and(conds))
+        const mainOrders = (await query.get()).data
+        const totalAmount = mainOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+        return { code: 0, data: { totalOrders: mainOrders.length, totalAmount: Math.round(totalAmount * 100) / 100 } }
+      }
+      
       if (reportTab === 'product') {
         // 商品汇总统计
         // 合并多条件为单次 where：Query.where() 会整体替换旧条件而非合并

@@ -51,24 +51,6 @@
   filter: brightness(.95);
 }
 
-.btn-export-recv {
-  flex-shrink: 0;
-  font-size: calc(26rpx * var(--font-scale));
-  padding: 12rpx 28rpx;
-  border-radius: 12rpx;
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
-  color: #ffffff;
-  border: none;
-  font-weight: 500;
-  box-shadow: 0 4rpx 12rpx rgba(6, 173, 86, 0.25);
-  line-height: 1.5;
-}
-
-.btn-export-recv:active {
-  opacity: 0.8;
-  transform: scale(0.98);
-}
-
 .overview {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -888,6 +870,7 @@
 .recv-action-row {
   display: flex;
   justify-content: flex-start;
+  align-items: center;
   gap: 8px;
   margin-top: 8px;
 }
@@ -914,9 +897,26 @@
   color: #fff;
 }
 
-/* 导出按钮（保持原有样式，添加右对齐） */
+/* 导出按钮（对齐原型：绿底白字胶囊，与收款确认同高同字号） */
 .btn-export-recv {
-  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: calc(12px * var(--font-scale));
+  padding: 6px 16px;
+  border-radius: 14px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  transition: all 0.15s;
+  box-shadow: none;
+  line-height: 1.5;
+}
+
+.btn-export-recv:active {
+  opacity: 0.85;
 }
 
 /* ===== 导出预览弹窗（对齐原型 v4.4）===== */
