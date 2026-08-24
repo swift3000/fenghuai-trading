@@ -107,7 +107,7 @@ App({
   // 系统字号映射：微信 设置→通用→字体大小 → --font-scale 系数
   systemFontScale() {
     try {
-      const s = wx.getSystemInfoSync().fontSizeSetting
+      const s = (wx.getSystemSetting ? wx.getSystemSetting().fontSizeSetting : wx.getSystemInfoSync().fontSizeSetting)
       const map = { mini: 0.85, small: 0.92, standard: 1.0, large: 1.1, extraLarge: 1.2 }
       return map[s] || 1.0
     } catch (e) {
