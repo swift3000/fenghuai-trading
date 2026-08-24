@@ -5,7 +5,8 @@ for (const l of fs.readFileSync("/Users/god/Desktop/项目/github/fenghuai-tradi
   const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2].trim();
 }
 const app = cloudbase.init({ secretId: env.CLOUDBASE_SECRET_ID, secretKey: env.CLOUDBASE_SECRET_KEY, envId: env.CLOUDBASE_ENV_ID });
-const invoke = (name, data) => app.callFunction({ name, data }).then(r => r.result);
+const QA_OID = "oo0s93SW9A4V4iO1ANyA3eqzxVIA"; // QA impersonation: real admin (only effective when cloud fn env QA_IMPERSONATE=1)
+const invoke = (name, data) => app.callFunction({ name, data: Object.assign({}, data, { qaAsOpenid: QA_OID }) }).then(r => r.result);
 const results = [];
 const check = (name, pass, detail) => { results.push({name,pass:!!pass}); console.log((pass?"✅":"❌")+" "+name+(detail?(" — "+String(detail).slice(0,150)):"")); };
 

@@ -9,7 +9,8 @@ const env = {}
 for (const l of fs.readFileSync(path.join(__dirname, "..", ".env"), "utf8").split("\n")) { const m = l.match(/^([A-Z_]+)=(.*)$/); if (m) env[m[1]] = m[2].trim() }
 const app = cloudbase.init({ secretId: env.CLOUDBASE_SECRET_ID, secretKey: env.CLOUDBASE_SECRET_KEY, envId: env.CLOUDBASE_ENV_ID })
 const db = app.database()
-const invoke = (n, d) => app.callFunction({ name: n, data: d }).then(r => r.result)
+const QA_OID = "oo0s93SW9A4V4iO1ANyA3eqzxVIA"; // QA impersonation: real admin (only effective when cloud fn env QA_IMPERSONATE=1)
+const invoke = (n, d) => app.callFunction({ name: n, data: Object.assign({}, d, { qaAsOpenid: QA_OID }) }).then(r => r.result)
 let total = 0, passed = 0
 const check = (name, pass, detail) => { total++; if (pass) passed++; console.log((pass ? "✅" : "❌") + " " + name + (detail && !pass ? " — " + String(detail).slice(0, 120) : "")) }
 const mkOrder = async (name) => (await invoke("orders", { action: "create", customerName: name, totalAmount: 100, items: [{ name: "测试品", piece_qty: 1, zero_qty: 0, price_piece: 100, pricing_mode: "case", unit: "包", amount: 100 }] })).data._id

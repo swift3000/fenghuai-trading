@@ -481,7 +481,8 @@ exports.main = async (event, context) => {
         timeTab,
         region,
         startDate,
-        endDate
+        endDate,
+        qaAsOpenid: event.qaAsOpenid // T42: 内层递归透传 QA 身份，防 __impersonatedOpenid 被重置为空
       }, context)
 
       const data = summaryResult.data || {}
@@ -555,7 +556,7 @@ exports.main = async (event, context) => {
         })
       })
 
-      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
+      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (timeTab === 'all' ? '全部' : ((startDate || '') + ' 至 ' + (endDate || '')))))
       const csvRows = [[COMPANY_NAME + ' 客户汇总表（' + rangeDesc + '）'], [], ['编号', '时间', '区域', '客户', '商品', '单位', '数量', '单价', '金额', '备注']]
       let no = 1
       let grandTotal = 0
@@ -586,7 +587,7 @@ exports.main = async (event, context) => {
       const { rows, totals } = buildLedgerData(orders)
       if (rows.length === 0) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
 
-      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (startDate + ' 至 ' + endDate)))
+      let rangeDesc = timeTab === 'day' ? todayTxt() : (timeTab === 'week' ? '本周' : (timeTab === 'month' ? '本月' : (timeTab === 'all' ? '全部' : ((startDate || '') + ' 至 ' + (endDate || '')))))
       const title = COMPANY_NAME + rangeDesc + '外县收款台账'
       const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '大件', '中件', '小件', '件数']
       const csvRows = [[title], [], header]
