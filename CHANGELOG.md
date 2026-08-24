@@ -16,9 +16,13 @@
 
 ### Fixed
 - **smart-ai 测试回归**：f2ae385 给 parseWithAI 加权限校验后测试 mock 无 OPENID 被 401 拦截（4/4 全挂）；wx-server-sdk-mock 支持 __SMART_OPENID__ 身份 + users 集合 where 查询；已下线的千问(qwen)降级用例更新为 TokenHub 链路（降级链 = relay -> tokenhub）
+- **报表导出内层身份丢失**：report 云函数 export 内递归调 summary 时重置 __impersonatedOpenid 为空 → QA 链路下导出 CSV 仅表头无数据行；内层透传 qaAsOpenid（生产真实用户走 WXContext 不受影响）
+- **收款台账导出标题**：timeTab=all 时 rangeDesc 输出「undefined 至 undefined」，补「全部」档（exportLedger/exportDailySummary 两处）
+- **清理历史测试脏数据**：删 1 条 08-20 data.data 脏结构测试订单 + 3 个 QA 测试用户（备份 docs/reports/_backup_20260824_pre_cleanup.json，已 gitignore）；e2e 三算账脚本补 QA 身份注入（此前生产态全 401 无法回归）
 
 ### Verified
 - 全量回归 11 步全绿（172 断言 0 失败）：权限 19/权限UI 12/走查 13/深巡 24/多角色403 28/E2E 23/会员 56/幂等 10 + QA 残留门禁通过，生产安全态；金额口径复核：剩余欠款 = 订单金额 − 实收 − 折价（分级整数计算），实收达最终价即结清，看板/CSV/Excel 导出同源
+- T42 上线前算账专项（2026-08-24 第二轮）：收款 9/9（结清拦截/分笔占额/确认转 paid/实收折价落库）、时间段报表 11/11（客户视图总额==订单和、CSV 导出金额和==订单和、出库导出三范围）、0 元红线 9/9；总账口径抽查：台账/未结清/已结清三视图 + 逐客户 应收=已付+未付 守恒 diff=0（应收 1228.52/已付 75/未付 1153.52）；全量回归 11 步 185 断言 0 失败，生产安全态门禁通过
 
 ---
 
