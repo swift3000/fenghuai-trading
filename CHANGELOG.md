@@ -6,6 +6,19 @@
 
 ---
 
+## [1.6.2] - 2026-08-24
+
+### Fixed
+- 真机语音录入 start record fail：wx.authorize 参数误写 scope record 前缀错误导致授权被静默吞掉，录音器 start 必失败；补 app.json permission 声明与拒绝后去设置入口(openSetting)
+- 客户台账同名两张卡：8/13 三笔订单 customerId 指向旧导入批次孤儿 ID，与 8/24 新 ID 裂成两卡；执行幂等迁移 scripts/migrate-repoint-orphan-orders.cjs 重挂 3 笔(迁移前备份 docs/reports/_backup_*_20260824.json，守恒 8/8)
+- 报表本周 0 单/收款台账空：部署的 report 云函数为 T42 前旧版；重新部署 report(北京时间周界修复+收款台账 confirmed 口径)
+
+### Verified
+- 台账聚合终验(云端同口径重算)：4 家客户，应收 1500.52/已收 75.00/未结清 1425.52，逐客户守恒全 OK
+- 生产 CI 上传 1.6.2：miniprogram-ci UPLOAD_OK，zip 270679 字节 / 54 文件
+
+---
+
 ## [1.6.1] - 2026-08-24
 
 ### Fixed
