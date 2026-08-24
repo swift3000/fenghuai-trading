@@ -6,6 +6,16 @@
 
 ---
 
+## [1.6.1] - 2026-08-24
+
+### Fixed
+- **IDE 上传主包 80051 超限(3264KB)**：根因是微信开发者工具按 appid 缓存的文件清单快照停在 T30 之前(当时 packOptions.ignore 尚无 output/screenshots)，把这两个测试产物目录打进主包(3264KB=pages+output+screenshots 精确字节和)；生产 CI 通道 miniprogram-ci 独立 ignores 不受影响(270KB)。根治：回归截图 wx-pagewalk OUT_DIR 改写 .local/output(已被 gitignore)，根目录残留产物移入 .local/regenerable-artifacts/ 保留；此后产物不再落根目录。IDE 侧可 cli cache clean -c file --project <p> --port <port> 清文件缓存后重开项目恢复注册
+
+### Verified
+- 生产 CI 上传 1.6.1：miniprogram-ci UPLOAD_OK，zip 270319 字节 / 54 文件；主包真实代码体积 544KB(<2MB 上限)
+
+---
+
 ## [1.6] - 2026-08-24
 
 ### Added
