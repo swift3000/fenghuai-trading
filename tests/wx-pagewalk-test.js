@@ -23,7 +23,7 @@ const fs = require('fs');
 const os = require('os');
 
 const PROJECT = path.resolve(__dirname, '..');
-const OUT_DIR = path.join(PROJECT, 'output', 'wx-pagewalk-test');
+const OUT_DIR = path.join(PROJECT, '.local', 'output', 'wx-pagewalk-test');
 const AUTOMATOR_LIB =
   process.env.WX_AUTOMATOR_LIB ||
   path.join(os.homedir(), '.codex', 'skills', 'wechat-devtools-automator', 'scripts', 'lib');
