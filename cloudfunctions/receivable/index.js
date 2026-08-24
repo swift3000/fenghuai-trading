@@ -558,7 +558,7 @@ exports.main = async (event, context) => {
       // 赊销报表双格式导出（行结构与前端 buildExportCsv 完全一致，口径复用 dashboard 聚合）
       const { viewTab, timeTab, format = 'csv', period, start, end } = event
       // 时间口径与前端导出预览一致：period 来自导出弹窗（all/today/week/month/custom）
-      const dash = await exports.main({ action: 'dashboard', viewTab, timeTab: period || timeTab, searchKey: '', startDate: start, endDate: end })
+      const dash = await exports.main({ action: 'dashboard', viewTab, timeTab: period || timeTab, searchKey: '', startDate: start, endDate: end, qaAsOpenid: event.qaAsOpenid }) // T47: 内层递归透传 QA 身份(对齐 report T42)，防 __impersonatedOpenid 被重置为空致 exportReceivable 401
       if (dash.code !== 0) return dash
       const customers = (dash.data && dash.data.customers) || []
       if (customers.length === 0) return { code: 0, data: { format: 'csv', csvContent: '', filename: '' } }
