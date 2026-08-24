@@ -15,6 +15,7 @@
     "pages/members/members",
     "pages/settings/settings"
   ],
+  "lazyCodeLoading": "requiredComponents",
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#06AD56",
