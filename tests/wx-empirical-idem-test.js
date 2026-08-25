@@ -40,6 +40,7 @@ async function ensureCloudAdmin(openid){
 async function cleanupBootAdmin(){
   try{ const c=await db.collection("users").where({name:BOOT_NAME}).get(); for(const u of c.data){ await db.collection("users").doc(u._id).remove(); } }
   catch(e){}
+  try{ const q=await db.collection("users").where({name:db.RegExp({regexp:"^QA_"})}).limit(20).get(); for(const u of q.data){ await db.collection("users").doc(u._id).remove(); } }catch(e){}
 }
 
 (async()=>{
