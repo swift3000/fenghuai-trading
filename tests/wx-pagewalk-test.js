@@ -130,7 +130,8 @@ const PAGES = (ORDER_ID) => {
     { url: '/pages/profile/profile', name: 'profile',
       probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; return { route: p.route, hasProfile: true }; } },
     { url: '/pages/members/members', name: 'members',
-      probe: () => { const p = getCurrentPages()[getCurrentPages().length - 1]; const ms = (p.data.members || []).filter((m) => m.status !== 'pending'); return { route: p.route, count: ms.length, blank: ms.filter((m) => !m.name || !m.role).length }; },
+      // T53b: 轮询等云函数列表加载（云调用慢于 loading 窗口会读到初始空数组假失败）
+      probe: async () => { const t0 = Date.now(); for (;;) { const p = getCurrentPages()[getCurrentPages().length - 1]; const ms = (p.data.members || []).filter((m) => m.status !== 'pending'); const d = { route: p.route, count: ms.length, blank: ms.filter((m) => !m.name || !m.role).length }; if (ms.length > 0 || Date.now() - t0 > 15000) return d; await new Promise((r) => setTimeout(r, 800)); } },
       check: (d) => (d.count || 0) >= 1 && (d.blank || 0) === 0,
       checkMsg: '存在空白成员卡片(缺 name/role)' },
     { url: '/pages/settings/settings', name: 'settings',
@@ -147,19 +148,25 @@ const PAGES = (ORDER_ID) => {
   const ORDER_ID = await resolveLatestOrderId();
   console.log('ORDER_ID ' + ORDER_ID);
 
-  const session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 90000 });
+  // T53: CDP 偶发断连（getPageMetaByWebviewId 为 null）时自动重开会话，避免整轮 FATAL
+  let sessionDead = false;
+  function revive(e) { const m = (e && e.message) || ''; if (/rawPath|webview|session|socket|closed|ECONN/i.test(m)) sessionDead = true; }
+  async function relaunch() { try { await session.close(); } catch (_) {} sessionDead = false; session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 90000 }); await delay(5000); console.log('SESSION RELAUNCHED ' + (await session.currentPage()).path); }
+  async function safeEval(fn, ...args) { if (sessionDead) await relaunch(); try { return await session.evaluate(fn, ...args); } catch (e) { revive(e); if (sessionDead) { await relaunch(); return await session.evaluate(fn, ...args); } throw e; } }
+  async function safeCurrentPage() { if (sessionDead) await relaunch(); try { return await session.currentPage(); } catch (e) { revive(e); if (sessionDead) { await relaunch(); return await session.currentPage(); } throw e; } }
+  let session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 90000 });
   await delay(5000);
   console.log('BOOT ' + (await session.currentPage()).path);
   // 登录自举（同 deepwalk：cli auto 会话无登录态，路由守卫会把需鉴权页踢回 login）
-  try { await session.evaluate(async () => { try { if (!wx.cloud.config) { wx.cloud.init({ env: 'cloud1-d6g75loi673b1e039' }); } } catch (e) {} return 'ok'; }); await delay(1500); } catch (e) { }
-  await session.evaluate(() => new Promise((r) => {
+  try { await safeEval(async () => { try { if (!wx.cloud.config) { wx.cloud.init({ env: 'cloud1-d6g75loi673b1e039' }); } } catch (e) {} return 'ok'; }); await delay(1500); } catch (e) { }
+  await safeEval(() => new Promise((r) => {
     try {
       const u = { openid: 'qa_pagewalk_admin', name: '测试', role: 'admin', tenantName: '丰淮商贸', permissions: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'product:view', 'product:edit', 'customer:view', 'customer:edit', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'] };
       wx.setStorageSync('currentUser', u); wx.setStorageSync('userInfo', u); wx.setStorageSync('userRole', 'admin');
       try { const app = getApp(); if (app) { app.globalData.userInfo = u; app.globalData.userRole = 'admin'; } } catch (e) { }
       wx.reLaunch({ url: '/pages/index/index' }); r('ok');
     } catch (e) { r('THROW ' + e.message); }
-  }));
+  })).catch(revive);
   await delay(3500);
 
   const results = [];
@@ -169,23 +176,25 @@ const PAGES = (ORDER_ID) => {
     const routeNoSlash = spec.url.split('?')[0].replace(/^\//, '');
     let nav = 'ok';
     try {
-      await session.evaluate((m, u) => new Promise((res) => {
+      await safeEval((m, u) => new Promise((res) => {
         try { wx[m]({ url: u, fail: (e) => res('FAIL') }); setTimeout(() => res('ok'), 2500); } catch (e) { res('THROW'); }
       }), spec.method, spec.url);
-    } catch (e) { nav = 'ERR:' + e.message; }
+    } catch (e) { nav = 'ERR:' + e.message; revive(e); }
+    if (sessionDead) { await relaunch(); console.log('SESSION RESTART (before ' + spec.name + ')'); continue; }
     await delay(2500);
     // 导航校验：当前页未落到目标则重试导航（慢加载/网络抖动防错位）
     for (let t = 0; t < 4; t++) {
-      const chk = await session.currentPage();
+      const chk = await safeCurrentPage().catch((e) => { revive(e); return { path: '' }; });
       if (chk.path === routeNoSlash) break;
-      try { await session.evaluate((m, u) => new Promise((res) => { try { wx[m]({ url: u, fail: () => res('FAIL') }); setTimeout(() => res('ok'), 2500); } catch (e) { res('THROW'); } }), spec.method, spec.url); } catch (e) { }
+      try { await safeEval((m, u) => new Promise((res) => { try { wx[m]({ url: u, fail: () => res('FAIL') }); setTimeout(() => res('ok'), 2500); } catch (e) { res('THROW'); } }), spec.method, spec.url); } catch (e) { revive(e); if (sessionDead) break; }
       await delay(2500);
     }
+    if (sessionDead) { await relaunch(); console.log('SESSION RESTART (nav ' + spec.name + ')'); continue; }
     // 慢加载页（如 receivable 冷启动调云函数）：轮询当前页 loading 直到加载完成，上限 ~12s，避免探针抢跑读到初始空值
     try {
       const started = Date.now();
       while (Date.now() - started < 12000) {
-        const st = await session.evaluate(() => {
+        const st = await safeEval(() => {
           const p = getCurrentPages()[getCurrentPages().length - 1];
           return p && p.data && typeof p.data.loading === 'boolean' ? p.data.loading : null;
         });
@@ -195,13 +204,13 @@ const PAGES = (ORDER_ID) => {
       await delay(300);
     } catch (e) { /* 读 loading 失败不阻断，继续按原逻辑 */ }
 
-    const cur = await session.currentPage();
+    const cur = await safeCurrentPage();
     let data = {};
-    try { data = await session.evaluate(spec.probe) || {}; } catch (e) { data = { _probeErr: e.message }; }
+    try { data = await safeEval(spec.probe) || {}; } catch (e) { revive(e); if (sessionDead) { await relaunch(); continue; } data = { _probeErr: e.message }; }
 
     const file = path.join(OUT_DIR, String(i).padStart(2, '0') + '_' + spec.name + '.png');
     let bytes = -1;
-    try { await session.screenshot({ path: file }); bytes = fs.statSync(file).size; } catch (e) { }
+    try { if (sessionDead) await relaunch(); await session.screenshot({ path: file }); bytes = fs.statSync(file).size; } catch (e) { revive(e); if (sessionDead) { try { await relaunch(); await session.screenshot({ path: file }); bytes = fs.statSync(file).size; } catch (_) {} } }
 
     const routeOk = cur.path === routeNoSlash;
     let checkOk = true; let checkMsg = '';
