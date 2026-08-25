@@ -147,8 +147,9 @@ function buildLedgerData(orders) {
     const m = (p) => (p.method || p.paymentMethod || '其他')
     const cash = payments.filter(p => p.status === 'confirmed' && ['现金','cash'].includes(m(p))).reduce((sum, p) => sum + (p.amount || 0), 0)
     const wechat = payments.filter(p => p.status === 'confirmed' && ['微信','wechat'].includes(m(p))).reduce((sum, p) => sum + (p.amount || 0), 0)
-    // 折价/货损(collect 登记的 total_discount)独立于实收现金，欠款 = 实际货值 - 实收 - 累计折价（与赊销 dashboard/order-detail 口径一致）
-    const discount = o.total_discount || o.totalDiscount || 0
+    // T54 口径修正：折价/货损只认库管已确认（payments.status=confirmed）的 Σdiscount，与赊销 dashboard/order-detail 口径一致
+    // 旧实现读 orders.total_discount（登记即累加），折价未确认时台账虚减欠款
+    const discount = payments.filter(p => p.status === 'confirmed').reduce((sum, p) => sum + (p.discount || 0), 0)
     const debt = Math.max(0, actual - confirmed - discount)
     const recvDates = payments.filter(p => p.status === 'confirmed').map(p => p.confirmed_at || p.paid_at || '').filter(Boolean).sort()
     const recvDate = recvDates.length ? recvDates[recvDates.length - 1] : ''
