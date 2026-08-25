@@ -13,6 +13,30 @@ const env={};
 fs.readFileSync(path.join(PROJECT,'.env'),'utf8').split('\n').forEach(l=>{const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);if(m)env[m[1]]=m[2].trim();});
 const db=cb.init({secretId:env.CLOUDBASE_SECRET_ID,secretKey:env.CLOUDBASE_SECRET_KEY,envId:env.CLOUDBASE_ENV_ID}).database();
 const pm=require(path.join(PROJECT,'cloudfunctions','auth','perm-matrix-shared.js'));
+// T48: 云端 admin 自举（对齐 T13 自清理模式）。
+// 根因：loadPermConfig 走真实 callCloud('users',{action:'perm-config'})，云侧 checkAdmin
+// 校验【云侧】openid（开发者工具真实账号）是否为 admin。T46 删占位管理员后该记录不存在
+// → 401 → 前端静默 return → permGroups=0 → FATAL。测试前幂等 upsert 临时 admin，测后自清理。
+const DEVTOOLS_OPENID='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const BOOT_NAME='QA permui bootstrap';
+let boot={created:false,id:null};
+// 注意：node-sdk 的 add/update 用顶层字段（不带 {data:} 包装）；wx-server-sdk 才用 {data:}。两套口径混用会写出 data.data 脏结构（项目已知坑）。
+async function ensureCloudAdmin(openid){
+  const c=await db.collection('users').where({openid}).get();
+  if(c.data&&c.data.length){
+    const u=c.data[0];
+    if(u.role!=='admin'){ await db.collection('users').doc(u._id).update({role:'admin',permissions:pm.defaultPermsForRole('admin')}); }
+    return {created:false,id:u._id};
+  }
+  const r=await db.collection('users').add({openid,name:BOOT_NAME,role:'admin',status:'active',permissions:pm.defaultPermsForRole('admin'),createdBy:'qa-permui-test',createdAt:new Date(),updatedAt:new Date()});
+  return {created:true,id:(r&&r.id)||r._id||null};
+}
+async function cleanup(){
+  try{
+    const c=await db.collection('users').where({openid:DEVTOOLS_OPENID}).get();
+    for(const d of (c.data||[])){ if(d.name===BOOT_NAME){ await db.collection('users').doc(d._id).remove(); console.log('  (自清理) 已删除临时云端 admin'); } }
+  }catch(e){ console.log('  (自清理跳过) '+e.message); }
+}
 let pass=0,fail=0;
 const ok=(c,m)=>{if(c){pass++;console.log('  \u2713 '+m);}else{fail++;console.log('  \u2717 '+m);}};
 async function cloudRolePerms(){
@@ -26,6 +50,8 @@ async function cloudRolePerms(){
 }
 const ROLES=['admin','orderer','sorter','warehouse'];
 (async()=>{
+  boot=await ensureCloudAdmin(DEVTOOLS_OPENID);
+  console.log('  云端 admin 自举: '+(boot.created?'新建临时 admin':'已存在复用'));
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
   // auto-sim may not run onLaunch->wx.cloud.init; idempotent bootstrap (no-op on real launch)
@@ -45,7 +71,7 @@ wx.reLaunch({url:'/pages/index/index'});r('ok');}catch(e){r('THROW '+e.message);
     if(settled)break;
     await delay(2000);
   }
-  if(!settled){console.log('FATAL members 页未就绪');process.exit(1);}
+  if(!settled){ try{await s.close();}catch(e){} await cleanup(); console.log('FATAL members 页未就绪'); process.exit(1); }
 
   // A. 触发真实 loadPermConfig（内部取页面）
   const loaded=await s.evaluate(async()=>{try{const p=getCurrentPages().find(x=>x.route==='pages/members/members');if(!p)throw new Error('members page not found');await p.loadPermConfig();return {route:p.route,groups:p.data.permGroups.length};}catch(e){return {err:e.message};}});
@@ -83,7 +109,9 @@ wx.reLaunch({url:'/pages/index/index'});r('ok');}catch(e){r('THROW '+e.message);
   ok(cloudD.warehouse.indexOf('receivable:collect')<0 && cloudD.warehouse.indexOf('receivable:confirm')>=0,'默认两步分离：库管 无 collect、有 confirm');
   ok(cloudD.orderer.indexOf('receivable:collect')>=0 && cloudD.orderer.indexOf('receivable:confirm')<0,'默认两步分离：下单员 有 collect、无 confirm');
 
+  const code=fail?1:0;
+  try{ await s.close(); }catch(e){}
+  await cleanup();
   console.log('\n==== 结果：通过 '+pass+'，失败 '+fail+' ====');
-  await s.close();
-  process.exit(fail?1:0);
-})().catch(e=>{console.error('FATAL',e.message);process.exit(1);});
+  process.exit(code);
+})().catch(async e=>{ console.error('FATAL',e.message); try{ await cleanup(); }catch(_){} process.exit(1); });
