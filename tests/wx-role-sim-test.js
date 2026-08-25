@@ -23,6 +23,29 @@ const db=cb.init({secretId:env.CLOUDBASE_SECRET_ID,secretKey:env.CLOUDBASE_SECRE
 let pass=0,fail=0;
 const ok=(c,m)=>{if(c){pass++;console.log('  \u2713 '+m);}else{fail++;console.log('  \u2717 '+m);}};
 const QA={orderer:'qa_test_orderer_001',sorter:'qa_test_sorter_001',warehouse:'qa_test_warehouse_001'};
+const DEVTOOLS_OPENID='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const BOOT_NAME='QA rolesim bootstrap';
+// T50: 云端 admin 自举（对齐 T48）。save-perm/reset-perm 以 devtools 真实 openid 调用，
+// 云侧校验该用户为 admin；T46 删占位管理员后记录不存在 → 401 → 开关类 case 全断。
+// 测试前幂等 upsert 临时 admin（BOOT_NAME 标记），退出时自清理（双出口）。
+async function ensureCloudAdmin(openid){
+  const c=await db.collection('users').where({openid}).get();
+  for(const u of c.data){
+    if(u.role==='admin'){ return {created:false}; }
+    if(u.name===BOOT_NAME){ await db.collection('users').doc(u._id).update({role:'admin',permissions:pm.defaultPermsForRole('admin')}); return {created:false}; }
+  }
+  await db.collection('users').add({openid,name:BOOT_NAME,role:'admin',status:'active',permissions:pm.defaultPermsForRole('admin'),createdBy:'qa-rolesim-test',createdAt:new Date(),updatedAt:new Date()});
+  return {created:true};
+}
+async function cleanupQa(){
+  try{
+    const c=await db.collection('users').limit(200).get();
+    for(const u of c.data){
+      if((u.openid||'').indexOf('qa_test_')===0 || u.name===BOOT_NAME){ await db.collection('users').doc(u._id).remove(); }
+    }
+  }catch(e){ console.warn('  (自清理) 失败: ' + e.message); }
+}
+
 const code=(r)=> (r&&r.code!==undefined)?r.code:(r&&r.__err?'ERR':-999);
 const allowed=(r)=> code(r)!==403 && code(r)!==401;   // 通过权限门（缺参等业务码也算放行）
 const denied=(r)=> code(r)===403;
@@ -30,6 +53,8 @@ const denied=(r)=> code(r)===403;
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
+  const boot=await ensureCloudAdmin(DEVTOOLS_OPENID);
+  console.log('  云端 admin 自举: ' + (boot.created?'新建临时 admin':'已存在复用'));
   const callAs=async (fn,action,oid)=> s.evaluate(async (fn2,action2,oid2)=>{
     try{ const data={action:action2}; if(oid2) data.qaAsOpenid=oid2;
       const r=await wx.cloud.callFunction({name:fn2,data}); return (r&&r.result)||{};
@@ -148,5 +173,7 @@ const denied=(r)=> code(r)===403;
 
   console.log('\n==== 结果：通过 '+pass+'，失败 '+fail+' ====');
   await s.close();
+  await cleanupQa(); console.log('  (自清理) qa_test_*/临时 admin 已清理');
   process.exit(fail?1:0);
-})().catch(e=>{console.error('FATAL',e.message);process.exit(1);});
+})().catch(async e=>{ try{ await cleanupQa(); }catch(_){}
+  console.error('FATAL',e.message);process.exit(1);});
