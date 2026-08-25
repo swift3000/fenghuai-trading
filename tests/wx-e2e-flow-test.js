@@ -16,6 +16,22 @@ const pm=require(path.join(PROJECT,'cloudfunctions','auth','perm-matrix-shared.j
 const env={};
 fs.readFileSync(path.join(PROJECT,'.env'),'utf8').split('\n').forEach(l=>{const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);if(m)env[m[1]]=m[2].trim();});
 const db=cb.init({secretId:env.CLOUDBASE_SECRET_ID,secretKey:env.CLOUDBASE_SECRET_KEY,envId:env.CLOUDBASE_ENV_ID}).database();
+const DEVTOOLS_OPENID='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const BOOT_NAME='QA e2eflow bootstrap';
+// T50: 云端 admin 自举（对齐 T48）。getOrder 以 devtools 真实身份读 orders.detail（需 order:view），
+// T46 删占位管理员后该账号无 users 记录 -> 401 -> 读断言全失败。测试前幂等 upsert 临时 admin，退出自清理（双出口）。
+async function ensureCloudAdmin(openid){
+  const c=await db.collection('users').where({openid}).get();
+  for(const u of c.data){
+    if(u.role==='admin'){ return {created:false}; }
+    if(u.name===BOOT_NAME){ await db.collection('users').where({openid}).update({role:'admin',permissions:pm.defaultPermsForRole('admin')}); return {created:false}; }
+  }
+  await db.collection('users').add({openid,name:BOOT_NAME,role:'admin',status:'active',permissions:pm.defaultPermsForRole('admin'),createdBy:'qa-e2eflow-test',createdAt:new Date(),updatedAt:new Date()});
+  return {created:true};
+}
+async function cleanupBootAdmin(){
+  try{ const c=await db.collection('users').where({name:BOOT_NAME}).get(); for(const u of c.data){ await db.collection('users').doc(u._id).remove(); } }catch(e){ console.warn('  (自清理) 失败: '+e.message); }
+}
 
 let pass=0,fail=0;
 const ok=(c,m)=>{if(c){pass++;console.log('  \u2713 '+m);}else{fail++;console.log('  \u2717 '+m);}};
@@ -25,6 +41,8 @@ const CUST={_id:'1aeaf3576a7ee3870058bead57f09341',name:'万友',region:'汉阴'
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:120000});
   await delay(4000);
+  const boot=await ensureCloudAdmin(DEVTOOLS_OPENID);
+  console.log('  云端 admin 自举: '+(boot.created?'新建临时 admin':'已存在复用'));
   const callAs=async (fn,action,role,data)=> s.evaluate(async (fn2,action2,oid2,d2)=>{
     try{ const d=Object.assign({action:action2},d2||{}); if(oid2) d.qaAsOpenid=oid2;
       const r=await wx.cloud.callFunction({name:fn2,data:d}); return (r&&r.result)||{};
@@ -117,6 +135,8 @@ const CUST={_id:'1aeaf3576a7ee3870058bead57f09341',name:'万友',region:'汉阴'
   ok(!chk,'订单已从库中删除');
 
   console.log('\n==== 结果：通过 '+pass+'，失败 '+fail+' ====');
+  await cleanupBootAdmin();
   await s.close();
   process.exit(fail>0?1:0);
-})().catch(e=>{console.error('FATAL',e.message,e.stack);process.exit(1);});
+})().catch(async e=>{ try{ await cleanupBootAdmin(); }catch(_){}
+  console.error('FATAL',e.message,e.stack);process.exit(1);});
