@@ -34,6 +34,36 @@ const { delay, ensureDirFor } = require(path.join(AUTOMATOR_LIB, 'common.js'));
 const TEST_PGWK_TAG = 'TEST_PGWK';
 let createdTestOrderId = null;
 let testDb = null;
+// T49: 云端 admin 自举（同 T48 wx-perm-ui / T49 deepwalk 模式）——order-detail/members 探针
+// 走真实 callCloud，云侧校验开发者工具【真实】openid；users=0 时 401 → hasOrder=false/members 空。
+// 测试前幂等 upsert 临时 admin（node-sdk 顶层字段口径），测后自清理。
+const DEVTOOLS_OPENID = 'oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const PGWK_BOOT_NAME = 'QA pagewalk bootstrap';
+let pgwkBootCreated = false;
+async function ensureCloudAdmin() {
+  try {
+    const env = {};
+    for (const line of fs.readFileSync(path.join(PROJECT, '.env'), 'utf8').split('\n')) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/); if (m) env[m[1]] = m[2].trim();
+    }
+    const db = require(path.join(PROJECT, 'node_modules', '@cloudbase', 'node-sdk'))
+      .init({ secretId: env.CLOUDBASE_SECRET_ID, secretKey: env.CLOUDBASE_SECRET_KEY, envId: env.CLOUDBASE_ENV_ID }).database();
+    const pm = require(path.join(PROJECT, 'cloudfunctions', 'auth', 'perm-matrix-shared.js'));
+    const c = await db.collection('users').where({ openid: DEVTOOLS_OPENID }).get();
+    if (c.data && c.data.length) { testDb = db; return; }
+    await db.collection('users').add({ openid: DEVTOOLS_OPENID, name: PGWK_BOOT_NAME, role: 'admin', status: 'active', permissions: pm.defaultPermsForRole('admin'), createdBy: 'qa-pagewalk-test', createdAt: new Date(), updatedAt: new Date() });
+    pgwkBootCreated = true;
+    testDb = db;
+  } catch (e) { console.warn('[warn] 云端 admin 自举失败：' + e.message); }
+}
+async function cleanupCloudAdmin() {
+  try {
+    if (testDb) {
+      const c = await testDb.collection('users').where({ openid: DEVTOOLS_OPENID, name: PGWK_BOOT_NAME }).get();
+      for (const d of c.data || []) await testDb.collection('users').doc(d._id).remove();
+    }
+  } catch (e) { console.warn('[warn] 自清理失败：' + e.message); }
+}
 async function resolveLatestOrderId() {
   try {
     const env = {};
@@ -112,6 +142,8 @@ const PAGES = (ORDER_ID) => {
 (async () => {
   ensureDirFor(OUT_DIR);
   console.log('PROJECT ' + PROJECT);
+  await ensureCloudAdmin();
+  console.log('云端 admin 自举: ' + (pgwkBootCreated ? '新建临时 admin' : '已存在复用'));
   const ORDER_ID = await resolveLatestOrderId();
   console.log('ORDER_ID ' + ORDER_ID);
 
@@ -193,6 +225,8 @@ const PAGES = (ORDER_ID) => {
     }
   } catch (e) { console.warn('[warn] 清理 TEST 订单失败：' + e.message); }
 
-  await session.close();
-  process.exit(failed.length ? 1 : 0);
-})().catch((e) => { console.error('FATAL ' + e.message); process.exit(1); });
+  if (pgwkBootCreated) { await cleanupCloudAdmin(); console.log('[cleanup] 临时云端 admin 已清理'); }
+  const code = failed.length ? 1 : 0;
+  try { await session.close(); } catch (e) {}
+  process.exit(code);
+})().catch(async (e) => { console.error('FATAL ' + e.message); try { if (pgwkBootCreated) await cleanupCloudAdmin(); } catch (_) {} process.exit(1); });

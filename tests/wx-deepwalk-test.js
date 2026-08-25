@@ -19,6 +19,29 @@ const AUTOMATOR_LIB =
   path.join(os.homedir(), '.codex', 'skills', 'wechat-devtools-automator', 'scripts', 'lib');
 const { launchSession } = require(path.join(AUTOMATOR_LIB, 'devtools_client.js'));
 const { delay } = require(path.join(AUTOMATOR_LIB, 'common.js'));
+// T49: 云端 admin 自举（同 T48 wx-perm-ui 模式）——页面 onShow 走真实 callCloud，
+// 云侧校验的是开发者工具【真实】openid；T12 清 QA 用户 + T46 删占位管理员后 users=0
+// → 云函数 401 → 页面云端数据全空。测试前幂等 upsert 临时 admin（node-sdk 顶层字段口径），测后自清理。
+const _env = {};
+fs.readFileSync(path.join(PROJECT, '.env'), 'utf8').split('\n').forEach((l) => { const m = l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/); if (m) _env[m[1]] = m[2].trim(); });
+const _db = require(path.join(PROJECT, 'node_modules', '@cloudbase', 'node-sdk'))
+  .init({ secretId: _env.CLOUDBASE_SECRET_ID, secretKey: _env.CLOUDBASE_SECRET_KEY, envId: _env.CLOUDBASE_ENV_ID }).database();
+const _pm = require(path.join(PROJECT, 'cloudfunctions', 'auth', 'perm-matrix-shared.js'));
+const DEVTOOLS_OPENID = 'oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const BOOT_NAME = 'QA deepwalk bootstrap';
+let bootCreated = false;
+async function ensureCloudAdmin() {
+  const c = await _db.collection('users').where({ openid: DEVTOOLS_OPENID }).get();
+  if (c.data && c.data.length) return;
+  await _db.collection('users').add({ openid: DEVTOOLS_OPENID, name: BOOT_NAME, role: 'admin', status: 'active', permissions: _pm.defaultPermsForRole('admin'), createdBy: 'qa-deepwalk-test', createdAt: new Date(), updatedAt: new Date() });
+  bootCreated = true;
+}
+async function cleanupCloudAdmin() {
+  try {
+    const c = await _db.collection('users').where({ openid: DEVTOOLS_OPENID, name: BOOT_NAME }).get();
+    for (const d of c.data || []) await _db.collection('users').doc(d._id).remove();
+  } catch (e) { console.log('  (自清理跳过) ' + e.message); }
+}
 
 // 导航目标：route -> {method, url}
 const NAV = {
@@ -83,6 +106,8 @@ let pass = 0, fail = 0;
 function ok(cond, msg) { if (cond) { pass++; console.log('  ✓ ' + msg); } else { fail++; console.log('  ✗ ' + msg); } }
 
 (async () => {
+  await ensureCloudAdmin();
+  console.log('  云端 admin 自举: done');
   const session = await launchSession({ projectPath: PROJECT, trustProject: true, timeoutMs: 90000 });
   await delay(5000);
   // cloud init + 登录自举（同 perm-ui：storage + globalData）
@@ -181,6 +206,8 @@ function ok(cond, msg) { if (cond) { pass++; console.log('  ✓ ' + msg); } else
   }
 
   console.log('\n==== 结果：通过 ' + pass + '，失败 ' + fail + ' ====');
-  await session.close();
-  process.exit(fail ? 1 : 0);
-})().catch((e) => { console.error('FATAL ' + e.message); process.exit(1); });
+  const code = fail ? 1 : 0;
+  try { await session.close(); } catch (e) {}
+  if (bootCreated) { await cleanupCloudAdmin(); console.log('  (自清理) 已删除临时云端 admin'); }
+  process.exit(code);
+})().catch(async (e) => { console.error('FATAL ' + e.message); try { if (bootCreated) await cleanupCloudAdmin(); } catch (_) {} process.exit(1); });
