@@ -24,9 +24,29 @@ const WARE='qa_test_warehouse_001';
 const TAG='TEST_IDEM';
 const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
 
+// T51c: 云端 admin 自举（对齐 T50）。getOrder 用 devtools 真实身份（无 qaAsOpenid），
+// T46 删占位管理员后 401 → 订单读 null → received_amount/payment_status 断言假失败。
+const DEVTOOLS_OPENID="oo0s93SW9A4V4iO1ANyA3eqzxVIA";
+const BOOT_NAME="QA idem bootstrap";
+async function ensureCloudAdmin(openid){
+  const c=await db.collection("users").where({openid}).get();
+  for(const u of c.data){
+    if(u.role==="admin"){ return {created:false}; }
+    if(u.name===BOOT_NAME){ await db.collection("users").doc(u._id).update({role:"admin",permissions:pm.defaultPermsForRole("admin")}); return {created:false}; }
+  }
+  await db.collection("users").add({openid,name:BOOT_NAME,role:"admin",status:"active",permissions:pm.defaultPermsForRole("admin"),createdBy:"qa-idem-test",createdAt:new Date(),updatedAt:new Date()});
+  return {created:true};
+}
+async function cleanupBootAdmin(){
+  try{ const c=await db.collection("users").where({name:BOOT_NAME}).get(); for(const u of c.data){ await db.collection("users").doc(u._id).remove(); } }
+  catch(e){}
+}
+
 (async()=>{
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
+  const boot=await ensureCloudAdmin(DEVTOOLS_OPENID);
+  console.log("  云端 admin 自举: "+(boot.created?"新建临时 admin":"已存在复用"));
   for(const [oid,role] of [[ORDERER,'orderer'],[WARE,'warehouse']]){
     const us=await db.collection('users').where({openid:oid}).limit(1).get();
     if(!us.data.length){
@@ -37,7 +57,7 @@ const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
     try{ const r=await wx.cloud.callFunction({name:fn2,data:Object.assign({},d2,{qaAsOpenid:oid})}); return (r&&r.result)||{}; }
     catch(e){ return {__err:e.message,code:-1}; }
   }, fn, data, roleOid);
-  const getOrder=async oid=>{ const r=await call('orders',{action:'detail',orderId:oid}); return (r&&r.code===0&&r.data)?r.data:null; };
+  const getOrder=async oid=>{ const r=await call('orders',{action:'detail',orderId:oid},WARE); return (r&&r.code===0&&r.data)?r.data:null; };
 
   // 先清理历史残留（前几轮失败的 TEST 订单）
   await db.collection('payments').where({client_token:db.RegExp({regexp:TAG})}).remove().catch(()=>{});
@@ -46,7 +66,7 @@ const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
   const cRes=await call('orders',{action:'create',customerName:TAG+'_\u5ba2\u6237',totalAmount:50,items:[{name:TAG+'_\u5546\u54c1',pricing_mode:'piece',piece_qty:1,package_qty:0,price_piece:50,price_unit:0}]},ORDERER);
   const oid=cRes.data&&cRes.data._id;
   ok(!!oid,'\u9020 TEST \u8ba2\u5355 '+oid+(cRes.message?'\uff08'+cRes.message+'\uff09':''));
-  if(!oid){ console.log('==== \u7ed3\u679c\uff1a\u901a\u8fc7 '+pass+'\uff0c\u5931\u8d25 '+fail+' ===='); process.exit(1); }
+  if(!oid){ console.log('==== \u7ed3\u679c\uff1a\u901a\u8fc7 '+pass+'\uff0c\u5931\u8d25 '+fail+' ===='); await cleanupBootAdmin(); process.exit(1); }
 
   const tok=TAG+'_tok1';
   const c1=await call('receivable',{action:'collect',orderId:oid,amount:50,clientToken:tok},ORDERER);
@@ -78,5 +98,7 @@ const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
   ok(left.data.length===0&&leftP.data.length===0,'TEST \u8ba2\u5355+\u6536\u6b3e\u6570\u636e\u5df2\u6e05\u7406 orders='+left.data.length+' pays='+leftP.data.length);
 
   console.log('==== \u7ed3\u679c\uff1a\u901a\u8fc7 '+pass+'\uff0c\u5931\u8d25 '+fail+' ====');
+  await cleanupBootAdmin();
   process.exit(fail?1:0);
-})().catch(e=>{console.error('FATAL',e.message);process.exit(1);});
+})().catch(async e=>{ try{ await cleanupBootAdmin(); }catch(_){}
+  console.error('FATAL',e.message);process.exit(1);});

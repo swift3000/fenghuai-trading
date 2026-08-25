@@ -22,6 +22,24 @@ const env={};
 fs.readFileSync(path.join(PROJECT,'.env'),'utf8').split('\n').forEach(l=>{const m=l.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);if(m)env[m[1]]=m[2].trim();});
 const db=cb.init({secretId:env.CLOUDBASE_SECRET_ID,secretKey:env.CLOUDBASE_SECRET_KEY,envId:env.CLOUDBASE_ENV_ID}).database();
 
+// T51: 云端 admin 自举（对齐 T50）。管理员专属 action 以 devtools 真实 openid 调用，
+// T46 删占位管理员后该身份非 admin → 401 → 邀请/创建/切换/删除类 case 全断。
+const DEVTOOLS_OPENID="oo0s93SW9A4V4iO1ANyA3eqzxVIA";
+const BOOT_NAME="QA membermgmt bootstrap";
+async function ensureCloudAdmin(openid){
+  const c=await db.collection("users").where({openid}).get();
+  for(const u of c.data){
+    if(u.role==="admin"){ return {created:false}; }
+    if(u.name===BOOT_NAME){ await db.collection("users").doc(u._id).update({role:"admin",permissions:pm.defaultPermsForRole("admin")}); return {created:false}; }
+  }
+  await db.collection("users").add({openid,name:BOOT_NAME,role:"admin",status:"active",permissions:pm.defaultPermsForRole("admin"),createdBy:"qa-membermgmt-test",createdAt:new Date(),updatedAt:new Date()});
+  return {created:true};
+}
+async function cleanupBootAdmin(){
+  try{ const c=await db.collection("users").where({name:BOOT_NAME}).get(); for(const u of c.data){ await db.collection("users").doc(u._id).remove(); } }
+  catch(e){}
+}
+
 let pass=0,fail=0;
 const ok=(c,m)=>{if(c){pass++;console.log('  \u2713 '+m);}else{fail++;console.log('  \u2717 '+m);}};
 const code=(r)=> (r&&r.code!==undefined)?r.code:(r&&r.__err?'ERR':-999);
@@ -33,9 +51,14 @@ const NEW_ORDERER='qa_mm_orderer_001';   // 邀请激活目标
 const NEW_SORTER='qa_mm_sorter_001';      // users.add 创建目标
 const NEW_WH='qa_mm_warehouse_001';       // 角色切换实验目标
 const NEW_INV='qa_mm_invitee_001';        // 直接 activateByInvite 目标
-const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
+const ADMIN=DEVTOOLS_OPENID;
+// T51b: 正常出口显式 await 清理 BOOT admin（process.exit 不会等异步；失败出口走 FATAL catch）
+// T51b: 失败出口也清理 BOOT admin（防 process.exit 跳过尾部清理污染后续轮次）
 
 (async()=>{
+  const boot=await ensureCloudAdmin(DEVTOOLS_OPENID);
+  console.log("  云端 admin 自举: "+(boot.created?"新建临时 admin":"已存在复用"));
+
   const s=await launchSession({projectPath:PROJECT,trustProject:true,timeoutMs:90000});
   await delay(4000);
   // auto-sim may not run onLaunch->wx.cloud.init; idempotent bootstrap (no-op on real launch)
@@ -256,5 +279,7 @@ const ADMIN='oo0s93SW9A4V4iO1ANyA3eqzxVIA';
 
   console.log('\n==== 结果：通过 '+pass+'，失败 '+fail+' ====');
   await s.close();
+  await cleanupBootAdmin();
   process.exit(fail?1:0);
-})().catch(e=>{console.error('FATAL',e);process.exit(1);});
+})().catch(async e=>{ try{ await cleanupBootAdmin(); }catch(_){}
+  console.error('FATAL',e);process.exit(1);});
