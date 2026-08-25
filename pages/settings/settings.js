@@ -29,6 +29,10 @@ Page({
     // 定时自动确认（管理员可控）
     acEnabled: '0',
     acTime: '16:00',
+    // 默认管理员白名单（防体验版抢首登）
+    wlItems: [],
+    wlMine: '',
+    wlInput: '',
     // 打印机配置（蓝牙打印）
     printerBrand: 'xinye',
     printerBrandIndex: 0,
@@ -213,7 +217,10 @@ Page({
     const userRole = wx.getStorageSync('userRole') || ''
     this.setData({ userRole })
     // 角色确定后补加载定时确认配置
-    if (userRole === 'admin') this.loadAutoConfirm()
+    if (userRole === 'admin') {
+      this.loadAutoConfirm()
+      this.loadWhitelist()
+    }
   },
 
   // 加载定时自动确认配置
@@ -248,6 +255,56 @@ Page({
     }
   },
 
+  // ===== 默认管理员白名单 =====
+  async loadWhitelist() {
+    try {
+      const r = await callCloud('system', { action: 'getAdminWhitelist' })
+      this.setData({ wlItems: r.items || [], wlMine: r.mine || '' })
+    } catch (e) {
+      console.error('加载管理员白名单失败', e)
+    }
+  },
+  onWlInput(e) {
+    this.setData({ wlInput: e.detail.value })
+  },
+  // 一键把当前登录账号（我自己）设为默认管理员
+  async wlAddMine() {
+    if (!this.data.wlMine) { wx.showToast({ title: '无法获取当前openid', icon: 'none' }); return }
+    try {
+      await callCloud('system', { action: 'addAdminWhitelist', openid: this.data.wlMine })
+      wx.showToast({ title: '已设为默认管理员', icon: 'success' })
+      this.loadWhitelist()
+    } catch (e) {
+      wx.showToast({ title: '设置失败', icon: 'none' })
+    }
+  },
+  // 手动输入 openid 添加
+  async wlAddInput() {
+    const openid = (this.data.wlInput || '').trim()
+    if (!openid) { wx.showToast({ title: '请输入 openid', icon: 'none' }); return }
+    try {
+      await callCloud('system', { action: 'addAdminWhitelist', openid })
+      wx.showToast({ title: '已添加', icon: 'success' })
+      this.setData({ wlInput: '' })
+      this.loadWhitelist()
+    } catch (e) {
+      wx.showToast({ title: '添加失败', icon: 'none' })
+    }
+  },
+  wlRemoveTap(e) {
+    const oid = (e.currentTarget.dataset && e.currentTarget.dataset.oid) || ''
+    if (!oid) return
+    this.wlRemove(oid)
+  },
+  async wlRemove(openid) {
+    try {
+      await callCloud('system', { action: 'removeAdminWhitelist', openid })
+      wx.showToast({ title: '已移除', icon: 'success' })
+      this.loadWhitelist()
+    } catch (e) {
+      wx.showToast({ title: '移除失败', icon: 'none' })
+    }
+  },
   onFontScaleChange(scale) {
     uiStyle.applyUiStyle(this)
   }

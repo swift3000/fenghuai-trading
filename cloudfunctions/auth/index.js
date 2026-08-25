@@ -98,6 +98,32 @@ exports.main = async (event, context) => {
   }
 }
 
+// ===== 默认管理员白名单（防体验版"谁先扫谁是管理员"，T47）=====
+async function getAdminWhitelist() {
+  try {
+    const r = await db.collection('system_config').doc('global').get()
+    const wl = (r.data && r.data.adminWhitelist) || []
+    return Array.isArray(wl) ? wl.filter(x => typeof x === 'string' && x) : []
+  } catch (e) { return [] }
+}
+async function isWhitelistedAdmin(openid) {
+  const wl = await getAdminWhitelist()
+  return wl.includes(openid)
+}
+// 白名单内已注册且未禁用的账号幂等提升为管理员
+async function syncWhitelistAdmin(openid, user) {
+  if (!user || user.role === 'admin' || user.status === 'disabled') return
+  if (await isWhitelistedAdmin(openid)) {
+    const pm = require('./perm-matrix-shared')
+    await db.collection('users').doc(user._id).update({ data: {
+      role: 'admin',
+      permissions: pm.defaultPermsForRole('admin') || [],
+      updatedAt: db.serverDate()
+    } })
+    user.role = 'admin'
+  }
+}
+
 /**
  * 处理登录
  */
@@ -133,7 +159,8 @@ async function handleLogin(openid, event) {
           return { code: 400, message: '邀请码已过期' }
         }
 
-        const finalRole = pre.role || 'orderer'
+        let finalRole = pre.role || 'orderer'
+        if (await isWhitelistedAdmin(openid)) finalRole = 'admin'
         const permissions = await effectivePermsForRole(finalRole)
 
         await db.collection('users').doc(pre._id).update({
@@ -174,7 +201,8 @@ async function handleLogin(openid, event) {
       }
 
       const hasAdmin = adminResult.total > 0
-      const finalRole = hasAdmin ? 'orderer' : 'admin'
+      const inWhitelist = await isWhitelistedAdmin(openid)
+      const finalRole = inWhitelist ? 'admin' : (hasAdmin ? 'orderer' : 'admin')
 
       console.log('创建新用户，role:', finalRole)
 
@@ -208,6 +236,8 @@ async function handleLogin(openid, event) {
     } else {
       // 用户已存在
       const user = userResult.data[0]
+      // 白名单账号同步提升为管理员（幂等）
+      await syncWhitelistAdmin(openid, user)
       console.log('老用户登录，role:', user.role)
 
       // 待确认成员（管理端预建、已绑 openid）登录即自动激活；禁用账号拦截

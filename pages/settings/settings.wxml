@@ -125,4 +125,30 @@
     </view>
   </view>
 
+  <view class="sec-card" id="sec-adminwl" wx:if="{{userRole === 'admin'}}">
+    <view class="sec-head">👑 默认管理员 <text class="hint-txt">防抢首登</text></view>
+    <view class="sec-body">
+      <view class="ag-step">白名单里的微信号登录时<b>必定是管理员</b>（即使已有其他管理员）。体验版发布后，先把老板/核心管理的微信加进白名单，谁先扫码都不会抢走管理员身份。当前登录账号可一键加入。</view>
+      <button class="btn-primary" bindtap="wlAddMine">⚡ 把当前账号（我）设为默认管理员</button>
+      <view class="wl-list" wx:if="{{wlItems.length > 0}}">
+        <view class="wl-item" wx:for="{{wlItems}}" wx:key="openid">
+          <view class="wl-info">
+            <view class="wl-name">{{item.user ? item.user.name : '未注册'}}{{item.openid === wlMine ? '（当前账号）' : ''}}</view>
+            <view class="wl-oid">{{item.openid}}</view>
+          </view>
+          <view class="wl-roles">
+            <text wx:if="{{!item.user || item.user.role !== 'admin'}}" class="wl-wait">登录后自动升管理员</text>
+            <text wx:else class="wl-ok">已是管理员</text>
+            <text class="wl-del" data-oid="{{item.openid}}" catchtap="wlRemoveTap">移除</text>
+          </view>
+        </view>
+      </view>
+      <view class="wl-empty" wx:else>白名单为空（保持「首个登录者成为管理员」的旧规则）</view>
+      <view class="mf-row wl-input-row">
+        <input class="wl-input" value="{{wlInput}}" bindinput="onWlInput" placeholder="手动填 openid 添加（选填）" />
+        <button class="wl-add-btn" bindtap="wlAddInput">添加</button>
+      </view>
+    </view>
+  </view>
+
 </view>

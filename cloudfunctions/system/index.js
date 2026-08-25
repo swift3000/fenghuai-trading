@@ -92,6 +92,40 @@ exports.main = async (event, context) => {
       await setConfig(cfg)
       return { code: 0, data: {} }
     }
+    case 'getAdminWhitelist': {
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
+      const cfg = await getConfig()
+      const wl = Array.isArray(cfg.adminWhitelist) ? cfg.adminWhitelist : []
+      // 每个 openid 附带上对应已注册用户的名字（便于管理员辨认）
+      const users = await db.collection('users').field({ openid: 1, name: 1, role: 1 }).get()
+      const byOpenid = {}
+      for (const u of users.data) byOpenid[u.openid] = u
+      return { code: 0, data: { list: wl, mine: OPENID, items: wl.map(o => ({ openid: o, user: byOpenid[o] || null })) } }
+    }
+    case 'addAdminWhitelist': {
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
+      const openid = String(event.openid || '').trim()
+      if (!openid) return { code: 400, message: 'openid 不能为空' }
+      const cfg = await getConfig()
+      const wl = Array.isArray(cfg.adminWhitelist) ? cfg.adminWhitelist : []
+      if (!wl.includes(openid)) {
+        wl.push(openid)
+        cfg.adminWhitelist = wl
+        cfg.updatedAt = db.serverDate()
+        await setConfig(cfg)
+      }
+      return { code: 0, data: { list: wl } }
+    }
+    case 'removeAdminWhitelist': {
+      if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
+      const openid = String(event.openid || '').trim()
+      const cfg = await getConfig()
+      const wl = Array.isArray(cfg.adminWhitelist) ? cfg.adminWhitelist : []
+      cfg.adminWhitelist = wl.filter(o => o !== openid)
+      cfg.updatedAt = db.serverDate()
+      await setConfig(cfg)
+      return { code: 0, data: { list: cfg.adminWhitelist } }
+    }
     case 'getAutoConfirm': {
       // 定时自动确认配置（仅管理员可读）：{ enabled, time: '16:00' }
       if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
