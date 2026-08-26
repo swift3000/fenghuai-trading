@@ -120,12 +120,11 @@ Page({
   saveExportFile(result, fmt) {
     if (fmt === 'excel' && result && result.fileID) {
       return new Promise((resolve, reject) => {
-        wx.downloadFile({
-          url: result.fileID,
+        wx.cloud.downloadFile({
+          fileID: result.fileID,
           success: d => {
-            if (d.statusCode !== 200) return reject(new Error('download fail'))
             wx.openDocument({
-              filePath: d.tempFilePath,
+            filePath: d.tempFilePath,
               showMenu: true,
               fileName: result.filename || 'export.xlsx',
               success: () => resolve(true),
@@ -207,12 +206,11 @@ Page({
       wx.showShareMenu({ withShareTicket: true, shareTypes: [1, 2] })
       wx.showLoading({ title: '打开 PDF...' })
       await new Promise((resolve, reject) => {
-        wx.downloadFile({
-          url: result.fileID,
+        wx.cloud.downloadFile({
+          fileID: result.fileID,
           success: d => {
-            if (d.statusCode !== 200) return reject(new Error('download fail'))
             wx.openDocument({
-              filePath: d.tempFilePath,
+            filePath: d.tempFilePath,
               showMenu: true,
               fileName: result.filename || '送货单.pdf',
               success: resolve,
