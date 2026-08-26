@@ -404,7 +404,7 @@ onCustomerSearch(e) {
 
   // ============ 语音录入（腾讯云 ASR） ============
   async startVoiceInput() {
-    // 录音权限
+    // 1) 录音 scope 权限
     try {
       const setting = await wx.getSetting()
       if (setting.authSetting['scope.record'] === false) {
@@ -428,7 +428,24 @@ onCustomerSearch(e) {
           return
         }
       }
-    } catch (e) { /* 继续，start 时若失败再提示 */ }
+    } catch (e) { /* getSetting 异常继续，start 时再兜底提示 */ }
+
+    // 2) 隐私授权（T45：新基础库录音属隐私接口，未同意隐私协议会 fail:start）
+    try {
+      if (wx.requirePrivacyAuthorize) {
+        await new Promise((resolve, reject) => {
+          wx.requirePrivacyAuthorize({ success: resolve, fail: reject })
+        })
+      }
+    } catch (e) {
+      wx.showModal({
+        title: '需要同意隐私协议',
+        content: '语音输入需要使用麦克风。请同意隐私协议；若未出现弹窗，请联系管理员在公众平台配置「用户隐私保护指引-麦克风」',
+        showCancel: false
+      })
+      this.setData({ voiceState: 'idle' })
+      return
+    }
 
     const { callCloud } = require('../../utils/request')
     // 检查 ASR 是否已配置（不泄露密钥，任意下单员可查）
@@ -447,7 +464,17 @@ onCustomerSearch(e) {
     recorder.onStop((res) => { this._onVoiceRecorded(res) })
     recorder.onError((err) => {
       this.setData({ voiceState: 'idle' })
-      wx.showToast({ title: (err && err.errMsg) || '录音失败', icon: 'none' })
+      const msg = (err && err.errMsg) || '录音失败'
+      // 隐私/权限类失败给明确指引，而非原始错误码
+      if (/privacy|denied|authorize/i.test(msg)) {
+        wx.showModal({
+          title: '无法开始录音',
+          content: '麦克风权限未开启：请在弹窗中同意隐私协议并允许使用麦克风；若仍失败，请检查公众平台「用户隐私保护指引」是否已配置麦克风',
+          showCancel: false
+        })
+      } else {
+        wx.showToast({ title: msg, icon: 'none' })
+      }
     })
     try {
       recorder.start({
