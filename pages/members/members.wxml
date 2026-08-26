@@ -17,6 +17,7 @@
       </view>
       <view class="ic-actions">
         <button class="btn-invite primary" bindtap="handleInvite">🔗 生成邀请</button>
+        <button class="btn-invite" wx:if="{{lastInvite}}" open-type="share">📤 转发给微信好友</button>
         <button class="btn-invite" bindtap="handleInvite">🔄 刷新</button>
       </view>
     </view>
@@ -29,7 +30,7 @@
           <text class="invite-result-label">邀请码：{{lastInvite.code}}</text>
           <text class="invite-copy" data-code="{{lastInvite.code}}" bindtap="copyInvite">复制</text>
         </view>
-        <text class="invite-result-expire">{{lastInvite.expireText}} · 员工扫码即自动绑定该角色</text>
+        <text class="invite-result-expire">{{lastInvite.expireText}} · 员工扫码或点转发卡片登录，自动绑定该角色</text>
       </view>
       <text class="invite-close" bindtap="closeInvite">× 关闭</text>
     </view>

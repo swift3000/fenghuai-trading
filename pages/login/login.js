@@ -13,8 +13,22 @@ Page({
   onLoad(options) {
     uiStyle.applyUiStyle(this)
     this.checkFirstAdmin();
-    // 扫码进入：scene 携带 invite=XXXXXX，自动填入邀请码
-    if (options && options.scene) {
+    // 统一解析邀请码（卡片分享 / 扫码 scene 两种来源）
+    this.parseInviteFromOptions(options)
+  },
+
+  // 解析邀请码：1) 小程序卡片 path 带 ?invite=XXXXXX  2) 扫码 scene 带 invite=XXXXXX
+  parseInviteFromOptions(options) {
+    if (!options) return
+    if (options.invite) {
+      const code = String(options.invite).trim().toUpperCase()
+      if (/^[A-Z0-9]{4,}$/.test(code)) {
+        this.setData({ inviteCode: code })
+        wx.showToast({ title: '已识别邀请码，请登录', icon: 'none' })
+      }
+      return
+    }
+    if (options.scene) {
       const scene = decodeURIComponent(options.scene)
       const m = scene.match(/invite=([A-Z0-9]+)/)
       if (m && m[1]) {

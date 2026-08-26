@@ -217,6 +217,21 @@ Page({
     this.setData({ inviteQr: '', lastInvite: null })
   },
 
+  // T44：转发邀请小程序卡片。对方点开卡片直达登录页，邀请码自动填入并绑定角色。
+  onShareAppMessage() {
+    const inv = this.data.lastInvite
+    if (inv && inv.code) {
+      return {
+        title: '丰淮商贸 · 邀请你加入（' + inv.roleLabel + '）',
+        path: '/pages/login/login?invite=' + inv.code
+      }
+    }
+    return {
+      title: '丰淮商贸采购下单助手',
+      path: '/pages/login/login'
+    }
+  },
+
   handleRemove(e) {
     const id = e.currentTarget.dataset.id
     wx.showModal({
