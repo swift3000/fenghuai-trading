@@ -2,7 +2,7 @@
 
 > 生效范围：所有 AI 助手（Codex/Trae/其他）。本文件只提供【项目技术细节】；
 > 全局流程规则（评审机制/交付循环/经验库/平台红线/测试方式/工程纪律）以 ~/.codex/AGENTS.md 为最高优先，冲突以全局为准。
-> **规范版本**：v1.2 | **全局规则依赖版本**：v4.14 | **更新日期**：2026-08-22
+> **规范版本**：v1.3 | **全局规则依赖版本**：v4.15 | **更新日期**：2026-08-26
 
 ## 一句话
 丰淮商贸采购下单助手：微信小程序（4 角色 RBAC）+ 微信云开发 Serverless，覆盖 智能录入→录单→分拣→出库→赊销收款→蓝牙打印/转发销售单。MVP v1.0 为最终功能范围（无 Web 后台、无二期增强；催收/审计/趋势报表/微信支付为独立升级模块）。
@@ -84,6 +84,14 @@
 - ASR 端到端转写 >30s：callFunction 等待放宽；生产走 smart 云函数（timeout 60s）
 - node-sdk 写后必须回读验证顶层 key
 - 完整历史坑见：~/.codex/knowledge/errors.md（grep 项目名 fenghuai）项目级清单 docs/reports/项目级错误经验.md
+
+## 专业角色执行细则（项目事实，v4.15 五新角色；流程条款引用全局【多角色评审机制】不复制）
+- SAST：semgrep（未装，首次触发 `brew install semgrep` 并建 DEPAUD 任务）。范围 = 小程序根目录 + cloudfunctions/，排除 node_modules/；触发 = 登录/RBAC/支付/敏感数据代码变更或提审前；发现按 P0-P2 建任务卡
+- MUT：stryker（未装，首次 `npx stryker` 评估可行性并建 DEPAUD 任务）。抽 = 金额/订单状态机/催收逻辑核心函数；触发 = 回归套件验收；存活变异体 = 弱用例 → 补断言
+- INC：runbook 未建（docs/runbook/ 待建，P2 任务）；云函数/线上故障按全局 INC 角色流程走（P0-P3 分级 → 根因 → 复盘写 CHANGELOG + 错误经验库）
+- APID：API 文档 = docs/API_接口文档.md + docs/api/；openapi.yaml 未建（P2 任务）；云函数接口错误码从全局 APID 条款（422 语义沿用）
+- DEPAUD：lockfile = 根 package-lock.json + cloudfunctions/*/package-lock.json（必入库）；audit = npm audit（根目录 + 各云函数目录）；豁免写任务卡
+- 任务卡：状态字段从全局 requirement-task-template.md（待做/进行中/已做({commit})/取消(理由)）
 
 ## 文档权威顺序
 PRD_产品需求文档.md > 小程序MVP落地计划与技术架构.md > TDD_技术规格书.md > ERD_数据库设计.md > API_接口文档.md（均在 docs/）
