@@ -86,8 +86,8 @@
 - 完整历史坑见：~/.codex/knowledge/errors.md（grep 项目名 fenghuai）项目级清单 docs/reports/项目级错误经验.md
 
 ## 专业角色执行细则（项目事实，v4.15 五新角色；流程条款引用全局【多角色评审机制】不复制）
-- SAST：semgrep（未装，首次触发 `brew install semgrep` 并建 DEPAUD 任务）。范围 = 小程序根目录 + cloudfunctions/，排除 node_modules/；触发 = 登录/RBAC/支付/敏感数据代码变更或提审前；发现按 P0-P2 建任务卡
-- MUT：stryker（未装，首次 `npx stryker` 评估可行性并建 DEPAUD 任务）。抽 = 金额/订单状态机/催收逻辑核心函数；触发 = 回归套件验收；存活变异体 = 弱用例 → 补断言
+- SAST：semgrep 1.174.0（已装；须在正常项目目录跑，/tmp 沙箱目录写缓存被挡）。范围 = 小程序根目录 + cloudfunctions/，排除 node_modules/；触发 = 登录/RBAC/支付/敏感数据代码变更或提审前；发现按 P0-P2 建任务卡
+- MUT：stryker（@stryker-mutator/core v10 已全局装，命令 `stryker`；旧包名 stryker-js 已 404）。抽 = 金额/订单状态机/催收逻辑核心函数；触发 = 回归套件验收；存活变异体 = 弱用例 → 补断言
 - INC：runbook 未建（docs/runbook/ 待建，P2 任务）；云函数/线上故障按全局 INC 角色流程走（P0-P3 分级 → 根因 → 复盘写 CHANGELOG + 错误经验库）
 - APID：API 文档 = docs/API_接口文档.md + docs/api/；openapi.yaml 未建（P2 任务）；云函数接口错误码从全局 APID 条款（422 语义沿用）
 - DEPAUD：lockfile = 根 package-lock.json + cloudfunctions/*/package-lock.json（必入库）；audit = npm audit（根目录 + 各云函数目录）；豁免写任务卡
