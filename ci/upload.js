@@ -32,6 +32,8 @@ const project = new ci.Project({
     '.DS_Store',
     'b7fbab622776d6a24ac2ff94bb759960/**/*',
     'project.private.config.json',
+    '临时/**/*',
+    '头像/**/*',
     'package.json',
     'package-lock.json'
   ]

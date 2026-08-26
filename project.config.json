@@ -14,7 +14,7 @@
     "useCompilerPlugins": false,
     "minifyWXML": true,
     "compileWorklet": false,
-    "uploadWithSourceMap": true,
+    "uploadWithSourceMap": false,
     "packNpmManually": false,
     "minifyWXSS": true,
     "localPlugins": false,
@@ -106,6 +106,14 @@
       {
         "type": "file",
         "value": "project.private.config.json"
+      },
+      {
+        "type": "folder",
+        "value": "临时"
+      },
+      {
+        "type": "folder",
+        "value": "头像"
       }
     ],
     "include": []
