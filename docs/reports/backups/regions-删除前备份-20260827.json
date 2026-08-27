@@ -1,0 +1,110 @@
+{
+  "deletedAt": "2026-08-27",
+  "count": 12,
+  "reason": "T52 P3-1：全集合为 data.data 嵌套脏数据+孤儿，无业务链路读取，用户拍板清除",
+  "data": [
+    {
+      "_id": "init",
+      "status": 1
+    },
+    {
+      "_id": "b5138c476a7a8ccb0162b75b6bc19951",
+      "data": {
+        "_id": "1",
+        "name": "汉滨区",
+        "sort": 1,
+        "status": 1
+      }
+    },
+    {
+      "_id": "eabbca7e6a7a8ccc01a381b80ac30e22",
+      "data": {
+        "_id": "2",
+        "name": "汉阴县",
+        "sort": 2,
+        "status": 1
+      }
+    },
+    {
+      "_id": "68cebfc56a7a8ccc018f400c0d5ae0ae",
+      "data": {
+        "_id": "3",
+        "name": "石泉县",
+        "sort": 3,
+        "status": 1
+      }
+    },
+    {
+      "_id": "eabbca7e6a7a8ccc01a381be706e812d",
+      "data": {
+        "_id": "4",
+        "name": "宁陕县",
+        "sort": 4,
+        "status": 1
+      }
+    },
+    {
+      "_id": "f57953266a7a8ccc0040d8d92043af22",
+      "data": {
+        "_id": "5",
+        "name": "紫阳县",
+        "sort": 5,
+        "status": 1
+      }
+    },
+    {
+      "_id": "68cebfc56a7a8ccc018f40d95ab002a3",
+      "data": {
+        "_id": "6",
+        "name": "岚皋县",
+        "sort": 6,
+        "status": 1
+      }
+    },
+    {
+      "_id": "eabbca7e6a7a8ccc01a382942363f483",
+      "data": {
+        "_id": "7",
+        "name": "平利县",
+        "sort": 7,
+        "status": 1
+      }
+    },
+    {
+      "_id": "f57953266a7a8ccc0040d8e05d55a9ba",
+      "data": {
+        "_id": "8",
+        "name": "镇坪县",
+        "sort": 8,
+        "status": 1
+      }
+    },
+    {
+      "_id": "68cebfc56a7a8ccd018f41a97f0d65a8",
+      "data": {
+        "_id": "9",
+        "name": "旬阳市",
+        "sort": 9,
+        "status": 1
+      }
+    },
+    {
+      "_id": "eabbca7e6a7a8ccd01a3829e2e7c5dab",
+      "data": {
+        "_id": "10",
+        "name": "白河县",
+        "sort": 10,
+        "status": 1
+      }
+    },
+    {
+      "_id": "f57953266a7a8ccd0040d8eb4817ebec",
+      "data": {
+        "_id": "99",
+        "name": "外县",
+        "sort": 99,
+        "status": 1
+      }
+    }
+  ]
+}

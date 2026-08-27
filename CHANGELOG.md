@@ -4,6 +4,15 @@
 
 格式基于 [Conventional Changelog](https://www.conventionalcommits.org/)。
 
+## [1.6.9] - 2026-08-27
+
+### Removed (T52 P3-1: regions 集合历史脏数据清除，用户拍板)
+- 删除 regions 集合全部 12 条记录（data.data 嵌套脏数据 + 1 条 {status:1} 孤儿）；删除前全仓核验无任何业务链路读取（regions 云函数无调用方 / customers 内部 action 前端不消费 / 报表区域选项来自订单快照），客户区域数据独立存于 customers.region 不受影响
+- 留痕：全量备份入库 docs/reports/backups/regions-删除前备份-20260827.json；清洗脚本入库 scripts/cleanup-regions-20260827.js（幂等，可重复执行）
+- 复核：删除后 count=0、幂等重跑退出 0、数据对账审计 12 项全绿
+
+---
+
 ## [1.6.8] - 2026-08-27
 
 ### Added (T52: 全业务数据对账 + 文档代码对齐，来源用户"全业务/页面/算账报表/权限流程全检查")
