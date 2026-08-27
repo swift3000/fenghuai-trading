@@ -1,0 +1,937 @@
+openapi: 3.0.3
+info:
+  title: 乾多多采购下单助手 — 云函数接口（OpenAPI 规格）
+  version: 1.0.0
+  description: |
+    本规格基于 docs/api/API_接口文档.md 整理（31 个 action，10 个云函数），
+    作为机器可读的接口契约。云函数调用方式：wx.cloud.callFunction({ name: '<云函数>', data: { action, payload/... } })。
+    所有接口统一返回 {code, message, data, timestamp}；错误码表见 API_接口文档.md §1.4。
+    维护纪律：新增/变更云函数 action 时必须同步更新本文件（APID 门禁）。
+    注意：path 仅为 OpenAPI 表达形式（云函数无 HTTP 路由），实际以 name+action 为准。
+servers:
+  - url: https://cloud1-d6g75loi673b1e039.tcloudbase.com
+    description: 微信云开发 CloudBase 环境（云函数调用入口，非 HTTP REST）
+tags:
+    - name: auth
+      description: 云函数 auth 的 action 集合
+    - name: products
+      description: 云函数 products 的 action 集合
+    - name: customers
+      description: 云函数 customers 的 action 集合
+    - name: regions
+      description: 云函数 regions 的 action 集合
+    - name: orders
+      description: 云函数 orders 的 action 集合
+    - name: receivable
+      description: 云函数 receivable 的 action 集合
+    - name: users
+      description: 云函数 users 的 action 集合
+    - name: smart
+      description: 云函数 smart 的 action 集合
+    - name: system
+      description: 云函数 system 的 action 集合
+    - name: report
+      description: 云函数 report 的 action 集合
+paths:
+  '/auth/login':
+    post:
+      summary: "用户登录（openid 自动绑定/邀请码激活）"
+      description: "云函数 auth 的 action 接口。调用: wx.cloud.callFunction({ name: \"auth\", data: { ... } })。权限: 公开。"
+      tags: ["auth"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "inviteCode: string（邀请制绑定时携带）；小程序端其余字段不传"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "user(对象或null), token(后台用), need_bind: boolean"
+  '/auth/invite-code':
+    post:
+      summary: "生成邀请码（管理员）"
+      description: "云函数 auth / getInviteCode 的 action 接口。调用: wx.cloud.callFunction({ name: \"auth\", data: { action: \"getInviteCode\", ... } })。权限: admin。"
+      tags: ["auth"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "role: orderer|sorter|warehouse|admin（必填）; name/phone/region: string（选填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "userId, inviteCode(6位), expireTime, role, qrFileID"
+  '/products':
+    post:
+      summary: "商品列表"
+      description: "云函数 products / products 的 action 接口。调用: wx.cloud.callFunction({ name: \"products\", data: { action: \"products\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["products"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "customer_id?: string（客户常购优先排序）; filter?: {keyword, category, status}; page?: number; page_size?: number; sort?: object（usage: -1 常用）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "list[]（商品对象）+ pagination"
+  '/products/detail':
+    post:
+      summary: "商品详情"
+      description: "云函数 products / product-detail 的 action 接口。调用: wx.cloud.callFunction({ name: \"products\", data: { action: \"product-detail\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["products"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter._id: string（商品ID，必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "商品对象（无 list 包裹）"
+  '/products/create':
+    post:
+      summary: "新增商品"
+      description: "云函数 products / create 的 action 接口。调用: wx.cloud.callFunction({ name: \"products\", data: { action: \"create\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["products"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {sku(必填,3-50,唯一), name(必填,1-100), unit(必填,1-10), pricing_mode: case|piece|unit, pieces_per_case(case模式必填), unit_price_piece(必填), unit_price_zero, category?, spec?, original_price?, status?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, sku}"
+  '/products/update':
+    post:
+      summary: "修改商品"
+      description: "云函数 products / update 的 action 接口。调用: wx.cloud.callFunction({ name: \"products\", data: { action: \"update\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["products"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), 其余同新增全可选，只传要改的}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, updated: true}"
+  '/customers':
+    post:
+      summary: "客户列表"
+      description: "云函数 customers / customers 的 action 接口。调用: wx.cloud.callFunction({ name: \"customers\", data: { action: \"customers\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["customers"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter?: {keyword, region, status}; page?: number; page_size?: number"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "list[]（客户对象）+ pagination"
+  '/customers/detail':
+    post:
+      summary: "客户详情"
+      description: "云函数 customers / customer-detail 的 action 接口。调用: wx.cloud.callFunction({ name: \"customers\", data: { action: \"customer-detail\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["customers"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter._id: string（客户ID，必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "客户对象（无 list 包裹）"
+  '/customers/create':
+    post:
+      summary: "新增客户"
+      description: "云函数 customers / create 的 action 接口。调用: wx.cloud.callFunction({ name: \"customers\", data: { action: \"create\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["customers"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {name(必填), region_id(必填), address?, contact?, phone?, is_adjustable?, status?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, name}"
+  '/customers/update':
+    post:
+      summary: "修改客户"
+      description: "云函数 customers / update 的 action 接口。调用: wx.cloud.callFunction({ name: \"customers\", data: { action: \"update\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["customers"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), ...updateFields}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, updated: true}"
+  '/regions':
+    post:
+      summary: "区域列表"
+      description: "云函数 regions / regions 的 action 接口。调用: wx.cloud.callFunction({ name: \"regions\", data: { action: \"regions\", ... } })。权限: all。"
+      tags: ["regions"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter?: {status}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "区域对象数组（无分页）"
+  '/regions/create':
+    post:
+      summary: "新增区域"
+      description: "云函数 regions / create 的 action 接口。调用: wx.cloud.callFunction({ name: \"regions\", data: { action: \"create\", ... } })。权限: admin。"
+      tags: ["regions"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {name(必填), sort?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, name}"
+  '/regions/update':
+    post:
+      summary: "修改区域"
+      description: "云函数 regions / update 的 action 接口。调用: wx.cloud.callFunction({ name: \"regions\", data: { action: \"update\", ... } })。权限: admin。"
+      tags: ["regions"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), name?, sort?, status?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, updated: true}"
+  '/orders':
+    post:
+      summary: "订单列表"
+      description: "云函数 orders / orders 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"orders\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter?: {status(单值或数组), network_time_gte/lte, customer_id, region, keyword(订单号/客户名), created_by}; page?; page_size?; sort?: {network_time: 1|-1}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "list[]（订单对象，含 payment_status/received_amount/ship_*）+ pagination"
+  '/orders/detail':
+    post:
+      summary: "订单详情（含 items_snapshot + order_logs）"
+      description: "云函数 orders / order-detail 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"order-detail\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter._id: string（订单ID，必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "订单对象 + items_snapshot[] + 操作记录"
+  '/orders/create':
+    post:
+      summary: "创建订单（含快照，0元拦截）"
+      description: "云函数 orders / create 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"create\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {customer_id(必填), contact?, phone?, items[]: {product_id, piece_qty, package_qty, tmp_unit_price_piece?, tmp_unit_price_zero?, remark?}, remark?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{order_id, order_no, total_amount}；0元/空商品返回 2001"
+  '/orders/update-status':
+    post:
+      summary: "更新订单状态（分拣完成/出库确认/完成/取消）"
+      description: "云函数 orders / update-status 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"update-status\", ... } })。权限: 按流转: sorted→sorter, confirmed/completed→warehouse, cancelled→admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), target_status: sorted|confirmed|completed|cancelled, ship_large/medium/small(出库确认必填), sort_remark?, cancel_reason(cancelled必填)}；confirm 为兼容别名"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, status, ship_*, sorter_hint, updated: true}；非法流转返回 3002"
+  '/orders/pick-stash':
+    post:
+      summary: "配货暂存（二期规划，当前未启用）"
+      description: "云函数 orders / pick-stash 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"pick-stash\", ... } })。权限: warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id, pick_large, pick_medium, pick_small}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, pick_*, updated: true}"
+  '/orders/mark-printed':
+    post:
+      summary: "标记已打印"
+      description: "云函数 orders / mark-printed 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"mark-printed\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填)}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, printed: true, printed_at}"
+  '/orders/collect':
+    post:
+      summary: "收款登记（第1步：下单员/分拣员）"
+      description: "云函数 orders / collect 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"collect\", ... } })。权限: orderer/sorter/admin（receivable:collect）。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), collect_amount(必填,≥0), collect_time(必填,ms), method?: cash|wechat, collect_discount?(≥0)}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, payment{payment_id, status: pending, amount, discount, registered_by, registered_at}, payment_status: pending, received_amount, updated: true}"
+  '/orders/collect-confirm':
+    post:
+      summary: "确认收款（第2步：仅库管）"
+      description: "云函数 orders / collect-confirm 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"collect-confirm\", ... } })。权限: warehouse/admin（receivable:confirm）。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id?（订单ID，确认全部pending）, payment_id?（单条，二选一）}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{payment_ids[], payment_status: paid|pending, received_amount, total_discount, remaining_debt, confirmed_by, confirmed_at, updated: true}"
+  '/orders/update-remark':
+    post:
+      summary: "修改订单备注"
+      description: "云函数 orders / update-remark 的 action 接口。调用: wx.cloud.callFunction({ name: \"orders\", data: { action: \"update-remark\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["orders"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), remark(可null清空)}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, remark, updated: true}"
+  '/receivable':
+    post:
+      summary: "赊销三栏（客户台账/未结清/已结清）"
+      description: "云函数 receivable / receivable 的 action 接口。调用: wx.cloud.callFunction({ name: \"receivable\", data: { action: \"receivable\", ... } })。权限: orderer/sorter/warehouse/admin。"
+      tags: ["receivable"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter?: {region, keyword, period: all|today|week|month|custom, date_from?, date_to?, tab: ledger|unsettled|settled}; page?; page_size?"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "list[]（{customer_id, customer_name, receivable_total, received, unsettled, settled, unpaid/pending/paid_orders}）+ pagination；守恒: 应收=已收+未结清"
+  '/users':
+    post:
+      summary: "用户列表（仅管理员）"
+      description: "云函数 users / users 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"users\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "filter?: {role, status}; page?; page_size?"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "list[]（用户对象，不含 openid 等敏感字段）+ pagination"
+  '/users/create':
+    post:
+      summary: "新增用户（生成邀请码）"
+      description: "云函数 users / create 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"create\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {name(必填,2-30), role(必填), phone?, region?, avatar?, status?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, inviteCode}"
+  '/users/update':
+    post:
+      summary: "修改用户"
+      description: "云函数 users / update 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"update\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "payload: {id(必填), name?/role?/phone?/region?/status?}"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{id, updated: true}"
+  '/users/perm-config':
+    post:
+      summary: "读取各角色实际权限"
+      description: "云函数 users / perm-config 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"perm-config\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "无额外参数"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "各角色有效权限数组（默认∪覆盖）"
+  '/users/save-perm':
+    post:
+      summary: "保存某角色权限（member:manage 锁定保护）"
+      description: "云函数 users / save-perm 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"save-perm\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "role: admin|orderer|sorter|warehouse（必填）; permissions: string[]（必填，完整权限键数组）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{role, permissions[]}"
+  '/users/reset-perm':
+    post:
+      summary: "恢复默认权限"
+      description: "云函数 users / reset-perm 的 action 接口。调用: wx.cloud.callFunction({ name: \"users\", data: { action: \"reset-perm\", ... } })。权限: admin。"
+      tags: ["users"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "role: admin|orderer|sorter|warehouse（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{role, permissions[]}（默认数组）"
+  '/smart/match':
+    post:
+      summary: "智能匹配（商品/客户模糊匹配）"
+      description: "云函数 smart / match 的 action 接口。调用: wx.cloud.callFunction({ name: \"smart\", data: { action: \"match\", ... } })。权限: all。"
+      tags: ["smart"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "text: string（必填）; mode?: text|voice"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{customer?, customerCandidates[], items[], unmatched[]}；5002=text为空, 5003=暂无商品数据"
+  '/smart/transcribe':
+    post:
+      summary: "语音转文字（腾讯云ASR，未配置降级空文本）"
+      description: "云函数 smart / transcribe 的 action 接口。调用: wx.cloud.callFunction({ name: \"smart\", data: { action: \"transcribe\", ... } })。权限: all。"
+      tags: ["smart"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "fileID?: string（云存储音频ID）/ audioUrl?: string（二选一）; audioText?: string（兜底纯文本）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{text, engine: tencent-asr|disabled|no-audio|fallback}"
+  '/system/ai-config':
+    post:
+      summary: "获取 AI 服务配置（仅管理员）"
+      description: "云函数 system / getAiConfig 的 action 接口。调用: wx.cloud.callFunction({ name: \"system\", data: { action: \"getAiConfig\", ... } })。权限: admin。"
+      tags: ["system"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "无额外参数"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{ai{tencent{enabled, secretId, secretKey, engine}, tokenhub{enabled, apiKey, baseUrl, model}}, printer}"
+  '/system/ai-config/update':
+    post:
+      summary: "更新 AI 服务配置（仅管理员）"
+      description: "云函数 system / updateAiConfig 的 action 接口。调用: wx.cloud.callFunction({ name: \"system\", data: { action: \"updateAiConfig\", ... } })。权限: admin。"
+      tags: ["system"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "aiConfig: {tencent?: {enabled, secretId, secretKey, engine: 16k_zh|8k_zh}, tokenhub?: {enabled, apiKey, baseUrl, model}}（全可选，增量合并）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{updated: true}"
+  '/report/summary':
+    post:
+      summary: "报表统计（商品/客户/收款台账）"
+      description: "云函数 report / summary 的 action 接口。调用: wx.cloud.callFunction({ name: \"report\", data: { action: \"summary\", ... } })。权限: orderer/sorter/warehouse/admin（report:view）。"
+      tags: ["report"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "reportTab: product|customer|payment（必填）; timeTab: day|week|month|all|custom; region?; startDate?/endDate?（custom 时，YYYY-MM-DD）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "按 reportTab 返回 products[]/customers[]/methods[] 汇总"
+  '/report/export':
+    post:
+      summary: "报表导出（CSV，防公式注入）"
+      description: "云函数 report / export 的 action 接口。调用: wx.cloud.callFunction({ name: \"report\", data: { action: \"export\", ... } })。权限: orderer/sorter/warehouse/admin（report:export）。"
+      tags: ["report"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "reportTab/timeTab/region/startDate/endDate 同 summary; format?: csv"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "{fileID 或 content}（CSV 文件）"
+
+components:
+  schemas:
+    ApiEnvelope:
+      type: object
+      required: [code, message, data, timestamp]
+      properties:
+        code:
+          type: integer
+          description: 0=成功；1001/1002/2001/2002/2003/3002/4001/4002/4004/5001/5002/5003 见错误码表
+        message:
+          type: string
+          description: 提示文案，直接展示给用户
+        data:
+          type: object
+          nullable: true
+        timestamp:
+          type: integer
+          format: int64
+          description: 服务端时间戳（毫秒）
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        page_size: { type: integer }
+        total: { type: integer }
+        total_pages: { type: integer }

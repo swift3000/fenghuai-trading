@@ -88,8 +88,8 @@
 ## 专业角色执行细则（项目事实，v4.15 五新角色；流程条款引用全局【多角色评审机制】不复制）
 - SAST：semgrep 1.174.0（已装；须在正常项目目录跑，/tmp 沙箱目录写缓存被挡）。范围 = 小程序根目录 + cloudfunctions/，排除 node_modules/；触发 = 登录/RBAC/支付/敏感数据代码变更或提审前；发现按 P0-P2 建任务卡
 - MUT：stryker（@stryker-mutator/core v10 已全局装，命令 `stryker`；旧包名 stryker-js 已 404）。抽 = 金额/订单状态机/催收逻辑核心函数；触发 = 回归套件验收；存活变异体 = 弱用例 → 补断言
-- INC：runbook 未建（docs/runbook/ 待建，P2 任务）；云函数/线上故障按全局 INC 角色流程走（P0-P3 分级 → 根因 → 复盘写 CHANGELOG + 错误经验库）
-- APID：API 文档 = docs/API_接口文档.md + docs/api/；openapi.yaml 未建（P2 任务）；云函数接口错误码从全局 APID 条款（422 语义沿用）
+- INC：runbook = docs/runbook/线上事故处置runbook.md（P0-P3 分级 + 故障处置清单 + 双回滚 + QA 残留应急，2026-08-27 建成）；线上故障按册处置后走全局 INC 闭环
+- APID：API 文档 = docs/api/API_接口文档.md；OpenAPI 规格 = docs/api/openapi.yaml（2026-08-27 建成，35 接口，新 action 必须同步维护）；错误码语义以文档 §1.4 为准
 - DEPAUD：lockfile = 根 package-lock.json + cloudfunctions/*/package-lock.json（必入库）；audit = npm audit（根目录 + 各云函数目录）；豁免写任务卡
 - 任务卡：状态字段从全局 requirement-task-template.md（待做/进行中/已做({commit})/取消(理由)）
 

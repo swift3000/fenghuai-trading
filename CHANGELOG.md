@@ -10,6 +10,10 @@
 - T49-1: API 文档 §1.4 错误码表补登记 4001/4002/4004/5002/5003 语义 + 2001 历史兼容注（代码不改，兼容纪律；前端仅 code===0 二分支无感）
 - T49-2: sync-data 云函数 package.json name 残留修正 import-data → sync-data（纯元数据，不重新部署）
 
+### Added (T42: 专业角色资产补建)
+- T42-1: 建成 docs/runbook/线上事故处置runbook.md（P0-P3 分级 + 6 类故障处置清单 + 云函数/小程序双回滚 + QA 残留应急 + 事后闭环）
+- T42-2: 建成 docs/api/openapi.yaml（OpenAPI 3.0.3，35 接口 = 31 核心 action + getInviteCode + 权限矩阵 3 接口；swagger-cli validate 通过，与 API 文档 action 全量核对无缺失）
+
 ### Verified
 - 二轮深度审查结论：无 P0/P1。SAST semgrep 12 项全 P3 豁免（登记于 T49 卡）；权限矩阵/状态机/金额守恒/赊销两步/0 元订单拦截/主包体积/线上与本地一致性核查全部通过
 - 二轮全量回归 11 步全绿（单测/权限/页走查/深走查/部署/E2E/会员/幂等/关钩子/QA 残留校验），收尾确认生产安全态
