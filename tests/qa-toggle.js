@@ -24,12 +24,27 @@ function setRcValue(val){
   });
   fs.writeFileSync(RC, JSON.stringify(c,null,2)+'\n');
 }
+// 部署单函数：COS 上传偶发 60s 超时（2026-08-27 products 实例），失败等 10s 自动重试 1 次
+function sleepMs(ms){ const end=Date.now()+ms; while(Date.now()<end){} }
 function deploy(fn){
+  const opt={stdio:'inherit',cwd:PROJECT,env:{...process.env,TCB_SECRET_ID:env.CLOUDBASE_SECRET_ID,TCB_SECRET_KEY:env.CLOUDBASE_SECRET_KEY}};
   try{
-    execFileSync('npx',['tcb','fn','deploy',fn,'--force','--env-id',ENV_ID],{stdio:'inherit',cwd:PROJECT,env:{...process.env,TCB_SECRET_ID:env.CLOUDBASE_SECRET_ID,TCB_SECRET_KEY:env.CLOUDBASE_SECRET_KEY}});
-  }catch(e){ console.log('  ⚠ 部署失败 '+fn+': '+e.message.slice(0,120)); }
+    execFileSync('npx',['tcb','fn','deploy',fn,'--force','--env-id',ENV_ID],opt);
+    return true;
+  }catch(e){
+    console.log('  ⚠ 部署失败 '+fn+': '+e.message.slice(0,120)+'，10s 后重试...');
+    sleepMs(10000);
+    try{
+      execFileSync('npx',['tcb','fn','deploy',fn,'--force','--env-id',ENV_ID],opt);
+      console.log('  ✓ 重试成功 '+fn);
+      return true;
+    }catch(e2){
+      console.log('  ✖ 重试仍失败 '+fn+': '+e2.message.slice(0,120));
+      return false;
+    }
+  }
 }
-if(mode==='on'){ setRcValue('1'); console.log('→ 测试模式：部署 7 函数 QA_IMPERSONATE=1 ...'); FNS.forEach(deploy); console.log('✅ 测试模式已开启，可运行 role-sim / e2e-flow 测试'); }
-else if(mode==='off'){ setRcValue(''); console.log('→ 生产模式：部署 7 函数 QA_IMPERSONATE=空 ...'); FNS.forEach(deploy); console.log('✅ 生产模式已生效（钩子惰性），可安全上线'); }
+if(mode==='on'){ setRcValue('1'); console.log('→ 测试模式：部署 7 函数 QA_IMPERSONATE=1 ...'); const failed=FNS.filter(fn=>!deploy(fn)); if(failed.length){ console.log('❌ 测试模式开启未完成，失败函数：'+failed.join(', ')); process.exit(1);} console.log('✅ 测试模式已开启，可运行 role-sim / e2e-flow 测试'); }
+else if(mode==='off'){ setRcValue(''); console.log('→ 生产模式：部署 7 函数 QA_IMPERSONATE=空 ...'); const failed=FNS.filter(fn=>!deploy(fn)); if(failed.length){ console.log('❌ 生产模式切换未完成（钩子可能未全部关闭），失败函数：'+failed.join(', ')); process.exit(1);} console.log('✅ 生产模式已生效（钩子惰性），可安全上线'); }
 else if(mode==='status'){ console.log('线上 7 函数 QA_IMPERSONATE 当前值：'); FNS.forEach(fn=>{ try{ const out=execFileSync('npx',['tcb','fn','detail',fn,'--env-id',ENV_ID],{cwd:PROJECT,encoding:'utf8',env:{...process.env,TCB_SECRET_ID:env.CLOUDBASE_SECRET_ID,TCB_SECRET_KEY:env.CLOUDBASE_SECRET_KEY}}); const m=out.match(/Environment variables[^\n]*\n?/); console.log('  '+fn+': '+(m?m[0].replace(/\x1b\[[0-9;]*m/g,'').replace(/[│\n]/g,' ').trim():'?')); }catch(e){ console.log('  '+fn+': (err)'); } }); }
 else { console.log('用法: node tests/qa-toggle.js <on|off|status>'); process.exit(1); }
