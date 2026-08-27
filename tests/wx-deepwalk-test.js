@@ -114,7 +114,7 @@ function ok(cond, msg) { if (cond) { pass++; console.log('  ✓ ' + msg); } else
   try { await session.evaluate(async () => { try { if (!wx.cloud.config) { wx.cloud.init({ env: 'cloud1-d6g75loi673b1e039' }); } } catch (e) {} return 'ok'; }); await delay(1500); } catch (e) { }
   await session.evaluate(() => new Promise((r) => {
     try {
-      const u = { openid: 'qa_deepwalk_admin', name: '测试', role: 'admin', tenantName: '丰淮商贸', permissions: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'product:view', 'product:edit', 'customer:view', 'customer:edit', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'] };
+      const u = { openid: 'qa_deepwalk_admin', name: '测试', role: 'admin', tenantName: '乾多多', permissions: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'product:view', 'product:edit', 'customer:view', 'customer:edit', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'] };
       wx.setStorageSync('currentUser', u); wx.setStorageSync('userInfo', u); wx.setStorageSync('userRole', 'admin');
       try { const app = getApp(); if (app) { app.globalData.userInfo = u; app.globalData.userRole = 'admin'; } } catch (e) { }
       wx.reLaunch({ url: '/pages/index/index' }); r('ok');

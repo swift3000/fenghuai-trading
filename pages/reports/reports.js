@@ -244,7 +244,7 @@ Page({
   // 分享功能
   onShareAppMessage() {
     return {
-      title: '丰淮商贸报表',
+      title: '乾多多报表',
       path: '/pages/reports/reports'
     }
   },

@@ -11,7 +11,7 @@ const path = require('path')
 const ENV_ID = 'cloud1-d6g75loi673b1e039'
 
 console.log('╔════════════════════════════════════════╗')
-console.log('║   丰淮商贸 - 数据导入开始              ║')
+console.log('║   乾多多 - 数据导入开始              ║')
 console.log('╚════════════════════════════════════════╝\n')
 
 console.log('环境 ID:', ENV_ID)

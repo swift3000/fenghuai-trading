@@ -1,6 +1,6 @@
 # ERD 数据库设计文档
 
-> **项目名称**：丰淮商贸采购下单助手
+> **项目名称**：乾多多采购下单助手
 > **数据库类型**：MongoDB 兼容（微信云开发自带数据库）
 > **版本**：MVP v1.0（2026-08-05 定稿：payments 集合 + 收款状态机 + 全员订单权限 + 订单内自定义价格 + 字号跟随微信系统设置 + 0 元订单约束）
 > **创建日期**：2026-07-28
@@ -78,7 +78,7 @@ erDiagram
 
     orders {
         string id PK "订单ID"
-        string order_no UK "订单编号 丰淮商贸-YYYYMMDD-NNNN"
+        string order_no UK "订单编号 乾多多-YYYYMMDD-NNNN"
         string customer_id FK "客户ID"
         string customer_name "客户名称(冗余)"
         string customer_region "客户区域(冗余)"
@@ -310,7 +310,7 @@ db.customers.createIndex({ name: 1, phone: 1 });
 | 字段名 | 类型 | 必填 | 默认值 | 说明 | 索引 |
 |--------|------|------|--------|------|------|
 | `_id` | String | 是 | 自动生成 | 订单唯一标识 | PK |
-| `order_no` | String | 是 | — | 订单编号，格式 丰淮商贸-YYYYMMDD-NNNN | UK 唯一索引 |
+| `order_no` | String | 是 | — | 订单编号，格式 乾多多-YYYYMMDD-NNNN | UK 唯一索引 |
 | `customer_id` | String | 是 | — | 客户ID（customers集合_id） | 普通索引 |
 | `customer_name` | String | 是 | — | 客户名称（冗余） | 普通索引 |
 | `customer_region` | String | 是 | — | 客户区域（冗余） | 组合索引（+status+network_time） |
@@ -797,14 +797,14 @@ items_snapshot: [
 ### A. 订单编号生成规则
 
 ```
-格式：丰淮商贸 + YYYYMMDD + NNNN
-示例：丰淮商贸-20260730-0001
+格式：乾多多 + YYYYMMDD + NNNN
+示例：乾多多-20260730-0001
 
 生成逻辑：
 1. 获取当前日期，格式化为 YYYYMMDD
 2. 查询当日最大序号（按 order_no 倒序）
 3. 最大序号 + 1，补零至4位
-4. 拼接生成订单编号：丰淮商贸-YYYYMMDD-NNNN
+4. 拼接生成订单编号：乾多多-YYYYMMDD-NNNN
 5. 写入前检查唯一性（防并发重复）
 6. 订单时间取网络时间（精确到分钟），不依赖手机本地时间
 ```
@@ -848,7 +848,7 @@ items_snapshot: [
 ### E. 重要约束清单
 - **双层快照**：orders.items_snapshot（冗余数组）+ order_items（独立明细），二者内容一致
 - **去冗余字段**：客户画像（total_orders/total_amount/avg_amount/last_order_at）改为按需聚合查询
-- **订单编号**：按日生成，格式 `丰淮商贸-YYYYMMDD-NNNN`
+- **订单编号**：按日生成，格式 `乾多多-YYYYMMDD-NNNN`
 - **订单时间**：取网络时间（精确到分钟），不依赖手机本地时间
 - **历史订单**：已完成/历史订单默认锁定不可修改；**当日订单 4 角色均可修改**（与全角色下单/改单/删单权限一致），历史订单解锁修改仅管理员可操作
 - **分拣员SLA**：【二期规划·当前未启用】原当日 14:00 仍未确认发货的 submitted 订单自动流转 checked（auto_checked=true）；当前 MVP 无超时自动，分拣由人工一键完成
@@ -877,7 +877,7 @@ items_snapshot: [
 | 1.0 | 2026-07-29 | — | v0.1 终版：12集合设计，regions/price_changes/account_inheritance_logs/announcements/backups/operation_logs 等全部集合，31项核心功能 |
 | 1.0 | 2026-07-30 | — | **早期精简版**：12→6集合；移除categories/price_changes/account_inheritance_logs/operation_logs/announcements/backups；products移除pinyin/category_id/created_by；customers移除alias/total_orders/total_amount/avg_amount/last_order_at/created_by；orders移除is_printed/is_modified；强化双层快照(items_snapshot)；明确种子数据量(14商品/10客户/4用户/21订单)；增加与1.0精简对照表 |
 | **1.0** | **2026-07-30** | — | **分拣确认发货闭环版**：users.role新增`sorter`(分拣员)；orders.status新增`rejected`/`checked`中间态（7态流转：draft→submitted→{checked/rejected}→confirmed→completed）；orders新增7字段：`reject_reason`/`rejected_by`/`rejected_at`/`sort_remark`/`checked_by`/`checked_at`/`auto_checked`；明确SLA：**14:00分拣员超时自动确认发货 + 16:00库管超时自动确认**；新增驳回流程(submitted→rejected→draft修改重提交)；明确"分拣员不可修改商品数量，只能填写分拣备注/驳回原因"；种子数据升级为5用户/28订单，覆盖7种状态+驳回+超时自动+分拣备注全场景 |
-| **1.0** | **2026-08-03** | — | **并行配货+收款登记版**：products 新增 `usage`（使用频率排序）；orders 新增 `remark`（下单员可随时修改）、`pick_large/pick_medium/pick_small`（库管并行配货暂存，默认0，不改状态）、`ship_large/ship_medium/ship_small`（"配完"确认实际发货件数，默认0）、`collect`（收款登记，以商家到账为准）；商品零散单位"零数"统一更名"包"；订单号前缀 `FH-` 改为 `丰淮商贸-`（丰淮商贸-YYYYMMDD-NNNN）；payment_method 新增 `transfer` 转账，收款补充商户收款码合规提示 |
+| **1.0** | **2026-08-03** | — | **并行配货+收款登记版**：products 新增 `usage`（使用频率排序）；orders 新增 `remark`（下单员可随时修改）、`pick_large/pick_medium/pick_small`（库管并行配货暂存，默认0，不改状态）、`ship_large/ship_medium/ship_small`（"配完"确认实际发货件数，默认0）、`collect`（收款登记，以商家到账为准）；商品零散单位"零数"统一更名"包"；订单号前缀 `FH-` 改为 `乾多多-`（乾多多-YYYYMMDD-NNNN）；payment_method 新增 `transfer` 转账，收款补充商户收款码合规提示 |
 | **1.0** | **2026-08-03** | — | **流程再优化版（分拣只回复已发+库管直接配完）**：①分拣员"校对"文案全量更新为"确认已发货"，分拣员仅录入分拣备注 + 点【确认已发货/驳回】，去掉校对概念；②库管"配完"确认不再仅限制 checked 订单，submitted/checked 两态均可直接执行（无需等待分拣员结果）；③submitted 订单库管配完时弹窗顶部加蓝色提示条「💡 分拣员尚未确认发货，您可直接配完出库」；④16:00超时自动配完作用范围扩大至 submitted+checked；⑤订单状态枚举 submitted 显示文案从"待确认/待校对"统一为"待发货"，checked为"已发货"；⑥三方追溯：若库管先配完，分拣员后续补录checked_by/checked_at字段允许为空后补 |
 | **1.0** | **2026-08-04** | — | **赊销收款管理版（对应产品 1.0）**：①orders 移除 `collect` 单对象，新增 `payment_status`（unpaid/pending/paid，默认 unpaid）+ `received_amount`（累计实收）；②新增 `payments` 独立集合（登记人→库管确认两步：registered_by/registered_at/status(pending/confirmed)/confirmed_by/confirmed_at/**discount 折价货损**），现金/转账/赊账统一走「登记→库管确认」，订单可部分收款多次累计；③**全员订单权限**：下单/改单/删单放开至 4 角色（含订单内改价），sorter/warehouse 角色描述更新，取消分拣员只读与库管价格脱敏；④**订单内自定义价格**：所有商品可改价仅当前订单有效，order_items 标记 is_price_modified + original_price_*；⑤**客户上次价格**：新开订单默认取该客户最近订单成交价；⑥**取消商户收款码与259号文合规**（不印收款码、不做第三方支付对接），赊销页按客户维度聚合每日欠款+累计总欠款 |
 | **1.0** | **2026-08-07** | — | **对齐产品 1.0 / 1.0**：角色权限矩阵细粒度化（权限键可开关，默认全员开放）；分拣与库管合并为「分拣出库」单一 Tab，出库页子区按角色身份门控；赊销页三栏重设计 + 统一「已收」口径；本文档一致性戳同步至产品 1.0 |

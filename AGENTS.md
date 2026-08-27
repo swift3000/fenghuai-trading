@@ -1,11 +1,11 @@
-# AGENTS.md — 丰淮商贸小程序（fenghuai-trading）
+# AGENTS.md — 乾多多小程序（fenghuai-trading）
 
 > 生效范围：所有 AI 助手（Codex/Trae/其他）。本文件只提供【项目技术细节】；
 > 全局流程规则（评审机制/交付循环/经验库/平台红线/测试方式/工程纪律）以 ~/.codex/AGENTS.md 为最高优先，冲突以全局为准。
 > **规范版本**：v1.3 | **全局规则依赖版本**：v4.20 | **更新日期**：2026-08-26
 
 ## 一句话
-丰淮商贸采购下单助手：微信小程序（4 角色 RBAC）+ 微信云开发 Serverless，覆盖 智能录入→录单→分拣→出库→赊销收款→蓝牙打印/转发销售单。MVP v1.0 为最终功能范围（无 Web 后台、无二期增强；催收/审计/趋势报表/微信支付为独立升级模块）。
+乾多多采购下单助手：微信小程序（4 角色 RBAC）+ 微信云开发 Serverless，覆盖 智能录入→录单→分拣→出库→赊销收款→蓝牙打印/转发销售单。MVP v1.0 为最终功能范围（无 Web 后台、无二期增强；催收/审计/趋势报表/微信支付为独立升级模块）。
 
 ## 技术栈
 - 前端：微信原生小程序 + TypeScript + Vant Weapp；页面 pages/{login,index,customers,orders,new-order,order-detail,outbound,products,receivable,reports,members,profile,settings,shipping}
@@ -27,7 +27,7 @@
 | `deploy/scripts/` | 云函数一键部署脚本 |
 | `PROJECT_STRUCTURE.md` | 保留，与 `tests/performance/` 并列维护 |
 ## 原型
-- 原型位置：docs/ui/（丰淮商贸采购下单助手_原型.html，唯一 UI 基准）
+- 原型位置：docs/ui/（乾多多采购下单助手_原型.html，唯一 UI 基准）
 - 开发对齐：只对齐产品事实（字段/流程/状态/权限/文案）；演示辅助剥离（4 角色演示切换≠真实 RBAC，按登录+权限实现）——原则见全局 AGENTS.md"原型对齐原则"
 
 ## 业务红线（改动前必查）

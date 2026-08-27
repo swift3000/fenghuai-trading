@@ -68,7 +68,7 @@ const CUST={_id:'1aeaf3576a7ee3870058bead57f09341',name:'万友',region:'汉阴'
   r=await C('orders','create','orderer',{customerId:CUST._id,customerName:CUST.name,customerRegion:CUST.region,totalAmount:36,items:[{name:'淮盐 400g',pricing_mode:'case',piece_qty:1,package_qty:0,price_piece:36,price_unit:0}]});
   ok(r.code===0,'创建订单成功');
   const orderId=r.data&&r.data._id; const orderNo=r.data&&r.data.orderNo;
-  ok(!!orderId&&/丰淮商贸-\d{8}-\d{4}/.test(orderNo||''),'订单号格式正确：'+orderNo);
+  ok(!!orderId&&/乾多多-\d{8}-\d{4}/.test(orderNo||''),'订单号格式正确：'+orderNo);
 
   console.log('\n【3】分拣员确认分拣（独立于出库，不依赖出库）');
   r=await C('orders','confirmSort','sorter',{orderId});

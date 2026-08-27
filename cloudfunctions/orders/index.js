@@ -23,7 +23,7 @@ let __impersonatedOpenid = null
 const XLSX = require('xlsx')
 
 // 公司名（用于导出标题；云函数无法 require 前端 constants）
-const COMPANY_NAME = '丰淮商贸'
+const COMPANY_NAME = '乾多多'
 function salesTitle(o){ return (o && (o.customerName || o.customer) || COMPANY_NAME) + '食品销售单' }
 
 // 本地数量文案（云函数无法 require 前端 utils，内联精简版）
@@ -267,8 +267,8 @@ exports.main = async (event, context) => {
       if (itemsSum <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
       const today = bjNow()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
-      const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `丰淮商贸-${dateStr}`, options: 'i' }) }).count()
-      const orderNo = `丰淮商贸-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
+      const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `乾多多-${dateStr}`, options: 'i' }) }).count()
+      const orderNo = `乾多多-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
       const order = {
         orderNo, customerId, customerName, customerRegion: customerRegion || '', items: normalizedItems,
         totalAmount, status: 'submitted',

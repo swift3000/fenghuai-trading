@@ -222,12 +222,12 @@ Page({
     const inv = this.data.lastInvite
     if (inv && inv.code) {
       return {
-        title: '丰淮商贸 · 邀请你加入（' + inv.roleLabel + '）',
+        title: '乾多多 · 邀请你加入（' + inv.roleLabel + '）',
         path: '/pages/login/login?invite=' + inv.code
       }
     }
     return {
-      title: '丰淮商贸采购下单助手',
+      title: '乾多多采购下单助手',
       path: '/pages/login/login'
     }
   },
