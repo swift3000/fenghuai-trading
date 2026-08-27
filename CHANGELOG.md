@@ -4,6 +4,21 @@
 
 格式基于 [Conventional Changelog](https://www.conventionalcommits.org/)。
 
+## [1.6.8] - 2026-08-27
+
+### Added (T52: 全业务数据对账 + 文档代码对齐，来源用户"全业务/页面/算账报表/权限流程全检查")
+- 数据对账审计脚本固化：tests/data-consistency-audit.js（只读零写入，8 组断言：总额vs明细/实收vs确认收款/状态一致性/孤儿收款/取消单合理性/逐客户赊销守恒/权限快照vs矩阵/引用完整性+0元单+料号唯一），挂 test-all 第 1 步常设回归
+- 首轮生产对账全过：订单 1/收款 0/客户 282/商品 167，无漂移无孤儿无越权
+
+### Fixed
+- API 文档与代码/生产数据字段不一致 14 处（商品段 sku→material_code、订单段 snake_case→camelCase、客户段 region_id 外键→region 名称、区域段调用路径）——按生产数据实际 KEYS 重写，杜绝"文档契约"误导后续开发
+
+### Verified
+- regions 集合 data.data 嵌套历史脏数据登记 P3 观察（无业务链路消费，不修）
+- 商品「调货」(material_code=93) 0 价占位确认业务设计（is_adjustable 人工改价），非 bug
+
+---
+
 ## [1.6.7] - 2026-08-27
 
 ### Fixed (T51: 动钱核心加固 + 全仓截断清零，来源用户"其他有 bug 的全修")

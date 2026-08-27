@@ -228,34 +228,32 @@ const res = await app.callFunction({
 ```typescript
 {
   type: 'products',
-  customer_id?: string;   // 下单弹窗场景：传客户 ID，服务端按该客户历史订单商品购买量降序、其次 usage 降序（客户维度常购优先）
   filter?: {
-    keyword?: string;
-    category?: string;
-    status?: 'pending' | 'active' | 'disabled';
+    keyword?: string    // 模糊搜索（商品名/商品料号 material_code）
   },
   page?: number;
-  page_size?: number;
-  sort?: { [key: string]: 1 | -1 }   // 支持 usage: -1 按使用频率降序（从高到低）；支持客户维度常购排序（传 customer_id，无 customer_id 时按 usage 降序）
+  page_size?: number
 }
 ```
+
+> 说明：商品列表无客户维度常购排序、无 usage 字段（MVP 实际实现）；全量返回 + 前端本地过滤。
 
 #### 返回 data (list)
 ```typescript
 {
   list: Array<{
-    id: string; sku: string; name: string;
-    category: string; spec: string | null; unit: string;
+    id: string;
+    material_code: string;      // 商品料号（唯一标识展示位；93 开头=调货品，is_adjustable=true 可改价）
+    name: string;
+    spec: string | null;        // 规格，如 1×60
+    unit: string;               // 单位（包）
     pricing_mode: 'case' | 'piece' | 'unit';
-    pieces_per_case: number | null;
-    unit_price_piece: number; unit_price_zero: number;
-    original_price: number | null;
-    is_93_adjustable: boolean;
-    usage: number;              // 使用频率（近 N 日下单次数，服务端自动统计）；新建订单成功自动 +1（服务端累计，选择越多的越靠前），用于排序
-    status: 'active' | 'inactive';
-    created_by_name: string; created_at: number;
-  }>;
-  pagination: { page: number; page_size: number; total: number; total_pages: number; }
+    unit_piece_qty: number;     // 每箱件数（case 模式）
+    price_piece: number | null; // 件价（箱价/件）
+    price_unit: number | null;  // 单件零售价
+    pinyin: string;             // 拼音（智能录入辅助）
+    is_adjustable: boolean;     // 是否允许改价
+  }>
 }
 ```
 
@@ -282,29 +280,28 @@ const res = await app.callFunction({
 {
   action: 'create',
   payload: {
-    sku: string;                // 必填，唯一，长度 3-50
-    name: string;               // 必填，长度 1-100
-    category?: string;          // 选填，枚举：蔬菜/肉类/冻品/调料/粮油/水产/其他
-    spec?: string | null;       // 选填
-    unit: string;               // 必填，长度 1-10
-    pricing_mode: 'case' | 'piece' | 'unit';
-    pieces_per_case?: number;   // case 模式必填，> 0
-    unit_price_piece: number;   // 必填，≥ 0
-    unit_price_zero: number;    // ≥ 0
-    original_price?: number | null;
-    status?: 'pending' | 'active' | 'disabled';  // 默认 active
+    name: string;               // 必填，商品名称
+    material_code?: string;     // 商品料号（选填，默认空串）
+    spec?: string;              // 规格，选填
+    unit?: string;              // 单位，选填，默认「包」
+    pricing_mode?: 'case' | 'piece' | 'unit';  // 默认 case
+    unit_piece_qty?: number;    // 每箱件数，默认 1
+    price_piece?: number | null;// 件价
+    price_unit?: number | null; // 单件零售价
+    pinyin?: string;            // 拼音，选填
+    is_adjustable?: boolean     // 是否允许改价，默认 false
   }
 }
 ```
 
 | 校验规则 | |
 |----------|---|
-| SKU 唯一 | 同 sku 存在时返回 1001 |
-| 93 SKU | 以 93 开头时 is_93_adjustable 自动 = true |
+| 名称必填 | name 为空返回 4001 |
+| 93 前缀 | material_code 以 93 开头=调货品，前端展示 is_adjustable=true 允许改价（导入数据约定，非服务端强制） |
 
 #### 返回 data
 ```json
-{ "id": "新增商品ID", "sku": "编码" }
+{ "_id": "新增商品ID" }
 ```
 
 ### 3.4 修改商品
@@ -337,22 +334,21 @@ const res = await app.callFunction({
 
 #### 请求
 ```json
-{ "type": "customers", "filter": { "keyword": "", "region": "", "status": "active" }, "page": 1, "page_size": 20 }
+{ type: 'customers', searchKey?: string }   // event 平铺；全量返回，前端本地过滤
 ```
 
 #### 返回 data (list)
 ```typescript
 {
-  list: Array<{
-    id: string; name: string;
-    region_id: string; region_name: string;
-    address: string | null;
-    contact: string | null; phone: string | null;
-    status: 'active' | 'inactive';
-    is_adjustable: boolean;
-    created_by_name: string; created_at: number;
-  }>;
-  pagination: { /* ... */ }
+  // 全量返回（T51-1 起分页拉全量），camelCase：
+  Array<{
+    _id: string;
+    name: string;      // 客户名
+    alias: string;     // 别名（智能录入匹配用）
+    region: string;    // 区域名称（直接存名称字符串，无 region_id 外键）
+    phone: string | null;
+    contact: string | null;
+  }>
 }
 ```
 
@@ -375,19 +371,16 @@ const res = await app.callFunction({
 ```typescript
 {
   action: 'create',
-  payload: {
-    name: string;
-    region_id: string;
-    address?: string | null;
-    contact?: string | null;
-    phone?: string | null;
-    is_adjustable?: boolean;   // 默认 false
-    status?: 'pending' | 'active' | 'disabled';
-  }
+  // event 平铺：
+  name: string;             // 必填（为空返回 4001）
+  alias?: string;
+  region?: string;          // 区域名称
+  phone?: string | null;
+  contact?: string | null;
 }
 ```
 
-#### 返回：`{ id, name }`
+#### 返回：`{ _id }`
 
 ### 4.4 修改客户
 
@@ -407,17 +400,15 @@ const res = await app.callFunction({
 - **云函数**：`regions` / `regions`
 - **最小权限**：all
 
-#### 请求：`{ type:'regions', filter:{ status:'active' } }`（无分页）
+#### 请求：customers 云函数 `{ type: 'regions' }`（customers 内部 action，非独立 regions 云函数）
 
 #### 返回 data
 ```typescript
-Array<{
-  id: string;
-  name: string;                // 示例：汉滨区
-  status: 'active' | 'inactive';
-  sort: number;                // 排序号，从小到大
-}>;
+Array<{ name: string; sort: number; status: 1 }>
+// 示例：汉滨区/汉阴县/石泉县/宁陕县/紫阳县/岚皋县/平利县/镇坪县/旬阳市/白河县/外县
 ```
+
+> ⚠️ 现状说明：客户区域实际直接存**名称字符串**（customers.region），不依赖 regions 集合外键；前端当前未消费此接口（区域下拉用静态名单）。regions 集合存在 data.data 嵌套历史脏数据（见 T52 卡 P3 登记），无业务链路读取。
 
 ### 5.2 新增区域
 
@@ -448,52 +439,42 @@ Array<{
 #### 请求
 ```typescript
 {
-  type: 'orders',
-  filter: {
-    status?: OrderStatus | OrderStatus[];
-    network_time_gte?: number;        // 时间戳
-    network_time_lte?: number;
-    customer_id?: string;
-    region?: string;
-    keyword?: string;                 // 订单号/客户名
-    created_by?: string;              // orderer 专用（前端传）
-  },
-  page?: number;
-  page_size?: number;
-  sort?: { network_time?: 1 | -1 }
+  // event 平铺：
+  action: 'list',
+  timeTab?: 'today' | 'week' | 'month';   // 时间范围（北京时间，默认全部）
+  searchKey?: string                  // 订单号/客户名模糊搜索
 }
 ```
 
 #### 返回 data (list)
 ```typescript
 {
-  list: Array<{
-    id: string;
-    order_no: string;
-    status: OrderStatus;
-    network_time: number;
-    customer_id: string;
-    customer_name: string;
-    customer_region: string;
-    customer_region_name: string;
-    contact: string | null;
-    phone: string | null;
-    total_amount: number;           // 全员可见（无脱敏，1.0）
-    item_count: number;             // 明细行数
-    // payment: 'cash' | 'transfer' | 'credit';  // ⚠️ 1.0 起移除：订单不再有收款方式字段
+  // 全量返回（T51-1 起分页拉全量，前端本地过滤/分页），camelCase：
+  Array<{
+    _id: string;
+    orderNo: string;                 // 乾多多-YYYYMMDD-NNNN
+    status: 'submitted' | 'sorted' | 'confirmed' | 'completed' | 'cancelled';
+    customerId: string;
+    customerName: string;
+    customerRegion: string;          // 区域名称（下单时快照）
+    items: Array;                    // 商品快照（含 0件0包 行，前端展示时过滤）
+    totalAmount: number;             // 全员可见（无脱敏，1.0）
     payment_status: 'unpaid' | 'pending' | 'paid';   // 收款状态（默认 unpaid）
-    received_amount: number;        // 累计实收金额（含 pending/paid 记录）
-    has_price_modified: boolean;
-    created_by: string;
-    created_by_name: string;
-    printed: boolean;
-    printed_at: number | null;
-    ship_large: number | null;       // 实际发货大件数（出库确认时写入），用于已出库列表物流包裹展示
-    ship_medium: number | null;      // 实际发货中件数，用于已出库列表物流包裹展示
-    ship_small: number | null;       // 实际发货小件数，用于已出库列表物流包裹展示
-    remark: string | null;
-  }>;
-  pagination: { /* ... */ }
+    paymentStatus: 'unpaid' | 'pending' | 'paid';    // 双写字段（兼容）
+    received_amount: number;         // 累计已确认实收（分位精度）
+    receivedAmount: number;          // 双写字段（兼容）
+    total_discount: number;          // 已确认折价/货损合计
+    sortStatus: 'pending' | 'done';  // 分拣状态（与 status 双轨派生）
+    outStatus: 'pending' | 'done';   // 出库状态
+    sortTime: Date | null; outTime: Date | null;
+    ship_large: number | null;       // 实际发货大件数（出库确认时写入）
+    ship_medium: number | null;
+    ship_small: number | null;
+    shared_to_wechat: boolean;       // 已转发微信
+    created_at: Date;
+    createdByName: string; createdByRole: string;
+    logs: Array;                     // 操作记录
+  }>
 }
 ```
 
@@ -510,24 +491,19 @@ Array<{
 ```typescript
 {
   // 同 6.1 列表所有字段 +（含 payment_status/received_amount 收款状态、ship_large/ship_medium/ship_small 物流包裹；送货单数据同此返回）：
-  items_snapshot: Array<{
-    seq: number;
-    product_id: string;
-    sku: string; name: string; spec: string | null;
+  items: Array<{            // 字段名=items（快照），非 items_snapshot
+    _id: string;             // 商品 ID
+    material_code: string;   // 商品料号
+    name: string; spec: string; unit: string;
     pricing_mode: 'case' | 'piece' | 'unit';
-    pieces_per_case: number | null;
     piece_qty: number; package_qty: number;
-    unit_price_piece: number;
-    unit_price_zero: number;
-    original_price: number | null;
-    is_price_modified: boolean;
-    amount: number;
-    remark: string | null;
+    price_piece: number;     // 成交件价（快照）
+    price_unit: number;      // 成交单件价（快照）
+    qty: number; price: number;  // 归一化展示字段（服务端补齐）
+    amount: number;          // 行金额（服务端重算）
+    is_adjustable: boolean; remark: string | null;
   }>;
-  updated_at: number | null;
-  cancelled_at: number | null;
-  cancel_reason: string | null;
-  cancelled_by: string | null;
+  logs: Array<{ action: string; desc: string; operatorName: string; role: string; time: number }>;  // 操作记录（随详情返回）
 }
 ```
 
@@ -540,41 +516,39 @@ Array<{
 ```typescript
 {
   action: 'create',
-  payload: {
-    customer_id: string;
-    contact?: string | null;
-    phone?: string | null;
-    items: Array<{
-      product_id: string;
-      piece_qty: number;        // ≥ 0
-      package_qty: number;         // ≥ 0
-      // 订单内自定义价格（1.0）：所有商品均可传临时价，仅当前订单有效，不影响商品默认价
-      tmp_unit_price_piece?: number;  // ≥ 0，可改价件价（选填，缺省用商品默认价/客户上次价）
-      tmp_unit_price_zero?: number;   // ≥ 0，可改价包价（选填）
-      remark?: string | null;
-    }>;
-    // payment?: 'cash' | 'transfer' | 'credit';  // ⚠️ 1.0 起移除：新建订单不再传收款方式
+  // event 平铺（无 payload 包裹），camelCase：
+  customerId: string;             // 必填
+  customerName?: string; customerRegion?: string;
+  totalAmount: number;            // 前端预算值仅作 0 元快速拦截；落库总额=服务端按明细重算（T51-1）
+  items: Array<{
+    _id: string;                  // 商品 ID
+    name: string; material_code: string; spec: string; unit: string;
+    pricing_mode: 'case' | 'piece' | 'unit';
+    piece_qty: number;            // ≥ 0
+    package_qty: number;          // ≥ 0
+    price_piece: number;          // 成交件价（前端来源：客户上次成交价 > 商品默认价；is_adjustable 商品可人工改价）
+    price_unit: number;           // 成交单件价（同上）
     remark?: string | null;
-  }
+  }>;
 }
 ```
 
 | 校验规则 | |
 |----------|---|
-| items 非空 | 空返回 1001 |
-| **价格来源（1.0）** | 传 tmp_ 价 → 用订单内自定义价（写 is_price_modified + original_price_*）；未传 → 取**该客户最近订单成交价**；无历史 → 商品默认价 |
+| items 非空 | 有效商品为空返回 2001 |
+| **价格来源（1.0）** | 前端组装：同客户最近订单成交价（orders/lastOrder 拉取）> 商品默认价；is_adjustable 商品允许人工改价。行金额 amount 由服务端按 qty×price 分位重算，不信任前端 amount；订单总额=明细求和（T51-1 起不再信任前端 totalAmount） |
 | piece_qty + package_qty | 至少一个 > 0，否则整条明细被忽略 |
 | 计价金额 | 服务端重算，不信任前端 |
-| **0 金额拦截（2026-08-17 双重校验）** | ① `totalAmount <= 0` → 2001「订单金额不能为 0」；② 过滤 0件0包 行后，有效商品为空 → 2001「订单商品数量必须大于 0」，物品金额合计 ≤ 0 → 2001「订单金额必须大于 0，请检查商品数量/单价」。`update`（编辑订单）同规则 |
+| **0 金额拦截（双重校验）** | ① `totalAmount <= 0` → 2001「订单金额不能为 0」；② 过滤 0件0包 行后，有效商品为空 → 2001「订单商品数量必须大于 0」，物品金额合计 ≤ 0 → 2001「订单金额必须大于 0，请检查商品数量/单价」。`update`（编辑订单）同规则 |
 | **0 值导出留空** | `exportOutbound` / `exportLedger` / `exportDailySummary` 中数量为 0 的件数/物流大中小件单元格输出空字符串（不写 0），与界面口径一致 |
 
 | 行为说明 | |
 |----------|---|
-| usage 自动累计 | 创建成功后自动累计订单内商品 usage 各 +1（服务端累计，每款商品各 +1），用于商品列表常购排序 |
+| 订单号 | 服务端生成 `乾多多-YYYYMMDD-NNNN`（当日顺序号）；创建人姓名/角色服务端记录（createdByName/createdByRole） |
 
 #### 返回 data
 ```json
-{ "order_id": "orders._id", "order_no": "乾多多-20260730-0001", "total_amount": 1234.56 }
+{ "_id": "orders._id", "orderNo": "乾多多-20260730-0001" }
 ```
 
 ### 6.4 出库确认 + 分拣动作（update-status）

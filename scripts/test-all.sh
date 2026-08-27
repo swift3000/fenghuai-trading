@@ -10,7 +10,8 @@ run_ui() {
   node "$1" || { echo "    ⚠ 首次失败，等待 5s 后重试..."; sleep 5; node "$1"; }
 }
 
-echo "==> [1/11] 权限逻辑单测（perm-logic）"
+echo "==> [1/11] 数据对账审计（data-consistency）+ 权限逻辑单测（perm-logic）"
+node tests/data-consistency-audit.js
 node tests/perm-logic-test.js
 
 echo "==> [2/11] 权限 UI 测试（wx-perm-ui，需微信开发者工具模拟器）"
