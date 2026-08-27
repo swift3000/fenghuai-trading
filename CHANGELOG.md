@@ -6,6 +6,19 @@
 
 ---
 
+## [1.6.4] - 2026-08-27
+
+### Changed (T48: 项目审查发现处置，来源 2026-08-27 全量审查)
+- T48-1: 项目 AGENTS.md 全局规则依赖版本 v4.20→v4.21（与全局规则对齐，commit db32520）
+- T48-2: 补齐 6 个云函数（smart/outbound/auth/users/system/regions）package-lock.json，落实"lockfile 必入库"纪律；依赖漏洞豁免登记入 T48 卡（wx-server-sdk 平台约束 / xlsx 0.18.5 无 npm 修复版 / miniprogram-ci 纯 CI 工具链）（commit f119c7f）
+- T48-3: tests/qa-toggle.js 云函数部署瞬态失败（COS 上传 60s 超时，当日 products 实例）自动等 10s 重试 1 次；重试仍失败则 on/off 退出码非 0，set -e 阻断 test-all 防止带病进入后续步骤
+
+### Verified
+- 全量回归 test:all 11 步全绿（审查时基线，19/12/24/28/23/56/10 失败 0，QA 残留校验通过）
+- node --check tests/qa-toggle.js 通过；badarg 退出码 1；status 只读命令线上 10 函数 QA_IMPERSONATE 全空（生产安全态）
+- 6 个新 lockfile 均锁 wx-server-sdk 2.6.3（与既有函数一致）；package.json 零改动（diff 验证）
+- check:perms 通过
+
 ## [1.6.3] - 2026-08-24
 
 ### Changed (T46: 报表汇总卡口径 + 两处 UI 对齐原型)
