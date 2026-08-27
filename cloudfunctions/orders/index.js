@@ -72,6 +72,19 @@ function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+// T51-1：全量分页拉取（服务端单次查询默认 limit=100，批量操作/列表必须拉全量，否则静默漏处理）
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
+
 // 权限校验
 async function checkPermission(permission) {
   const { OPENID } = cloud.getWXContext()
@@ -174,8 +187,9 @@ async function markAutoRan(type, detail) {
 async function runAutoConfirm() {
   const t = bjTodayStart()
   let sortN = 0, outN = 0
-  const sortRes = await db.collection('orders')
-    .where({ sortStatus: 'pending', created_at: db.command.gte(t) }).limit(500).get()
+  // T51-1：全量拉取（原 limit(500) 超量当日订单会漏自动确认）
+  const __sortQ = await fetchAll(db.collection('orders').where({ sortStatus: 'pending', created_at: db.command.gte(t) }))
+  const sortRes = { data: __sortQ }
   for (const it of sortRes.data) {
     const derive = (it.outStatus === 'done') ? 'confirmed' : 'sorted'
     await db.collection('orders').doc(it._id).update({
@@ -183,8 +197,9 @@ async function runAutoConfirm() {
     })
     sortN++
   }
-  const outRes = await db.collection('orders')
-    .where({ outStatus: 'pending', created_at: db.command.gte(t) }).limit(500).get()
+  // T51-1：全量拉取
+  const __outQ = await fetchAll(db.collection('orders').where({ outStatus: 'pending', created_at: db.command.gte(t) }))
+  const outRes = { data: __outQ }
   for (const it of outRes.data) {
     const derive = (it.sortStatus === 'done') ? 'confirmed' : 'sorted'
     await db.collection('orders').doc(it._id).update({
@@ -239,8 +254,9 @@ exports.main = async (event, context) => {
   switch (action) {
     case 'create': {
       const { customerId, customerName, items, customerRegion } = event
-      const totalAmount = Number(event.totalAmount) || 0
-      if (totalAmount <= 0) return { code: 2001, message: '订单金额不能为 0' }
+      // T51-2：订单总额以服务端重算为准（明细行金额服务端重算后求和），前端 totalAmount 仅作 0 元快速拦截参考
+      const __clientTotal = Number(event.totalAmount) || 0
+      if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
 
       // 归一化 items：补齐 qty/price/amount 展示字段（兼容详情/送货单/报表），保留件包双轨字段
       const normalizedItems = (items || []).map(it => {
@@ -265,6 +281,8 @@ exports.main = async (event, context) => {
       const itemsSum = validItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
       if (!validItems.length) return { code: 2001, message: '订单商品数量必须大于 0' }
       if (itemsSum <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
+      // T51-2：服务端重算总额（分位取整，防浮点误差），不信任前端 totalAmount
+      const totalAmount = Math.round(itemsSum * 100) / 100
       const today = bjNow()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `乾多多-${dateStr}`, options: 'i' }) }).count()
@@ -316,7 +334,8 @@ exports.main = async (event, context) => {
       } else if (conditions.length > 1) {
         query = query.where(db.command.and(conditions))
       }
-      const res = await query.orderBy('created_at', 'desc').limit(200).get()
+      // T51-1：全量拉取（原 limit(200) 导致订单超 200 后列表静默截断）
+      const res = { data: await fetchAll(query.orderBy('created_at', 'desc')) }
       return { code: 0, data: res.data }
     }
     case 'detail': {
@@ -352,8 +371,12 @@ exports.main = async (event, context) => {
               customerId: order.customerId,
               paymentStatus: db.command.in(['unpaid', 'pending'])
             })
-            .get()
-          const totalDebt = unpaid.data.reduce((sum, o) => {
+            // T51-1：全量拉取（客户未结清订单超 100 会少算欠款）
+          const __unpaidQ = await fetchAll(db.collection('orders').where({
+            customerId: order.customerId,
+            paymentStatus: db.command.in(['unpaid', 'pending'])
+          }))
+          const totalDebt = __unpaidQ.reduce((sum, o) => {
             const received = o.received_amount || o.receivedAmount || 0
             const discount = o.total_discount || o.totalDiscount || 0
             return sum + Math.max(0, (o.totalAmount || 0) - received - discount)
@@ -380,9 +403,10 @@ exports.main = async (event, context) => {
     }
     case 'update': {
       const { orderId, items, customerName, customerRegion } = event
-      const totalAmount = Number(event.totalAmount) || 0
+      // T51-2：同 create——总额服务端重算，前端 totalAmount 仅 0 元快速拦截参考
+      const __clientTotal = Number(event.totalAmount) || 0
       if (!orderId) return { code: 2002, message: '缺少订单 ID' }
-      if (totalAmount <= 0) return { code: 2001, message: '订单金额不能为 0' }
+      if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
       const normalizedItems = (items || []).map(it => {
         const mode = it.pricing_mode || 'case'
         const pieceQty = it.piece_qty || 0
@@ -404,6 +428,8 @@ exports.main = async (event, context) => {
       const itemsSum2 = validItems2.reduce((sum, it) => sum + (Number(it.amount) || 0), 0)
       if (!validItems2.length) return { code: 2001, message: '订单商品数量必须大于 0' }
       if (itemsSum2 <= 0) return { code: 2001, message: '订单金额必须大于 0，请检查商品数量/单价' }
+      // T51-2：服务端重算总额（分位取整）
+      const totalAmount = Math.round(itemsSum2 * 100) / 100
       const patch = { items: validItems2, customerRegion: customerRegion || '', totalAmount, status: 'submitted', sortStatus: 'pending', outStatus: 'pending' }
       if (customerName) patch.customerName = customerName
       await db.collection('orders').doc(orderId).update({ data: patch })
@@ -479,24 +505,26 @@ exports.main = async (event, context) => {
       return { code: 0, data: {} }
     }
     case 'todayStats': {
+      // T51-1：全量拉取（原裸 .get() 默认截 100，当日订单超 100 会少算）；金额按分位累加防浮点误差
       const today = bjTodayStart()
-      const res = await db.collection('orders').where({ created_at: db.command.gte(today) }).get()
-      let amount = 0
-      res.data.forEach(o => { amount += Number(o.totalAmount) || 0 })
-      return { code: 0, data: { count: res.data.length, amount } }
+      const orders = await fetchAll(db.collection('orders').where({ created_at: db.command.gte(today) }))
+      let amountCents = 0
+      orders.forEach(o => { amountCents += Math.round((Number(o.totalAmount) || 0) * 100) })
+      return { code: 0, data: { count: orders.length, amount: amountCents / 100 } }
     }
     case 'outboundList': {
       const { subTab } = event
       if (subTab === 'sort') {
-        const res = await db.collection('orders').where({ sortStatus: 'pending' }).orderBy('created_at', 'desc').limit(100).get()
+        // T51-1：全量拉取（待分拣超 100 会漏显示）
+        const res = { data: await fetchAll(db.collection('orders').where({ sortStatus: 'pending' }).orderBy('created_at', 'desc')) }
         return { code: 0, data: { pendingSort: res.data, pendingOut: [] } }
       }
       // 出库工作台：库管不等分拣完成，所有未出库订单都可见（与分拣并行）
-      const pendingRes = await db.collection('orders').where({ outStatus: 'pending' }).orderBy('created_at', 'desc').limit(100).get()
+      // T51-1：全量拉取（待出库超 100 会漏显示）
+      const pendingRes = { data: await fetchAll(db.collection('orders').where({ outStatus: 'pending' }).orderBy('created_at', 'desc')) }
       const today = bjTodayStart()
-      const doneRes = await db.collection('orders')
-        .where({ outStatus: 'done', created_at: db.command.gte(today) })
-        .orderBy('created_at', 'desc').limit(100).get()
+      // T51-1：全量拉取
+      const doneRes = { data: await fetchAll(db.collection('orders').where({ outStatus: 'done', created_at: db.command.gte(today) }).orderBy('created_at', 'desc')) }
       return { code: 0, data: { pendingOut: pendingRes.data, doneOut: doneRes.data } }
     }
     case 'confirmSort': {
@@ -504,7 +532,8 @@ exports.main = async (event, context) => {
       // status 由 分拣+出库 双状态派生：出库已完成=confirmed，否则=sorted（并行下避免把已出库订单降级）
       const deriveStatusAfterSort = (o) => (o && o.outStatus === 'done') ? 'confirmed' : 'sorted'
       if (batchMode) {
-        const list = await db.collection('orders').where({ sortStatus: 'pending' }).get()
+        // T51-1：全量拉取（超 100 条待分拣会漏批量确认）
+        const list = { data: await fetchAll(db.collection('orders').where({ sortStatus: 'pending' })) }
         for (const it of list.data) {
           await db.collection('orders').doc(it._id).update({
             data: { sortStatus: 'done', sortTime: db.serverDate(), status: deriveStatusAfterSort(it) }
@@ -539,7 +568,8 @@ exports.main = async (event, context) => {
       // 库管出库不依赖分拣完成；status 由 分拣+出库 双状态派生：分拣已完成=confirmed，否则=sorted
       const deriveStatusAfterOut = (o) => (o && o.sortStatus === 'done') ? 'confirmed' : 'sorted'
       if (batchMode) {
-        const list = await db.collection('orders').where({ outStatus: 'pending' }).get()
+        // T51-1：全量拉取
+        const list = { data: await fetchAll(db.collection('orders').where({ outStatus: 'pending' })) }
         for (const it of list.data) {
           await db.collection('orders').doc(it._id).update({
             data: { outStatus: 'done', ship_large: sl, ship_medium: sm, ship_small: ss, outTime: db.serverDate(), status: deriveStatusAfterOut(it) }
@@ -569,11 +599,8 @@ exports.main = async (event, context) => {
         const tomorrow = bjTomorrowStart()
         where.created_at = db.command.and([db.command.gte(today), db.command.lt(tomorrow)])
       }
-      const res = await db.collection('orders')
-        .where(where)
-        .orderBy('created_at', 'desc')
-        .get()
-      const orders = res.data
+      // T51-1：全量拉取（导出超 100 单会缺行）
+      const orders = await fetchAll(db.collection('orders').where(where).orderBy('created_at', 'desc'))
       const rows = []
       let no = 1
       let currentCustomer = ''
@@ -679,10 +706,11 @@ exports.main = async (event, context) => {
           console.error('[print] 拉取客户信息失败, customerId=' + o.customerId, e && e.message)
         }
         try {
-          const unpaid = await db.collection('orders')
-            .where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending']) })
-            .get()
-          o.totalDebt = unpaid.data.reduce((s, x) => s + Math.max(0, (x.totalAmount || 0) - (x.received_amount || x.receivedAmount || 0) - (x.total_discount || x.totalDiscount || 0)), 0)
+          // T51-1：全量拉取（客户未结清订单超 100 会少算打印单欠款）；分位累加防浮点误差
+          const __up = await fetchAll(db.collection('orders').where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending']) }))
+          let __dc = 0
+          __up.forEach(x => { __dc += Math.max(0, Math.round((x.totalAmount || 0) * 100) - Math.round((x.received_amount || x.receivedAmount || 0) * 100) - Math.round((x.total_discount || x.totalDiscount || 0) * 100)) })
+          o.totalDebt = Math.round(__dc) / 100
         } catch (e) { o.totalDebt = 0 }
       }
 

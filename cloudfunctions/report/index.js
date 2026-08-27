@@ -468,15 +468,16 @@ exports.main = async (event, context) => {
         const start = dayAgo.start
         const end = dayAgo.end
         
-        const ordersResult = await db.collection('orders').where({
+        // T51-1：全量拉取（趋势统计超 100 会失真）；金额分位累加防浮点误差
+        const orders = await fetchAll(db.collection('orders').where({
           created_at: db.command.and([
             db.command.gte(start),
             db.command.lte(end)
           ])
-        }).get()
-        
-        const orders = ordersResult.data
-        const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
+        }))
+        let __trendCents = 0
+        orders.forEach(o => { __trendCents += Math.round((o.totalAmount || 0) * 100) })
+        const totalAmount = Math.round(__trendCents) / 100
         const orderCount = orders.length
         
         trendData.push({

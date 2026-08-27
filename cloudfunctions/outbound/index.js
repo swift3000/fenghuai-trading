@@ -35,6 +35,19 @@ async function checkPermission(permission) {
   return { code: 403, message: '无权限访问' }
 }
 
+// T51-1：全量分页拉取（服务端单次查询默认 limit=100，批量/列表/聚合必须拉全量）
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
+
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
@@ -58,23 +71,15 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'pendingSortList':
         // 获取待分拣订单
-        const pendingSort = await db.collection('orders')
-          .where({
-            status: 'submitted'
-          })
-          .orderBy('created_at', 'desc')
-          .get()
-        return { code: 0, data: pendingSort.data }
+        // T51-1：全量拉取（待分拣超 100 会漏显示）
+        const pendingSort = await fetchAll(db.collection('orders').where({ status: 'submitted' }).orderBy('created_at', 'desc'))
+        return { code: 0, data: pendingSort }
         
       case 'pendingOutList':
         // 获取待出库订单（已分拣未出库）
-        const pendingOut = await db.collection('orders')
-          .where({
-            status: 'sorted'
-          })
-          .orderBy('created_at', 'desc')
-          .get()
-        return { code: 0, data: pendingOut.data }
+        // T51-1：全量拉取（待出库超 100 会漏显示）
+        const pendingOut = await fetchAll(db.collection('orders').where({ status: 'sorted' }).orderBy('created_at', 'desc'))
+        return { code: 0, data: pendingOut }
         
       case 'confirmSort':
         // 确认分拣（T11 P2-3：状态守卫，非 submitted 状态重复确认直接返回，防重复流转）
@@ -118,13 +123,9 @@ exports.main = async (event, context) => {
         
       case 'exportOutbound':
         // 导出出库数据
-        const outboundOrders = await db.collection('orders')
-          .where({
-            status: db.command.in(['confirmed', 'sorted'])
-          })
-          .orderBy('created_at', 'desc')
-          .get()
-        return { code: 0, data: outboundOrders.data }
+        // T51-1：全量拉取
+        const outboundOrders = await fetchAll(db.collection('orders').where({ status: db.command.in(['confirmed', 'sorted']) }).orderBy('created_at', 'desc'))
+        return { code: 0, data: outboundOrders }
         
       default:
         return { code: 400, message: '未知操作' }

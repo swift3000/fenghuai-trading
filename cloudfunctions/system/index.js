@@ -42,6 +42,19 @@ async function setConfig(data) {
   }
 }
 
+// T51-1：全量分页拉取（服务端单次查询默认 limit=100）
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
+
 exports.main = async (event, context) => {
   const { action } = event
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
@@ -97,9 +110,10 @@ exports.main = async (event, context) => {
       const cfg = await getConfig()
       const wl = Array.isArray(cfg.adminWhitelist) ? cfg.adminWhitelist : []
       // 每个 openid 附带上对应已注册用户的名字（便于管理员辨认）
-      const users = await db.collection('users').field({ openid: 1, name: 1, role: 1 }).get()
+      // T51-1：全量拉取（注册超 100 人后白名单姓名匹配会漏）
+      const users = await fetchAll(db.collection('users').field({ openid: 1, name: 1, role: 1 }))
       const byOpenid = {}
-      for (const u of users.data) byOpenid[u.openid] = u
+      for (const u of users) byOpenid[u.openid] = u
       return { code: 0, data: { list: wl, mine: OPENID, items: wl.map(o => ({ openid: o, user: byOpenid[o] || null })) } }
     }
     case 'addAdminWhitelist': {

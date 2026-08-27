@@ -561,6 +561,20 @@ function buildItems(arr, products) {
   return items
 }
 
+// T51-1：全量分页拉取（服务端单次查询默认 limit=100；智能匹配必须全量候选，
+// 否则第 100 条之后的商品/客户永远匹配不到）
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
+
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
@@ -569,10 +583,11 @@ exports.main = async (event, context) => {
       const __p = await checkPermission('order:create'); if (__p.code !== 0) return __p
       const { text } = event
       if (!text) return { code: 5001, message: 'text 参数为空' }
-      const products = await db.collection('products').get()
-      const customers = await db.collection('customers').get()
-      const productResults = fuzzyMatch(text, products.data, 0.6)
-      const customerResults = fuzzyMatch(text, customers.data, 0.6)
+      // T51-1：全量候选（生产 167 商品/282 客户，截 100 会漏匹配）
+      const products = await fetchAll(db.collection('products'))
+      const customers = await fetchAll(db.collection('customers'))
+      const productResults = fuzzyMatch(text, products, 0.6)
+      const customerResults = fuzzyMatch(text, customers, 0.6)
       return { code: 0, data: { products: productResults, customers: customerResults } }
     }
     
@@ -626,8 +641,8 @@ exports.main = async (event, context) => {
       const { text } = event
       if (!text) return { code: 5002, message: 'text 参数为空' }
       
-      const productsResult = await db.collection('products').get()
-      const products = productsResult.data
+      // T51-1：全量候选
+      const products = await fetchAll(db.collection('products'))
       
       if (products.length === 0) {
         return { code: 5003, message: '暂无商品数据' }
@@ -644,8 +659,8 @@ exports.main = async (event, context) => {
       const { text } = event
       if (!text) return { code: 5002, message: 'text 参数为空' }
 
-      const productsResult = await db.collection('products').get()
-      const products = productsResult.data
+      // T51-1：全量候选
+      const products = await fetchAll(db.collection('products'))
 
       if (products.length === 0) {
         return { code: 5003, message: '暂无商品数据' }
