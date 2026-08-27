@@ -35,6 +35,21 @@ function escapeRegExp(str) {
 function toCents(n) {
   return Math.round((Number(n) || 0) * 100)
 }
+// T50-1：全量分页拉取——服务端单次查询默认 limit=100（硬上限 1000），
+// 财务聚合（应收/已收/未结清）必须拉全量，否则订单数 >100 后汇总静默少算、财务报表失真
+// 批次固定 100：与 SDK 默认单批一致，保证单批不触发 1MB 响应上限（-602001，
+// orders 文档含 items 快照，大批量易超限）；循环 skip 拉全量
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
 // 剩余欠款（分）= 订单金额 − 累计实收 − 累计折价
 function remainingCents(total, received, discount) {
   return Math.max(0, toCents(total) - toCents(received) - toCents(discount))
@@ -47,11 +62,12 @@ async function attachConfirmedPayments(orders) {
   if (ids.length === 0) return
   const confirmedByOrder = {}
   try {
-    const payRes = await db.collection('payments').where({
+    // T50-1：全量拉取（默认 100 截断会在订单数多时漏计已确认收款）
+    const pays = await fetchAll(db.collection('payments').where({
       orderId: db.command.in(ids),
       status: 'confirmed'
-    }).get()
-    payRes.data.forEach(p => {
+    }))
+    pays.forEach(p => {
       const oid = p.orderId || p.order_id
       if (!oid) return
       if (!confirmedByOrder[oid]) confirmedByOrder[oid] = { amount: 0, discountCents: 0 }
@@ -189,9 +205,9 @@ exports.main = async (event, context) => {
       let query = db.collection('orders')
       if (conds.length === 1) query = query.where(conds[0])
       else if (conds.length > 1) query = query.where(db.command.and(conds))
-      
-      const ordersResult = await query.get()
-      const orders = ordersResult.data
+
+      // T50-1：全量拉取（默认 100 截断会少算财务汇总）
+      const orders = await fetchAll(query)
       await attachConfirmedPayments(orders)
       
       // 按客户维度聚合统计（已收口径 = 实收 + 已确认折价，守恒：应收=已收+未结清）
@@ -292,12 +308,10 @@ exports.main = async (event, context) => {
         return { code: 4001, message: 'customerId 参数缺失' }
       }
       
-      const ordersResult = await db.collection('orders')
-        .where({ customerId })
-        .orderBy('created_at', 'desc')
-        .get()
-      
-      const orders = ordersResult.data
+      // T50-1：全量拉取（默认 100 截断会少算财务汇总）
+      const orders = await fetchAll(
+        db.collection('orders').where({ customerId }).orderBy('created_at', 'desc')
+      )
       await attachConfirmedPayments(orders)
       // 口径对齐 dashboard：已收 = 实收 + 已确认折价；未结清 = 应收 - 已收（守恒）
       const totalAmount = orders.reduce((sum, o) => sum + toCents(o.totalAmount || 0), 0)
@@ -454,9 +468,11 @@ exports.main = async (event, context) => {
         console.log('[confirmPayment] 幂等命中，该笔已确认', pay._id)
         return { code: 0, data: { reused: true } }
       }
-      
-      // 标记该笔收款为已确认
-      await db.collection('payments').doc(pay._id).update({
+
+      // T50-2：并发防双记——条件更新仅当 status 仍为 pending 才翻 confirmed。
+      // 原 get→update 两步非原子：两并发请求同时读到 pending 都通过守卫会双写 confirmed
+      // （金额在重算口径下不会双计，但确认人/时间/日志会被第二笔覆盖，审计轨迹错乱）
+      const flip = await db.collection('payments').where({ _id: pay._id, status: 'pending' }).update({
         data: {
           status: 'confirmed',
           confirmed_by: cloud.getWXContext().OPENID,
@@ -464,6 +480,11 @@ exports.main = async (event, context) => {
           confirm_note: note || ''
         }
       })
+      if (!flip.stats || !flip.stats.updated) {
+        // 并发下另一请求已抢先确认 → 幂等返回，不重复记账
+        console.log('[confirmPayment] 条件更新未命中（并发已确认），幂等返回', pay._id)
+        return { code: 0, data: { reused: true } }
+      }
       
       // 重算订单：received_amount = Σ已确认实收；payment_status = 结清则 paid，否则 pending
       const orderRes = await db.collection('orders').doc(targetOrderId).get()

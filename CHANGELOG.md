@@ -4,6 +4,22 @@
 
 格式基于 [Conventional Changelog](https://www.conventionalcommits.org/)。
 
+## [1.6.6] - 2026-08-27
+
+### Fixed (T50: 三轮猎杀审计——全角色流程 + 赊销财务逐行审计发现处置)
+- T50-1 [P1]: 财务汇总查询补全量分页——receivable（dashboard/customerDetail/attachConfirmedPayments）与 report（summary 三 tab/main + payments 台账 + 2 处 in(ids) 关联）共 8 处聚合查询原默认截断 100 条，订单数 >100 后应收/已收/未结清/报表统计静默少算；现统一 fetchAll 分页拉全量（批次 100 防 1MB 响应上限）
+- T50-2 [P1]: 确认收款改条件更新（where _id+status=pending）防并发双记——原 get→update 两步非原子，并发可双翻 confirmed 覆盖确认人/审计轨迹
+- T50-3 [P1]: 删除订单资金红线拦截——存在已确认收款记录的订单禁止物理删除（原级联销毁收款轨迹、应收凭空减少）；查询失败保守拦截；级联清理只删 pending；前端删除入口对已收款订单隐藏
+- T50-4 [P2]: orders/update-status 补状态机——原为任意状态裸写（死接口敞口，前端不调用）；现合法前向流白名单 + 取消仅 admin + 必填原因 + 留痕
+- T50-6 [P2]: API 文档收款链路纠错——实际收款在 receivable/collect + receivable/confirmPayment（非 orders/collect）；6.7/6.8 参数段与代码事实完全不符已按代码重写
+
+### Verified
+- 三轮审计范围：receivable/orders/report 全量源码 + 权限链路（perm_configs→user.permissions 快照同步）+ 前端调用链 + wx-server-sdk 默认 limit 源码核实（tcb-admin-node query.js L66=100）
+- 误报撤销 1 项：orders checkPermission 已接 QA 身份钩子（审计看漏）
+- 待拍板：order:delete 默认矩阵是否收紧仅 admin（T50-8，未动代码）
+
+---
+
 ## [1.6.5] - 2026-08-27
 
 ### Fixed (T49: 二轮深度审查发现处置)

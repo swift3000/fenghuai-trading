@@ -153,6 +153,8 @@ Page({
         },
         paymentStatus,
         paymentStatusText: PAYMENT_STATUS_TEXT[paymentStatus] || PAYMENT_STATUS_TEXT.unpaid,
+        // T50-3：已确认收款的订单不展示删除入口（服务端同样拦截，双保险）
+        canDelete: ((getApp().globalData.userInfo && getApp().globalData.userInfo.permissions) || []).includes('order:delete') && paymentStatus !== 'paid' && received <= 0,
         orderStatusText: (ORDER_STATUS_TEXT[order.status] || order.status || '未知'),
         receivedAmount: received,
         totalDiscount: discount,

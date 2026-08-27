@@ -411,16 +411,68 @@ exports.main = async (event, context) => {
       return { code: 0, data: {} }
     }
     case 'update-status': {
-      await db.collection('orders').doc(event.orderId).update({ data: { status: event.status } })
+      // T50-4：状态机校验——原实现为裸写（任意 status 直入，前端已不调用此 action，
+      // 属死接口敞口：直连可绕过 confirmSort/confirmOut 状态流把订单改成任意状态）
+      const __oid = __impersonatedOpenid || (await cloud.getWXContext()).OPENID
+      const VALID_STATUS = ['submitted', 'sorted', 'confirmed', 'completed', 'cancelled']
+      const target = event.status
+      if (!VALID_STATUS.includes(target)) return { code: 1001, message: '非法目标状态：' + target }
+      const curSt = await db.collection('orders').doc(event.orderId).get()
+      if (!curSt.data) return { code: 4004, message: '订单不存在' }
+      const from = curSt.data.status
+      if (target === 'cancelled') {
+        // 取消订单仅管理员（与权限矩阵取消语义一致）
+        const uRes = await db.collection('users').where({ openid: __oid }).limit(1).get()
+        if (!uRes.data.length || uRes.data[0].role !== 'admin') return { code: 2001, message: '取消订单仅限管理员' }
+        if (!event.reason && !event.cancel_reason) return { code: 1001, message: '取消订单必须填写原因' }
+      } else if (from === 'cancelled') {
+        return { code: 3002, message: '已取消订单不可变更状态' }
+      } else if (from === 'completed') {
+        return { code: 3002, message: '已完成订单不可变更状态' }
+      } else {
+        // 合法前向流：submitted→sorted→confirmed→completed（允许同态幂等）
+        const FLOW = { submitted: ['sorted'], sorted: ['confirmed'], confirmed: ['completed'] }
+        const allowed = (FLOW[from] || []).concat(from)
+        if (!allowed.includes(target)) return { code: 3002, message: '当前状态不允许此操作' }
+      }
+      const patch = { status: target }
+      if (target === 'cancelled') {
+        patch.cancelled_at = Date.now()
+        patch.cancel_reason = String(event.reason || event.cancel_reason || '').slice(0, 100)
+        patch.cancelled_by = __oid
+      }
+      await db.collection('orders').doc(event.orderId).update({ data: patch })
+      await appendLog(event.orderId, 'status', '状态变更 ' + from + ' → ' + target)
       return { code: 0, data: {} }
     }
     case 'delete': {
+      // T50-3：有已确认收款的订单禁止物理删除——删除会级联销毁收款轨迹，
+      // 客户应收凭空减少、收款台账蒸发，财务对账无法解释（资金红线，服务端拦截）。
+      // 注意：部分收款的订单 payment_status 仍为 pending，不能只看状态位，
+      // 必须查 payments 集合是否存在 status=confirmed 记录
+      const __curDel = await db.collection('orders').doc(event.orderId).get()
+      if (!__curDel.data) return { code: 4004, message: '订单不存在' }
+      let __hasConfirmedPay = false
+      try {
+        const __cp = await db.collection('payments').where({
+          orderId: event.orderId, status: 'confirmed'
+        }).limit(1).get()
+        __hasConfirmedPay = __cp.data.length > 0
+      } catch (e) {
+        // 查询失败保守处理：按"有已确认收款"拦截（宁可拒绝删除，不可销毁财务轨迹）
+        console.error('删除前查已确认收款失败，保守拦截', event.orderId, e && e.message)
+        __hasConfirmedPay = true
+      }
+      if (__hasConfirmedPay || __curDel.data.payment_status === 'paid' || __curDel.data.paymentStatus === 'paid') {
+        return { code: 3002, message: '该订单已有已确认收款，不可删除；请在赊销页核实收款记录' }
+      }
       await appendLog(event.orderId, 'delete', '删除订单')
       await db.collection('orders').doc(event.orderId).remove()
       // 级联清理该订单的收款记录（付款单），避免孤儿数据残留「待确认收款」工作台
+      // 注：pending 收款允许随单删除（尚未入账，received_amount 未累加，无财务影响）
       try {
         const pays = await db.collection('payments').where({
-          orderId: event.orderId
+          orderId: event.orderId, status: 'pending'
         }).get()
         await Promise.all(pays.data.map(p => db.collection('payments').doc(p._id).remove()))
       } catch (e) { console.error('清理订单收款记录失败', e) }

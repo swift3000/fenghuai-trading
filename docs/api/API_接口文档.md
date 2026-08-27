@@ -54,14 +54,14 @@ const res = await app.callFunction({
 | 15 | | create | 创建订单 |
 | 16 | | update-status | 更新订单状态（分拣完成/出库确认/完成/取消；驳回为二期遗留） |
 | 17 | | pick-stash | 配货暂存（二期规划·当前未启用） |
-| 18 | | collect | 收款登记（下单员/分拣员） |
-| 19 | | collect-confirm | 确认收款（库管） |
+| 18 | receivable | collect | 收款登记（第 1 步：下单员/分拣员，receivable 云函数） |
+| 19 | | confirmPayment | 确认收款（第 2 步：库管，receivable 云函数） |
 | 20 | | update-remark | 修改订单备注 |
 | 21 | | mark-printed | 标记已打印 |
 | 22 | users | users | 用户列表 |
 | 23 | | create | 新增用户 |
 | 24 | | update | 修改用户 |
-| 25 | receivable | receivable | 赊销（三栏：客户台账/未结清/已结清 + 收款确认；已收口径） |
+| 25 | | dashboard | 赊销三栏：客户台账/未结清/已结清（已收口径；另含 customerDetail/paymentHistory/pendingConfirm/exportReceivable） |
 | 26 | system | getAiConfig | 获取 AI 服务配置（腾讯云语音 + TokenHub NLP） |
 | 27 | | updateAiConfig | 更新 AI 服务配置（仅管理员） |
 | 28 | smart | match | 智能匹配（商品/客户模糊匹配） |
@@ -665,87 +665,67 @@ Array<{
 
 ### 6.7 收款登记（第 1 步：登记，1.0）
 
-- **云函数**：`orders` / `collect`
-- **最小权限**：orderer/sorter/admin（登记收款；1.0 放开分拣员）
+- **云函数**：`receivable` / `collect`
+- **最小权限**：orderer/sorter/admin（receivable:collect；1.0 放开分拣员，库管不可）
 - **说明**：下单员/分拣员登记收款（**以商家到账为准**），生成一条 `status=pending`（待确认）收款记录，订单 `payment_status=unpaid→pending`。一笔订单可多次登记（部分收款累计）；登记可选填**折价/货损金额（collect_discount）**记录实收与应付差额（如100元货品实收90元，折价10元）。
 
 #### 请求
 ```typescript
 {
   action: 'collect',
-  payload: {
-    id: string;
-    method?: 'cash' | 'wechat';  // 收款渠道（现金/微信，台账"现余/微信"拆分用；默认 cash）
-    collect_amount: number;    // 实收金额，≥ 0，以商家到账为准
-    collect_discount: number;  // 折价/货损金额，≥ 0，默认 0（可选）
-    collect_time: number;      // 收款时间（毫秒时间戳）
-  }
+  orderId: string;          // 订单 ID（必填）
+  amount: number;           // 实收金额（必填，> 0，以商家到账为准）
+  paymentMethod?: string;   // 收款渠道 cash/wechat（默认 cash）
+  note?: string;            // 备注
+  discount?: number;        // 折价/货损金额，≥ 0（需 receivable:discount 权限，否则 403）
+  clientToken?: string      // 幂等键：前端每次打开弹窗生成一个；双击/重试带同一 token 复用首次 pending 记录
 }
 ```
 
 | 入参 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| id | string | ✅ | 订单 ID |
-| method | 'cash'\|'wechat' | ❌ | 收款渠道（现金/微信，台账"现余/微信"拆分用；默认 `cash`） |
-| collect_amount | number | ✅ | 实收金额，≥ 0 |
-| collect_discount | number | ❌ | 折价/货损金额，≥ 0，默认 0 |
-| collect_time | number | ✅ | 收款时间（毫秒时间戳） |
+| orderId | string | ✅ | 订单 ID |
+| amount | number | ✅ | 实收金额，> 0；超过剩余欠款（订单金额−已收−已确认折价−pending 占额）返回 4002 |
+| paymentMethod | string | ❌ | 收款渠道（默认 `cash`） |
+| note | string | ❌ | 备注 |
+| discount | number | ❌ | 折价/货损金额，≥ 0（需 `receivable:discount` 权限） |
+| clientToken | string | ❌ | 幂等键（双击/网络重试防重复登记） |
 
 #### 返回 data
 ```typescript
-{
-  id: string;
-  payment: {
-    payment_id: string;
-    status: 'pending';                 // 待库管确认
-    amount: number;
-    discount: number;                  // 折价/货损金额，默认 0
-    registered_by: string;             // 登记人（服务端记录当前操作者）
-    registered_at: number;
-  };
-  payment_status: 'pending';
-  received_amount: number;
-  updated: true;
-}
+{ paymentId: string }                 // 新登记时
+{ paymentId: string, reused: true }   // 幂等命中（同一 clientToken 重复提交）
 ```
 
 > 登记人（registered_by）由服务端记录当前操作者，前端不可传。登记后需库管调 6.8 确认收款，收款流程才算完成。
 
 ### 6.8 确认收款（第 2 步：库管确认，1.0）
 
-- **云函数**：`orders` / `collect-confirm`
-- **最小权限**：warehouse/admin（确认收款，收款流程最后一步）
-- **说明**：库管对已登记（pending）的收款记录点【确认收款】→ 记录 `status=pending→confirmed`，订单 `payment_status=pending→paid`；支持按订单确认（传入 order_id 自动确认该订单全部 pending 记录）。
+- **云函数**：`receivable` / `confirmPayment`
+- **最小权限**：warehouse/admin（receivable:confirm，确认收款，收款流程最后一步）
+- **说明**：库管对已登记（pending）的收款记录点【确认收款】→ 记录 `status=pending→confirmed`（T50-2 条件更新防并发双记）；确认后服务端重算订单：`received_amount=Σ已确认实收`，结清则 `payment_status=paid`，否则保持 `pending`。传 paymentId 确认单笔；传 orderId 确认该订单最早一条 pending（逐笔确认，前端 pendingConfirm 列表驱动）。
 
 #### 请求
 ```typescript
 {
-  action: 'collect-confirm',
-  payload: {
-    id?: string;               // 订单 ID；确认该订单全部待确认收款记录
-    payment_id?: string;       // 或指定单条收款记录 ID（二选一）
-  }
+  action: 'confirmPayment',
+  paymentId?: string;      // 收款记录 ID（推荐；二选一）
+  orderId?: string         // 或订单 ID（确认该订单最早一条 pending；二选一）
 }
 ```
 
 | 入参 | 类型 | 必填 | 说明 |
 |---|---|---|---|
-| id | string | 二选一 | 订单 ID，确认该订单全部 pending 记录 |
-| payment_id | string | 二选一 | 单条收款记录 ID |
+| paymentId | string | 二选一 | 单条收款记录 ID（pendingConfirm 列表项） |
+| orderId | string | 二选一 | 订单 ID（确认最早一条 pending 记录） |
 
 #### 返回 data
 ```typescript
-{
-  payment_ids: string[];
-  payment_status: 'paid' | 'pending';   // 全部结清=paid；仍有剩余欠款=pending
-  received_amount: number;              // 累计实收（含本批确认）
-  total_discount: number;               // 累计折价/货损（已确认记录之和）
-  remaining_debt: number;               // 剩余欠款 = total_amount - received_amount - total_discount
-  confirmed_by: string;                 // 确认人（库管，服务端记录）
-  confirmed_at: number;
-  updated: true;
-}
+{ }                // 确认成功（空对象；订单金额/状态由服务端重算落库）
+{ reused: true }   // 幂等命中：该笔已被确认（含并发抢先场景）
 ```
+
+> 确认人/确认时间由服务端记录（confirmed_by/confirmed_at）。订单剩余欠款 = 订单金额 − 已确认实收 − 已确认折价，守恒由 dashboard/导出统一口径保证。
 
 ### 6.9 修改订单备注
 

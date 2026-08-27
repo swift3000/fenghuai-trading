@@ -51,6 +51,21 @@ async function buildExport(rows, baseName, opts) {
   return { format: 'csv', csvContent, filename: baseName + '.csv' }
 }
 
+// T50-1：全量分页拉取——服务端单次查询默认 limit=100（硬上限 1000），
+// 报表汇总（商品/客户/收款台账）必须拉全量，否则订单数 >100 后统计静默少算、报表失真
+// 批次固定 100：与 SDK 默认单批一致，保证单批不触发 1MB 响应上限（-602001）
+async function fetchAll(query) {
+  const size = 100
+  const all = []
+  for (let skip = 0; ; skip += size) {
+    const batch = await query.skip(skip).limit(size).get()
+    const data = (batch && batch.data) || []
+    all.push(...data)
+    if (data.length < size) break
+  }
+  return all
+}
+
 // 权限校验
 async function checkPermission(permission) {
   const { OPENID: __rawOID } = cloud.getWXContext()
@@ -98,18 +113,18 @@ async function getFilteredOrdersFull(timeTab, region, customStart, customEnd) {
   let query = db.collection('orders')
   if (conds.length === 1) query = query.where(conds[0])
   else if (conds.length > 1) query = query.where(db.command.and(conds))
-  const res = await query.orderBy('created_at', 'desc').get()
-  const orders = res.data
+  // T50-1：全量拉取（默认 100 截断会少算报表统计）
+  const orders = await fetchAll(query.orderBy('created_at', 'desc'))
   // 关联各订单的已确认收款，注入 o.payments 供 buildLedgerData 使用（收款存独立 payments 集合）
   const ids = orders.map(o => o._id).filter(Boolean)
   if (ids.length > 0) {
     try {
-      const payRes = await db.collection('payments').where({
+      const payRes = await fetchAll(db.collection('payments').where({ // T50-1：全量拉取
         orderId: db.command.in(ids),
         status: 'confirmed'
-      }).get()
+      }))
       const byOrder = {}
-      payRes.data.forEach(p => {
+      payRes.forEach(p => {
         if (!byOrder[p.orderId]) byOrder[p.orderId] = []
         byOrder[p.orderId].push(p)
       })
@@ -173,11 +188,11 @@ async function attachConfirmedPayments(orders) {
   if (ids.length === 0) return
   const confirmedByOrder = {}
   try {
-    const payRes = await db.collection('payments').where({
+    const payRes = await fetchAll(db.collection('payments').where({ // T50-1：全量拉取
       orderId: db.command.in(ids),
       status: 'confirmed'
-    }).get()
-    payRes.data.forEach(p => {
+    }))
+    payRes.forEach(p => {
       const oid = p.orderId || p.order_id
       if (!oid) return
       if (!confirmedByOrder[oid]) confirmedByOrder[oid] = { amount: 0, discountCents: 0 }
@@ -259,7 +274,7 @@ exports.main = async (event, context) => {
         let query = db.collection('orders')
         if (conds.length === 1) query = query.where(conds[0])
         else if (conds.length > 1) query = query.where(db.command.and(conds))
-        const mainOrders = (await query.get()).data
+        const mainOrders = await fetchAll(query) // T50-1：全量拉取
         const totalAmount = mainOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0)
         return { code: 0, data: { totalOrders: mainOrders.length, totalAmount: Math.round(totalAmount * 100) / 100 } }
       }
@@ -274,8 +289,7 @@ exports.main = async (event, context) => {
         if (conds.length === 1) query = query.where(conds[0])
         else if (conds.length > 1) query = query.where(db.command.and(conds))
         
-        const ordersResult = await query.get()
-        const orders = ordersResult.data
+        const orders = await fetchAll(query) // T50-1：全量拉取
         
         // 按商品聚合统计
         const productMap = {}
@@ -337,8 +351,7 @@ exports.main = async (event, context) => {
         if (conds.length === 1) query = query.where(conds[0])
         else if (conds.length > 1) query = query.where(db.command.and(conds))
         
-        const ordersResult = await query.get()
-        const orders = ordersResult.data
+        const orders = await fetchAll(query) // T50-1：全量拉取
         
         // 对齐原型/赊销口径：已收 = 实收 + 已确认折价（守恒）
         await attachConfirmedPayments(orders)
@@ -394,8 +407,7 @@ exports.main = async (event, context) => {
           query = query.where(dateFilter)
         }
         
-        const paymentsResult = await query.orderBy('created_at', 'desc').get()
-        let payments = paymentsResult.data
+        let payments = await fetchAll(query.orderBy('created_at', 'desc')) // T50-1：全量拉取
         // 区域过滤（收款记录需回查订单区域）
         if (region) {
           const filtered = []
