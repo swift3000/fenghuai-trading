@@ -4,6 +4,8 @@
     <view wx:if="{{canOut}}" class="tab {{subTab==='out'?'active':''}}" data-tab="out" bindtap="switchSub"><text>📦 出库</text></view>
   </view>
   <view wx:if="{{subTab==='sort'}}">
+    <!-- T53（graph测试 V-4/D-1）：接线已备但从未引用的 loading 状态位 -->
+    <view class="out-empty" wx:if="{{loading}}">加载中...</view>
     <!-- 分拣子区 tabs（对齐原型：待分拣/已分拣 badge） -->
     <view class="out-subtabs">
       <view class="out-subtab {{sortTab==='pending'?'active':''}}" data-tab="pending" bindtap="switchSortTab">待分拣 <text class="wh-badge">{{pendingSort.length}}</text></view>
@@ -76,7 +78,8 @@
 
     <view class="wh-toolbar" wx:if="{{outTab==='pending'}}">
       <button class="btn-all-confirm" bindtap="handleAllOut">✅ 全部确认</button>
-      <button class="btn-auto" bindtap="simulateAutoConfirm">⏰ 模拟16:00通过</button>
+      <!-- T53（graph测试 V-5/D-2）：「模拟16:00通过」为原型演示辅助残留文案，实际=立即执行定时确认（真生效），改名防生产误导 -->
+      <button class="btn-auto" bindtap="simulateAutoConfirm">⏰ 立即执行定时确认</button>
     </view>
 
     <block wx:for="{{outTab==='pending' ? pendingOut : doneOut}}" wx:key="_id">

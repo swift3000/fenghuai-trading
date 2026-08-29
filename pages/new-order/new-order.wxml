@@ -2,7 +2,8 @@
   <view class="customer-bar card" bindtap="selectCustomer">
     <view class="customer-bar-info">
       <text class="customer-bar-name">{{customer ? customer.name : '请选择客户'}}</text>
-      <text class="customer-bar-region">{{customer ? (customer.region || '选择客户') : '点击选择客户'}}</text>
+      <!-- T53（graph测试 V-6/D-3）：未选态副文对齐原型「点击选择客户信息」；已选态显示 region 为合理增强保留 -->
+      <text class="customer-bar-region">{{customer ? (customer.region || '点击选择客户信息') : '点击选择客户信息'}}</text>
     </view>
     <text class="customer-bar-arrow">›</text>
   </view>

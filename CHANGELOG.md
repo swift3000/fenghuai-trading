@@ -4,6 +4,30 @@
 
 格式基于 [Conventional Changelog](https://www.conventionalcommits.org/)。
 
+## [1.7.0] - 2026-08-30
+
+### Fixed (T53: graph测试 4 路全角度测试 + 独立验证 + 修复)
+
+**P1 状态机穿透（B-3/V-1，已独立复现）**
+- orders 云函数 confirmSort/confirmOut 补终态守卫：已取消/已完成订单被 3002 拒绝（单条+批量模式），堵住"已取消订单经 confirmSort/confirmOut 双通道复活进入出库流"的穿透（原仅 update-status 有守卫）
+
+**P2 修复（独立复现确认）**
+- confirmOut 幂等守卫（B-2/V-2）：已出库订单重复 confirmOut 不再静默覆盖 ship 件数，返回 alreadyOutbound+当前件数（防库单导出被污染）
+- 3 个列表页补加载态指示（D-1/V-4）：orders 补 loading 位+wx:if 指示；reports/outbound 接线已存在但 wxml 从未引用的 loading 死状态位
+- 日志脱敏（C-4/V-9）：auth 云函数 openid 截断前 6 位、inviteCode 不打印（PII/邀请码不进云函数日志）
+- CI 供应链加固（C-1/V-7）：actions/checkout 与 actions/setup-node 从可变 tag @v4 pin 到 commit SHA
+- outbound「⏰ 模拟16:00通过」改名「⏰ 立即执行定时确认」（D-2/V-5，原型演示辅助残留文案，功能=真实立即执行）
+- new-order 未选客户副文对齐原型「点击选择客户信息」（D-3/V-6）
+
+**测试基建**
+- 新增 tests/order-state-guard-test.js（T53 防回归，12 断言：合法流不误伤/cancelled 双通道拒绝/重复出库幂等+件数守恒，纯 node-sdk 不占模拟器），挂 test-all 第 7 步（全量 11→12 步）
+- 误报关闭 1 项：init-database/init-db-auto execSync 变量参数（参数源=脚本内硬编码常量，无用户输入通路）
+- 观察项 2 项（偶发未复现，不立卡）：deepwalk tab 切回、pagewalk members 截图 bytes=-1（重跑均绿）
+
+**未修·待用户拍板（人工关卡）**
+- B-1/V-3（P2）折价 pending 窗口台账口径：collect 登记折价后未 confirm 期间，客户台账"已收"不含该笔待确认折价/实收（窗口内显示全额未结清）。当前口径守恒不破（应收=已收+未结清恒成立），但财务看板窗口期内偏保守。方案 A=台账"已收"含 pending 部分并标注"含待确认"；方案 B=维持现状加 pending 提示行。涉及财务展示语义，待用户定
+
+## [1.6.9] - 2026-08-27
 ## [1.6.9] - 2026-08-27
 
 ### Removed (T52 P3-1: regions 集合历史脏数据清除，用户拍板)

@@ -29,19 +29,22 @@ node tests/qa-toggle.js on
 echo "==> [6/11] 多角色云端 403 拦截 + 开关即时生效（wx-role-sim）"
 node tests/wx-role-sim-test.js
 
-echo "==> [7/11] 全业务流程 E2E（wx-e2e-flow）"
+echo "==> [7/12] 状态机终态守卫回归（order-state-guard，T53：已取消不可分拣/出库 + 重复出库幂等不覆盖）"
+node tests/order-state-guard-test.js
+
+echo "==> [8/12] 全业务流程 E2E（wx-e2e-flow）"
 node tests/wx-e2e-flow-test.js
 
-echo "==> [8/11] 会员/权限管理（wx-member-mgmt）"
+echo "==> [9/12] 会员/权限管理（wx-member-mgmt）"
 node tests/wx-member-mgmt-test.js
 
-echo "==> [9/11] 幂等专项验收（wx-empirical-idem：双击不重复登记/重复确认不重复入账）"
+echo "==> [10/12] 幂等专项验收（wx-empirical-idem：双击不重复登记/重复确认不重复入账）"
 node tests/wx-empirical-idem-test.js
 
-echo "==> [10/11] 关闭 QA 身份钩子（恢复生产安全态，约 3-4 分钟）"
+echo "==> [11/12] 关闭 QA 身份钩子（恢复生产安全态，约 3-4 分钟）"
 node tests/qa-toggle.js off
 
-echo "==> [11/11] 收尾门禁：QA 残留校验（任一函数 QA_IMPERSONATE 非空或查询异常即失败）"
+echo "==> [12/12] 收尾门禁：QA 残留校验（任一函数 QA_IMPERSONATE 非空或查询异常即失败）"
 : > /tmp/qa-residue-check.log
 node tests/qa-toggle.js status > /tmp/qa-residue-check.log 2>&1 || true
 RESIDUE=$(grep -acE 'QA_IMPERSONATE=[^;[:space:]]' /tmp/qa-residue-check.log || true)
