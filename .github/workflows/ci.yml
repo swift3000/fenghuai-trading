@@ -24,6 +24,15 @@ jobs:
             if ! node --check "$f"; then echo "❌ 语法错误: $f"; fail=1; fi
           done
           exit $fail
+      # T53 补漏：前端页面 JS 语法检查（graph 复扫发现 receivable.js 语法错误漏网——
+      # 页面 JS 语法错会导致该页 JS 不执行、实例方法全丢，UI 走查报 NOMETHOD）
+      - name: 前端页面语法检查
+        run: |
+          fail=0
+          for f in pages/*/*.js utils/*.js app.js; do
+            if ! node --check "$f" 2>/dev/null; then echo "❌ 语法错误: $f"; fail=1; fi
+          done
+          exit $fail
       - name: 权限矩阵一致性（check:perms）
         run: npm run check:perms
       - name: 基础自动化测试
