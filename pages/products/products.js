@@ -1,5 +1,5 @@
 const { guardPageLoad } = require('../../utils/router-guard')
-const { callCloud, callCloudRaw } = require('../../utils/request')
+const { callCloud } = require('../../utils/request')
 
 // 默认商品数据（180 个）
 const DEFAULT_PRODUCTS = [
@@ -185,7 +185,6 @@ Page({
     canEdit: false,
   isAdmin: false,
     showForm: false,
-    showImportDialog: false,
     showPriceModal: false,
     priceItem: null,
     priceMode: 'case',
@@ -193,9 +192,6 @@ Page({
     savingPrice: false,
     editingProduct: null,
     saving: false,
-    importing: false,
-    importOverride: true,
-    defaultProductsCount: DEFAULT_PRODUCTS.length,
     formData: {
       name: '',
       materialCode: '',
@@ -528,57 +524,6 @@ const perms = (app.globalData.userInfo && app.globalData.userInfo.permissions) |
     this.setData({ [`formData.isAdjustable`]: e.detail.value })
   },
 
-  // 导入相关方法
-  showImportDialog() {
-    this.setData({ showImportDialog: true })
-  },
-
-  hideImportDialog() {
-    this.setData({ showImportDialog: false })
-  },
-
-  toggleOverride(e) {
-    this.setData({
-      importOverride: !this.data.importOverride
-    })
-  },
-
-  async confirmImport() {
-    const { importOverride } = this.data
-    const defaultProducts = DEFAULT_PRODUCTS
-    this.setData({ importing: true })
-
-    try {
-      wx.showLoading({ title: '正在导入商品数据...', mask: true })
-
-      const result = await callCloudRaw('import-data', {
-        action: 'import-products',
-        override: importOverride
-      })
-
-      wx.hideLoading()
-
-      if (result.success) {
-        wx.showModal({
-          title: '导入完成',
-          content: `成功导入 ${result.successCount} 个商品，失败 ${result.failCount} 个`,
-          showCancel: false,
-          success: () => {
-            this.hideImportDialog()
-            this.loadProducts()
-          }
-        })
-      } else {
-        wx.showToast({ title: '导入失败', icon: 'none' })
-      }
-    } catch (err) {
-      wx.hideLoading()
-      wx.showToast({ title: '导入出错', icon: 'none' })
-      console.error(err)
-    } finally {
-      this.setData({ importing: false })
-    }
-  },
   onFontScaleChange(scale) {
     uiStyle.applyUiStyle(this)
   }

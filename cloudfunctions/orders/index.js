@@ -313,8 +313,9 @@ exports.main = async (event, context) => {
         }
       }
       // T51-2：订单总额以服务端重算为准（明细行金额服务端重算后求和），前端 totalAmount 仅作 0 元快速拦截参考
-      const __clientTotal = Number(event.totalAmount) || 0
-      if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
+      // T59-R7B-3（P2）：原实现在服务端重算前用前端 totalAmount 做 0 元快速拦截——前端口径漂移（半分钱归整差异等）
+      // 会把合法订单（行金额>0 但前端 totalAmount=0）误拒 2001。下方 itemsSum<=0 的服务端重算拦截已完整覆盖
+      // 0 元红线，0 元/空单拦截口径单点收拢在服务端重算处，不再信任前端 totalAmount。
 
       // 归一化 items：补齐 qty/price/amount 展示字段（兼容详情/送货单/报表），保留件包双轨字段
       const normalizedItems = (items || []).map(it => {
@@ -484,9 +485,8 @@ exports.main = async (event, context) => {
         }
       }
       // T51-2：同 create——总额服务端重算，前端 totalAmount 仅 0 元快速拦截参考
-      const __clientTotal = Number(event.totalAmount) || 0
       if (!orderId) return { code: 2002, message: '缺少订单 ID' }
-      if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
+      // T59-R7B-3（P2）：同 create——移除对前端 totalAmount 的 0 元拦截，口径单点收拢在服务端重算处
       // T57-RB-1（P1 状态机收口，对齐 T53）：仅「待分拣 submitted」订单可编辑。
       // 原实现无状态守卫且 patch 硬写 status:'submitted'/sortStatus:'pending'/outStatus:'pending'：
       // 已分拣/已出库/已收款单可被编辑后重置回待分拣（二次出库敞口），已取消单可"复活"。
