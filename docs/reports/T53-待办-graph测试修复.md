@@ -35,4 +35,7 @@
 - 安全流：SAST 无 P0/P1，T53 C-1/C-4 修复确认生效，403 矩阵 28/28，权限矩阵三处一致
 - UI 流：T53 七个 UI 修复点全部确认生效，原型对齐 7/7，边界四态全过，170 按钮 0 死按钮
 - 复扫新发现并已修：SD-1（orders.js 补 completed→已完成 状态映射，原缺失致 completed 订单回退显示"待分拣"）
-- 复扫新登记低危（不阻塞，建卡）：SC-1（console.error 字符串拼接日志伪造面 ×7，P2）/SC-2（本地 init 脚本 execSync 变量，P3 信息）/SB-1（云函数冷启动 P95 尖峰，预热后达标，观察项）
+- 复扫低危项**已全部处理**（用户拍板，2026-08-30）：
+  - SC-1：console.error 字符串拼接日志伪造面 ×8（含复扫漏网的 migrate-repoint-orphan-orders.cjs:43）全部改参数分列，semgrep 复扫 unsafe-formatstring 清零
+  - SC-2：本地 init 脚本 execSync 加"命令源=硬编码常量、无输入通路"白名单标注（P3 保留观察，SAST 2 条 detect-child-process 属预期）
+  - SB-1：观察项归档——冷启动首轮 P95 约 2.3s，预热后 350-1750ms 全达标；量大后可评估预留实例，不立卡

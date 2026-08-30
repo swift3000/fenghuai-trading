@@ -316,3 +316,7 @@
 | Fixed | 问题修复 |
 | Removed | 移除功能 |
 | Deprecated | 即将废弃 |
+**二轮 graph 复扫低危项处理（用户拍板，SC-1/SC-2/SB-1）**
+- SC-1：8 处 console.error/log 字符串拼接改参数分列（orders:736/report:422/automated-import×2/fix-db-data/import-all-data×2/migrate-repoint:43），semgrep 复扫 unsafe-formatstring 清零
+- SC-2：init-database.js 与 init-db-auto.js 的 execSync 加命令来源白名单标注（本地初始化脚本，无用户/网络输入通路）
+- SB-1：云函数冷启动 P95 尖峰记为观察项（预热后 350-1750ms 达标，数据量增长后可评估预留实例）

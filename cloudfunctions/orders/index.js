@@ -733,7 +733,8 @@ exports.main = async (event, context) => {
           }
         } catch (e) {
           // 客户信息拉取失败不阻断打印（降级=无客户富集字段），但留痕防静默（T11 P2-1）
-          console.error('[print] 拉取客户信息失败, customerId=' + o.customerId, e && e.message)
+          // SC-1：参数分列不拼格式串（防日志伪造面）
+          console.error('[print] 拉取客户信息失败', 'customerId=', o.customerId, e && e.message)
         }
         try {
           // T51-1：全量拉取（客户未结清订单超 100 会少算打印单欠款）；分位累加防浮点误差

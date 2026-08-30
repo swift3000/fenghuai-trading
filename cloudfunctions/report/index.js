@@ -419,7 +419,8 @@ exports.main = async (event, context) => {
               if (oRes.data && oRes.data.customerRegion === region) filtered.push(pay)
             } catch (e) {
               // 订单查询失败→该笔不计入区域过滤结果（降级），留痕防静默（T11 P2-1）
-              console.error('[report] 区域过滤查单失败, orderId=' + (pay.orderId || pay.order_id), e && e.message)
+              // SC-1：参数分列不拼格式串（防日志伪造面）
+              console.error('[report] 区域过滤查单失败', 'orderId=', (pay.orderId || pay.order_id), e && e.message)
             }
           }
           payments = filtered
@@ -641,4 +642,3 @@ function todayTxt() {
   const d = bjNow()
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 }
-

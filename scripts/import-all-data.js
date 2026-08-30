@@ -94,7 +94,8 @@ async function importCustomers() {
         console.log(`已导入 ${successCount} 个客户...`)
       }
     } catch (err) {
-      console.error(`导入客户 ${c.name} 失败:`, err.message)
+      // SC-1：参数分列不拼格式串
+      console.error('导入客户失败:', c.name, err.message)
       failCount++
     }
   }
@@ -158,7 +159,8 @@ async function importProducts() {
         console.log(`已导入 ${successCount} 个商品...`)
       }
     } catch (err) {
-      console.error(`导入商品 ${p.name} 失败:`, err.message)
+      // SC-1：参数分列不拼格式串
+      console.error('导入商品失败:', p.name, err.message)
       failCount++
     }
   }

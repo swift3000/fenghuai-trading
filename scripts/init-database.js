@@ -56,6 +56,8 @@ const SYSTEM_CONFIG_DATA = {
  */
 function execCommand(command) {
   try {
+    // SC-2：command 由本脚本内硬编码常量拼装（无用户/网络输入通路），仅本地初始化用；
+    // 若未来接入外部输入必须先做白名单校验
     const output = execSync(command, { encoding: 'utf-8', stdio: 'pipe' });
     return output;
   } catch (error) {

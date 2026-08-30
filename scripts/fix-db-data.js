@@ -100,7 +100,8 @@ async function fixData() {
       })
       customerSuccess++
     } catch (err) {
-      console.error(`   导入客户 ${c.name} 失败:`, err.message)
+      // SC-1：参数分列不拼格式串
+      console.error('   导入客户失败:', c.name, err.message)
       customerFail++
     }
   }
