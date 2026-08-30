@@ -6,7 +6,7 @@
 
 ## [1.7.0] - 2026-08-30
 
-### Fixed (T53: graph测试 4 路全角度测试 + 独立验证 + 修复)
+### Fixed (T53: graph测试 4 路全角度测试 + 独立验证 + 修复，含 B-1 口径方案 A)
 
 **P1 状态机穿透（B-3/V-1，已独立复现）**
 - orders 云函数 confirmSort/confirmOut 补终态守卫：已取消/已完成订单被 3002 拒绝（单条+批量模式），堵住"已取消订单经 confirmSort/confirmOut 双通道复活进入出库流"的穿透（原仅 update-status 有守卫）
@@ -24,8 +24,10 @@
 - 误报关闭 1 项：init-database/init-db-auto execSync 变量参数（参数源=脚本内硬编码常量，无用户输入通路）
 - 观察项 2 项（偶发未复现，不立卡）：deepwalk tab 切回、pagewalk members 截图 bytes=-1（重跑均绿）
 
-**未修·待用户拍板（人工关卡）**
-- B-1/V-3（P2）折价 pending 窗口台账口径：collect 登记折价后未 confirm 期间，客户台账"已收"不含该笔待确认折价/实收（窗口内显示全额未结清）。当前口径守恒不破（应收=已收+未结清恒成立），但财务看板窗口期内偏保守。方案 A=台账"已收"含 pending 部分并标注"含待确认"；方案 B=维持现状加 pending 提示行。涉及财务展示语义，待用户定
+**B-1/V-3 折价 pending 窗口台账口径（方案 A，用户拍板）**
+- receivable dashboard/customerDetail：已收口径扩展为 实收+已确认折价+待确认实收+待确认折价；新增 totalPendingAmount/pendingAmount 字段
+- 前端标注：hero"已收·含待确认"、客户卡"已收·待确认"、客户详情弹窗"（含待确认¥X）"
+- 守恒不破：应收=已收+未结清恒成立（实测 102.5=100 含待确认+2.5，确认后 pendingAmount 归 0）
 
 ## [1.6.9] - 2026-08-27
 ## [1.6.9] - 2026-08-27

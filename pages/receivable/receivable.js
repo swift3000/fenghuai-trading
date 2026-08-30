@@ -175,7 +175,9 @@ Page({
     const item = e.currentTarget.dataset.item
     wx.showModal({
       title: item.name,
-      content: `联系人：${item.contact || '-'}\n区域：${item.region || '-'}\n订单数：${item.orderCount}单\n应收：¥${item.totalAmount}\n已收：¥${item.paidAmount}\n欠款：¥${item.unpaidAmount}`,
+      // T53-B1（方案A）：已收含待确认部分，>0 时标注
+      const __pendNote = Number(item.pendingAmount) > 0 ? '（含待确认¥' + item.pendingAmount + '）' : ''
+      content: `联系人：${item.contact || '-'}\n区域：${item.region || '-'}\n订单数：${item.orderCount}单\n应收：¥${item.totalAmount}\n已收：¥${item.paidAmount}${__pendNote}\n欠款：¥${item.unpaidAmount}`,
       showCancel: false
     })
   },
