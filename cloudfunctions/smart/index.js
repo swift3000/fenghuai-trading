@@ -335,7 +335,7 @@ function parseMultiProductText(text, products) {
   const qtyPhrases = []
   QTY_PHRASE_RE.lastIndex = 0
   let m
-  while ((m = QTY_PHRASE_RE.exec(text)) !== null) qtyPhrases.push({ pos: m.index, len: m[0].length, qty: cnNumToInt(m[1]) || 1, used: false })
+  while ((m = QTY_PHRASE_RE.exec(text)) !== null) qtyPhrases.push({ pos: m.index, len: m[0].length, qty: cnNumToInt(m[1]) || 1, unit: (m[2] || '').trim() || '包', used: false })
   // 3) 商品后优先、距离就近的贪心配对
   const pairs = []
   for (const o of occ) {
@@ -350,15 +350,15 @@ function parseMultiProductText(text, products) {
       else score = 999 // 重叠，视为不属于该商品
       if (score < bestScore) { best = qp; bestScore = score }
     }
-    if (best && bestScore <= 10) { best.used = true; pairs.push({ occ: o, qty: best.qty }) }
+    if (best && bestScore <= 10) { best.used = true; pairs.push({ occ: o, qty: best.qty, unit: best.unit || '包' }) }
   }
-  for (const o of occ) { if (!pairs.some(p => p.occ === o)) pairs.push({ occ: o, qty: 1 }) }
+  for (const o of occ) { if (!pairs.some(p => p.occ === o)) pairs.push({ occ: o, qty: 1, unit: '包' }) }
   // 4) 去重输出
   for (const pr of pairs) {
     const pp = pr.occ.pp
     if (seen[pp._id]) continue
     seen[pp._id] = true
-    items.push({ _id: pp._id, name: pp.name, spec: pp.spec || '', price: pp.price_piece || 0, qty: pr.qty })
+    items.push({ _id: pp._id, name: pp.name, spec: pp.spec || '', price: pp.price_piece || 0, qty: pr.qty, unit: pr.unit || '包' })
   }
   return items
 }
@@ -400,7 +400,10 @@ function parseOrderText(text, products) {
         name: product.name,
         spec: product.spec || '',
         price: product.price_piece || 0,
-        qty: qty
+        qty: qty,
+        // T56：带回用户量词单位（"2件"→件），前端据此记 piece_qty/package_qty；
+        // 缺 unit 会回落商品默认单位，把"件"错记成"包"，金额差 30 倍（老酸奶 件45/包1.5）
+        unit: unit || '包'
       })
     }
   }
@@ -561,6 +564,25 @@ function buildItems(arr, products) {
   return items
 }
 
+// T56（SA-1 丢价）：规则引擎（parseOrderText/parseMultiProductText）返回项仅含
+// {_id,name,spec,price,qty}，缺 material_code/pricing_mode/price_unit/unit；前端 parseOnline
+// 靠 if(it.material_code) 判"已匹配商品"，规则命中项无该字段→落"未匹配自由项"分支 price 置 0→
+// 总额 0→建单被拦。此处按 _id 回查商品库补齐字段，与 AI 路径 buildItems 同口径（纯增，不覆盖已有字段）。
+function normalizeRuleItems(items, products) {
+  const byId = {}
+  for (const pp of products || []) if (pp && pp._id) byId[pp._id] = pp
+  return (items || []).map(it => {
+    const pp = it._id ? byId[it._id] : null
+    if (!pp) return it
+    return Object.assign({}, it, {
+      material_code: it.material_code != null ? it.material_code : (pp.material_code || ''),
+      pricing_mode: it.pricing_mode != null ? it.pricing_mode : (pp.pricing_mode || 'case'),
+      price_unit: it.price_unit != null ? it.price_unit : (pp.price_unit != null ? pp.price_unit : 0),
+      unit: it.unit != null ? it.unit : (pp.unit || '包')
+    })
+  })
+}
+
 // T51-1：全量分页拉取（服务端单次查询默认 limit=100；智能匹配必须全量候选，
 // 否则第 100 条之后的商品/客户永远匹配不到）
 async function fetchAll(query) {
@@ -649,8 +671,9 @@ exports.main = async (event, context) => {
       }
       
       const items = parseOrderText(text, products)
-      
-      return { code: 0, data: { items } }
+
+      // T56：规则引擎项补齐 material_code 等字段（否则前端丢价）
+      return { code: 0, data: { items: normalizeRuleItems(items, products) } }
     }
 
     case 'parseWithAI': {
@@ -679,7 +702,7 @@ exports.main = async (event, context) => {
 
       // 3. 规则已命中所有行则直接用；有未命中且配了引擎则走 AI
       if (ruleItems.length > 0) {
-        return { code: 0, data: { items: ruleItems, engine: 'rule' } }
+        return { code: 0, data: { items: normalizeRuleItems(ruleItems, products), engine: 'rule' } }
       }
 
       for (const eng of engines) {
@@ -700,7 +723,7 @@ exports.main = async (event, context) => {
         }
       }
 
-      return { code: 0, data: { items: ruleItems, engine: 'rule' } }
+      return { code: 0, data: { items: normalizeRuleItems(ruleItems, products), engine: 'rule' } }
     }
     
     default:
@@ -715,5 +738,6 @@ exports.extractQuantity = extractQuantity
 exports.extractProductName = extractProductName
 exports.parseOrderText = parseOrderText
 exports.parseMultiProductText = parseMultiProductText
+exports.normalizeRuleItems = normalizeRuleItems
 exports.cnNumToInt = cnNumToInt
 exports.normalizeHomophones = normalizeHomophones

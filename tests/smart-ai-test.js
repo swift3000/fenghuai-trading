@@ -74,6 +74,19 @@ async function loadSmartRun() {
     assert.strictEqual(r.calls.length, 0, '规则命中不应调 AI')
   })
 
+  // T56 防回归（SA-1 丢价）：规则引擎命中项必须带回 material_code + 量词单位，
+  // 否则前端 parseOnline 落到"未匹配自由项"分支 price 置 0 / 单位回落"包"，金额算错。
+  await test('T56: 规则命中项带回 material_code + 量词单位（件）', async () => {
+    const r = await run({ action: 'parseWithAI', text: '乐事薯片 2件', ai: {} })
+    assert.strictEqual(r.res.data.engine, 'rule', '应使用规则引擎')
+    const it = r.res.data.items && r.res.data.items[0]
+    assert.ok(it, '应有命中项')
+    assert.strictEqual(it.material_code, '001', '规则命中项必须带 material_code（前端据此识别库内商品）')
+    assert.ok(it.unit, '规则命中项必须带量词单位（前端据此记 piece/package）')
+    assert.strictEqual(it.price, 45, '件价应随项带回')
+    assert.strictEqual(it.pricing_mode, 'case', 'pricing_mode 应带回')
+  })
+
   // 2. 规则未命中 + 配中转站 -> 调用中转站并 AI 兜底
   await test('规则未命中 + 配中转站 -> 调用中转站并 AI 兜底', async () => {
     const r = await run({
