@@ -81,6 +81,10 @@ exports.main = async (event, context) => {
     if (user.role !== 'admin') {
       return { code: 403, message: '只有管理员可以访问' }
     }
+    // T55-SC-5：与业务侧 checkPermission 口径统一——禁用账号（status 非 active）一律拒绝
+    if (user.status && user.status !== 'active') {
+      return { code: 403, message: '账号已被禁用' }
+    }
     return { code: 0, user }
   }
 

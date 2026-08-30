@@ -364,8 +364,14 @@ exports.main = async (event, context) => {
         if (__d.code !== 0) return { code: 403, message: '无折价/减免权限' }
       }
       
-      if (!orderId || !amount || amount <= 0) {
+      // T55-SC-7（graph二轮安全流）：amount 非数字（如 'abc'）原先落入 ||0 按 0 元处理，
+      // 语义模糊。现显式校验：缺参→4001（原口径），非数字/负数/0→1001（参数错误，API 文档 §1.4）。
+      if (!orderId || amount == null || amount === '') {
         return { code: 4001, message: '订单 ID 和收款金额为必填' }
+      }
+      const __amtNum = Number(amount)
+      if (isNaN(__amtNum) || __amtNum <= 0) {
+        return { code: 1001, message: '收款金额必须为大于 0 的数字' }
       }
       
       const orderRes = await db.collection('orders').doc(orderId).get()

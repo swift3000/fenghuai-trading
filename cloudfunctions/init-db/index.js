@@ -1,7 +1,22 @@
 const cloud = require('wx-server-sdk');scloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
- const db = cloud.database();
+const db = cloud.database();
+
+// T55-SC-4（P2，graph二轮安全流）：本函数原生产态无鉴权，可建集合/写测试数据。
+// 属本地一次性初始化工具，补管理员门禁（口径同 clear-all-data）。
+async function checkAdmin() {
+  const { OPENID } = cloud.getWXContext()
+  if (!OPENID) return { code: 401, message: '未登录' }
+  const res = await db.collection('users').where({ openid: OPENID }).limit(1).get()
+  const user = res.data && res.data[0]
+  if (!user || user.role !== 'admin') return { code: 403, message: '只有管理员可以访问' }
+  if (user.status && user.status !== 'active') return { code: 403, message: '账号已被禁用' }
+  return { code: 0 }
+}
 
 exports.main = async (event, context) => {
+  const gate = await checkAdmin()
+  if (gate.code !== 0) return gate
+
   const collections = ['users', 'orders', 'products', 'customers', 'receivable'];
   const results = [];
   

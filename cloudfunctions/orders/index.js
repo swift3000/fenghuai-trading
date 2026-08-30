@@ -254,6 +254,18 @@ exports.main = async (event, context) => {
   switch (action) {
     case 'create': {
       const { customerId, customerName, items, customerRegion } = event
+      // T55-SC-6（graph二轮安全流）：行级负单价拦截。原实现 price_piece||0 会把负价静默归 0，
+      // 负价行混正价行可压低订单总额/应收（金额红线）。参数错误统一 1001（API 文档 §1.4）。
+      if (Array.isArray(items)) {
+        for (const it of items) {
+          for (const k of ['price_piece', 'price_unit', 'price_zero', 'price']) {
+            const v = Number(it[k])
+            if (it[k] != null && it[k] !== '' && (isNaN(v) || v < 0)) {
+              return { code: 1001, message: '商品单价不能为负数或非法数值' }
+            }
+          }
+        }
+      }
       // T51-2：订单总额以服务端重算为准（明细行金额服务端重算后求和），前端 totalAmount 仅作 0 元快速拦截参考
       const __clientTotal = Number(event.totalAmount) || 0
       if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
@@ -403,6 +415,17 @@ exports.main = async (event, context) => {
     }
     case 'update': {
       const { orderId, items, customerName, customerRegion } = event
+      // T55-SC-6：同 create——行级负单价拦截（编辑订单不得写入负价行）
+      if (Array.isArray(items)) {
+        for (const it of items) {
+          for (const k of ['price_piece', 'price_unit', 'price_zero', 'price']) {
+            const v = Number(it[k])
+            if (it[k] != null && it[k] !== '' && (isNaN(v) || v < 0)) {
+              return { code: 1001, message: '商品单价不能为负数或非法数值' }
+            }
+          }
+        }
+      }
       // T51-2：同 create——总额服务端重算，前端 totalAmount 仅 0 元快速拦截参考
       const __clientTotal = Number(event.totalAmount) || 0
       if (!orderId) return { code: 2002, message: '缺少订单 ID' }

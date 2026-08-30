@@ -71,6 +71,10 @@ exports.main = async (event, context) => {
     if (!user || user.role !== 'admin') {
       return false
     }
+    // T55-SC-5：与业务侧 checkPermission 口径统一——禁用账号（status 非 active）一律拒绝
+    if (user.status && user.status !== 'active') {
+      return false
+    }
     return true
   }
 
