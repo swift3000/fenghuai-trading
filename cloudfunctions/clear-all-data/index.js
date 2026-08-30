@@ -22,8 +22,11 @@ exports.main = async (event, context) => {
   if (gate.code !== 0) return gate
 
   try {
-    // 清除所有集合数据
-    const collections = ['customers', 'products', 'orders', 'receivable', 'outbound', 'members']
+    // 清除所有业务数据集合
+    // T58-R6（graph第6轮）：原清单错误——receivable/outbound/members 是云函数名非集合名（remove 会静默失败），
+    // 且漏了真实的收款流水集合 payments（清库后残留孤儿收款，对账/赊销页脏数据）+ auto_confirm_log。
+    // 只清业务数据，不动 users/system_config（身份与配置）。
+    const collections = ['customers', 'products', 'orders', 'payments', 'auto_confirm_log']
     const results = []
     
     for (const col of collections) {
