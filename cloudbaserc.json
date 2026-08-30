@@ -126,6 +126,22 @@
         "QA_IMPERSONATE": "",
         "TZ": "Asia/Shanghai"
       }
+    },
+    {
+      "name": "clear-all-data",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
+    },
+    {
+      "name": "init-db",
+      "runtime": "Nodejs20.19",
+      "timeout": 30,
+      "envVariables": {
+        "TZ": "Asia/Shanghai"
+      }
     }
   ]
 }
