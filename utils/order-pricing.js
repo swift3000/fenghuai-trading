@@ -25,7 +25,10 @@ function calcItemAmount(it) {
 }
 
 function calcOrderAmount(items) {
-  return (items || []).reduce((sum, it) => sum + calcItemAmount(it), 0)
+  // T57-RB-7：分位整数累加后还原元——原 float 直加（0.1+0.2 型）会与
+  // 服务端分位取整口径差 1 分（如 132.50 vs 132.51），导致前端总额与服务端重算不一致
+  const cents = (items || []).reduce((sum, it) => sum + Math.round(calcItemAmount(it) * 100), 0)
+  return Math.round(cents) / 100
 }
 
 // 数量合并展示（同商品 1 行）：2件+10包 / 2件 / 10包
