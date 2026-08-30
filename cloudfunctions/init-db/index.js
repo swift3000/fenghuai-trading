@@ -1,4 +1,5 @@
-const cloud = require('wx-server-sdk');scloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+const cloud = require('wx-server-sdk');
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
 // T55-SC-4（P2，graph二轮安全流）：本函数原生产态无鉴权，可建集合/写测试数据。
