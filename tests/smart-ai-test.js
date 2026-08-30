@@ -127,6 +127,38 @@ async function loadSmartRun() {
     assert.strictEqual(r.res.data.engine, 'rule', '引擎全失败应回落规则引擎')
   })
 
+  // ===== T57 防回归：RA-1（0件不再被兜底成1件）/ RA-3（数量上限9999） =====
+  const smartPure = require(path.join(__dirname, '..', 'cloudfunctions', 'smart', 'index.js'))
+  await test('T57-RA-1: "0件" 量词命中时 qty=0（不再兜底成1）', () => {
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片0件', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 0, '0件应解析为 0，实际 ' + it.qty)
+    assert.strictEqual(smartPure.parseQtyPhrase('0'), 0, 'parseQtyPhrase(0)=0')
+    assert.strictEqual(smartPure.parseQtyPhrase('三'), 3, 'parseQtyPhrase 正常中文数')
+  })
+  await test('T57-RA-1: 无量词兜底仍为1（"乐事薯片"→qty 1）', () => {
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 1, '无量词默认 1 件，实际 ' + it.qty)
+  })
+  await test('T57-RA-3: 数量上限 9999（999999件 截断）', () => {
+    assert.strictEqual(smartPure.normalizeQty(999999), 9999, '超上限截断 9999')
+    assert.strictEqual(smartPure.normalizeQty(2.5), 3, '小数向上取整')
+    assert.strictEqual(smartPure.normalizeQty(0), 0, '显式 0 保留（RA-1）')
+    assert.strictEqual(smartPure.normalizeQty('abc'), 1, '非数字兜底 1')
+    assert.strictEqual(smartPure.normalizeQty(-5), 1, '负数兜底 1')
+    assert.strictEqual(smartPure.normalizeQty(100), 100, '正常值不变')
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片999999件', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 9999, '解析层应截断到 9999，实际 ' + it.qty)
+  })
+
   console.log('\n' + '='.repeat(50))
   console.log('📊 智能录入 AI 降级逻辑测试总结')
   console.log('='.repeat(50))

@@ -67,6 +67,26 @@ const C=async (fn,d)=>{try{const r=await app.callFunction({name:fn,data:d});retu
     r1=(await db.collection('orders').doc(oidC).get()).data[0];
     ok(r1.outStatus!=='done','outStatus 未被翻成 done');
 
+    // ===== T57 防回归（graph R1）：RB-1 update 状态守卫 / RB-3 cancelled 收款守卫 =====
+    // RB-1a: 新造一条 submitted 订单验证可编辑（守卫不误伤正常流）
+    const oU=await C('orders',{action:'create',customerId:cid,customerName:'TEST_状态机守卫客户',qaAsOpenid:QA_ORDERER,
+      items:[{piece_qty:1,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:10});
+    const oidU=oU.data._id||oU.data.orderId; created.push(oidU);
+    const updOk=await C('orders',{action:'update',orderId:oidU,
+      items:[{piece_qty:1,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:10,qaAsOpenid:QA_ORDERER});
+    ok(updOk.code===0,'T57-RB-1 submitted 订单 update 放行（不误伤）');
+    // RB-3: 已取消订单登记收款被拒
+    const colR=await C('receivable',{action:'collect',orderId:oidC,amount:5,paymentMethod:'cash',qaAsOpenid:QA_ORDERER});
+    ok(colR.code===3002,'T57-RB-3 cancelled 订单 collect 被 3002 拒绝（防取消单新增收款轨迹）');
+    // RB-1b: 已分拣订单（oid）update 被 3002 拒绝（此时 oid 已 sorted）
+    const updBad=await C('orders',{action:'update',orderId:oid,
+      items:[{piece_qty:9,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:90,qaAsOpenid:QA_ORDERER});
+    ok(updBad.code===3002,'T57-RB-1 非 submitted 订单 update 被 3002 拒绝（防状态重置/二次出库）');
+    // RB-1c: cancelled 订单 update 被 3002 拒绝（防复活）
+    const updC=await C('orders',{action:'update',orderId:oidC,
+      items:[{piece_qty:1,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:10,qaAsOpenid:QA_ORDERER});
+    ok(updC.code===3002,'T57-RB-1 cancelled 订单 update 被 3002 拒绝（防复活）');
+
     // 4. 已出库订单重复 confirmOut = 幂等，件数不覆盖
     const o3=await C('orders',{action:'create',customerId:cid,customerName:'TEST_状态机守卫客户',qaAsOpenid:QA_ORDERER,
       items:[{piece_qty:3,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:30});
