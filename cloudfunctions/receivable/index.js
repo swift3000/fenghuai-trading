@@ -238,6 +238,7 @@ exports.main = async (event, context) => {
             paidAmount: 0,
             unpaidAmount: 0,
             orderCount: 0,
+            paidOrders: 0,
             maxAge: 0,
             orders: []
           }
@@ -259,6 +260,9 @@ exports.main = async (event, context) => {
         customer.pendingCents = (customer.pendingCents || 0) + pendCents
         customer.unpaidCents = (customer.unpaidCents || 0) + Math.max(0, toCents(total) - receivedCents)
         customer.orderCount += 1
+        // T59-R7B-2（方案A，2026-08-31 老板拍板）：客户级"已结清"判定改按 payment_status——
+        // 全部订单 payment_status=paid 才算结清；派生欠款(含待确认)归零但账务仍 pending 的，不得判结清。
+        if (order.paymentStatus === 'paid') customer.paidOrders += 1
         // 最长欠款账龄：仅统计未结清订单（剩余欠款>0），对齐原型 maxAge
         const unpaidNow = Math.max(0, toCents(total) - receivedCents)
         if (unpaidNow > 0) customer.maxAge = Math.max(customer.maxAge, debtAgeDays(order))
@@ -289,11 +293,11 @@ exports.main = async (event, context) => {
       
       // 根据视图标签过滤客户
       if (viewTab === 'unpaid') {
-        // 只显示有欠款的客户
-        customers = customers.filter(c => c.unpaidAmount > 0)
+        // T59-R7B-2（方案A）：未结清 = 存在非 paid 订单（派生欠款口径会把 pending 归零，不可用于判结清）
+        customers = customers.filter(c => (c.paidOrders || 0) < (c.orderCount || 0))
       } else if (viewTab === 'settled') {
-        // 只显示已结清的客户（当前无欠款）
-        customers = customers.filter(c => c.unpaidAmount === 0 && c.totalAmount > 0)
+        // T59-R7B-2（方案A）：已结清 = 全部订单 payment_status=paid
+        customers = customers.filter(c => (c.orderCount || 0) > 0 && (c.paidOrders || 0) === (c.orderCount || 0))
       }
       
       // 按欠款金额降序排序
@@ -313,7 +317,8 @@ exports.main = async (event, context) => {
           // T53-B1（方案A）：全局待确认金额，>0 时 hero"已收"标注含待确认
           totalPendingAmount: Math.round(totalPendingCents) / 100,
           customerCount: customers.length,
-          settledCount: customers.filter(c => c.unpaidAmount === 0).length,
+          // T59-R7B-2（方案A）：已结清家数按 payment_status（全部订单 paid）
+          settledCount: customers.filter(c => (c.orderCount || 0) > 0 && (c.paidOrders || 0) === (c.orderCount || 0)).length,
           customers
         }
       }

@@ -133,7 +133,9 @@ Page({
         customer.orders = (c.orders || []).map(o => {
           const ps = o.paymentStatus || 'unpaid'
           const bal = Number(o.unpaidAmount) || 0
-          const statusText = bal <= 0.001 ? '已结清' : (ps === 'pending' ? '待确认' : '未结清')
+          // T59-R7B-2（方案A）：结清状态一律按 payment_status——paid=已结清、pending=待确认、其余=未结清。
+          // 派生欠款(含待确认)归零时不得判已结清（账务未确认前不结清）。
+          const statusText = ps === 'paid' ? '已结清' : (ps === 'pending' ? '待确认' : '未结清')
           const paid = Number(o.paidAmount) || 0
           const amt = Number(o.totalAmount) || 0
           return Object.assign({}, o, {
@@ -143,9 +145,11 @@ Page({
           })
         })
         // 客户级状态（对齐原型 buildDebtCards：有 pending 单 → 部分结清·待确认）
-        customer.hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending' && (Number(o.unpaidAmount) || 0) > 0.001)
-        customer.statusText = (Number(c.unpaidAmount) || 0) <= 0.001 ? '已结清' : (customer.hasPending ? '部分结清·待确认' : '未结清')
-        customer.statusColor = (Number(c.unpaidAmount) || 0) <= 0.001 ? '#16A34A' : (customer.hasPending ? '#2563EB' : '#DC2626')
+        // T59-R7B-2（方案A）：客户级状态改按 payment_status——全部订单 paid=已结清；含 pending=待确认；其余=未结清
+        customer.hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending')
+        const __allPaid = (c.orderCount || 0) > 0 && (c.orders || []).every(o => o.paymentStatus === 'paid')
+        customer.statusText = __allPaid ? '已结清' : (customer.hasPending ? '待确认' : '未结清')
+        customer.statusColor = __allPaid ? '#16A34A' : (customer.hasPending ? '#2563EB' : '#DC2626')
         const months = Object.keys(monthMap).sort().map(k => {
           const m = monthMap[k]
           // 颜色：pending 蓝，否则按该月最长账龄分色（对齐原型 agingSeverity）

@@ -34,7 +34,7 @@ const PAYMENT_STATUS = {
 
 const PAYMENT_STATUS_TEXT = {
   unpaid: '未付款',
-  pending: '未结清',
+  pending: '待确认',
   paid: '已结清'
 }
 
