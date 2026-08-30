@@ -238,6 +238,15 @@
   font-size: calc(28rpx * var(--font-scale));
   background: #fafafa;
   border-radius: 16rpx;
+}
+.loading-tip {
+  /* T53（graph测试 V-4/D-1）：加载态指示，样式对齐 empty-tip */
+  text-align: center;
+  padding: 80rpx 0;
+  color: #999999;
+  font-size: calc(28rpx * var(--font-scale));
+  background: #fafafa;
+  border-radius: 16rpx;
   border: 1rpx dashed #e0e0e0;
 }
 

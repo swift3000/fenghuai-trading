@@ -8,6 +8,8 @@ Page({
     timeTab: 'today',
     searchKey: '',
     orders: [],
+    // T53（graph测试 V-4/D-1）：列表初始加载 loading 指示（对齐 customers/products 的 wx.showLoading 做法）
+    loading: false,
     tabs: [
       { key: 'today', label: '今日' },
       { key: 'week', label: '本周' },
@@ -62,6 +64,7 @@ Page({
   },
 
   async loadOrders() {
+    this.setData({ loading: true })
     try {
       const { callCloud } = require('../../utils/request')
       const orders = await callCloud('orders', {
@@ -121,6 +124,8 @@ Page({
     } catch (e) {
       console.error('加载订单失败', e)
       wx.showToast({ title: '加载失败', icon: 'none' })
+    } finally {
+      this.setData({ loading: false })
     }
   },
 

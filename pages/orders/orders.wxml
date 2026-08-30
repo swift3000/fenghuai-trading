@@ -53,7 +53,11 @@
     </view>
   </view>
 
-  <view class="empty-tip" wx:if="{{!orders.length}}">
+  <!-- T53（graph测试 V-4/D-1）：加载态指示 -->
+  <view class="loading-tip" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="empty-tip" wx:elif="{{!orders.length}}">
     <text>暂无订单</text>
   </view>
 

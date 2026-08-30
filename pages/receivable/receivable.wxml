@@ -5,7 +5,8 @@
     <view class="rh-amount">¥{{totalUnpaid}}</view>
     <view class="rh-summary-row">
       <view class="rh-s-item"><text class="rh-s-val">¥{{totalReceivable}}</text><text class="rh-s-lbl">应收总额</text></view>
-      <view class="rh-s-item green"><text class="rh-s-val">¥{{totalReceived}}</text><text class="rh-s-lbl">已收</text></view>
+      <!-- T53-B1（方案A）：已收含待确认部分，>0 时标注 -->
+      <view class="rh-s-item green"><text class="rh-s-val">¥{{totalReceived}}</text><text class="rh-s-lbl">已收{{totalPendingAmount > 0 ? '·含待确认' : ''}}</text></view>
       <view class="rh-s-item red"><text class="rh-s-val">¥{{totalUnpaid}}</text><text class="rh-s-lbl">未结清</text></view>
     </view>
     <view class="rh-sub">
@@ -63,7 +64,8 @@
         </view>
         <view class="cc-summary">
           <view class="cc-col"><text class="cc-col-lbl">应收总额</text><text class="cc-col-val">¥{{item.totalAmount}}</text></view>
-          <view class="cc-col"><text class="cc-col-lbl" style="color:#16A34A">已收</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
+          <!-- T53-B1（方案A）：客户级已收含待确认部分，>0 时标注 -->
+          <view class="cc-col"><text class="cc-col-lbl" style="color:#16A34A">已收{{item.pendingAmount > 0 ? '·待确认' : ''}}</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
           <view class="cc-col"><text class="cc-col-lbl" style="color:#EA580C">未结清</text><text class="cc-col-val {{item.unpaidAmount > 0.001 ? 'cc-due' : ''}}">¥{{item.unpaidAmount}}</text></view>
         </view>
         <view class="cc-orders">

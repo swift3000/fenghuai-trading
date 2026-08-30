@@ -78,7 +78,8 @@ exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const openid = __impersonatedOpenid || wxContext.OPENID
 
-  console.log('auth 云函数调用，action:', action, 'openid:', openid)
+  // T53（graph测试 V-9/C-4）：openid 脱敏——完整 openid 属 PII，不进云函数日志
+  console.log('auth 云函数调用，action:', action, 'openid:', String(openid).slice(0, 6) + '***')
 
   if (!openid) {
     return { code: 500, message: '无法获取 OPENID，请检查云函数配置' }
@@ -131,7 +132,8 @@ async function handleLogin(openid, event) {
   try {
     const { role = 'orderer', name, phone, region, inviteCode } = event
 
-    console.log('handleLogin 开始，openid:', openid, 'inviteCode:', inviteCode)
+    // T53（graph测试 V-9/C-4）：inviteCode 不打印（邀请码进日志=泄露面），openid 脱敏
+    console.log('handleLogin 开始，openid:', String(openid).slice(0, 6) + '***', 'inviteCode:', inviteCode ? '****' : 'none')
 
     // 查询用户是否存在
     const userResult = await db.collection('users').where({ openid }).get()

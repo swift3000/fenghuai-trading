@@ -531,9 +531,20 @@ exports.main = async (event, context) => {
       const { orderId, batchMode } = event
       // status 由 分拣+出库 双状态派生：出库已完成=confirmed，否则=sorted（并行下避免把已出库订单降级）
       const deriveStatusAfterSort = (o) => (o && o.outStatus === 'done') ? 'confirmed' : 'sorted'
+      // T53（graph测试 V-1/B-3）：终态守卫——已取消/已完成订单禁止分拣（与 update-status 的"已取消不可变更"对齐，堵住 confirmSort 复活已取消订单的穿透通道）
+      const rejectTerminal = (o) => {
+        if (!o) return { code: 4004, message: '订单不存在' }
+        if (o.status === 'cancelled') return { code: 3002, message: '已取消订单不可变更状态' }
+        if (o.status === 'completed') return { code: 3002, message: '已完成订单不可变更状态' }
+        return null
+      }
       if (batchMode) {
         // T51-1：全量拉取（超 100 条待分拣会漏批量确认）
-        const list = { data: await fetchAll(db.collection('orders').where({ sortStatus: 'pending' })) }
+        const list = { data: (await fetchAll(db.collection('orders').where({ sortStatus: 'pending' }))).filter(o => {
+          const r = rejectTerminal(o)
+          if (r) console.warn('[confirmSort batch] 跳过终态订单', o._id, o.status)
+          return !r
+        }) }
         for (const it of list.data) {
           await db.collection('orders').doc(it._id).update({
             data: { sortStatus: 'done', sortTime: db.serverDate(), status: deriveStatusAfterSort(it) }
@@ -541,6 +552,8 @@ exports.main = async (event, context) => {
         }
       } else {
         const cur = await db.collection('orders').doc(orderId).get()
+        const guardErr = rejectTerminal(cur && cur.data)
+        if (guardErr) return guardErr
         await db.collection('orders').doc(orderId).update({
           data: { sortStatus: 'done', sortTime: db.serverDate(), status: deriveStatusAfterSort(cur.data) }
         })
@@ -567,9 +580,20 @@ exports.main = async (event, context) => {
       const ss = typeof ship_small === 'number' ? ship_small : 0
       // 库管出库不依赖分拣完成；status 由 分拣+出库 双状态派生：分拣已完成=confirmed，否则=sorted
       const deriveStatusAfterOut = (o) => (o && o.sortStatus === 'done') ? 'confirmed' : 'sorted'
+      // T53（graph测试 V-1/B-3）：终态守卫——已取消/已完成订单禁止出库
+      const rejectTerminal = (o) => {
+        if (!o) return { code: 4004, message: '订单不存在' }
+        if (o.status === 'cancelled') return { code: 3002, message: '已取消订单不可变更状态' }
+        if (o.status === 'completed') return { code: 3002, message: '已完成订单不可变更状态' }
+        return null
+      }
       if (batchMode) {
         // T51-1：全量拉取
-        const list = { data: await fetchAll(db.collection('orders').where({ outStatus: 'pending' })) }
+        const list = { data: (await fetchAll(db.collection('orders').where({ outStatus: 'pending' }))).filter(o => {
+          const r = rejectTerminal(o)
+          if (r) console.warn('[confirmOut batch] 跳过终态订单', o._id, o.status)
+          return !r
+        }) }
         for (const it of list.data) {
           await db.collection('orders').doc(it._id).update({
             data: { outStatus: 'done', ship_large: sl, ship_medium: sm, ship_small: ss, outTime: db.serverDate(), status: deriveStatusAfterOut(it) }
@@ -577,6 +601,12 @@ exports.main = async (event, context) => {
         }
       } else {
         const cur = await db.collection('orders').doc(orderId).get()
+        const guardErr = rejectTerminal(cur && cur.data)
+        if (guardErr) return guardErr
+        // T53（graph测试 V-2/B-2）：已出库订单重复 confirmOut 不再静默覆盖件数——幂等返回当前件数，防导出库单数据被污染
+        if (cur && cur.data && cur.data.outStatus === 'done') {
+          return { code: 0, data: { alreadyOutbound: true, ship_large: cur.data.ship_large, ship_medium: cur.data.ship_medium, ship_small: cur.data.ship_small } }
+        }
         await db.collection('orders').doc(orderId).update({
           data: { outStatus: 'done', ship_large: sl, ship_medium: sm, ship_small: ss, outTime: db.serverDate(), status: deriveStatusAfterOut(cur.data) }
         })

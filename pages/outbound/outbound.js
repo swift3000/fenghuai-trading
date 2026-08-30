@@ -103,14 +103,15 @@ Page({
     this.setData({ sortTab: e.currentTarget.dataset.tab })
   },
 
-  // 模拟16:00通过（对齐原型 simulateAutoConfirm：复用现有 autoConfirmTrigger 定时逻辑）
+  // 立即执行定时确认（对齐原型 simulateAutoConfirm：复用现有 autoConfirmTrigger 定时逻辑）
+  // T53（graph测试 V-5/D-2）：文案从「模拟16:00通过」改名——原型演示辅助残留，生产易误导用户以为不会真生效
   async simulateAutoConfirm() {
     if (!this.data.pendingOut.length && !this.data.pendingSort.length) {
       wx.showToast({ title: '暂无待处理订单', icon: 'none' })
       return
     }
     wx.showModal({
-      title: '模拟16:00通过',
+      title: '立即执行定时确认',
       content: '将立即执行定时自动确认（分拣+出库），确认继续？',
       success: async (res) => {
         if (!res.confirm) return

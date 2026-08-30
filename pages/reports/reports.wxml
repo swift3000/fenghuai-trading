@@ -137,7 +137,12 @@
   </view>
 
   <!-- 空状态 -->
-  <view class="empty-state" wx:if="{{!hasData}}">
+  <!-- T53（graph测试 V-4/D-1）：接线已备但从未引用的 loading 状态位 -->
+  <view class="empty-state" wx:if="{{loading}}">
+    <text class="empty-icon">⏳</text>
+    <text class="empty-text">加载中...</text>
+  </view>
+  <view class="empty-state" wx:elif="{{!hasData}}">
     <text class="empty-icon">📊</text>
     <text class="empty-text">暂无数据</text>
     <text class="empty-hint">当前时间范围内暂无统计数据，可切换时间范围后查看</text>
