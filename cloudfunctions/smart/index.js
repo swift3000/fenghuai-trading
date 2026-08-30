@@ -217,7 +217,7 @@ function fuzzyMatch(text, candidates, threshold) {
 
 function extractQuantity(text) {
   const cn = String(text || '').match(new RegExp('([0-9]+(?:\\.[0-9]+)?|十[一二三四五六七八九]?|[一二三四五六七八九]十[一二三四五六七八九]?|[一二三四五六七八九两俩])\\s*(' + QTY_UNITS + ')'))
-  if (cn) return cnNumToInt(cn[1]) || 1
+  if (cn) return parseQtyPhrase(cn[1])
   const qtyPatterns = [
     /(\d+(?:\.\d+)?)\s*件/,
     /(\d+(?:\.\d+)?)\s*箱/,
@@ -335,7 +335,7 @@ function parseMultiProductText(text, products) {
   const qtyPhrases = []
   QTY_PHRASE_RE.lastIndex = 0
   let m
-  while ((m = QTY_PHRASE_RE.exec(text)) !== null) qtyPhrases.push({ pos: m.index, len: m[0].length, qty: cnNumToInt(m[1]) || 1, unit: (m[2] || '').trim() || '包', used: false })
+  while ((m = QTY_PHRASE_RE.exec(text)) !== null) qtyPhrases.push({ pos: m.index, len: m[0].length, qty: parseQtyPhrase(m[1]), unit: (m[2] || '').trim() || '包', used: false })
   // 3) 商品后优先、距离就近的贪心配对
   const pairs = []
   for (const o of occ) {
@@ -350,7 +350,7 @@ function parseMultiProductText(text, products) {
       else score = 999 // 重叠，视为不属于该商品
       if (score < bestScore) { best = qp; bestScore = score }
     }
-    if (best && bestScore <= 10) { best.used = true; pairs.push({ occ: o, qty: best.qty, unit: best.unit || '包' }) }
+    if (best && bestScore <= 10) { best.used = true; pairs.push({ occ: o, qty: normalizeQty(best.qty), unit: best.unit || '包' }) }
   }
   for (const o of occ) { if (!pairs.some(p => p.occ === o)) pairs.push({ occ: o, qty: 1, unit: '包' }) }
   // 4) 去重输出
@@ -358,7 +358,7 @@ function parseMultiProductText(text, products) {
     const pp = pr.occ.pp
     if (seen[pp._id]) continue
     seen[pp._id] = true
-    items.push({ _id: pp._id, name: pp.name, spec: pp.spec || '', price: pp.price_piece || 0, qty: pr.qty, unit: pr.unit || '包' })
+    items.push({ _id: pp._id, name: pp.name, spec: pp.spec || '', price: pp.price_piece || 0, qty: normalizeQty(pr.qty), unit: pr.unit || '包' })
   }
   return items
 }
@@ -400,7 +400,7 @@ function parseOrderText(text, products) {
         name: product.name,
         spec: product.spec || '',
         price: product.price_piece || 0,
-        qty: qty,
+        qty: normalizeQty(qty), // T57-RA-3：整数化+上限 9999
         // T56：带回用户量词单位（"2件"→件），前端据此记 piece_qty/package_qty；
         // 缺 unit 会回落商品默认单位，把"件"错记成"包"，金额差 30 倍（老酸奶 件45/包1.5）
         unit: unit || '包'
@@ -545,7 +545,7 @@ function buildItems(arr, products) {
       (it.name && (pp.name === it.name || pp.name.includes(it.name) || it.name.includes(pp.name))) ||
       (it.spec && pp.spec && pp.spec.includes(it.spec))
     )
-    const qty = parseFloat(it.qty) || 1
+    const qty = normalizeQty(it.qty) // T57-RA-3：AI 返回数量同样整数化+上限（原 parseFloat||1 无上限）
     if (!product) {
       return { _id: '', name: it.name || '', spec: it.spec || '', price: 0, qty, unit: it.unit || '包', unmatched: true }
     }
@@ -597,6 +597,26 @@ async function fetchAll(query) {
   return all
 }
 
+// ===== T57-RA-3：智能录入数量归一（防巨额订单敞口）=====
+// 原实现 qty 直接透传（"999999件"→¥44,999,955 订单可提交），且小数数量直落。
+// 规则：非有限数/负数 → 1（垃圾输入兜底）；显式 0 保留（RA-1："0件"是合法语义，建单时
+// 由"0件0包"过滤规则统一处理，不在解析层篡改用户意图）；小数向上取整（"2.5件"按 3 件）；
+// 上限 9999（超出截断）。
+const SMART_QTY_MAX = 9999
+function normalizeQty(q) {
+  const n = Number(q)
+  if (!isFinite(n) || n < 0) return 1
+  if (n === 0) return 0
+  return Math.min(SMART_QTY_MAX, Math.ceil(n))
+}
+
+// T57-RA-1：数量短语解析——量词命中时 0 为合法值（"0件"就是 0，原 cnNumToInt||1 会兜底成 1）；
+// 仅无量词兜底场景返回 1。
+function parseQtyPhrase(s) {
+  const n = cnNumToInt(s)
+  return n >= 0 ? n : 1
+}
+
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
@@ -632,6 +652,11 @@ exports.main = async (event, context) => {
       }
       if (!audioUrl) {
         return { code: 0, data: { text: event.audioText || '', engine: 'no-audio' } }
+      }
+      // T57-RC-2：audioUrl 白名单校验——原实现任何 URL 直送 ASR，可被恶意刷计费配额。
+      // 仅放行 https 且长度受限（CloudBase 临时链接/常规 CDN 均满足）
+      if (!/^https:\/\/[^\s]{1,500}$/.test(audioUrl)) {
+        return { code: 1001, message: '音频地址非法，请使用小程序上传的音频文件' }
       }
       try {
         const text = await asrTranscribe({ secretId: tc.secretId, secretKey: tc.secretKey, engine: tc.engine || '16k_zh' }, audioUrl)
@@ -738,6 +763,9 @@ exports.extractQuantity = extractQuantity
 exports.extractProductName = extractProductName
 exports.parseOrderText = parseOrderText
 exports.parseMultiProductText = parseMultiProductText
+exports.normalizeQty = normalizeQty
+exports.parseQtyPhrase = parseQtyPhrase
+exports.SMART_QTY_MAX = SMART_QTY_MAX
 exports.normalizeRuleItems = normalizeRuleItems
 exports.cnNumToInt = cnNumToInt
 exports.normalizeHomophones = normalizeHomophones
