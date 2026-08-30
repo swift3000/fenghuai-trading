@@ -128,10 +128,14 @@ Page({
       // 转发时间文案（WXML 不支持 new Date 表达式）
       const sharedAtText = order.shared_at ? new Date(order.shared_at).toLocaleString('zh-CN') : ''
       // 收款三行：已收金额 / 折价货损 / 剩余欠款（对齐原型 detailPaySection）
+      // T57-RB-4：优先用服务端 detail 回传的 payments 权威口径（含待确认，对齐赊销台账/报表），
+      // 老响应无 payCalc 时回落原快照字段（向后兼容）
       const totalAmount = Number(order.totalAmount || order.total_amount || 0)
-      const received = Number(order.received_amount != null ? order.received_amount : (order.receivedAmount || 0))
-      const discount = Number(order.total_discount != null ? order.total_discount : (order.totalDiscount || 0))
-      const remaining = Math.max(0, totalAmount - received - discount)
+      const pc = order.payCalc
+      const received = pc ? (pc.receivedCents / 100) : Number(order.received_amount != null ? order.received_amount : (order.receivedAmount || 0))
+      const discount = pc ? (pc.discountCents / 100) : Number(order.total_discount != null ? order.total_discount : (order.totalDiscount || 0))
+      const remaining = pc ? Math.max(0, (Math.round((Number(order.totalAmount || 0) * 100)) - pc.receivedCents - pc.discountCents) / 100) : Math.max(0, totalAmount - received - discount)
+      const hasPendingPay = pc && pc.pendingCents > 0
       const creatorText = '下单员：' + (order.createdByName || order.created_by_name || '未知')
       const orderTimeText = order.created_at ? new Date(order.created_at).toLocaleString('zh-CN') : '—'
       const shipParts = []
@@ -159,6 +163,8 @@ Page({
         receivedAmount: received,
         totalDiscount: discount,
         remainingDebt: remaining,
+        // T57-RB-4：存在待确认收款/折价时前端标注（与赊销台账"含待确认"口径一致）
+        hasPendingPay: hasPendingPay,
         creatorText,
         orderTimeText,
         shipText,
@@ -215,9 +221,11 @@ Page({
       return
     }
     const total = Number(this.data.order.totalAmount || 0)
-    const received = Number(this.data.order.received_amount != null ? this.data.order.received_amount : (this.data.order.receivedAmount || 0))
-    const existingDiscount = Number(this.data.order.total_discount != null ? this.data.order.total_discount : (this.data.order.totalDiscount || 0))
-    const remaining = Math.max(0, total - received - existingDiscount)
+    // T57-RB-4：预校验剩余欠款用服务端权威口径（含待确认，与服务端 collect 的占额计算一致）
+    const pc = this.data.order.payCalc
+    const remaining = pc
+      ? Math.max(0, (Math.round(total * 100) - pc.receivedCents - pc.discountCents) / 100)
+      : Math.max(0, total - Number(this.data.order.received_amount != null ? this.data.order.received_amount : (this.data.order.receivedAmount || 0)) - Number(this.data.order.total_discount != null ? this.data.order.total_discount : (this.data.order.totalDiscount || 0)))
     if (amount + discount > remaining) {
       wx.showToast({ title: `收款+折价不能超过剩余欠款 ¥${remaining}`, icon: 'none' })
       return
