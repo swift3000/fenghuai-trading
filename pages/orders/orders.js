@@ -89,6 +89,9 @@ Page({
         const status = o.status || o.orderStatus || 'submitted'
         if (status === 'sorted') { statusText = '已分拣'; statusClass = 'processing' }
         else if (status === 'confirmed') { statusText = '已出库'; statusClass = 'completed' }
+        // SD-1（graph 二轮复扫）：补 completed 终态映射——update-status 可 confirmed→completed，
+        // 原缺失时 completed 订单会回退显示默认"待分拣"（与首页 statusMap 的"已完成"口径不一）
+        else if (status === 'completed') { statusText = '已完成'; statusClass = 'completed' }
         
         // 计算商品数量（0件0包 的行不展示）
         const viewItems = (o.items || [])
