@@ -22,6 +22,42 @@ let __impersonatedOpenid = null
 
 const XLSX = require('xlsx')
 
+// ===== T57-RB-4 收款/折价口径助手（与 receivable 模块 T53-B1 方案A 同口径）=====
+// 已收 = 已确认实收 + 已确认折价 + 待确认实收 + 待确认折价（前端"含待确认"标注）
+function toCentsLocal(v) { return Math.round((Number(v) || 0) * 100) }
+// 批量注入 o.paidCalc = { confirmedAmtCents, confirmedDiscCents, pendingAmtCents, pendingDiscCents }
+async function attachOrderPayments(orders) {
+  const ids = (orders || []).map(o => o._id).filter(Boolean)
+  const empty = { confirmedAmtCents: 0, confirmedDiscCents: 0, pendingAmtCents: 0, pendingDiscCents: 0 }
+  for (const o of (orders || [])) o.paidCalc = Object.assign({}, empty)
+  if (ids.length === 0) return
+  let pays = []
+  try {
+    pays = await fetchAll(db.collection('payments').where({
+      orderId: db.command.in(ids),
+      status: db.command.in(['confirmed', 'pending'])
+    }))
+  } catch (e) {
+    // 查询失败不阻断主流程：欠款按"无额外折价"计算（偏保守，不会虚减），留痕
+    console.error('[orders] 关联收款记录失败', e && e.message)
+    return
+  }
+  const byId = {}
+  for (const o of (orders || [])) byId[o._id] = o
+  for (const p of pays) {
+    const oid = p.orderId || p.order_id
+    const o = oid && byId[oid]
+    if (!o) continue
+    if (p.status === 'confirmed') {
+      o.paidCalc.confirmedAmtCents += toCentsLocal(p.amount)
+      o.paidCalc.confirmedDiscCents += toCentsLocal(p.discount)
+    } else {
+      o.paidCalc.pendingAmtCents += toCentsLocal(p.amount)
+      o.paidCalc.pendingDiscCents += toCentsLocal(p.discount)
+    }
+  }
+}
+
 // 公司名（用于导出标题；云函数无法 require 前端 constants）
 const COMPANY_NAME = '乾多多'
 function salesTitle(o){ return (o && (o.customerName || o.customer) || COMPANY_NAME) + '食品销售单' }
@@ -191,6 +227,8 @@ async function runAutoConfirm() {
   const __sortQ = await fetchAll(db.collection('orders').where({ sortStatus: 'pending', created_at: db.command.gte(t) }))
   const sortRes = { data: __sortQ }
   for (const it of sortRes.data) {
+    // T57-RB-2：终态守卫——已取消/已完成订单不参与自动确认（原实现会把 cancelled 订单到点"复活"为 sorted/confirmed）
+    if (it.status === 'cancelled' || it.status === 'completed') continue
     const derive = (it.outStatus === 'done') ? 'confirmed' : 'sorted'
     await db.collection('orders').doc(it._id).update({
       data: { sortStatus: 'done', sortTime: db.serverDate(), autoConfirmed: true, status: derive }
@@ -201,6 +239,8 @@ async function runAutoConfirm() {
   const __outQ = await fetchAll(db.collection('orders').where({ outStatus: 'pending', created_at: db.command.gte(t) }))
   const outRes = { data: __outQ }
   for (const it of outRes.data) {
+    // T57-RB-2：终态守卫（同上）
+    if (it.status === 'cancelled' || it.status === 'completed') continue
     const derive = (it.sortStatus === 'done') ? 'confirmed' : 'sorted'
     await db.collection('orders').doc(it._id).update({
       data: { outStatus: 'done', outTime: db.serverDate(), autoConfirmed: true, status: derive }
@@ -213,7 +253,10 @@ async function runAutoConfirm() {
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
-  
+
+  // T57-RC-4：顶层错误边界——原 switch 无任何包裹，未知/异常路径（如非法 orderId 直连
+  // doc().get() 抛错）会以裸异常 500 返回，客户端只见系统繁忙。统一转 500 码 + 服务端留痕。
+  try {
   // 权限映射
   const permissionMap = {
     'create': 'order:create',
@@ -229,6 +272,9 @@ exports.main = async (event, context) => {
     'confirmSort': 'sort:task',
     'confirmOut': 'warehouse:confirm',
     'exportOutbound': 'warehouse:confirm',
+    // T57-RB-8：补齐此前无映射（静默跳过权限校验）的 action——策略读取属全员基础权限，
+    // 显式映射防止"未映射=免检"的默认行为留敞口（qaClearAutoConfirmLog 自带 env 门禁不动）
+    'getAutoConfirmPolicy': 'order:view',
   }
   
   // 如果 action 不在权限映射中，跳过权限校验
@@ -378,25 +424,36 @@ exports.main = async (event, context) => {
         }
         // 累计欠款 = 该客户所有未结清订单（paid 之外）的剩余欠款之和
         try {
-          const unpaid = await db.collection('orders')
-            .where({
-              customerId: order.customerId,
-              paymentStatus: db.command.in(['unpaid', 'pending'])
-            })
-            // T51-1：全量拉取（客户未结清订单超 100 会少算欠款）
           const __unpaidQ = await fetchAll(db.collection('orders').where({
             customerId: order.customerId,
-            paymentStatus: db.command.in(['unpaid', 'pending'])
+            paymentStatus: db.command.in(['unpaid', 'pending']),
+            status: db.command.neq('cancelled') // T57-RB-3：已取消订单不计入欠款
           }))
+          // T57-RB-4：折价口径对齐 T53-B1 方案A——只认 payments 已确认+待确认折价，
+          // 不再读 orders.total_discount（登记即累加，未确认期间会与台账/报表口径分叉）
+          await attachOrderPayments(__unpaidQ)
           const totalDebt = __unpaidQ.reduce((sum, o) => {
-            const received = o.received_amount || o.receivedAmount || 0
-            const discount = o.total_discount || o.totalDiscount || 0
-            return sum + Math.max(0, (o.totalAmount || 0) - received - discount)
+            const pc = o.paidCalc || { confirmedAmtCents: 0, confirmedDiscCents: 0, pendingAmtCents: 0, pendingDiscCents: 0 }
+            const paidCents = toCentsLocal(o.received_amount || o.receivedAmount || 0) + pc.confirmedDiscCents + pc.pendingAmtCents + pc.pendingDiscCents
+            return sum + Math.max(0, toCentsLocal(o.totalAmount || 0) - paidCents)
           }, 0)
-          order.totalDebt = totalDebt
+          // 分位累加后还原元
+          order.totalDebt = Math.round(totalDebt) / 100
         } catch (e) {
           console.error('计算累计欠款失败', e)
           order.totalDebt = 0
+        }
+      }
+      // T57-RB-4：本单收款三行（已收/折价/剩余）改用 payments 权威口径（含待确认），
+      // 前端展示直接用，不再读 orders.total_discount 快照
+      {
+        await attachOrderPayments([order])
+        const pc = order.paidCalc
+        order.paidCalc = pc
+        order.payCalc = {
+          receivedCents: toCentsLocal(order.received_amount || order.receivedAmount || 0) + pc.confirmedDiscCents + pc.pendingAmtCents + pc.pendingDiscCents,
+          discountCents: pc.confirmedDiscCents + pc.pendingDiscCents,
+          pendingCents: pc.pendingAmtCents + pc.pendingDiscCents
         }
       }
       return { code: 0, data: order }
@@ -430,6 +487,14 @@ exports.main = async (event, context) => {
       const __clientTotal = Number(event.totalAmount) || 0
       if (!orderId) return { code: 2002, message: '缺少订单 ID' }
       if (__clientTotal <= 0) return { code: 2001, message: '订单金额不能为 0' }
+      // T57-RB-1（P1 状态机收口，对齐 T53）：仅「待分拣 submitted」订单可编辑。
+      // 原实现无状态守卫且 patch 硬写 status:'submitted'/sortStatus:'pending'/outStatus:'pending'：
+      // 已分拣/已出库/已收款单可被编辑后重置回待分拣（二次出库敞口），已取消单可"复活"。
+      {
+        const __cur = await db.collection('orders').doc(orderId).get()
+        if (!__cur.data) return { code: 4004, message: '订单不存在' }
+        if (__cur.data.status !== 'submitted') return { code: 3002, message: '仅待分拣订单可编辑' }
+      }
       const normalizedItems = (items || []).map(it => {
         const mode = it.pricing_mode || 'case'
         const pieceQty = it.piece_qty || 0
@@ -761,9 +826,19 @@ exports.main = async (event, context) => {
         }
         try {
           // T51-1：全量拉取（客户未结清订单超 100 会少算打印单欠款）；分位累加防浮点误差
-          const __up = await fetchAll(db.collection('orders').where({ customerId: o.customerId, paymentStatus: db.command.in(['unpaid', 'pending']) }))
+          const __up = await fetchAll(db.collection('orders').where({
+            customerId: o.customerId,
+            paymentStatus: db.command.in(['unpaid', 'pending']),
+            status: db.command.neq('cancelled') // T57-RB-3：已取消订单不计入欠款
+          }))
+          // T57-RB-4：折价口径对齐 T53-B1 方案A（payments 已确认+待确认），不再读 orders.total_discount
+          await attachOrderPayments(__up)
           let __dc = 0
-          __up.forEach(x => { __dc += Math.max(0, Math.round((x.totalAmount || 0) * 100) - Math.round((x.received_amount || x.receivedAmount || 0) * 100) - Math.round((x.total_discount || x.totalDiscount || 0) * 100)) })
+          __up.forEach(x => {
+            const pc = x.paidCalc || { confirmedAmtCents: 0, confirmedDiscCents: 0, pendingAmtCents: 0, pendingDiscCents: 0 }
+            const paidCents = toCentsLocal(x.received_amount || x.receivedAmount || 0) + pc.confirmedDiscCents + pc.pendingAmtCents + pc.pendingDiscCents
+            __dc += Math.max(0, toCentsLocal(x.totalAmount || 0) - paidCents)
+          })
           o.totalDebt = Math.round(__dc) / 100
         } catch (e) { o.totalDebt = 0 }
       }
@@ -949,6 +1024,7 @@ exports.main = async (event, context) => {
     }
     case 'getAutoConfirmPolicy': {
       // 工作台超时高亮策略：返回当前是否到点、今天是否已自动确认
+      // T57-RC-3：原实现无身份校验（匿名直连可查配置）；权限已由 permissionMap→order:view 兜底
       const cfg = await getAutoConfirmCfg()
       const now = new Date()
       const [hh, mm] = String(cfg.time).split(':').map(Number)
@@ -972,5 +1048,9 @@ exports.main = async (event, context) => {
 
     default:
       return { code: 1001, message: '未知 action' }
+  }
+  } catch (err) {
+    console.error('[orders] 未捕获异常 action=' + action, err && err.message)
+    return { code: 500, message: '服务器内部错误，请稍后重试' }
   }
 }
