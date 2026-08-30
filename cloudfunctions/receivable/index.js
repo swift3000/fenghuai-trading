@@ -137,6 +137,8 @@ async function appendOrderLog(orderId, action, desc) {
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
+  // T57-RC-4：顶层错误边界（同 orders）——非法 paymentId/orderId 等路径不再裸异常 500
+  try {
   switch (action) {
     case 'dashboard': {
       const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
@@ -200,6 +202,9 @@ exports.main = async (event, context) => {
       if (dateFilter) {
         conds.push({ ...dateFilter })
       }
+      // T57-RB-3：已取消订单不计入赊销台账/未结清/已结清聚合（原实现 cancelled 单仍参与
+      // 欠款统计，客户"结清"状态与订单状态矛盾）
+      conds.push({ status: db.command.neq('cancelled') })
       
       // 应用搜索过滤
       if (searchKey) {
@@ -324,7 +329,7 @@ exports.main = async (event, context) => {
       
       // T50-1：全量拉取（默认 100 截断会少算财务汇总）
       const orders = await fetchAll(
-        db.collection('orders').where({ customerId }).orderBy('created_at', 'desc')
+        db.collection('orders').where({ customerId, status: db.command.neq('cancelled') }).orderBy('created_at', 'desc')
       )
       await attachConfirmedPayments(orders)
       // T53-B1（方案A）：口径对齐 dashboard——已收 = 实收 + 已确认折价 + 待确认实收 + 待确认折价
@@ -374,6 +379,17 @@ exports.main = async (event, context) => {
         return { code: 1001, message: '收款金额必须为大于 0 的数字' }
       }
       
+      // T57-RC-1：折价/减免同 amount 口径强校验。原实现 discount 直接落库：
+      // 字符串 '5' 在 confirmPayment reduce(sum + (p.discount||0)) 时变字符串拼接（5+'5'=55），
+      // 负数折价则虚增欠款。折价只允许 0（不填）或 >0 的有限数字。
+      if (discount != null && discount !== '') {
+        const __dNum = Number(discount)
+        if (isNaN(__dNum) || __dNum < 0 || !isFinite(__dNum)) {
+          return { code: 1001, message: '折价金额必须为不小于 0 的数字' }
+        }
+        if (__dNum > 0) discount = Math.round(__dNum * 100) / 100
+      }
+      
       const orderRes = await db.collection('orders').doc(orderId).get()
       const order = orderRes.data
       
@@ -381,6 +397,14 @@ exports.main = async (event, context) => {
         return { code: 4004, message: '订单不存在' }
       }
       
+      // T57-RB-3：终态订单拒绝登记收款——已取消订单不应新增收款（原实现可对 cancelled 单收款，
+      // 确认后会改其 payment_status 造成"取消单又有收款轨迹"的账务矛盾）
+      if (order.status === 'cancelled') {
+        return { code: 3002, message: '订单已取消，不可登记收款' }
+      }
+      if (order.status === 'completed' && (order.paymentStatus === 'paid' || (order.payment_status || 'unpaid') === 'paid')) {
+        return { code: 3002, message: '订单已结清，无需收款' }
+      }
       // 幂等键（T11 P2-3）：前端每次打开登记弹窗生成一个 clientToken；
       // 网络重试/双击带同一 token 进来 → 复用首次登记的 pending 记录，不重复生成
       const token = clientToken || `auto_${orderId}_${Date.now()}`
@@ -665,5 +689,9 @@ exports.main = async (event, context) => {
 
     default:
       return { code: 1001, message: '未知 action' }
+  }
+  } catch (err) {
+    console.error('[receivable] 未捕获异常 action=' + action, err && err.message)
+    return { code: 500, message: '服务器内部错误，请稍后重试' }
   }
 }
