@@ -9,7 +9,7 @@
 
 ## 技术栈
 - 前端：微信原生小程序 + TypeScript + Vant Weapp；页面 pages/{login,index,customers,orders,new-order,order-detail,outbound,products,receivable,reports,members,profile,settings,shipping}
-- 后端：微信云开发 CloudBase（env: cloud1-d6g75loi673b1e039），15 个云函数（auth/customers/orders/products/outbound/receivable/regions/report/smart/system/users/import-data/init-db/check-customer-fields/clear-all-data），11 个数据库集合
+- 后端：微信云开发 CloudBase（env: cloud1-d6g75loi673b1e039），16 个云函数（auth/customers/orders/products/outbound/receivable/regions/report/smart/sync-data/system/users/import-data/init-db/check-customer-fields/clear-all-data），11 个数据库集合
 - 打印：ESC/POS 指令 + 蓝牙 BLE（芯烨/佳博/汉印 58/80mm）
 - 智能录入：腾讯云 ASR（录音文件识别）+ TokenHub NLP（OpenAI 兼容，默认 hy3）；密钥由管理员在小程序「系统设置」云端配置，未配置自动降级为纯规则引擎
 
