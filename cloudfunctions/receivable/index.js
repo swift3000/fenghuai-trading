@@ -361,7 +361,10 @@ exports.main = async (event, context) => {
     case 'collect': {
       const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
-      const { orderId, amount, paymentMethod, note, discount, clientToken } = event
+      const { orderId, amount, paymentMethod, note, clientToken } = event
+      // discount 单独用 let：RC-1 归一化时需对折价重赋值（解构 const 不可重赋值，
+      // 曾致 "Assignment to constant variable" 崩溃——RB-4 回归测试抓出）
+      let discount = event.discount
 
       // 折价/减免属独立权限：即使持有 receivable:collect，若未配置 receivable:discount 也不得折价（纵深防御，前端已用 canDiscount 隐藏入口）
       if (discount && discount > 0) {
@@ -691,7 +694,7 @@ exports.main = async (event, context) => {
       return { code: 1001, message: '未知 action' }
   }
   } catch (err) {
-    console.error('[receivable] 未捕获异常 action=' + action, err && err.message)
+    console.error('[receivable] 未捕获异常 action=' + action, err && err.stack)
     return { code: 500, message: '服务器内部错误，请稍后重试' }
   }
 }
