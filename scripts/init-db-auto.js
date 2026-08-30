@@ -71,6 +71,8 @@ const SYSTEM_CONFIG = {
 // ==================== 工具函数 ====================
 function runCommand(cmd) {
   try {
+    // SC-2：cmd 由本脚本内硬编码命令拼装（集合名=代码常量，无用户/网络输入通路），仅本地初始化用；
+    // 若未来接入外部输入必须先做白名单校验
     const output = execSync(cmd, { encoding: 'utf8', stdio: 'pipe' });
     return output;
   } catch (error) {

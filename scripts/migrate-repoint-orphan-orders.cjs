@@ -40,6 +40,7 @@ async function allDocs(coll,max){const out=[];for(let s=0;s<max;s+=100){const r=
     } else if(same.length>1){ console.log('AMBIG',o.orderNo,o.customerName,same.length); skipAmbig++; }
     else { console.log('NOMATCH',o.orderNo,o.customerName); skipNoMatch++; }
   }
-  console.log('SUMMARY fixed='+fixed,'alreadyOK='+skipAlready,'ambig='+skipAmbig,'noMatch='+skipNoMatch,'ordersTotal='+orders.length,'conserved='+(fixed+skipAlready+skipAmbig+skipNoMatch===orders.length));
+  // SC-1：参数分列不拼格式串（防日志伪造面）
+  console.log('SUMMARY','fixed='+fixed,'alreadyOK='+skipAlready,'ambig='+skipAmbig,'noMatch='+skipNoMatch,'ordersTotal='+orders.length,'conserved='+(fixed+skipAlready+skipAmbig+skipNoMatch===orders.length));
   console.log('DONE');
 })().catch(e=>{console.error('FATAL',e.message,e.stack);process.exit(1);});

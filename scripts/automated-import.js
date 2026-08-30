@@ -120,7 +120,8 @@ async function importProducts() {
 
       results.success += batch.length
     } catch (err) {
-      console.error(`  ❌ 批次 ${i + 1} 失败:`, err.message)
+      // SC-1：参数分列不拼格式串
+      console.error('  ❌ 批次', i + 1, '失败:', err.message)
       results.failed += batch.length
       results.errors.push({ batch: i + 1, error: err.message })
     }
@@ -179,7 +180,8 @@ async function importCustomers() {
 
       results.success += batch.length
     } catch (err) {
-      console.error(`  ❌ 批次 ${i + 1} 失败:`, err.message)
+      // SC-1：参数分列不拼格式串
+      console.error('  ❌ 批次', i + 1, '失败:', err.message)
       results.failed += batch.length
       results.errors.push({ batch: i + 1, error: err.message })
     }
