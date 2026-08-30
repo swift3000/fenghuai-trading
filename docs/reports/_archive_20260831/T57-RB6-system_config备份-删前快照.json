@@ -1,0 +1,106 @@
+{
+  "dumpedAt": "2026-08-30T16:36:06.200Z",
+  "count": 4,
+  "docs": [
+    {
+      "_id": "init",
+      "status": 1
+    },
+    {
+      "_id": "f57953266a7a8ccd0040d8ee77e0d811",
+      "data": {
+        "_id": "ai_config",
+        "type": "ai",
+        "asr": {
+          "enabled": false,
+          "appId": "",
+          "appKey": "",
+          "secretKey": ""
+        },
+        "nlp": {
+          "enabled": false,
+          "apiKey": ""
+        },
+        "voice": {
+          "enabled": false,
+          "voiceId": ""
+        },
+        "printer": {
+          "enabled": false,
+          "printerId": "",
+          "printerName": ""
+        },
+        "status": 1,
+        "createTime": "2026-08-11T02:45:33.230Z"
+      }
+    },
+    {
+      "_id": "9b54dbe16a81c517008232634d073cd7",
+      "data": {
+        "_id": "global",
+        "autoConfirm": {
+          "enabled": true,
+          "time": "00:00"
+        }
+      }
+    },
+    {
+      "_id": "global",
+      "autoConfirm": {
+        "enabled": false,
+        "time": "16:00"
+      },
+      "ai": {
+        "tencent": {
+          "enabled": true,
+          "secretId": "[REDACTED]",
+          "secretKey": "[REDACTED]",
+          "engine": "16k_zh"
+        },
+        "tokenhub": {
+          "enabled": true,
+          "apiKey": "[REDACTED]",
+          "baseUrl": "https://tokenhub.tencentmaas.com/v1",
+          "model": "hy3",
+          "models": [
+            "hy3",
+            "deepseek-v4-pro",
+            "deepseek-v4-pro-202606",
+            "deepseek-v4-flash",
+            "deepseek-v4-flash-202605",
+            "glm-5.3",
+            "glm-5.2",
+            "glm-5.1",
+            "glm-5",
+            "glm-5-turbo",
+            "glm-5v-turbo",
+            "kimi-k3",
+            "kimi-k2.7-code",
+            "kimi-k2.7-code-highspeed",
+            "kimi-k2.6",
+            "minimax-m3",
+            "minimax-m2.7",
+            "hy-mt2-pro",
+            "hy-mt2-plus",
+            "hy-mt2-lite",
+            "hy-role",
+            "hunyuan-role-latest",
+            "mimo-v2.5-pro"
+          ]
+        },
+        "relay": {
+          "enabled": false,
+          "baseUrl": "",
+          "apiKey": "",
+          "model": ""
+        }
+      },
+      "printer": {
+        "enabled": false,
+        "printerId": "",
+        "printerName": ""
+      },
+      "updatedAt": "2026-08-18T16:38:24.557Z"
+    }
+  ]
+}
