@@ -88,3 +88,10 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
 - **缺 lockfile**：clear-all-data / init-db / sync-data 三个云函数缺 package-lock.json（依赖仅 wx-server-sdk，可确定性构建）→ 登记 P3 补建。
 - **处置=豁免（DEPAUD 纪律）**：生产面高危=平台 SDK 传递依赖、不可独立升级+代码零直接引用+不可达，写明豁免理由；根目录 dev 漏洞不影响生产。不阻塞发版（无生产可达高危）。
 - **P3 登记**：① wx-server-sdk 平台传递依赖漏洞（form-data/protobufjs/request 等）豁免，待微信平台升级 SDK；② 3 个云函数补 package-lock.json。
+
+## R13 全量回归 test-all（13 步 fresh run，2026-08-31）
+- **首跑中断（2 个真问题，均已修复）**：
+  1. 审计[7] 报权限快照漂移——R10 csv-injection-test 预置的 QA 无导出权限用户未被 cleanup 删除（cleanup 只删了注入客户/订单）。已修 cleanup 补删 QA 用户 + 残留归零断言加 QA 用户项；DB 清理 qa_noexport_csv_001/r10_probe_orderer，审计恢复 12/0。
+  2. 第 6 步 wx-role-sim 死于"FATAL timeout waiting for automator response"（微信开发者工具模拟器冷启动竞态，已知坑）——暴露回归框架缺口：run_ui 重试只包第 2/3/4 步，但 6/9/10/11 步同样走 automator 却无重试，一次抖动即废掉整个 13 步回归。已把 run_ui 扩到全部 7 个 automator 步骤（sh -n 通过）。
+- **重跑 13/13 全绿**：对账 12/0、权限逻辑 22/0（含 R11 补强 3 断言）、权限UI 12/0、走查 13/0、深度 24/0、403 28/0（首跑死掉的第 6 步本次通过，瞬态 rawPath 错被 run_ui 重试消化）、状态机 16/0、CSV注入 13/0、E2E 23/0、会员 56/0、幂等 10/0、QA 残留校验通过（生产安全态）。
+- 收工复核：QA=1 残留函数=0；TEST 残留（客户名/订单号/订单客户名/QA用户）全 0；生产基线 282 客户/1 订单/1 用户(admin)。
