@@ -62,3 +62,11 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
 ## R1-R9 累计
 - P0:0 / P1:0；已修 5 个 P2（R7B-3/R7C-1/R7D-70/R7B-2 方案A/R9 超收拦截）；登记 P3：订单号前缀、商品单价小数位、amount 归一对称、错误码统一。
 - 生产安全态：QA 钩子 10 函数全空；数据基线 customers 282 / orders 1 / payments 1 / users 1（测试admin）；TEST 残留 0。
+
+## R10 导出/打印/报表 + CSV 公式注入（2026-08-31）
+- 范围：report export 三 tab（customer/product/payment 守恒口径）、exportLedger 16 列台账、receivable exportReceivable、printOrder PDF 全链路（pdf-lib 生成 + 假上传桩验字节）、无导出权限用户 403 门禁、CSV 公式注入端到端。
+- **真端到端 22/22 全绿**（/tmp/r10_verify.cjs，桩 wx-server-sdk + 真云 DB）：权限 403 双拦、customer 导出逐行+合计守恒 508=508+0、ledger 16 列+合计行+总件数行、printOrder 真实订单 PDF 产出（黄焖鸡2店_销售单_丰淮商贸-20260826-0001.pdf）、不存在订单 5001 不裸异常、注入向量转义生效、残留全 0。
+- **代码零 bug**：report/receivable/orders 三个 CSV 出口（toCSV/内联拼法）均带 `^[=+\-@]` 前缀转义，防护真实有效。
+- **测试缺陷修正（P2，测试侧）**：首版 /tmp 注入用例把 `=` 放在客户名中间（TEST_R10=cmd），sanitizeCell 按规则不转义 → 2 条断言假 FAIL，且"无裸公式"那条因注入串根本没进导出而平凡 PASS（假阴性）。修正：注入名以 = / + 开头（真实 Excel 公式向量）+ 挂订单（report customer tab 只聚合有订单客户）→ 13 条断言真云端全绿。
+- **固化防回归**：新增 tests/csv-injection-test.js（真 callFunction 链路，QA 档），挂 test-all 第 8 步，test-all 12 步 → 13 步（重编号完成，sh -n 通过）。
+- 生产安全态：QA 钩子 10 函数全空（轮询复核 0）；TEST 残留 0（客户/订单/无权限用户全清理，残留归零断言通过）。

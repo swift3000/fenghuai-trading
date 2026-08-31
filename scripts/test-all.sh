@@ -10,41 +10,44 @@ run_ui() {
   node "$1" || { echo "    ⚠ 首次失败，等待 5s 后重试..."; sleep 5; node "$1"; }
 }
 
-echo "==> [1/11] 数据对账审计（data-consistency）+ 权限逻辑单测（perm-logic）"
+echo "==> [1/13] 数据对账审计（data-consistency）+ 权限逻辑单测（perm-logic）"
 node tests/data-consistency-audit.js
 node tests/perm-logic-test.js
 
-echo "==> [2/11] 权限 UI 测试（wx-perm-ui，需微信开发者工具模拟器）"
+echo "==> [2/13] 权限 UI 测试（wx-perm-ui，需微信开发者工具模拟器）"
 run_ui tests/wx-perm-ui-test.js
 
-echo "==> [3/11] 页面走查（wx-pagewalk）"
+echo "==> [3/13] 页面走查（wx-pagewalk）"
 run_ui tests/wx-pagewalk-test.js
 
-echo "==> [4/11] 多层级深度巡检（wx-deepwalk：L2 页内 tab + L3 弹窗）"
+echo "==> [4/13] 多层级深度巡检（wx-deepwalk：L2 页内 tab + L3 弹窗）"
 run_ui tests/wx-deepwalk-test.js
 
-echo "==> [5/11] 开启 QA 身份钩子（部署 8 函数 QA_IMPERSONATE=1，约 3-4 分钟）"
+echo "==> [5/13] 开启 QA 身份钩子（部署 8 函数 QA_IMPERSONATE=1，约 3-4 分钟）"
 node tests/qa-toggle.js on
 
-echo "==> [6/11] 多角色云端 403 拦截 + 开关即时生效（wx-role-sim）"
+echo "==> [6/13] 多角色云端 403 拦截 + 开关即时生效（wx-role-sim）"
 node tests/wx-role-sim-test.js
 
-echo "==> [7/12] 状态机终态守卫回归（order-state-guard，T53：已取消不可分拣/出库 + 重复出库幂等不覆盖）"
+echo "==> [7/13] 状态机终态守卫回归（order-state-guard，T53：已取消不可分拣/出库 + 重复出库幂等不覆盖）"
 node tests/order-state-guard-test.js
 
-echo "==> [8/12] 全业务流程 E2E（wx-e2e-flow）"
+echo "==> [8/13] CSV 公式注入回归（csv-injection，T59-R10：=/+ 开头单元格导出必被转义 + 导出权限 403）"
+node tests/csv-injection-test.js
+
+echo "==> [9/13] 全业务流程 E2E（wx-e2e-flow）"
 node tests/wx-e2e-flow-test.js
 
-echo "==> [9/12] 会员/权限管理（wx-member-mgmt）"
+echo "==> [10/13] 会员/权限管理（wx-member-mgmt）"
 node tests/wx-member-mgmt-test.js
 
-echo "==> [10/12] 幂等专项验收（wx-empirical-idem：双击不重复登记/重复确认不重复入账）"
+echo "==> [11/13] 幂等专项验收（wx-empirical-idem：双击不重复登记/重复确认不重复入账）"
 node tests/wx-empirical-idem-test.js
 
-echo "==> [11/12] 关闭 QA 身份钩子（恢复生产安全态，约 3-4 分钟）"
+echo "==> [12/13] 关闭 QA 身份钩子（恢复生产安全态，约 3-4 分钟）"
 node tests/qa-toggle.js off
 
-echo "==> [12/12] 收尾门禁：QA 残留校验（任一函数 QA_IMPERSONATE 非空或查询异常即失败）"
+echo "==> [13/13] 收尾门禁：QA 残留校验（任一函数 QA_IMPERSONATE 非空或查询异常即失败）"
 : > /tmp/qa-residue-check.log
 node tests/qa-toggle.js status > /tmp/qa-residue-check.log 2>&1 || true
 RESIDUE=$(grep -acE 'QA_IMPERSONATE=[^;[:space:]]' /tmp/qa-residue-check.log || true)
