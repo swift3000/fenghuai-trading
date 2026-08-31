@@ -530,6 +530,28 @@ exports.main = async (event, context) => {
         return { code: 0, data: { reused: true } }
       }
 
+      // T59-R9（P2 资金红线纵深防御）：确认前超收拦截。
+      // collect 的 pending 占额校验是 get→check→add 非原子（TOCTOU），并发下可能挂出超额 pending；
+      // 若超额 pending 被确认将造成 已收>应收 的超收错账（P0）。正常前端顺序操作不可触达，
+      // 但确认时按 订单总额−已确认折价 设上限拦截是纯防御、不改变任何合法确认行为：
+      // 已确认实收(不含本笔) + 本笔实收 + 已确认折价 + 本笔折价 > 订单总额 → 拒绝，payment 保持 pending 可回退。
+      {
+        const __ord = await db.collection('orders').doc(targetOrderId).get()
+        const __o = __ord && __ord.data
+        if (__o) {
+          const __conf = await db.collection('payments').where({ orderId: targetOrderId, status: 'confirmed' }).get()
+          const __confAmt = __conf.data.reduce((s, x) => s + toCents(x.amount || 0), 0)
+          const __confDisc = __conf.data.reduce((s, x) => s + toCents(x.discount || 0), 0)
+          const __totalC = toCents(__o.totalAmount || 0)
+          const __thisAmtC = toCents(pay.amount || 0)
+          const __thisDiscC = toCents(pay.discount || 0)
+          if (__confAmt + __confDisc + __thisAmtC + __thisDiscC > __totalC) {
+            console.log('[confirmPayment] 超收拦截：确认后实收+折价将超订单总额', { targetOrderId, conf: Math.round(__confAmt+__confDisc), this: Math.round(__thisAmtC+__thisDiscC), total: Math.round(__totalC) })
+            return { code: 4002, message: '确认后收款将超过订单应收，已拦截（该笔保持待确认，可作废后重收）' }
+          }
+        }
+      }
+      
       // T50-2：并发防双记——条件更新仅当 status 仍为 pending 才翻 confirmed。
       // 原 get→update 两步非原子：两并发请求同时读到 pending 都通过守卫会双写 confirmed
       // （金额在重算口径下不会双计，但确认人/时间/日志会被第二笔覆盖，审计轨迹错乱）
