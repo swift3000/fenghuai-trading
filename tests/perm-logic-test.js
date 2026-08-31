@@ -48,6 +48,18 @@ console.log('【3】锁定权限 member:manage 始终仅 admin');
 ok(!!pm.LOCKED_PERMS['member:manage'], 'member:manage 在锁定表中');
 ok(!pm.DEFAULT_MATRIX['member:manage'].orderer && !pm.DEFAULT_MATRIX['member:manage'].sorter && !pm.DEFAULT_MATRIX['member:manage'].warehouse, '默认矩阵中非 admin 无 member:manage');
 
+console.log('【4】T59-R11 变异测试补强（MUT：存活变异体 → 弱用例登记补断言）');
+// R11 存活 18 个变异体 = 共享权限的 admin 列误翻 false。运行期 checkPermission 对 admin 有硬 bypass
+//（role==='admin' 直接放行，不查矩阵），行为不受矩阵影响；补断言使矩阵与 bypass 的一致性显式可测。
+{
+  const shared = Object.keys(pm.DEFAULT_MATRIX).filter(k => !pm.LOCKED_PERMS[k]);
+  const badAdmin = shared.filter(k => !pm.DEFAULT_MATRIX[k].admin);
+  ok(badAdmin.length === 0, '所有共享权限在默认矩阵中 admin 恒为 true（admin 硬 bypass 与矩阵一致，误翻 false 可被检出）' + (badAdmin.length ? ' 漏=' + badAdmin.join(',') : ''));
+  ok(pm.DEFAULT_MATRIX['order:view'] && pm.DEFAULT_MATRIX['order:view'].admin === true, 'order:view 矩阵中 admin 恒为 true（基线权限 admin 列防误翻，R11 存活变异体补断言）');
+}
+// R11 存活 1 个变异体 = mergedPerms null-check→truthy（null 覆盖被当"无覆盖"走 fallback，正确语义是 null=显式覆盖→仅基线）
+ok(arrEq(pm.mergedPerms('orderer', null), pm.defaultPermsForRole('orderer')), 'overrides=null 回落默认（与 undefined 同语义）');
+
 console.log('【4】users/index.js 权限来源 = 共享矩阵（防硬编码漂移）');
 const uSrc = fs.readFileSync(path.join(__dirname, '..', 'cloudfunctions', 'users', 'index.js'), 'utf8');
 const okNoHardcode = !uSrc.includes('const ROLE_PERMISSIONS');

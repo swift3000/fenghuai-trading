@@ -70,3 +70,11 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
 - **测试缺陷修正（P2，测试侧）**：首版 /tmp 注入用例把 `=` 放在客户名中间（TEST_R10=cmd），sanitizeCell 按规则不转义 → 2 条断言假 FAIL，且"无裸公式"那条因注入串根本没进导出而平凡 PASS（假阴性）。修正：注入名以 = / + 开头（真实 Excel 公式向量）+ 挂订单（report customer tab 只聚合有订单客户）→ 13 条断言真云端全绿。
 - **固化防回归**：新增 tests/csv-injection-test.js（真 callFunction 链路，QA 档），挂 test-all 第 8 步，test-all 12 步 → 13 步（重编号完成，sh -n 通过）。
 - 生产安全态：QA 钩子 10 函数全空（轮询复核 0）；TEST 残留 0（客户/订单/无权限用户全清理，残留归零断言通过）。
+
+## R11 安全深钻：MUT 变异测试（perm-matrix-shared.js 权限核心，2026-08-31）
+- 工具：stryker v10 command-runner 对本项目 CommonJS 云函数模块**无法劫持测试 require 路径**（0% 覆盖、180 假存活，不可用）→ 改用自建定向变异分析器（vm 沙箱逐个变异体加载 + perm-logic 同款断言集判杀），更贴合本项目且诚实。
+- 目标：cloudfunctions/auth/perm-matrix-shared.js（defaultPermsForRole / mergedPerms / DEFAULT_MATRIX / BASELINE / LOCKED），生成 **88 个有效变异体**（矩阵 80 布尔翻转 + BASELINE/Locked/merged/dedupe 8 个结构变异）。
+- **结果：85 杀 / 3 存活**。存活 3 个 = `order:view` 的非 admin 矩阵列翻转——**证明为死数据**：order:view 是 BASELINE 权限，defaultPermsForRole 从 BASELINE_PERMS 提供、从不读矩阵非 admin 列（文件注释"不出现在开关矩阵"佐证），翻转运行时行为不变，非用例缺口。
+- **发现并补强真实弱用例**：原断言从不检查 admin 列 → 共享权限（order:create/edit/delete/print/export、product、customer、sort、warehouse、receivable:view/discount、report 三项）的 admin 误翻 false 无法检出（共 18 个危险变异体）。已补 3 条断言进 tests/perm-logic-test.js【4】：所有共享权限 admin 恒 true + order:view.admin 恒 true + overrides=null 回落默认。补后危险 admin 翻转全被杀。
+- 另登记 2 个可接受健壮性变异：mergedPerms null-check→truthy（null 覆盖语义）、defaultPerms no-dedupe（Set 去重安全网，无重复输入时不可观测）。
+- perm-logic-test.js 21→22 断言全绿；users/ 与 auth/ 的 perm-matrix-shared.js 字节一致校验仍通过。
