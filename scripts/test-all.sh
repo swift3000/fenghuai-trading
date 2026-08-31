@@ -27,7 +27,7 @@ echo "==> [5/13] 开启 QA 身份钩子（部署 8 函数 QA_IMPERSONATE=1，约
 node tests/qa-toggle.js on
 
 echo "==> [6/13] 多角色云端 403 拦截 + 开关即时生效（wx-role-sim）"
-node tests/wx-role-sim-test.js
+run_ui tests/wx-role-sim-test.js
 
 echo "==> [7/13] 状态机终态守卫回归（order-state-guard，T53：已取消不可分拣/出库 + 重复出库幂等不覆盖）"
 node tests/order-state-guard-test.js
@@ -36,13 +36,13 @@ echo "==> [8/13] CSV 公式注入回归（csv-injection，T59-R10：=/+ 开头�
 node tests/csv-injection-test.js
 
 echo "==> [9/13] 全业务流程 E2E（wx-e2e-flow）"
-node tests/wx-e2e-flow-test.js
+run_ui tests/wx-e2e-flow-test.js
 
 echo "==> [10/13] 会员/权限管理（wx-member-mgmt）"
-node tests/wx-member-mgmt-test.js
+run_ui tests/wx-member-mgmt-test.js
 
 echo "==> [11/13] 幂等专项验收（wx-empirical-idem：双击不重复登记/重复确认不重复入账）"
-node tests/wx-empirical-idem-test.js
+run_ui tests/wx-empirical-idem-test.js
 
 echo "==> [12/13] 关闭 QA 身份钩子（恢复生产安全态，约 3-4 分钟）"
 node tests/qa-toggle.js off

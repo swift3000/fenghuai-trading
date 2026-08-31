@@ -77,9 +77,13 @@ const created={orders:[],customers:[]};
   console.log('== [5] 清理 TEST 客户/订单 + 残留归零 ==');
   for(const oid of created.orders){ const d=await C('orders',{action:'delete',orderId:oid,qaAsOpenid:ADMIN_OPENID}); if(d.code!==0) console.log('  ! 订单删除返回',JSON.stringify(d).slice(0,120)); }
   for(const cid of created.customers){ const d=await C('customers',{action:'delete',customerId:cid,qaAsOpenid:ADMIN_OPENID}); if(d.code!==0) console.log('  ! 客户删除返回',JSON.stringify(d).slice(0,120)); }
+  // T59-R13：预置的 QA 无导出权限用户也必须清理（否则 data-consistency 审计[7] 报权限快照漂移）
+  const qex=await db.collection('users').where({openid:QA_NOEXPORT}).get();
+  for(const u of (qex.data||[])){ try{ await db.collection('users').doc(u._id).remove(); }catch(e){ console.log('  ! QA用户删除异常',e.message); } }
   const lc=await db.collection('customers').where({name:INJ_RE}).get();
   const lo=await db.collection('orders').where({customerName:INJ_RE}).get();
-  ok((lc.data||[]).length===0&&(lo.data||[]).length===0,'残留归零（客户='+(lc.data||[]).length+' 订单='+(lo.data||[]).length+'）');
+  const lq=await db.collection('users').where({openid:QA_NOEXPORT}).get();
+  ok((lc.data||[]).length===0&&(lo.data||[]).length===0&&((lq.data||[]).length===0),'残留归零（客户='+(lc.data||[]).length+' 订单='+(lo.data||[]).length+' QA用户='+(lq.data||[]).length+'）');
 
   console.log('RESULT pass='+pass+' fail='+fail);
   process.exit(fail===0?0:1);
