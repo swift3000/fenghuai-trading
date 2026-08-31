@@ -78,3 +78,13 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
 - **发现并补强真实弱用例**：原断言从不检查 admin 列 → 共享权限（order:create/edit/delete/print/export、product、customer、sort、warehouse、receivable:view/discount、report 三项）的 admin 误翻 false 无法检出（共 18 个危险变异体）。已补 3 条断言进 tests/perm-logic-test.js【4】：所有共享权限 admin 恒 true + order:view.admin 恒 true + overrides=null 回落默认。补后危险 admin 翻转全被杀。
 - 另登记 2 个可接受健壮性变异：mergedPerms null-check→truthy（null 覆盖语义）、defaultPerms no-dedupe（Set 去重安全网，无重复输入时不可观测）。
 - perm-logic-test.js 21→22 断言全绿；users/ 与 auth/ 的 perm-matrix-shared.js 字节一致校验仍通过。
+
+## R12 DEPAUD 依赖审计（npm audit 根目录+生产云函数，2026-08-31）
+- **生产面（云函数，直接决定暴露面）**：
+  - 直接依赖仅 4 个功能必需包：pdf-lib(MIT)/xlsx(Apache-2.0)/subset-font(BSD-3)/@pdf-lib/fontkit(MIT) + wx-server-sdk(MIT)，**license 全部合规（MIT/Apache/BSD，无 GPL/传染性）**。
+  - orders/report/receivable 各报 18 漏洞（3 critical: form-data/protobufjs/request，8 high），**全部溯源到 `wx-server-sdk ~2.6.3` 平台 SDK 的传递依赖链**（tcb-admin-node→request→form-data/protobufjs/tough-cookie 等）。
+  - **关键判定**：云函数源码零直接 require 这些高危传递包（rg 证实仅 import pdf-lib/xlsx/subset-font/fontkit）；且 wx-server-sdk 版本由微信平台锁定、不可独立升级 → **高危传递包不可达、无实际利用路径**。
+- **根目录**：76 漏洞（44 critical）全部在 devDependencies（babel 6.x 家族/miniprogram-ci/sharp 等本地 CI/测试工具链），不进生产部署，不影响线上暴露面。
+- **缺 lockfile**：clear-all-data / init-db / sync-data 三个云函数缺 package-lock.json（依赖仅 wx-server-sdk，可确定性构建）→ 登记 P3 补建。
+- **处置=豁免（DEPAUD 纪律）**：生产面高危=平台 SDK 传递依赖、不可独立升级+代码零直接引用+不可达，写明豁免理由；根目录 dev 漏洞不影响生产。不阻塞发版（无生产可达高危）。
+- **P3 登记**：① wx-server-sdk 平台传递依赖漏洞（form-data/protobufjs/request 等）豁免，待微信平台升级 SDK；② 3 个云函数补 package-lock.json。
