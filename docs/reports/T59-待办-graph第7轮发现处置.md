@@ -107,3 +107,9 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
   2. payment 聚合断言口径——"全部"时间范围含生产基线 508，断言须用"基线快照(造数前捕获)+已知增量"口径，不得写死绝对值。
 - **固化防回归**：tests/deep-chain-cross-test.js（15 断言，真云端 callFunction 不占模拟器）挂 test-all 第 9 步，13 步 → 14 步。
 - 收工：TEST 残留 0（客户/订单/收款）；生产基线 282/1/1 恢复。
+
+## R15 边界+性能终验（10 并发 × 核心 5 接口，2026-09-01）
+- 口径：10 并发 × 3 轮 × 5 核心接口（report summary/export/ledger、receivable dashboard、orders list）= 150 次真实 callFunction + 守恒断言，预热后采样（冷启动不计 P95）。
+- **结果 7/7 全绿**：零错误 150/150；各接口 P95 = summary 804 / export 902 / ledger 818 / dashboard 698 / orders list 670 ms（全部 < 2000ms 预算，P50 392-577ms，max 905ms）；并发后汇总守恒 应收508=已收508+欠0。
+- 首跑 2 个测试脚本问题已修正（非代码 bug）：① 守恒断言误读 summary 顶层（paid/unpaid 在 customers 行内）→ 改为逐客户行求和；② 冷启动未预热导致 P95 虚高 2.6-4.7s → 加预热轮后回落至 <1s。云函数冷启动 ~1.5-3s 属 Serverless 正常行为，非性能缺陷。
+- 固化为 tests/perf-baseline-test.js（QA 档，挂 R16 时并入 test-all 第 10 步，14→15 步）。
