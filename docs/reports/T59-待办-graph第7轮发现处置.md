@@ -95,3 +95,15 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
   2. 第 6 步 wx-role-sim 死于"FATAL timeout waiting for automator response"（微信开发者工具模拟器冷启动竞态，已知坑）——暴露回归框架缺口：run_ui 重试只包第 2/3/4 步，但 6/9/10/11 步同样走 automator 却无重试，一次抖动即废掉整个 13 步回归。已把 run_ui 扩到全部 7 个 automator 步骤（sh -n 通过）。
 - **重跑 13/13 全绿**：对账 12/0、权限逻辑 22/0（含 R11 补强 3 断言）、权限UI 12/0、走查 13/0、深度 24/0、403 28/0（首跑死掉的第 6 步本次通过，瞬态 rawPath 错被 run_ui 重试消化）、状态机 16/0、CSV注入 13/0、E2E 23/0、会员 56/0、幂等 10/0、QA 残留校验通过（生产安全态）。
 - 收工复核：QA=1 残留函数=0；TEST 残留（客户名/订单号/订单客户名/QA用户）全 0；生产基线 282 客户/1 订单/1 用户(admin)。
+
+## R14 深链路组合（多客户多订单报表交叉验证，2026-09-01）
+- 真实云函数流造数（customers create → orders create → receivable collect+confirmPayment）：A 客户 2 单（100 全结清 + 200 部分收 50）/ B 客户 1 单（80 全结清），三口径交叉核对：
+  - ① report customer tab：A 行 2单/应收300/已收150/欠150，B 行 1单/80/80/0，全表合计 888=738+150 守恒 ✓
+  - ② receivable dashboard（R7B-2 方案A 口径）：A 有未结清订单 → 未结清视图（欠150）；B 全部 paid → 已结清视图（欠0）✓
+  - ③ payment tab 收款方式聚合：基线 508 现金 + 增量 现金2笔180/微信1笔50 → 现金3笔688/微信1笔50，与 payments 表逐笔对账一致 ✓
+- **生产代码零 bug**（15/15 断言全绿）。
+- **测试侧发现并修复**（P2）：
+  1. cleanup 顺序缺陷——T50-3 资金红线拦 API 删除"有已确认收款的订单"（设计正确），首版 cleanup 只按 created.payments 删收款且顺序不对，paid 测试订单删不掉 → 残留订单污染后续 payment 聚合口径。修正：cleanup 按 customerName 正则先删 R14 收款 → API 删订单 → paid 残留 DB 层兜底删 → 删客户。
+  2. payment 聚合断言口径——"全部"时间范围含生产基线 508，断言须用"基线快照(造数前捕获)+已知增量"口径，不得写死绝对值。
+- **固化防回归**：tests/deep-chain-cross-test.js（15 断言，真云端 callFunction 不占模拟器）挂 test-all 第 9 步，13 步 → 14 步。
+- 收工：TEST 残留 0（客户/订单/收款）；生产基线 282/1/1 恢复。
