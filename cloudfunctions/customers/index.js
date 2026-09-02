@@ -83,6 +83,13 @@ exports.main = async (event, context) => {
       if (authResult.code !== 0) return authResult
 
       const { customerId, name, alias, region, phone, contact } = event
+
+      // T63-2：不存在 ID 预检——原实现 update() 静默成功（假更新回执）
+      if (!customerId) return { code: 4001, message: '缺少客户 ID 参数' }
+      // wx-server-sdk doc().get() 对不存在 ID 会抛错，try/catch 兜住 → 4004
+      let __updExists = false
+      try { const __r = await db.collection('customers').doc(customerId).get(); __updExists = !!__r.data } catch (e) { __updExists = false }
+      if (!__updExists) return { code: 4004, message: '客户不存在' }
       
       // 更新客户信息
       const updateData = {}

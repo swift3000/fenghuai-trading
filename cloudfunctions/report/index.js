@@ -457,7 +457,8 @@ exports.main = async (event, context) => {
         }
       }
       
-      return { code: 5001, message: '不支持的报表类型' }
+      // T63-5：非法 reportTab 属参数错误（1001），非服务端内部错误（5001 语义见 API 文档 §1.4）
+      return { code: 1001, message: '不支持的报表类型：' + reportTab }
     }
     
     case 'trend': {

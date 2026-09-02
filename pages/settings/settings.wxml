@@ -31,6 +31,18 @@
   </view>
 
   <view class="sec-card" wx:if="{{userRole === 'admin'}}">
+    <view class="sec-head">🏷️ 订单号前缀 <text class="hint-txt">新订单编号</text></view>
+    <view class="sec-body">
+      <view class="ag-step">新建订单的编号前缀（如 乾多多 / 丰淮商贸），生成格式：前缀-日期-序号。修改只影响新订单，已生成的订单号不变。</view>
+      <view class="mf-row">
+        <text class="mf-label">前缀</text>
+        <input value="{{orderPrefix}}" bindinput="onOrderPrefix" placeholder="默认 乾多多" maxlength="20" />
+      </view>
+      <button class="btn-primary" bindtap="saveOrderPrefix">💾 保存订单号前缀</button>
+    </view>
+  </view>
+
+  <view class="sec-card" wx:if="{{userRole === 'admin'}}">
     <view class="sec-head">🧠 TokenHub 大模型（NLP）配置 <text class="hint-txt">复杂语义理解</text></view>
     <view class="sec-body">
       <view class="ag-step">智能录入的「复杂语义理解」接入腾讯云 TokenHub 大模型（OpenAI 兼容接口，与语音识别密钥独立），用于规则引擎未命中的口语化/复杂表达。23 个免费额度模型可切换，默认 hy3（100万 tokens/年）。未启用或未配置时，自动降级为规则引擎（文字匹配仍可用）。密钥仅保存在云端，不会泄露到前端。</view>

@@ -138,6 +138,13 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:edit')
       if (authResult.code !== 0) return authResult
 
+      // T63-1：不存在 ID 预检——原实现 remove() 静默成功（假删除回执）
+      if (!event.productId) return { code: 4001, message: '缺少商品 ID 参数' }
+      // wx-server-sdk doc().get() 对不存在 ID 会抛错（与 node-sdk 返回空不同），try/catch 兜住 → 4004
+      let __delExists = false
+      try { const __r = await db.collection('products').doc(event.productId).get(); __delExists = !!__r.data } catch (e) { __delExists = false }
+      if (!__delExists) return { code: 4004, message: '商品不存在' }
+
       await db.collection('products').doc(event.productId).remove()
       
       return { code: 0, data: {} }

@@ -62,6 +62,16 @@ async function attachOrderPayments(orders) {
 const COMPANY_NAME = '乾多多'
 function salesTitle(o){ return (o && (o.customerName || o.customer) || COMPANY_NAME) + '食品销售单' }
 
+// T63-7：订单号前缀可配置（system_config.orderPrefix，默认乾多多）——
+// 生产存在 丰淮商贸- 与 乾多多- 双前缀并存的历史单，新单前缀可在设置页修改；存量订单不迁移
+async function getOrderNoPrefix(){
+  try {
+    const res = await db.collection('system_config').doc('global').get()
+    const p = res.data && res.data.orderPrefix
+    return (typeof p === 'string' && p.trim()) ? p.trim() : COMPANY_NAME
+  } catch (e) { return COMPANY_NAME }
+}
+
 // 本地数量文案（云函数无法 require 前端 utils，内联精简版）
 function qtyDescLocal(it) {
   const pieceQty = it.piece_qty || 0
@@ -344,8 +354,10 @@ exports.main = async (event, context) => {
       const totalAmount = Math.round(itemsSum * 100) / 100
       const today = bjNow()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
-      const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: `乾多多-${dateStr}`, options: 'i' }) }).count()
-      const orderNo = `乾多多-${dateStr}-${(count.total + 1).toString().padStart(4, '0')}`
+      // T63-7：前缀读系统配置（默认乾多多）；同日同前缀顺序号
+      const noPrefix = await getOrderNoPrefix()
+      const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: noPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-' + dateStr, options: 'i' }) }).count()
+      const orderNo = noPrefix + '-' + dateStr + '-' + (count.total + 1).toString().padStart(4, '0')
       const order = {
         orderNo, customerId, customerName, customerRegion: customerRegion || '', items: normalizedItems,
         totalAmount, status: 'submitted',
@@ -491,8 +503,10 @@ exports.main = async (event, context) => {
       // 原实现无状态守卫且 patch 硬写 status:'submitted'/sortStatus:'pending'/outStatus:'pending'：
       // 已分拣/已出库/已收款单可被编辑后重置回待分拣（二次出库敞口），已取消单可"复活"。
       {
-        const __cur = await db.collection('orders').doc(orderId).get()
-        if (!__cur.data) return { code: 4004, message: '订单不存在' }
+        let __curData = null
+        try { __curData = (await db.collection('orders').doc(orderId).get()).data } catch (e) { __curData = null }
+        if (!__curData) return { code: 4004, message: '订单不存在' }
+        const __cur = { data: __curData }
         if (__cur.data.status !== 'submitted') return { code: 3002, message: '仅待分拣订单可编辑' }
       }
       const normalizedItems = (items || []).map(it => {
@@ -531,8 +545,10 @@ exports.main = async (event, context) => {
       const VALID_STATUS = ['submitted', 'sorted', 'confirmed', 'completed', 'cancelled']
       const target = event.status
       if (!VALID_STATUS.includes(target)) return { code: 1001, message: '非法目标状态：' + target }
-      const curSt = await db.collection('orders').doc(event.orderId).get()
-      if (!curSt.data) return { code: 4004, message: '订单不存在' }
+      let __curStData = null
+      try { __curStData = (await db.collection('orders').doc(event.orderId).get()).data } catch (e) { __curStData = null }
+      if (!__curStData) return { code: 4004, message: '订单不存在' }
+      const curSt = { data: __curStData }
       const from = curSt.data.status
       if (target === 'cancelled') {
         // 取消订单仅管理员（与权限矩阵取消语义一致）
@@ -564,8 +580,10 @@ exports.main = async (event, context) => {
       // 客户应收凭空减少、收款台账蒸发，财务对账无法解释（资金红线，服务端拦截）。
       // 注意：部分收款的订单 payment_status 仍为 pending，不能只看状态位，
       // 必须查 payments 集合是否存在 status=confirmed 记录
-      const __curDel = await db.collection('orders').doc(event.orderId).get()
-      if (!__curDel.data) return { code: 4004, message: '订单不存在' }
+      let __curDelData = null
+      try { __curDelData = (await db.collection('orders').doc(event.orderId).get()).data } catch (e) { __curDelData = null }
+      if (!__curDelData) return { code: 4004, message: '订单不存在' }
+      const __curDel = { data: __curDelData }
       let __hasConfirmedPay = false
       try {
         const __cp = await db.collection('payments').where({
@@ -761,9 +779,10 @@ exports.main = async (event, context) => {
       const __p = await checkPermission('order:export'); if (__p.code !== 0) return __p
       const orderId = event.orderId || event.id
       if (!orderId) return { code: 5001, message: '缺少订单 ID 参数' }
-      const res = await db.collection('orders').doc(orderId).get()
-      const o = res.data
-      if (!o) return { code: 5001, message: '订单不存在' }
+      let o = null
+      try { o = (await db.collection('orders').doc(orderId).get()).data } catch (e) { o = null }
+      // T63-6：不存在订单属 4004（资源不存在），非 5001（服务端内部错误）
+      if (!o) return { code: 4004, message: '订单不存在' }
       const d = bjNow()
       const p2 = (n) => (n < 10 ? '0' + n : '' + n)
       const rows = [
@@ -806,9 +825,10 @@ exports.main = async (event, context) => {
       if (!orderId) return { code: 5001, message: '缺少订单 ID 参数' }
 
       // 1) 拉取订单 + 客户 + 欠款（与 detail 相同逻辑）
-      const res = await db.collection('orders').doc(orderId).get()
-      const o = res.data
-      if (!o) return { code: 5001, message: '订单不存在' }
+      let o = null
+      try { o = (await db.collection('orders').doc(orderId).get()).data } catch (e) { o = null }
+      // T63-6：同 exportSingleOrder——不存在订单属 4004
+      if (!o) return { code: 4004, message: '订单不存在' }
       if (o.customerId) {
         try {
           const cRes = await db.collection('customers').doc(o.customerId).get()
