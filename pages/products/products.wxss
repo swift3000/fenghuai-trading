@@ -459,9 +459,9 @@
 
 .filter-btn.active,
 .sort-btn.active {
-  background: #07c160;
+  background: var(--theme-primary);
   color: #fff;
-  border-color: #07c160;
+  border-color: var(--theme-primary);
 }
 
 /* ===== 新增商品按钮 ===== */
@@ -533,7 +533,7 @@
   border-radius: 12rpx;
   white-space: nowrap;
 }
-.btn-price { background: #07C160; color: #fff; }
+.btn-price { background: var(--theme-primary); color: #fff; }
 .btn-edit { border: 1rpx solid #E0E0E0; background: #fff; color: #333; }
 .btn-del { border: 1rpx solid #F56C6C; background: #fff; color: #F56C6C; }
 

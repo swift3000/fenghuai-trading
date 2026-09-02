@@ -39,7 +39,7 @@
   font-size: calc(12px * var(--font-scale));
   padding: 6px 14px;
   border-radius: 14px;
-  background: var(--green);
+  background: var(--theme-primary);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -299,7 +299,7 @@
 }
 .ledger-check {
   font-size: calc(40rpx * var(--font-scale, 1));
-  color: #16A34A;
+  color: var(--theme-success);
   font-weight: 700;
   line-height: 1;
 }
@@ -314,7 +314,7 @@
   color: #374151;
   margin-bottom: 4rpx;
 }
-.cc-o-statusline.st-paid { color: #16A34A; }
+.cc-o-statusline.st-paid { color: var(--theme-success); }
 .cc-o-statusline.st-due { color: #EA580C; }
 .cc-o-statusline.st-pending { color: #2563EB; }
 .cc-o-r {
@@ -333,18 +333,18 @@
   line-height: 1.3;
 }
 .settled-card {
-  border-left: 6rpx solid #16A34A;
+  border-left: 6rpx solid var(--theme-success);
   background: linear-gradient(135deg, #F0FDF4 0%, #FFFFFF 45%);
 }
 .settled-check {
   font-size: calc(24rpx * var(--font-scale, 1));
-  color: #16A34A;
+  color: var(--theme-success);
   font-weight: 400;
 }
 .settled-amount .settled-received {
   font-size: calc(30rpx * var(--font-scale, 1));
   font-weight: 700;
-  color: #16A34A;
+  color: var(--theme-success);
 }
 .sc-orders {
   margin-top: 8rpx;
@@ -376,7 +376,7 @@
   text-align: right;
 }
 .sc-paid {
-  color: #16A34A;
+  color: var(--theme-success);
   font-weight: 700;
 }
 /* 操作按钮 */
@@ -884,8 +884,8 @@
   padding: 6px 14px;
   border-radius: 14px;
   background: #fff;
-  border: 1px solid var(--green);
-  color: var(--green);
+  border: 1px solid var(--theme-primary);
+  color: var(--theme-primary);
   cursor: pointer;
   font-weight: 500;
   transition: all 0.15s;
@@ -893,7 +893,7 @@
 }
 
 .recv-confirm-btn:active {
-  background: var(--green);
+  background: var(--theme-primary);
   color: #fff;
 }
 
@@ -906,7 +906,7 @@
   font-size: calc(12px * var(--font-scale));
   padding: 6px 16px;
   border-radius: 14px;
-  background: var(--green);
+  background: var(--theme-primary);
   color: #fff;
   border: none;
   font-weight: 500;
@@ -1004,7 +1004,7 @@
   font-size: calc(28rpx * var(--font-scale, 1));
 }
 .epp-s-row .epp-s-label { color: #4e5969; }
-.epp-s-row.green .epp-s-val { color: #16a34a; }
+.epp-s-row.green .epp-s-val { color: var(--theme-success); }
 .epp-s-row.red .epp-s-val { color: #dc2626; }
 .epp-s-row.muted .epp-s-val { color: #86909c; }
 .epp-s-val { font-weight: 600; color: #1d2129; }
@@ -1203,7 +1203,7 @@
   margin-top: 4rpx;
 }
 .cc-col-val.cc-paid {
-  color: #16A34A;
+  color: var(--theme-success);
 }
 .cc-col-val.cc-due {
   color: #EA580C;
@@ -1237,7 +1237,7 @@
   font-size: calc(22rpx * var(--font-scale, 1));
 }
 .cc-o-st.st-paid {
-  color: #16A34A;
+  color: var(--theme-success);
 }
 .cc-o-st.st-due {
   color: #EA580C;

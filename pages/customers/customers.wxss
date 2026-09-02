@@ -464,7 +464,7 @@
   flex-shrink: 0;
   padding: 4rpx 14rpx;
   font-size: calc(22rpx * var(--font-scale));
-  color: #07C160;
+  color: var(--theme-primary);
   background: #E8F8EE;
   border-radius: 8rpx;
   white-space: nowrap;

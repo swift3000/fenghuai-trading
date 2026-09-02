@@ -496,7 +496,7 @@
   width: 88rpx;
   height: 88rpx;
   border-radius: 50%;
-  background: #07C160;
+  background: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;

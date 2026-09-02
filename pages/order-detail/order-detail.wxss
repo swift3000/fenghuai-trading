@@ -70,7 +70,7 @@
   width: 8rpx;
   height: 28rpx;
   border-radius: 4rpx;
-  background: var(--theme-primary, #06ad56);
+  background: var(--theme-primary, #07C160);
 }
 .detail-row {
   display: flex;
@@ -109,7 +109,7 @@
   width: 44rpx;
   height: 44rpx;
   border-radius: 12rpx;
-  background: var(--theme-primary, #06ad56);
+  background: var(--theme-primary, #07C160);
   color: #fff;
   font-size: calc(24rpx * var(--font-scale));
   font-weight: 700;
@@ -184,7 +184,7 @@
   border: none;
 }
 .act-print {
-  background: var(--theme-primary, #06ad56);
+  background: var(--theme-primary, #07C160);
   color: #fff;
 }
 .act-edit {
