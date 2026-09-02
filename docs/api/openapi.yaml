@@ -32,6 +32,12 @@ tags:
       description: 云函数 system 的 action 集合
     - name: report
       description: 云函数 report 的 action 集合
+    - name: outbound
+      description: 云函数 outbound 的 action 集合
+    - name: import-data
+      description: 云函数 import-data 的 action 集合（管理员运维）
+    - name: sync-data
+      description: 云函数 sync-data 的 action 集合（管理员运维）
 paths:
   '/auth/login':
     post:
@@ -1733,6 +1739,318 @@ paths:
                       data:
                         type: object
                         description: "{fileID 或 content}（CSV 文件）"
+  '/outbound/pendingSortList':
+    post:
+      summary: "待分拣订单列表"
+      description: "云函数 outbound / pendingSortList 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'outbound', data: { action: 'pendingSortList' } })。权限: sort:task。"
+      tags: ["outbound"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"pendingSortList\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "订单列表（status=submitted，倒序）"
+
+  '/outbound/pendingOutList':
+    post:
+      summary: "待出库订单列表"
+      description: "云函数 outbound / pendingOutList 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'outbound', data: { action: 'pendingOutList' } })。权限: warehouse:confirm。"
+      tags: ["outbound"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"pendingOutList\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "订单列表（status=sorted，倒序）"
+
+  '/outbound/confirmSort':
+    post:
+      summary: "确认分拣（submitted→sorted，状态守卫幂等）"
+      description: "云函数 outbound / confirmSort 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'outbound', data: { action: 'confirmSort' } })。权限: sort:task。"
+      tags: ["outbound"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"confirmSort\"（必填）；orderId: string（必填）；items?: array"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "message=分拣确认成功 / 已确认无需重复操作"
+
+  '/outbound/confirmOut':
+    post:
+      summary: "确认出库（sorted→confirmed，状态守卫幂等）"
+      description: "云函数 outbound / confirmOut 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'outbound', data: { action: 'confirmOut' } })。权限: warehouse:confirm。"
+      tags: ["outbound"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"confirmOut\"（必填）；orderId: string（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "message=出库确认成功 / 已出库无需重复操作"
+
+  '/outbound/exportOutbound':
+    post:
+      summary: "出库数据导出（confirmed+sorted 全量）"
+      description: "云函数 outbound / exportOutbound 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'outbound', data: { action: 'exportOutbound' } })。权限: warehouse:confirm。"
+      tags: ["outbound"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"exportOutbound\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "订单列表（status in confirmed/sorted）"
+
+  '/import-data/import-customers':
+    post:
+      summary: "导入客户数据（管理员运维，全量重置）"
+      description: "云函数 import-data / import-customers 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'import-data', data: { action: 'import-customers' } })。权限: admin 独占。"
+      tags: ["import-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"import-customers\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "导入结果统计"
+
+  '/import-data/import-products':
+    post:
+      summary: "导入商品数据（管理员运维，全量重置）"
+      description: "云函数 import-data / import-products 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'import-data', data: { action: 'import-products' } })。权限: admin 独占。"
+      tags: ["import-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"import-products\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "导入结果统计"
+
+  '/import-data/import-all':
+    post:
+      summary: "一键导入客户+商品（管理员运维）"
+      description: "云函数 import-data / import-all 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'import-data', data: { action: 'import-all' } })。权限: admin 独占。"
+      tags: ["import-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"import-all\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "customers+products 导入结果"
+
+  '/import-data/verify':
+    post:
+      summary: "校验导入数据完整性（管理员运维）"
+      description: "云函数 import-data / verify 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'import-data', data: { action: 'verify' } })。权限: admin 独占。"
+      tags: ["import-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"verify\"（必填）"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "校验结果"
+
+  '/sync-data/sync-customers':
+    post:
+      summary: "同步补齐客户（管理员运维，增量）"
+      description: "云函数 sync-data / sync-customers 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'sync-data', data: { action: 'sync-customers' } })。权限: admin 独占。"
+      tags: ["sync-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"sync-customers\"（必填）；offset?: number；batch?: number"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "customers 同步统计"
+
+  '/sync-data/sync-products':
+    post:
+      summary: "同步补齐商品（管理员运维，增量）"
+      description: "云函数 sync-data / sync-products 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'sync-data', data: { action: 'sync-products' } })。权限: admin 独占。"
+      tags: ["sync-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"sync-products\"（必填）；offset?: number；batch?: number"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "products 同步统计"
+
+  '/sync-data/sync-all':
+    post:
+      summary: "一键同步客户+商品（管理员运维）"
+      description: "云函数 sync-data / sync-all 的 action 接口（T62-A7 补文档：代码存在但此前漏在文档外）。调用: wx.cloud.callFunction({ name: 'sync-data', data: { action: 'sync-all' } })。权限: admin 独占。"
+      tags: ["sync-data"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: "action: \"sync-all\"（必填）；offset?: number；batch?: number"
+      responses:
+        '200':
+          description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        description: "customers+products 同步统计"
+
 components:
   schemas:
     ApiEnvelope:

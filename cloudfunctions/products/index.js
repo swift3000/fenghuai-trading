@@ -51,10 +51,11 @@ exports.main = async (event, context) => {
       let query = db.collection('products')
       
       if (searchKey) {
-        query = query.where(_.or([
-          { name: _.regexp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
-          { material_code: _.regexp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
-          { pinyin: _.regexp({ regexp: escapeRegExp(searchKey), options: 'i' }) }
+        // T62-V1：wx-server-sdk 的 db.command 无 .regexp 方法（应 db.RegExp），原 _.regexp 恒 500；对齐 customers 口径
+        query = query.where(db.command.or([
+          { name: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { material_code: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) },
+          { pinyin: db.RegExp({ regexp: escapeRegExp(searchKey), options: 'i' }) }
         ]))
       }
       
@@ -147,10 +148,14 @@ exports.main = async (event, context) => {
       const authResult = await checkPermission('product:view')
       if (authResult.code !== 0) return authResult
 
-      const productResult = await db.collection('products').doc(event.productId).get()
-      
-      const product = productResult.data
-      
+      // T62-A2：.doc().get() 对不存在 ID 抛底层异常（document ... does not exist），非统一信封
+      let product = null
+      try {
+        const productResult = await db.collection('products').doc(event.productId).get()
+        product = productResult.data
+      } catch (e) {
+        return { code: 4004, message: '商品不存在' }
+      }
       return { code: 0, data: product }
     }
 

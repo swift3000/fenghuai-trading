@@ -110,6 +110,7 @@ const asyncMain = async () => {
   let permDrift = [];
   for (const u of users) {
     if (u.role === 'admin') continue; // admin 全权
+    if (u.status === 'pending') continue; // T62：待激活邀请账号（无 openid）尚无权限快照，登录激活时自动回填（auth 登录流），不属漂移
     const effective = (byRole[u.role] != null) ? byRole[u.role] : (pm.defaultPermsForRole(u.role) || []);
     const mine = u.permissions || [];
     const a = new Set(effective), b = new Set(mine);
