@@ -175,6 +175,8 @@ const DEFAULT_PRODUCTS = [
 const uiStyle = require('../../utils/ui-style')
 Page({
   data: {
+    // T66b 设计token：与 app.wxss --theme-primary 同值（switch 组件色无法用 CSS var）
+    themePrimary: '#07C160',
     categoryFilter: 'all',
     sortOrder: 'asc',
     debounceTimer: null,

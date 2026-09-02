@@ -2,7 +2,11 @@
 page {
   /* 颜色系统 - 与原型一致 */
   --theme-primary: #07C160;
+  /* T66b 设计token收口：主色=现网微信绿 #07C160（2026-09-02 老板授权拍板）；
+     页面禁止散落硬编码，一律 var() 引用；JS 动态色必须与 --theme-success 同值 */
+  --theme-primary-bright: #45D06F;
   --theme-primary-light: #06AD56;
+  --theme-success: #16A34A;
   --theme-primary-bg: linear-gradient(135deg, #E8F5E9 0%, #fff 100%);
   --theme-secondary: #FF6B35;
   --theme-secondary-light: #FF8A65;

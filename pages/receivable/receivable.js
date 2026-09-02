@@ -2,6 +2,8 @@ const { guardPageLoad } = require('../../utils/router-guard')
 const tabbarHelper = require('../../utils/tabbar-helper')
 
 const uiStyle = require('../../utils/ui-style')
+// T66b 设计token：成功/结清语义色与 app.wxss --theme-success 同值（JS 无法读 CSS var，集中在此防散落硬编码）
+const COLOR_SUCCESS = '#16A34A'
 Page({
   data: {
     uiStyle: '',
@@ -116,7 +118,7 @@ Page({
       data.customers = (data.customers || []).map(c => {
         const customer = {
           ...c,
-          agingColor: c.maxAge > 90 ? '#DC2626' : c.maxAge >= 90 ? '#EA580C' : c.maxAge >= 60 ? '#F59E0B' : '#16A34A'
+          agingColor: c.maxAge > 90 ? '#DC2626' : c.maxAge >= 90 ? '#EA580C' : c.maxAge >= 60 ? '#F59E0B' : COLOR_SUCCESS
         }
         // 账期分布（对齐原型 buildDebtCards 按月欠款柱状）：按欠款订单的月份分桶
         const monthMap = {}
@@ -149,7 +151,7 @@ Page({
         customer.hasPending = (c.orders || []).some(o => o.paymentStatus === 'pending')
         const __allPaid = (c.orderCount || 0) > 0 && (c.orders || []).every(o => o.paymentStatus === 'paid')
         customer.statusText = __allPaid ? '已结清' : (customer.hasPending ? '待确认' : '未结清')
-        customer.statusColor = __allPaid ? '#16A34A' : (customer.hasPending ? '#2563EB' : '#DC2626')
+        customer.statusColor = __allPaid ? COLOR_SUCCESS : (customer.hasPending ? '#2563EB' : '#DC2626')
         const months = Object.keys(monthMap).sort().map(k => {
           const m = monthMap[k]
           // 颜色：pending 蓝，否则按该月最长账龄分色（对齐原型 agingSeverity）
@@ -158,7 +160,7 @@ Page({
           else if (m.maxAge > 90) color = '#DC2626'
           else if (m.maxAge >= 90) color = '#EA580C'
           else if (m.maxAge >= 60) color = '#F59E0B'
-          else color = '#16A34A'
+          else color = COLOR_SUCCESS
           return { key: k, amt: m.amt.toFixed(2), color, _amt: m.amt }
         })
         const maxAmt = Math.max(1, ...months.map(m => m._amt))

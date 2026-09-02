@@ -275,7 +275,7 @@
   font-size: calc(40rpx * var(--font-scale));
   font-weight: 700;
 }
-.sum-num.green { color: var(--theme-primary, #06ad56); }
+.sum-num.green { color: var(--theme-primary, #07C160); }
 .sum-num.orange { color: #FF8A2B; }
 .sum-lbl {
   margin-top: 8rpx;
@@ -295,7 +295,7 @@
   box-shadow: none;
 }
 .export-buttons .btn-primary {
-  background: var(--theme-primary, #06ad56);
+  background: var(--theme-primary, #07C160);
 }
 .export-buttons .export-btn-orange { background: #FF7A1A; }
 .export-buttons .export-btn-ledger { background: #534AB7; }

@@ -99,7 +99,7 @@
       <!-- 允许调价 -->
       <view class="form-group">
         <label class="form-label-inline">
-          <switch checked="{{formData.isAdjustable}}" bindchange="onAdjustableChange" color="#07C160" />
+<switch checked="{{formData.isAdjustable}}" bindchange="onAdjustableChange" color="{{themePrimary}}" />
           <text class="form-label-caption">允许下单时调价</text>
         </label>
       </view>

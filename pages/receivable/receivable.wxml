@@ -65,7 +65,7 @@
         <view class="cc-summary">
           <view class="cc-col"><text class="cc-col-lbl">应收总额</text><text class="cc-col-val">¥{{item.totalAmount}}</text></view>
           <!-- T53-B1（方案A）：客户级已收含待确认部分，>0 时标注 -->
-          <view class="cc-col"><text class="cc-col-lbl" style="color:#16A34A">已收{{item.pendingAmount > 0 ? '·待确认' : ''}}</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
+<view class="cc-col"><text class="cc-col-lbl" style="color:var(--theme-success)">已收{{item.pendingAmount > 0 ? '·待确认' : ''}}</text><text class="cc-col-val cc-paid">¥{{item.paidAmount}}</text></view>
           <view class="cc-col"><text class="cc-col-lbl" style="color:#EA580C">未结清</text><text class="cc-col-val {{item.unpaidAmount > 0.001 ? 'cc-due' : ''}}">¥{{item.unpaidAmount}}</text></view>
         </view>
         <view class="cc-orders">
@@ -130,7 +130,7 @@
           </view>
           <view class="customer-amount settled-amount">
             <text class="settled-received">¥{{item.paidAmount}}</text>
-            <view class="dc-status" style="color:#16A34A;border-color:#16A34A">已结清</view>
+<view class="dc-status" style="color:var(--theme-success);border-color:var(--theme-success)">已结清</view>
           </view>
         </view>
         <view class="sc-orders">

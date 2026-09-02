@@ -99,7 +99,7 @@
 
 .status-chip.completed {
   background: rgba(7, 193, 96, 0.1);
-  color: #07C160;
+  color: var(--theme-primary);
 }
 
 .order-amount {
@@ -200,7 +200,7 @@
 }
 
 .item-amount {
-  color: #07C160;
+  color: var(--theme-primary);
   font-weight: 500;
   white-space: nowrap;
   text-align: right;
@@ -227,7 +227,7 @@
 
 .pay-chip.paid {
   background: rgba(7, 193, 96, 0.1);
-  color: #07C160;
+  color: var(--theme-primary);
 }
 
 /* 空状态 */

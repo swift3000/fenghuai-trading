@@ -6,7 +6,7 @@
 }
 
 .profile-header {
-  background: linear-gradient(135deg, var(--theme-primary, #22B14C) 0%, #06AD56 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-light) 100%);
   padding: 56rpx 32rpx 48rpx;
   color: #fff;
   text-align: center;
@@ -62,7 +62,7 @@
   color: #fff;
   flex-shrink: 0;
 }
-.mi-icon.m1 { background: var(--theme-primary, #22B14C); }
+.mi-icon.m1 { background: var(--theme-primary); }
 .mi-icon.m2 { background: #F97316; }
 .mi-icon.m3 { background: #1989FA; }
 .mi-icon.m4 { background: #7C3AED; }
