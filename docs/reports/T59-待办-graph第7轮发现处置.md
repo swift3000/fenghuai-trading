@@ -16,7 +16,7 @@ P0:0 / P1:0 / P2:4 / P3:3。三个 P2 已修（独立 commit）；R7B-2 财务�
 - R7D-70 [P2] customers/products 页导入原型数据弹窗无入口按钮，wx:if 恒 false，方法/284 条数组成死代码。处置：按钮三分法删除；products 保留 DEFAULT_PRODUCTS（降级用）。状态：已做(e08b87b)。
 [DONE-SEE-BOTTOM] R7B-2 [P2] 财务展示口径：receivable 列表状态用派生 balance（方案A 已收含待确认）先判已结清，而 payment_status 只认 confirmed。边界 total=100/confirmed=60/pending=40 显示已结清但 payment_status=pending。无多计、守恒成立，纯展示分叉。处置：动业务语义（T53 方案A 已由用户 R1 拍板），按 graph 政策报老板。方案A=改按 payment_status 判结清；方案B=保持方案A+UI 标注待确认。状态：已做(2b707d7+deploy+边界6/6+回归12/12)。
 - R7B-1 [P3] 订单号前缀硬编码 乾多多-日期，生产唯一订单是 丰淮商贸-20260826-0001，双前缀并存。状态：已做（T63-7 2026-09-02：前缀做成 system_config 可配置，默认乾多多，设置页管理员可改，存量订单不迁移）。
-- R7B-4 [P3] 商品库 45 个单价超 2 位小数，toFixed(2) 展示差 1 分；1 个双 0 价商品调货。状态：已做（T64 2026-09-02：45 个 price_unit 归一到 2 位，幂等迁移脚本 scripts/migrate-price-round2.cjs，存量订单快照不受影响）；双 0 价"调货"商品属业务项不在本迁移范围。
+- R7B-4 [P3] 商品库 45 个单价超 2 位小数，toFixed(2) 展示差 1 分；1 个双 0 价商品调货。状态：已做（T64 2026-09-02：45 个 price_unit 归一到 2 位，幂等迁移脚本 scripts/migrate-price-round2.cjs，存量订单快照不受影响）。双 0 价"调货"商品：2026-09-02 老板拍板保留——系合法调货/换货占位商品（is_adjustable=true 可调价、0 订单引用、未触发 0 元订单红线），非脏数据，不动。本项全部闭环。
 - R7C-备注 [P3] collect amount 未做与 discount 同款的分位归一，口径不对称。状态：已做（T63-9 2026-09-02：collect amount 对齐 discount 分位归一）。
 
 ## 全绿项（R7 四路交叉验证）
