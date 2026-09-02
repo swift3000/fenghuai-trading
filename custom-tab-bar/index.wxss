@@ -75,7 +75,8 @@
   width: 92rpx;
   height: 92rpx;
   border-radius: 50%;
-  background: linear-gradient(135deg, #45D06F, #1E9E4B);
+  /* T66c：R19 token 一致性复查补漏——主色渐变归 token（原 #45D06F/#1E9E4B 散落硬编码） */
+  background: linear-gradient(135deg, var(--theme-primary-bright), var(--theme-primary-light));
   border: 8rpx solid #ffffff;
   box-shadow: 0 16rpx 36rpx rgba(36, 173, 82, 0.36);
   display: flex;
