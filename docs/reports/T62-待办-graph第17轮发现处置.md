@@ -59,7 +59,7 @@
 - P3-5 import-data/sync-data 返回缺统一 code 字段
 - P3-6 report/summary 缺参报 5001 → 应 1001
 - P3-7 orders/exportSingleOrder 不存在 ID 报 500 → 应 4004
-- 状态：待做（下轮或专项处理）
+- 状态：已做（T63 2026-09-02：7 项全修——不存在ID 4004 预检/paymentHistory 必填 1001/import+sync code 统一/summary 非法 1001/exportSingleOrder+printOrder 4004/customerDetail 复核正常/amount 分位归一）
 
 ## 回归与收尾（完成记录）
 - 修复点回归 tests/t62-fix-verify.js：10/10 PASS（V1 搜索/A2 4004/V5 day/V2 折价上限+pending 含折价/V6 日期）

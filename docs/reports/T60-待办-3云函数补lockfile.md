@@ -1,6 +1,6 @@
 # T60 待办：clear-all-data / init-db / sync-data 补 package-lock.json
 
-状态：待做
+状态：已做（T63-10 2026-09-02：clear-all-data/init-db/sync-data 已 npm install --package-lock-only 补齐并入库，test-all 全绿验证部署不受影响）
 来源：T59-R12 DEPAUD（2026-08-31）
 P级：P3
 
