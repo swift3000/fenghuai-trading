@@ -375,7 +375,11 @@ exports.main = async (event, context) => {
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: noPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-' + dateStr, options: 'i' }) }).count()
       const orderNo = noPrefix + '-' + dateStr + '-' + (count.total + 1).toString().padStart(4, '0')
       const order = {
-        orderNo, customerId, customerName, customerRegion: customerRegion || '', items: normalizedItems,
+        // T68（graph R20）：落库用 validItems（过滤 0件0包 行），与 update 的 validItems2 口径对齐。
+        // 原落库 normalizedItems 含 0件0包 行 → 订单详情页 wx:for 直接渲染会显示 0件0包 商品行，
+        // 违反业务红线"已成订单中 0件+0包商品行不显示"（打印销售单本已过滤，详情/打印口径需一致）。
+        // totalAmount 本就按 validItems 计算，落库改 validItems 不影响金额；validItems 必非空（空已被 2001 拦截）。
+        orderNo, customerId, customerName, customerRegion: customerRegion || '', items: validItems,
         totalAmount, status: 'submitted',
         payment_status: 'unpaid', paymentStatus: 'unpaid',
         received_amount: 0, receivedAmount: 0,
