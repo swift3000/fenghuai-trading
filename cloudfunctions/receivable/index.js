@@ -185,6 +185,17 @@ exports.main = async (event, context) => {
             db.command.lte(end)
           ])
         }
+      } else if (timeTab === 'day') {
+        // T62-V5：'day' 与 report summary 口径对齐（=今日）。原实现 'day' 落入无过滤分支
+        // 静默等同 'all'（reports 前端发 'day'，直调/新前端误传会把历史单算进今日视图）
+        const start = bjTodayStart()
+        const end = bjTodayEnd()
+        dateFilter = {
+          created_at: db.command.and([
+            db.command.gte(start),
+            db.command.lte(end)
+          ])
+        }
       }
 
       // 合并视图/时间/搜索为单次 where：Query.where() 会整体替换旧条件而非合并
@@ -439,12 +450,16 @@ exports.main = async (event, context) => {
         for (const p of [].concat(q1.data || [], q2.data || [])) {
           if (seen[p._id]) continue
           seen[p._id] = true
-          pendingCents += toCents(p.amount)
+          // T62-V2：pending 占额必须含折价——只累加 amount 会让"收50+折60"类超额 pending 混过登记校验
+          pendingCents += toCents(p.amount) + toCents(p.discount || 0)
         }
       } catch (e) { console.error('统计待确认收款失败', e) }
       const remainingC = Math.max(0, remainingCents(order.totalAmount || 0, received, totalDiscount) - pendingCents)
-      if (toCents(amount) > remainingC) {
-        return { code: 4002, message: `收款金额不能超过剩余欠款 ¥${(remainingC / 100).toFixed(2)}` }
+      // T62-V2：登记上限校验 = 实收+折价 合并占额（与 confirmPayment 超收拦截口径一致）。
+      // 原实现只查 amount，"收50+折60>100" 被接受后写脏 total_discount + 留僵尸 pending，
+      // 文案称"可作废"但仓库无作废 API，订单永远无法结清（graph R17 数据流 B-1 复现）
+      if (toCents(amount) + toCents(discount || 0) > remainingC) {
+        return { code: 4002, message: `收款金额+折价不能超过剩余欠款 ¥${(remainingC / 100).toFixed(2)}` }
       }
       
       // 登记收款：写入 payments（status=pending，待库管确认）；订单 unpaid→pending；实收在确认时才累加

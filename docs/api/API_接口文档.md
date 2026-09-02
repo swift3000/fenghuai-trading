@@ -4,7 +4,7 @@
 > **编写日期**：2026-08-03  
 > **最后更新**：2026-08-04  
 > **状态**：已定稿  
-> **总接口数**：31 个 action（10 个云函数；含「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
+> **总接口数**：80 个 action（13 个云函数；机器可读口径以 docs/api/openapi.yaml 为准，2026-09-02 T62 按源码逐条对账全量重生成；含「智能匹配 smart.match」「语音转文字 smart.transcribe」）  
 > **调用方式**：微信云函数（`wx.cloud.callFunction`）
 > **MVP 口径**：本文档已按 MVP（v1.0，2026-08-05）修订，MVP 为最终功能范围，无二期增强；接口契约以《小程序 MVP 落地计划与技术架构》为准。
 > **工期**：约 33 人天（MVP 生产化，详见《工期与工作量评估》）
@@ -33,7 +33,7 @@ const res = await app.callFunction({
 });
 ```
 
-### 1.2 云函数与 Action 对照表（10 个云函数，31 个 action）
+### 1.2 云函数与 Action 对照表（13 个云函数，80 个 action）
 
 | # | 云函数 | Action | 接口名 |
 |---|--------|--------|--------|
@@ -68,8 +68,20 @@ const res = await app.callFunction({
 | 29 | | transcribe | 语音转文字 |
 | 30 | report | summary | 报表统计（商品汇总/客户汇总/收款台账） |
 | 31 | | export | 报表导出（Excel/CSV） |
+| 32 | outbound | pendingSortList | 待分拣列表（T62 补文档） |
+| 33 | | pendingOutList | 待出库列表（T62 补文档） |
+| 34 | | confirmSort | 确认分拣（T62 补文档） |
+| 35 | | confirmOut | 确认出库（T62 补文档） |
+| 36 | | exportOutbound | 出库导出（T62 补文档） |
+| 37 | import-data | import-customers | 客户数据导入（admin 运维，T62 补文档） |
+| 38 | | import-products | 商品数据导入（admin 运维，T62 补文档） |
+| 39 | | import-all | 全量导入（admin 运维，T62 补文档） |
+| 40 | | verify | 导入校验（admin 运维，T62 补文档） |
+| 41 | sync-data | sync-customers | 客户数据同步（admin 运维，T62 补文档） |
+| 42 | | sync-products | 商品数据同步（admin 运维，T62 补文档） |
+| 43 | | sync-all | 全量同步（admin 运维，T62 补文档） |
 
-> 实际项目共 10 个云函数：`auth`、`products`、`customers`、`orders`、`users`、`regions`、`receivable`、`system`、`smart`、`report`。其中 `report` 云函数实现 `summary`/`export` 两个 action（源码另含 `trend` 趋势统计 action，MVP 前端当前用 summary/export）。
+> 实际项目共 13 个云函数：auth、products、customers、orders、users、regions、receivable、system、smart、report、outbound、import-data、sync-data；另含工具函数 init-db、check-customer-fields、clear-all-data（仅手动运维调用，不纳入上表）。完整 action 清单与参数契约以 docs/api/openapi.yaml 为准（80 paths，2026-09-02 T62-A7 补齐 12 个漏文档 action）。
 
 ### 1.3 返回格式
 

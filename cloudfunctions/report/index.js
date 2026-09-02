@@ -16,6 +16,9 @@ function bjMonthEnd(){ const n=bjNow(); return bjDate(n.getFullYear(), n.getMont
 function bjFromStr(str, endDay){ const p=String(str).split("-").map(Number); return bjDate(p[0], p[1]-1, p[2], endDay?23:0, endDay?59:0, endDay?59:0, endDay?999:0) }
 function bjDayAgo(i){ const n=bjNow(); const d=new Date(n.getFullYear(), n.getMonth(), n.getDate()-i); return { start:bjDate(d.getFullYear(),d.getMonth(),d.getDate()), end:bjDate(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999), label:(d.getMonth()+1)+"/"+d.getDate() } }
 // ===== 北京时间边界工具结束 =====
+// T62-V6：北京时区日期/时刻格式化（字符串化 Date 前 10 位会取到 locale 串如 "Wed Sep 02"，必须显式按北京时间拆年月日）
+function bjDateStr(v){ if(!v) return ''; const d=new Date(new Date(v).getTime()+BJ_OFFSET_MS); return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0') }
+function bjTimeStr(v){ if(!v) return ''; const d=new Date(new Date(v).getTime()+BJ_OFFSET_MS); return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0') }
 
 // ===== QA 测试身份钩子（生产默认关闭，安全）=====
 // 仅当云函数环境变量 QA_IMPERSONATE='1' 且请求携带 event.qaAsOpenid 时，
@@ -170,7 +173,7 @@ function buildLedgerData(orders) {
     const recvDate = recvDates.length ? recvDates[recvDates.length - 1] : ''
     const big = o.ship_large || 0, medium = o.ship_medium || 0, small = o.ship_small || 0
     const pkgs = big + medium + small
-    return { no: i + 1, time: o.created_at ? String(o.created_at).slice(0, 10) : '', region: o.customerRegion || '', customer: o.customerName, zheng, sun, actual, debt, confirmed, cash, wechat, recvDate, pkgs, big, medium, small }
+    return { no: i + 1, time: bjDateStr(o.created_at), region: o.customerRegion || '', customer: o.customerName, zheng, sun, actual, debt, confirmed, cash, wechat, recvDate, pkgs, big, medium, small }
   })
   const totals = rows.reduce((t, r) => {
     t.zheng += r.zheng; t.sun += r.sun; t.actual += r.actual; t.debt += r.debt; t.confirmed += r.confirmed; t.cash += r.cash; t.wechat += r.wechat; t.pkgs += r.pkgs; t.big += r.big; t.medium += r.medium; t.small += r.small
@@ -562,7 +565,7 @@ exports.main = async (event, context) => {
       orders.forEach(o => {
         const key = o.customerName
         if (!byCustomer[key]) byCustomer[key] = { customer: o.customerName, region: o.customerRegion || '', rows: [] }
-        const time = o.created_at ? new Date(o.created_at).toTimeString().slice(0, 5) : ''
+        const time = o.created_at ? bjTimeStr(o.created_at) : ''
         const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : ''
         ;(o.items || []).forEach(it => {
           const remark = it.remark || ''
@@ -620,7 +623,7 @@ exports.main = async (event, context) => {
       const header = ['编号', '时间', '区域', '客户', '正价货', '损赠特', '实际货值', '赊销', '实收金额', '现余', '微信', '收款日期', '大件', '中件', '小件', '件数']
       const csvRows = [[title], [], header]
       rows.forEach(r => {
-        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? String(r.recvDate).slice(0, 10) : '', pkShow(r.big), pkShow(r.medium), pkShow(r.small), pkShow(r.pkgs)])
+        csvRows.push([r.no, r.time, r.region, r.customer, r.zheng.toFixed(2), r.sun.toFixed(2), r.actual.toFixed(2), r.debt.toFixed(2), r.confirmed.toFixed(2), r.cash.toFixed(2), r.wechat.toFixed(2), r.recvDate ? bjDateStr(r.recvDate) : '', pkShow(r.big), pkShow(r.medium), pkShow(r.small), pkShow(r.pkgs)])
       })
       csvRows.push([])
       csvRows.push(['合计', '', '', '', totals.zheng.toFixed(2), totals.sun.toFixed(2), totals.actual.toFixed(2), totals.debt.toFixed(2), totals.confirmed.toFixed(2), totals.cash.toFixed(2), totals.wechat.toFixed(2), '', pkShow(totals.big), pkShow(totals.medium), pkShow(totals.small), pkShow(totals.pkgs)])
