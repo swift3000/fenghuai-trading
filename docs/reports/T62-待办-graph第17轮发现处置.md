@@ -1,4 +1,4 @@
-# T62 fenghuai-trading graph 第17轮发现处置（2026-09-02 产出，来源：graph测试4路并行+独立验证，分支 fenghuai/req-T62-graph-r17）
+# T62 fenghuai-trading graph 第17轮发现处置（已闭环：6 项修复上线+越权拍板方案B，2026-09-02）（2026-09-02 产出，来源：graph测试4路并行+独立验证，分支 fenghuai/req-T62-graph-r17）
 
 ## 已修（代码已写盘，部署+回归中）
 
@@ -44,12 +44,12 @@
 - 位置：cloudfunctions/orders/index.js update / delete 分支
 - 做法候选：方案A=写操作限本人+admin（createdByName 归属校验）；方案B=维持现状（多人协作互改）；方案C=仅 delete 加归属校验
 - 风险：A 最严但改变协作语义；C 折中
-- 状态：待做（待老板拍板）
+- 状态：已决策（2026-09-02 老板拍板方案B：维持多人协作互改，不加归属校验）
 
 ## P2-C4 客户水平越权：u2 可 update/delete 非本人客户；客户 delete 无订单引用检查
 - 位置：cloudfunctions/customers/index.js update / delete 分支
 - 做法候选：同 C1 方案 A/B/C；delete 需加"存在关联订单则拒删"检查
-- 状态：待做（待老板拍板，与 C1/C2 一并决策）
+- 状态：已决策（2026-09-02 老板拍板方案B：维持现状；已知风险登记=删客户不校验订单引用，协作场景下误删风险由操作人负责）
 
 ## P3 观察项（本轮不修，登记延后）
 - P3-1 products/delete 不存在 ID 静默成功 → 应 4004
