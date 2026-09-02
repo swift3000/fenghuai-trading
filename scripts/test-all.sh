@@ -13,6 +13,7 @@ run_ui() {
 echo "==> [1/15] 数据对账审计（data-consistency）+ 权限逻辑单测（perm-logic）"
 node tests/data-consistency-audit.js
 node tests/perm-logic-test.js
+node tests/orders-qty-limit-test.js
 
 echo "==> [2/15] 权限 UI 测试（wx-perm-ui，需微信开发者工具模拟器）"
 run_ui tests/wx-perm-ui-test.js

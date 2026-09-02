@@ -25,6 +25,20 @@ const XLSX = require('xlsx')
 // ===== T57-RB-4 收款/折价口径助手（与 receivable 模块 T53-B1 方案A 同口径）=====
 // 已收 = 已确认实收 + 已确认折价 + 待确认实收 + 待确认折价（前端"含待确认"标注）
 function toCentsLocal(v) { return Math.round((Number(v) || 0) * 100) }
+// ===== T66-R18-A1（graph 第18轮 P1）：手动录单数量归一，防巨额订单敞口 =====
+// 原实现 piece_qty/package_qty 直落库无上限（99999 件可提交 ¥999,990 单），
+// 与智能录入 T57-RA-3（smart 云函数 SMART_QTY_MAX=9999，整数化+截断）口径不一致。
+// 规则与 smart 完全对齐：负数/非有限数 → 0（create 由"0件0包"过滤统一拦截，不误伤 0 元红线）；
+// 显式 0 保留；小数向上取整；上限 9999（超出截断）。
+const ORDERS_QTY_MAX = 9999
+function normalizeQtyLocal(q) {
+  const n = Number(q)
+  if (!isFinite(n) || n < 0) return 0
+  if (n === 0) return 0
+  return Math.min(ORDERS_QTY_MAX, Math.ceil(n))
+}
+exports.normalizeQtyLocal = normalizeQtyLocal
+exports.ORDERS_QTY_MAX = ORDERS_QTY_MAX
 // 批量注入 o.paidCalc = { confirmedAmtCents, confirmedDiscCents, pendingAmtCents, pendingDiscCents }
 async function attachOrderPayments(orders) {
   const ids = (orders || []).map(o => o._id).filter(Boolean)
@@ -330,8 +344,9 @@ exports.main = async (event, context) => {
       // 归一化 items：补齐 qty/price/amount 展示字段（兼容详情/送货单/报表），保留件包双轨字段
       const normalizedItems = (items || []).map(it => {
         const mode = it.pricing_mode || 'case'
-        const pieceQty = it.piece_qty || 0
-        const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+        // T66-R18-A1：数量整数化+上限 9999（对齐 smart T57-RA-3 口径）
+        const pieceQty = normalizeQtyLocal(it.piece_qty)
+        const packageQty = normalizeQtyLocal(it.package_qty != null ? it.package_qty : it.zero_qty)
         const pricePiece = it.price_piece || 0
         const priceUnit = it.price_unit != null ? it.price_unit : (it.price_zero || 0)
         let amount = 0
@@ -340,9 +355,10 @@ exports.main = async (event, context) => {
         else if (mode === 'unit') amount = Math.round(packageQty * priceUnit * 100) / 100
         else amount = Math.round((pieceQty * pricePiece + packageQty * priceUnit) * 100) / 100
         // 兼容旧字段
-        const qty = Math.max(pieceQty, packageQty) || it.qty || 0
+        const qty = Math.max(pieceQty, packageQty) || normalizeQtyLocal(it.qty)
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
-        return Object.assign({}, it, { qty, price, amount })
+        // T66-R18-A1：归一化后的数量回写，落库与展示一致（防止 99999 原值残留）
+        return Object.assign({}, it, { piece_qty: pieceQty, package_qty: packageQty, qty, price, amount })
       })
       // 过滤 0件0包 的商品行
       const validItems = normalizedItems.filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
@@ -511,8 +527,9 @@ exports.main = async (event, context) => {
       }
       const normalizedItems = (items || []).map(it => {
         const mode = it.pricing_mode || 'case'
-        const pieceQty = it.piece_qty || 0
-        const packageQty = it.package_qty != null ? it.package_qty : it.zero_qty || 0
+        // T66-R18-A1：同 create——数量整数化+上限 9999
+        const pieceQty = normalizeQtyLocal(it.piece_qty)
+        const packageQty = normalizeQtyLocal(it.package_qty != null ? it.package_qty : it.zero_qty)
         const pricePiece = it.price_piece || 0
         const priceUnit = it.price_unit != null ? it.price_unit : (it.price_zero || 0)
         let amount = 0
@@ -520,10 +537,11 @@ exports.main = async (event, context) => {
         if (mode === 'piece') amount = Math.round(pieceQty * pricePiece * 100) / 100
         else if (mode === 'unit') amount = Math.round(packageQty * priceUnit * 100) / 100
         else amount = Math.round((pieceQty * pricePiece + packageQty * priceUnit) * 100) / 100
-        const qty = Math.max(pieceQty, packageQty) || it.qty || 0
+        const qty = Math.max(pieceQty, packageQty) || normalizeQtyLocal(it.qty)
         // 单价口径与 create 一致：case 模式存件价，其余按模式对应单价
         const price = (it.price_piece != null && it.price_piece !== 0) ? pricePiece : (priceUnit || it.price || 0)
-        return Object.assign({}, it, { qty, price, amount })
+        // T66-R18-A1：归一化数量回写，落库与展示一致
+        return Object.assign({}, it, { piece_qty: pieceQty, package_qty: packageQty, qty, price, amount })
       })
       // 与 create 一致：0件0包 过滤 + 0 金额拦截
       const validItems2 = normalizedItems.filter(it => (it.piece_qty || 0) > 0 || (it.package_qty != null ? it.package_qty : (it.zero_qty || 0)) > 0)
