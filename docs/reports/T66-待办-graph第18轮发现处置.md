@@ -26,7 +26,12 @@
 
 ## 销项
 
-- [ ] 部署 orders + 修复点回归（99999→9999 / 9999 正常 / package_qty 同样）
-- [ ] test-all 15 步全量（含 orders-qty-limit 单测纳入第 1 步）
-- [ ] QA 钩子 10→0 复核
-- [ ] 生产数据基线复核（customers 282 / products 167 / orders 1 / payments 1 / users 2）
+- [x] 部署 orders + 修复点回归（15/15 全过：create 99999→9999 / totalAmount=99990 / update 50000→9999 / package_qty 99999→9999 / 9999 正常 / 小数量正常 / 负数→0→2001）
+- [x] test-all 15 步全量全绿（含 orders-qty-limit 12 断言挂第 1 步）：审计 12/12、perm 22/0、pagewalk 13/13、deepwalk 24/24、role-sim 28/0、state-guard 16/0、csv-injection 23/0、deep-chain 56/0、perf 10/0、e2e/idem 等全部 0 失败
+- [x] QA 钩子 10→0 复核（qa-toggle status 计数 0；test-all 第 15 步门禁 ✅）
+- [x] 生产数据基线复核（customers 282 / products 167 / orders 1 / payments 1 / users 2，TEST 残留=0）
+
+## 过程中清理记录
+
+- 测试前发现生产库残留 15 单 TEST_R18* 订单（含 2 单 99999 元旧漏洞单）+ 1 笔孤儿收款，全部删除（12 单走 API 删除留痕，3 单 cancelled 终态守卫拦截走 SDK 删）；对账审计恢复 12/12 全绿
+- 假警报修正：审计"15 单客户不存在"即上述 TEST 残留（客户已删、订单未删完），清理后引用完整性恢复
