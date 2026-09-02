@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: 乾多多采购下单助手 — 云函数接口（OpenAPI 规格）
-  version: 1.1.0
+  version: 1.2.0
   description: |
     本规格基于云函数源码（case 块 + 权限映射）逐条对账生成（68 个 action，10 个云函数，2026-08-30 T55-SC-8 全量重生成），
     作为机器可读的接口契约。云函数调用方式：wx.cloud.callFunction({ name: 云函数名, data: { action, ... } })。
@@ -1463,7 +1463,7 @@ paths:
                     properties:
                       data:
                         type: object
-                        description: "{ai{tencent, tokenhub}, printer}"
+                        description: "{ai{tencent, tokenhub}, printer, orderPrefix(订单号前缀,默认乾多多)}"
   '/system/updateAiConfig':
     post:
       summary: "更新 AI 服务配置（增量合并，仅管理员）"
@@ -1475,7 +1475,7 @@ paths:
           application/json:
             schema:
               type: object
-              description: "action: \"updateAiConfig\"（必填）；aiConfig?: {tencent?: {enabled, secretId, secretKey, engine}, tokenhub?: {enabled, apiKey, baseUrl, model}}; printer?: 打印配置"
+              description: "action: \"updateAiConfig\"（必填）；aiConfig?: {tencent?, tokenhub?}; printer?: 打印配置; orderPrefix?: 订单号前缀（空串=恢复默认乾多多）"
       responses:
         '200':
           description: 统一包装 {code, message, data, timestamp}；code=0 成功，其余见 docs/api/API_接口文档.md §1.4

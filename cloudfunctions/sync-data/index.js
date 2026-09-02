@@ -74,19 +74,20 @@ const prodMap = p => ({
 })
 
 exports.main = async (event, context) => {
-  if (!(await checkAdmin())) return { success: false, message: '无权限：仅管理员可执行数据补齐' }
+  // T63-4：错误响应补统一 code（对齐其余云函数口径；success 保留向后兼容）
+  if (!(await checkAdmin())) return { code: 403, success: false, message: '无权限：仅管理员可执行数据补齐' }
   const { action = 'sync-all', offset = 0, batch = 20 } = event
   try {
-    if (action === 'sync-customers') return { success: true, customers: await syncBatch('customers', DEFAULT_CUSTOMERS, custMap, offset, batch) }
-    if (action === 'sync-products') return { success: true, products: await syncBatch('products', DEFAULT_PRODUCTS, prodMap, offset, batch) }
+    if (action === 'sync-customers') return { code: 0, success: true, customers: await syncBatch('customers', DEFAULT_CUSTOMERS, custMap, offset, batch) }
+    if (action === 'sync-products') return { code: 0, success: true, products: await syncBatch('products', DEFAULT_PRODUCTS, prodMap, offset, batch) }
     if (action === 'sync-all') {
       const c = await syncBatch('customers', DEFAULT_CUSTOMERS, custMap, offset, batch)
       const p = await syncBatch('products', DEFAULT_PRODUCTS, prodMap, offset, batch)
-      return { success: true, customers: c, products: p }
+      return { code: 0, success: true, customers: c, products: p }
     }
-    return { success: false, message: '未知操作：' + action }
+    return { code: 1001, success: false, message: '未知操作：' + action }
   } catch (e) {
     console.error('sync failed', e)
-    return { success: false, message: '补齐失败：' + e.message }
+    return { code: 5001, success: false, message: '补齐失败：' + e.message }
   }
 }

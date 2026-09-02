@@ -377,7 +377,10 @@ exports.main = async (event, context) => {
     case 'collect': {
       const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
-      const { orderId, amount, paymentMethod, note, clientToken } = event
+      const { orderId, paymentMethod, note, clientToken } = event
+      // T63-9：amount 独立 let——与 discount 同款归一化需重赋值（解构 const 会撞
+      // "Assignment to constant variable"，对齐 discount 注释里的 RB-4 教训）
+      let amount = event.amount
       // discount 单独用 let：RC-1 归一化时需对折价重赋值（解构 const 不可重赋值，
       // 曾致 "Assignment to constant variable" 崩溃——RB-4 回归测试抓出）
       let discount = event.discount
@@ -397,6 +400,8 @@ exports.main = async (event, context) => {
       if (isNaN(__amtNum) || __amtNum <= 0) {
         return { code: 1001, message: '收款金额必须为大于 0 的数字' }
       }
+      // T63-9：amount 与 discount 同口径分位归一（T59-R7C 备注项）——防 '60.005' 类输入直落库造成口径不对称
+      amount = Math.round(__amtNum * 100) / 100
       
       // T57-RC-1：折价/减免同 amount 口径强校验。原实现 discount 直接落库：
       // 字符串 '5' 在 confirmPayment reduce(sum + (p.discount||0)) 时变字符串拼接（5+'5'=55），
@@ -617,12 +622,14 @@ exports.main = async (event, context) => {
       const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
       // 获取收款历史记录
       const { customerId, limit = 50 } = event
+      // T63-3：customerId 必填——原实现缺参时静默返回全量流水（跨客户数据泄露面）
+      if (!customerId) {
+        return { code: 1001, message: 'customerId 参数必填' }
+      }
       
       let query = db.collection('payments').orderBy('created_at', 'desc').limit(limit)
       
-      if (customerId) {
-        query = query.where({ customerId })
-      }
+      query = query.where({ customerId })
       
       const res = await query.get()
       

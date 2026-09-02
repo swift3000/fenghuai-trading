@@ -26,21 +26,23 @@ exports.main = async (event, context) => {
 
   // 所有动作（import-customers/import-products/import-all/verify）统一走管理员门禁
   if (!(await checkAdmin())) {
-    return { success: false, message: '无权限：仅管理员可执行数据导入' }
+    // T63-4：错误响应补统一 code（对齐其余云函数口径；success 保留向后兼容）
+    return { code: 403, success: false, message: '无权限：仅管理员可执行数据导入' }
   }
   try {
     if (action === 'import-customers') {
-      return await importCustomers()
+      const r = await importCustomers(); if (r && r.code == null) r.code = 0; return r
     }
     
     if (action === 'import-products') {
-      return await importProducts()
+      const r = await importProducts(); if (r && r.code == null) r.code = 0; return r
     }
     
     if (action === 'import-all') {
       const customersResult = await importCustomers()
       const productsResult = await importProducts()
       return {
+        code: 0,
         success: true,
         message: '所有数据导入成功',
         customers: customersResult,
@@ -49,10 +51,11 @@ exports.main = async (event, context) => {
     }
     
     if (action === 'verify') {
-      return await verifyData()
+      const r = await verifyData(); if (r && r.code == null) r.code = 0; return r
     }
     
     return {
+      code: 1001,
       success: false,
       message: '未知操作：' + action,
       availableActions: ['import-customers', 'import-products', 'import-all', 'verify']
@@ -60,6 +63,7 @@ exports.main = async (event, context) => {
   } catch (error) {
     console.error('导入数据失败:', error)
     return {
+      code: 5001,
       success: false,
       message: '导入失败：' + error.message,
       error: error
