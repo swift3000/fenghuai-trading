@@ -17,7 +17,8 @@ async function checkAdmin() {
   if (!OPENID) return false
   const res = await db.collection('users').where({ openid: OPENID }).get()
   const user = res.data[0]
-  return !!(user && user.role === 'admin')
+  // T55-SC-5：与业务侧 checkPermission 口径统一——禁用账号（status 非 active）一律拒绝
+  return !!(user && user.role === 'admin' && (!user.status || user.status === 'active'))
 }
 
 async function fetchExistingNames(coll) {

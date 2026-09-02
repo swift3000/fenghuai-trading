@@ -45,11 +45,11 @@
     </view>
     <view class="detail-row flex-between">
       <text class="dr-lbl">已收金额</text>
-      <text class="dr-val text-success">¥{{receivedAmount}}</text>
+      <view class="dr-val text-success"><text>¥{{receivedAmount}}</text><text wx:if="{{hasPendingPay}}" class="dr-pending-tag">含待确认</text></view>
     </view>
     <view class="detail-row flex-between">
       <text class="dr-lbl">折价/货损</text>
-      <text class="dr-val {{totalDiscount > 0 ? 'text-warning' : ''}}">¥{{totalDiscount}}</text>
+      <view class="dr-val {{totalDiscount > 0 ? 'text-warning' : ''}}"><text>¥{{totalDiscount}}</text><text wx:if="{{hasPendingPay && totalDiscount > 0}}" class="dr-pending-tag">含待确认</text></view>
     </view>
     <view class="detail-row flex-between">
       <text class="dr-lbl">剩余欠款</text>

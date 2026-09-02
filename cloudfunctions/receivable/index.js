@@ -137,6 +137,8 @@ async function appendOrderLog(orderId, action, desc) {
 exports.main = async (event, context) => {
   __impersonatedOpenid = ((typeof process !== "undefined" && process.env && process.env.QA_IMPERSONATE === "1" && event && event.qaAsOpenid) ? event.qaAsOpenid : null)
   const { action } = event
+  // T57-RC-4：顶层错误边界（同 orders）——非法 paymentId/orderId 等路径不再裸异常 500
+  try {
   switch (action) {
     case 'dashboard': {
       const __p = await checkPermission('receivable:view'); if (__p.code !== 0) return __p
@@ -200,6 +202,9 @@ exports.main = async (event, context) => {
       if (dateFilter) {
         conds.push({ ...dateFilter })
       }
+      // T57-RB-3：已取消订单不计入赊销台账/未结清/已结清聚合（原实现 cancelled 单仍参与
+      // 欠款统计，客户"结清"状态与订单状态矛盾）
+      conds.push({ status: db.command.neq('cancelled') })
       
       // 应用搜索过滤
       if (searchKey) {
@@ -233,6 +238,7 @@ exports.main = async (event, context) => {
             paidAmount: 0,
             unpaidAmount: 0,
             orderCount: 0,
+            paidOrders: 0,
             maxAge: 0,
             orders: []
           }
@@ -254,6 +260,9 @@ exports.main = async (event, context) => {
         customer.pendingCents = (customer.pendingCents || 0) + pendCents
         customer.unpaidCents = (customer.unpaidCents || 0) + Math.max(0, toCents(total) - receivedCents)
         customer.orderCount += 1
+        // T59-R7B-2（方案A，2026-08-31 老板拍板）：客户级"已结清"判定改按 payment_status——
+        // 全部订单 payment_status=paid 才算结清；派生欠款(含待确认)归零但账务仍 pending 的，不得判结清。
+        if (order.paymentStatus === 'paid') customer.paidOrders += 1
         // 最长欠款账龄：仅统计未结清订单（剩余欠款>0），对齐原型 maxAge
         const unpaidNow = Math.max(0, toCents(total) - receivedCents)
         if (unpaidNow > 0) customer.maxAge = Math.max(customer.maxAge, debtAgeDays(order))
@@ -284,11 +293,11 @@ exports.main = async (event, context) => {
       
       // 根据视图标签过滤客户
       if (viewTab === 'unpaid') {
-        // 只显示有欠款的客户
-        customers = customers.filter(c => c.unpaidAmount > 0)
+        // T59-R7B-2（方案A）：未结清 = 存在非 paid 订单（派生欠款口径会把 pending 归零，不可用于判结清）
+        customers = customers.filter(c => (c.paidOrders || 0) < (c.orderCount || 0))
       } else if (viewTab === 'settled') {
-        // 只显示已结清的客户（当前无欠款）
-        customers = customers.filter(c => c.unpaidAmount === 0 && c.totalAmount > 0)
+        // T59-R7B-2（方案A）：已结清 = 全部订单 payment_status=paid
+        customers = customers.filter(c => (c.orderCount || 0) > 0 && (c.paidOrders || 0) === (c.orderCount || 0))
       }
       
       // 按欠款金额降序排序
@@ -308,7 +317,8 @@ exports.main = async (event, context) => {
           // T53-B1（方案A）：全局待确认金额，>0 时 hero"已收"标注含待确认
           totalPendingAmount: Math.round(totalPendingCents) / 100,
           customerCount: customers.length,
-          settledCount: customers.filter(c => c.unpaidAmount === 0).length,
+          // T59-R7B-2（方案A）：已结清家数按 payment_status（全部订单 paid）
+          settledCount: customers.filter(c => (c.orderCount || 0) > 0 && (c.paidOrders || 0) === (c.orderCount || 0)).length,
           customers
         }
       }
@@ -324,7 +334,7 @@ exports.main = async (event, context) => {
       
       // T50-1：全量拉取（默认 100 截断会少算财务汇总）
       const orders = await fetchAll(
-        db.collection('orders').where({ customerId }).orderBy('created_at', 'desc')
+        db.collection('orders').where({ customerId, status: db.command.neq('cancelled') }).orderBy('created_at', 'desc')
       )
       await attachConfirmedPayments(orders)
       // T53-B1（方案A）：口径对齐 dashboard——已收 = 实收 + 已确认折价 + 待确认实收 + 待确认折价
@@ -356,7 +366,10 @@ exports.main = async (event, context) => {
     case 'collect': {
       const __p = await checkPermission('receivable:collect'); if (__p.code !== 0) return __p
       // 登记收款（两步流程第一步；下单员/分拣员/管理员可，库管不可）
-      const { orderId, amount, paymentMethod, note, discount, clientToken } = event
+      const { orderId, amount, paymentMethod, note, clientToken } = event
+      // discount 单独用 let：RC-1 归一化时需对折价重赋值（解构 const 不可重赋值，
+      // 曾致 "Assignment to constant variable" 崩溃——RB-4 回归测试抓出）
+      let discount = event.discount
 
       // 折价/减免属独立权限：即使持有 receivable:collect，若未配置 receivable:discount 也不得折价（纵深防御，前端已用 canDiscount 隐藏入口）
       if (discount && discount > 0) {
@@ -364,8 +377,25 @@ exports.main = async (event, context) => {
         if (__d.code !== 0) return { code: 403, message: '无折价/减免权限' }
       }
       
-      if (!orderId || !amount || amount <= 0) {
+      // T55-SC-7（graph二轮安全流）：amount 非数字（如 'abc'）原先落入 ||0 按 0 元处理，
+      // 语义模糊。现显式校验：缺参→4001（原口径），非数字/负数/0→1001（参数错误，API 文档 §1.4）。
+      if (!orderId || amount == null || amount === '') {
         return { code: 4001, message: '订单 ID 和收款金额为必填' }
+      }
+      const __amtNum = Number(amount)
+      if (isNaN(__amtNum) || __amtNum <= 0) {
+        return { code: 1001, message: '收款金额必须为大于 0 的数字' }
+      }
+      
+      // T57-RC-1：折价/减免同 amount 口径强校验。原实现 discount 直接落库：
+      // 字符串 '5' 在 confirmPayment reduce(sum + (p.discount||0)) 时变字符串拼接（5+'5'=55），
+      // 负数折价则虚增欠款。折价只允许 0（不填）或 >0 的有限数字。
+      if (discount != null && discount !== '') {
+        const __dNum = Number(discount)
+        if (isNaN(__dNum) || __dNum < 0 || !isFinite(__dNum)) {
+          return { code: 1001, message: '折价金额必须为不小于 0 的数字' }
+        }
+        if (__dNum > 0) discount = Math.round(__dNum * 100) / 100
       }
       
       const orderRes = await db.collection('orders').doc(orderId).get()
@@ -375,6 +405,14 @@ exports.main = async (event, context) => {
         return { code: 4004, message: '订单不存在' }
       }
       
+      // T57-RB-3：终态订单拒绝登记收款——已取消订单不应新增收款（原实现可对 cancelled 单收款，
+      // 确认后会改其 payment_status 造成"取消单又有收款轨迹"的账务矛盾）
+      if (order.status === 'cancelled') {
+        return { code: 3002, message: '订单已取消，不可登记收款' }
+      }
+      if (order.status === 'completed' && (order.paymentStatus === 'paid' || (order.payment_status || 'unpaid') === 'paid')) {
+        return { code: 3002, message: '订单已结清，无需收款' }
+      }
       // 幂等键（T11 P2-3）：前端每次打开登记弹窗生成一个 clientToken；
       // 网络重试/双击带同一 token 进来 → 复用首次登记的 pending 记录，不重复生成
       const token = clientToken || `auto_${orderId}_${Date.now()}`
@@ -492,6 +530,28 @@ exports.main = async (event, context) => {
         return { code: 0, data: { reused: true } }
       }
 
+      // T59-R9（P2 资金红线纵深防御）：确认前超收拦截。
+      // collect 的 pending 占额校验是 get→check→add 非原子（TOCTOU），并发下可能挂出超额 pending；
+      // 若超额 pending 被确认将造成 已收>应收 的超收错账（P0）。正常前端顺序操作不可触达，
+      // 但确认时按 订单总额−已确认折价 设上限拦截是纯防御、不改变任何合法确认行为：
+      // 已确认实收(不含本笔) + 本笔实收 + 已确认折价 + 本笔折价 > 订单总额 → 拒绝，payment 保持 pending 可回退。
+      {
+        const __ord = await db.collection('orders').doc(targetOrderId).get()
+        const __o = __ord && __ord.data
+        if (__o) {
+          const __conf = await db.collection('payments').where({ orderId: targetOrderId, status: 'confirmed' }).get()
+          const __confAmt = __conf.data.reduce((s, x) => s + toCents(x.amount || 0), 0)
+          const __confDisc = __conf.data.reduce((s, x) => s + toCents(x.discount || 0), 0)
+          const __totalC = toCents(__o.totalAmount || 0)
+          const __thisAmtC = toCents(pay.amount || 0)
+          const __thisDiscC = toCents(pay.discount || 0)
+          if (__confAmt + __confDisc + __thisAmtC + __thisDiscC > __totalC) {
+            console.log('[confirmPayment] 超收拦截：确认后实收+折价将超订单总额', { targetOrderId, conf: Math.round(__confAmt+__confDisc), this: Math.round(__thisAmtC+__thisDiscC), total: Math.round(__totalC) })
+            return { code: 4002, message: '确认后收款将超过订单应收，已拦截（该笔保持待确认，可作废后重收）' }
+          }
+        }
+      }
+      
       // T50-2：并发防双记——条件更新仅当 status 仍为 pending 才翻 confirmed。
       // 原 get→update 两步非原子：两并发请求同时读到 pending 都通过守卫会双写 confirmed
       // （金额在重算口径下不会双计，但确认人/时间/日志会被第二笔覆盖，审计轨迹错乱）
@@ -659,5 +719,9 @@ exports.main = async (event, context) => {
 
     default:
       return { code: 1001, message: '未知 action' }
+  }
+  } catch (err) {
+    console.error('[receivable] 未捕获异常 action=' + action, err && err.stack)
+    return { code: 500, message: '服务器内部错误，请稍后重试' }
   }
 }

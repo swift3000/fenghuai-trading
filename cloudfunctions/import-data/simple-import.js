@@ -20,7 +20,8 @@ const TEST_PRODUCTS = [
 
 exports.main = async (event, context) => {
   const { OPENID } = cloud.getWXContext()
-  console.log('🚀 开始导入测试数据，OPENID:', OPENID)
+  // T59-R7C-1（P2）：OPENID 脱敏对齐 auth 口径（防 PII 进云函数日志）
+  console.log('🚀 开始导入测试数据，OPENID:', String(OPENID || '').slice(0, 6) + '***')
   
   try {
     // 导入客户

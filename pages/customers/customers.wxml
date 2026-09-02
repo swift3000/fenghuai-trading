@@ -30,34 +30,6 @@
     <view class="empty-tip" wx:if="{{customerGroups.length === 0}}">暂无客户</view>
   </view>
 
-  <!-- 导入弹窗 -->
-  <view class="modal-mask" wx:if="{{showImportDialog}}" bindtap="hideImportDialog"></view>
-  <view class="modal-content" wx:if="{{showImportDialog}}">
-    <view class="modal-header">
-      <text class="modal-title">导入原型数据</text>
-      <text class="modal-close" bindtap="hideImportDialog">×</text>
-    </view>
-    <scroll-view scroll-y class="modal-body">
-      <view class="import-info">
-        <text class="info-text">将导入 {{defaultCustomersCount}} 个客户数据</text>
-        <view class="import-options">
-          <label class="radio-label">
-            <radio color="#07C160" checked="{{importOverride}}" bindtap="toggleOverride" />
-            <text class="radio-text">覆盖已存在的客户</text>
-          </label>
-        </view>
-        <view class="warning-box">
-          <text class="warning-text">⚠️ 导入过程中请勿关闭页面</text>
-        </view>
-      </view>
-    </scroll-view>
-    <view class="modal-footer">
-      <button class="btn btn-cancel" bindtap="hideImportDialog">取消</button>
-      <button class="btn btn-primary" bindtap="confirmImport" loading="{{importing}}">
-        {{importing ? '导入中...' : '开始导入'}}
-      </button>
-    </view>
-  </view>
 
   <!-- 表单弹窗 -->
   <view class="modal-mask" wx:if="{{showForm}}" bindtap="closeForm"></view>

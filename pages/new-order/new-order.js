@@ -343,7 +343,12 @@ onCustomerSearch(e) {
 
   onQtyInput(e) {
     const { index, field } = e.currentTarget.dataset
-    const val = parseInt(e.detail.value) || 0
+    // T57-RA-4：原 parseInt 静默吞小数（"2.5"→2 无任何提示）；现小数显式提示并取整
+    const raw = e.detail.value
+    if (raw && /^d+.+d*$/.test(raw.trim())) {
+      wx.showToast({ title: '数量须为整数', icon: 'none' })
+    }
+    const val = parseInt(raw, 10) || 0
     const items = this.data.items
     items[index][field] = Math.max(0, val)
     this.calcTotal()
@@ -363,7 +368,8 @@ onCustomerSearch(e) {
   onRemarkInput(e) {
     const index = e.currentTarget.dataset.index
     const items = this.data.items
-    items[index].remark = e.detail.value
+    // T57-RA-4：备注上限 100 字（原无上限，超长备注会撑爆打印单排版与列表行高）
+    items[index].remark = String(e.detail.value || '').slice(0, 100)
     this.setData({ items })
   },
 

@@ -74,6 +74,19 @@ async function loadSmartRun() {
     assert.strictEqual(r.calls.length, 0, '规则命中不应调 AI')
   })
 
+  // T56 防回归（SA-1 丢价）：规则引擎命中项必须带回 material_code + 量词单位，
+  // 否则前端 parseOnline 落到"未匹配自由项"分支 price 置 0 / 单位回落"包"，金额算错。
+  await test('T56: 规则命中项带回 material_code + 量词单位（件）', async () => {
+    const r = await run({ action: 'parseWithAI', text: '乐事薯片 2件', ai: {} })
+    assert.strictEqual(r.res.data.engine, 'rule', '应使用规则引擎')
+    const it = r.res.data.items && r.res.data.items[0]
+    assert.ok(it, '应有命中项')
+    assert.strictEqual(it.material_code, '001', '规则命中项必须带 material_code（前端据此识别库内商品）')
+    assert.ok(it.unit, '规则命中项必须带量词单位（前端据此记 piece/package）')
+    assert.strictEqual(it.price, 45, '件价应随项带回')
+    assert.strictEqual(it.pricing_mode, 'case', 'pricing_mode 应带回')
+  })
+
   // 2. 规则未命中 + 配中转站 -> 调用中转站并 AI 兜底
   await test('规则未命中 + 配中转站 -> 调用中转站并 AI 兜底', async () => {
     const r = await run({
@@ -112,6 +125,38 @@ async function loadSmartRun() {
       byHost: { 'relay.com': { error: 'boom' }, 'tokenhub.com': { error: 'boom2' } }
     })
     assert.strictEqual(r.res.data.engine, 'rule', '引擎全失败应回落规则引擎')
+  })
+
+  // ===== T57 防回归：RA-1（0件不再被兜底成1件）/ RA-3（数量上限9999） =====
+  const smartPure = require(path.join(__dirname, '..', 'cloudfunctions', 'smart', 'index.js'))
+  await test('T57-RA-1: "0件" 量词命中时 qty=0（不再兜底成1）', () => {
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片0件', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 0, '0件应解析为 0，实际 ' + it.qty)
+    assert.strictEqual(smartPure.parseQtyPhrase('0'), 0, 'parseQtyPhrase(0)=0')
+    assert.strictEqual(smartPure.parseQtyPhrase('三'), 3, 'parseQtyPhrase 正常中文数')
+  })
+  await test('T57-RA-1: 无量词兜底仍为1（"乐事薯片"→qty 1）', () => {
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 1, '无量词默认 1 件，实际 ' + it.qty)
+  })
+  await test('T57-RA-3: 数量上限 9999（999999件 截断）', () => {
+    assert.strictEqual(smartPure.normalizeQty(999999), 9999, '超上限截断 9999')
+    assert.strictEqual(smartPure.normalizeQty(2.5), 3, '小数向上取整')
+    assert.strictEqual(smartPure.normalizeQty(0), 0, '显式 0 保留（RA-1）')
+    assert.strictEqual(smartPure.normalizeQty('abc'), 1, '非数字兜底 1')
+    assert.strictEqual(smartPure.normalizeQty(-5), 1, '负数兜底 1')
+    assert.strictEqual(smartPure.normalizeQty(100), 100, '正常值不变')
+    const prods = global.__SMART_PRODUCTS__
+    const items = smartPure.parseOrderText('乐事薯片999999件', prods)
+    const it = items.find(x => x._id === 'p1')
+    assert.ok(it, '应命中商品')
+    assert.strictEqual(it.qty, 9999, '解析层应截断到 9999，实际 ' + it.qty)
   })
 
   console.log('\n' + '='.repeat(50))
