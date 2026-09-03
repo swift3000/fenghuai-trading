@@ -82,7 +82,10 @@ const createdInvites=[];
   for(const role of ['admin','orderer','sorter','warehouse']) await cfCall('users',{action:'reset-perm',role})(session);
   await delay(800);
   const left=await db.collection('users').where({inviteStatus:'pending'}).get();
-  ok(left.data.length===0,'清理完成：无残留待激活邀请（剩 '+left.data.length+'）');
+  // T72 修复：断言口径改为"本轮创建的已全部清理"，全表 pending 可能含历史/真实业务邀请（不应误删误报）
+  const leftIds=new Set(left.data.map(d=>d._id));
+  const myLeft=createdInvites.filter(it=>leftIds.has(it.docId));
+  ok(myLeft.length===0,'清理完成：本轮创建邀请已全部清除（全表 pending '+left.data.length+' 条含历史/业务邀请）');
 
   console.log('\n==== 结果：通过 '+pass+'，失败 '+fail+' ====');
   await session.close();

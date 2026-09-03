@@ -13,6 +13,10 @@ const today = new Date().toISOString().slice(0,10);
 const ym = today.slice(0,8);
 
 (async () => {
+  // T72 修复：创建真实客户（report customer tab 有"无 customerId 孤儿订单不参与聚合"的脏数据防护，
+  // 原脚本只传 customerName → 期望值把孤儿单算进去、云函数正确返回 0，假 FAIL）
+  const tc = await invoke("customers", { action:"create", name:"区间测试客户", region:"测试区" });
+  const tcid = tc && tc.data && (tc.data.customerId||tc.data._id||tc.data.id);
   // ===== 报表自定义区间 =====
   // 1. 本月区间(当月)应有数据
   const sumMonth = await invoke("report", { action:"summary", reportTab:"product", timeTab:"custom", startDate:ym+"01", endDate:today });
@@ -37,7 +41,7 @@ const ym = today.slice(0,8);
   check("算账一致: 客户汇总表CSV金额和 == 本月订单金额和", expectAmt===csvAmt, "期望"+expectAmt+" 实得"+csvAmt);
   // ===== 出库库单导出时间范围 =====
   // 创建一个订单并出库填件数, 验证 exportOutbound 三种范围
-  const c = await invoke("orders", { action:"create", customerName:"区间测试客户", customerRegion:"测试区", totalAmount:100, items:[{material_code:"9",name:"测试品",pricing_mode:"case",piece_qty:2,zero_qty:0,price_piece:50}], orderDate:today });
+  const c = await invoke("orders", { action:"create", customerId:tcid, customerName:"区间测试客户", customerRegion:"测试区", totalAmount:100, items:[{material_code:"9",name:"测试品",pricing_mode:"case",piece_qty:2,zero_qty:0,price_piece:50}], orderDate:today });
   const oid = c && c.data && (c.data.orderId||c.data._id);
   check("创建出库测试订单", c && c.code===0, c.message);
   if (oid) {
@@ -59,6 +63,8 @@ const ym = today.slice(0,8);
     // 清理
     await invoke("orders", { action:"delete", orderId:oid });
   }
+  // T72 清理：测试客户
+  if (tcid) await invoke("customers", { action:"delete", customerId:tcid });
   const pass = results.filter(r=>r.pass).length;
   console.log("\n汇总: "+pass+"/"+results.length+" 通过");
   process.exit(pass===results.length?0:1);

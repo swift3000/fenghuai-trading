@@ -105,6 +105,8 @@ const C=async (fn,d)=>{try{const r=await app.callFunction({name:fn,data:d});retu
     const p=await db.collection('payments').where({orderNo:db.RegExp({regexp:'TEST',options:''})}).get().catch(()=>({data:[]}));
     for(const x of p.data){ await db.collection('payments').doc(x._id).remove().catch(()=>{}); }
     if(cid){ await db.collection('customers').doc(cid).remove().catch(()=>{}); }
+    // T72 修复：QA_orderer 用户自清理（防测试残留导致 data-consistency 用户权限快照漂移误报）
+    try{ await db.collection('users').where({openid:QA_ORDERER}).remove(); }catch(e){}
   }
   // 5. 对账复核
   const audit=require('child_process').spawnSync('node',[path.join(PROJECT,'tests','data-consistency-audit.js')],{encoding:'utf8'});

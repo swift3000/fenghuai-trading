@@ -496,7 +496,8 @@ exports.main = async (event, context) => {
           note: note || '',
           status: 'pending',
           client_token: token,
-          registered_by: cloud.getWXContext().OPENID,
+          // T72：同 confirmed_by 口径对齐 impersonation（collect 场景同问题）
+          registered_by: __impersonatedOpenid || (cloud.getWXContext() || {}).OPENID || '',
           registered_at: db.serverDate(),
           created_at: db.serverDate()
         }
@@ -575,10 +576,13 @@ exports.main = async (event, context) => {
       // T50-2：并发防双记——条件更新仅当 status 仍为 pending 才翻 confirmed。
       // 原 get→update 两步非原子：两并发请求同时读到 pending 都通过守卫会双写 confirmed
       // （金额在重算口径下不会双计，但确认人/时间/日志会被第二笔覆盖，审计轨迹错乱）
+      // T72：确认人取 __impersonatedOpenid || raw（对齐 checkPermission 口径）——
+      // 原实现直用 raw OPENID，QA impersonation 模式下为空 → 审计字段 confirmed_by 落空串
+      const __confirmerOid = __impersonatedOpenid || (cloud.getWXContext() || {}).OPENID
       const flip = await db.collection('payments').where({ _id: pay._id, status: 'pending' }).update({
         data: {
           status: 'confirmed',
-          confirmed_by: cloud.getWXContext().OPENID,
+          confirmed_by: __confirmerOid || '',
           confirmed_at: db.serverDate(),
           confirm_note: note || ''
         }
@@ -608,7 +612,7 @@ exports.main = async (event, context) => {
             payment_status: newStatus,
             paymentStatus: newStatus,
             paymentConfirmedAt: db.serverDate(),
-            paymentConfirmedBy: cloud.getWXContext().OPENID,
+            paymentConfirmedBy: __impersonatedOpenid || (cloud.getWXContext() || {}).OPENID || '',
             paymentConfirmNote: note || ''
           }
         })
