@@ -1,4 +1,4 @@
-// 乾多多小程序 CI 上传（不依赖 IDE 扫码，走 miniprogram-ci）
+// 钱多多小程序 CI 上传（不依赖 IDE 扫码，走 miniprogram-ci）
 const ci = require('miniprogram-ci')
 const appid = 'wxe4ab72773abd200f'
 const version = process.env.CI_VERSION || '0.1.0'

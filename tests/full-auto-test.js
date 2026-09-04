@@ -1,5 +1,5 @@
 /**
- * 乾多多小程序 - 全自动测试脚本
+ * 钱多多小程序 - 全自动测试脚本
  * 使用 loop 技能进行 100 轮测试和修复
  */
 
@@ -357,7 +357,7 @@ function generateReport() {
 
 // 主函数
 async function main() {
-  console.log('🚀 乾多多小程序 - 全自动测试');
+  console.log('🚀 钱多多小程序 - 全自动测试');
   console.log('='.repeat(60));
   
   // 执行测试轮次

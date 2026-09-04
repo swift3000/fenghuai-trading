@@ -29,7 +29,7 @@ if (!fs.existsSync(CONFIG.reportsDir)) {
 // 测试用例
 const TEST_CASES = [
   { name: '登录', page: 'login', expected: '微信一键登录' },
-  { name: '首页', page: 'index', expected: '乾多多' },
+  { name: '首页', page: 'index', expected: '钱多多' },
   { name: '新建订单', page: 'new-order', expected: '选择客户' },
   { name: '订单列表', page: 'orders', expected: '订单' },
   { name: '商品管理', page: 'products', expected: '商品' },

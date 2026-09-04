@@ -3,7 +3,7 @@
   <view class="profile-header">
     <view class="pf-avatar">{{userInitial}}</view>
     <view class="pf-name">{{userInfo.name || '用户'}}</view>
-    <view class="pf-role">乾多多 · {{roleText}}</view>
+    <view class="pf-role">钱多多 · {{roleText}}</view>
   </view>
 
   <!-- 功能菜单 -->
@@ -42,5 +42,5 @@
     </view>
   </view>
 
-  <view class="pf-version">乾多多 v0.1.0</view>
+  <view class="pf-version">钱多多 v0.1.0</view>
 </view>

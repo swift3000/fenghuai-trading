@@ -1,11 +1,11 @@
 /**
- * 乾多多小程序 - 全角色业务流程测试
+ * 钱多多小程序 - 全角色业务流程测试
  * 测试范围：管理员、下单员、分拣员、库管 四大角色
  * 测试领域：订单创建、分拣出库、收款管理、赊销管理、权限控制
  */
 
 console.log('\n' + '='.repeat(80))
-console.log('🚀 乾多多小程序 - 全角色业务流程测试开始')
+console.log('🚀 钱多多小程序 - 全角色业务流程测试开始')
 console.log('='.repeat(80))
 console.log(`测试时间：${new Date().toISOString()}`)
 console.log('')
@@ -241,7 +241,7 @@ function testOrderCreation() {
         
         test(`${roleDef.name} - 创建正常订单`, () => {
           const order = {
-            orderNo: `乾多多-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-0001`,
+            orderNo: `钱多多-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-0001`,
             customerId: 'cust-001',
             customerName: '测试餐厅 A',
             items: [
@@ -268,8 +268,8 @@ function testOrderCreation() {
           const dateStr = date.getFullYear().toString() + 
                          (date.getMonth()+1).toString().padStart(2,'0') + 
                          date.getDate().toString().padStart(2,'0')
-          const expectedPrefix = `乾多多-${dateStr}`
-          assert(expectedPrefix.startsWith('乾多多-20'), '订单号前缀格式正确', role)
+          const expectedPrefix = `钱多多-${dateStr}`
+          assert(expectedPrefix.startsWith('钱多多-20'), '订单号前缀格式正确', role)
         })
         
         test(`${roleDef.name} - 件包双轨计算`, () => {
@@ -303,8 +303,8 @@ function testSortingFlow() {
         
         test(`${roleDef.name} - 待分拣订单列表`, () => {
           const pendingOrders = [
-            { _id: 'order-001', orderNo: '乾多多-20260811-0001', status: 'submitted' },
-            { _id: 'order-002', orderNo: '乾多多-20260811-0002', status: 'submitted' }
+            { _id: 'order-001', orderNo: '钱多多-20260811-0001', status: 'submitted' },
+            { _id: 'order-002', orderNo: '钱多多-20260811-0002', status: 'submitted' }
           ]
           assert(pendingOrders.length > 0, '待分拣订单列表正确', role)
         })

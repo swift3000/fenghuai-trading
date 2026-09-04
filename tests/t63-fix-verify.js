@@ -44,7 +44,7 @@ const C=async(fn,d)=>{try{const r=await app.callFunction({name:fn,data:d});retur
   const r6b=await C('orders',{action:'printOrder',orderId:'nonexistent_xyz',qaAsOpenid:ADMIN});
   ok(r6b.code===4004,'printOrder got '+r6b.code);
 
-  console.log('== T63-7 订单前缀可配置（默认乾多多）');
+  console.log('== T63-7 订单前缀可配置（默认钱多多）');
   const cfg=await C('system',{action:'getAiConfig',qaAsOpenid:ADMIN});
   ok(cfg.code===0 && cfg.data && typeof cfg.data.orderPrefix==='string','getAiConfig 返回 orderPrefix='+cfg.data&&cfg.data.orderPrefix);
   // 造一单验证前缀=配置值
@@ -56,7 +56,7 @@ const C=async(fn,d)=>{try{const r=await app.callFunction({name:fn,data:d});retur
       items:[{piece_qty:1,package_qty:0,price_piece:10,pricing_mode:'piece'}],totalAmount:10});
     const oid=o.data&&(o.data._id||o.data.orderId);
     const on=o.data&&o.data.orderNo;
-    ok(!!oid && /^乾多多-\d{8}-\d{4}$/.test(on||''),'新单 orderNo='+on+'（默认前缀乾多多）');
+    ok(!!oid && /^钱多多-\d{8}-\d{4}$/.test(on||''),'新单 orderNo='+on+'（默认前缀钱多多）');
     // 改前缀再造单
     const up=await C('system',{action:'updateAiConfig',orderPrefix:'丰淮商贸',qaAsOpenid:ADMIN});
     ok(up.code===0,'updateAiConfig orderPrefix 成功 code='+up.code);
@@ -65,7 +65,7 @@ const C=async(fn,d)=>{try{const r=await app.callFunction({name:fn,data:d});retur
     const on2=o2.data&&o2.data.orderNo;
     ok(/^丰淮商贸-\d{8}-\d{4}$/.test(on2||''),'改前缀后新单 orderNo='+on2);
     // 恢复默认
-    await C('system',{action:'updateAiConfig',orderPrefix:'乾多多',qaAsOpenid:ADMIN});
+    await C('system',{action:'updateAiConfig',orderPrefix:'钱多多',qaAsOpenid:ADMIN});
     // 清理
     try{
       await db.collection('orders').doc(oid).remove();

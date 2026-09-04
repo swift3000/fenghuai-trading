@@ -73,11 +73,11 @@ async function attachOrderPayments(orders) {
 }
 
 // 公司名（用于导出标题；云函数无法 require 前端 constants）
-const COMPANY_NAME = '乾多多'
+const COMPANY_NAME = '钱多多'
 function salesTitle(o){ return (o && (o.customerName || o.customer) || COMPANY_NAME) + '食品销售单' }
 
-// T63-7：订单号前缀可配置（system_config.orderPrefix，默认乾多多）——
-// 生产存在 丰淮商贸- 与 乾多多- 双前缀并存的历史单，新单前缀可在设置页修改；存量订单不迁移
+// T63-7：订单号前缀可配置（system_config.orderPrefix，默认钱多多）——
+// 生产存在 丰淮商贸- 与 钱多多- 双前缀并存的历史单，新单前缀可在设置页修改；存量订单不迁移
 async function getOrderNoPrefix(){
   try {
     const res = await db.collection('system_config').doc('global').get()
@@ -370,7 +370,7 @@ exports.main = async (event, context) => {
       const totalAmount = Math.round(itemsSum * 100) / 100
       const today = bjNow()
       const dateStr = today.getFullYear().toString() + (today.getMonth()+1).toString().padStart(2,'0') + today.getDate().toString().padStart(2,'0')
-      // T63-7：前缀读系统配置（默认乾多多）；同日同前缀顺序号
+      // T63-7：前缀读系统配置（默认钱多多）；同日同前缀顺序号
       const noPrefix = await getOrderNoPrefix()
       const count = await db.collection('orders').where({ orderNo: db.RegExp({ regexp: noPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-' + dateStr, options: 'i' }) }).count()
       const orderNo = noPrefix + '-' + dateStr + '-' + (count.total + 1).toString().padStart(4, '0')

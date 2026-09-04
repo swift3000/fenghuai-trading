@@ -703,7 +703,7 @@ exports.main = async (event, context) => {
       const payText = (ps) => ps === 'paid' ? '已结清' : (ps === 'pending' ? '未结清' : '未付款')
 
       const rows = []
-      rows.push(['乾多多赊销报表'])
+      rows.push(['钱多多赊销报表'])
       rows.push(['导出时间：' + new Date(Date.now() + 8 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 16)])
       rows.push(['筛选周期：' + finalLabel + ' · 视图：' + viewLabel])
       rows.push([])
@@ -725,7 +725,7 @@ exports.main = async (event, context) => {
       rows.push([])
       rows.push(['周期汇总  应收总额：¥' + grandTotal.toFixed(2) + ' | 已收：¥' + grandConfirmed.toFixed(2) + ' | 未结清：¥' + grandBalance.toFixed(2)])
 
-      const baseName = '乾多多赊销报表_' + dateStr()
+      const baseName = '钱多多赊销报表_' + dateStr()
       if (format === 'excel') {
         const ws = XLSX.utils.aoa_to_sheet(rows)
         const wb = XLSX.utils.book_new()

@@ -97,8 +97,8 @@ exports.main = async (event, context) => {
       // 获取 AI 服务配置（阿里语音 + 千问 + 打印机）— 含密钥，仅管理员可读（纵深防御）
       if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
       const cfg = await getConfig()
-      // T63-7：附带订单号前缀（默认乾多多），设置页可改
-      return { code: 0, data: { ai: cfg.ai || {}, printer: cfg.printer || {}, orderPrefix: (typeof cfg.orderPrefix === 'string' && cfg.orderPrefix.trim()) ? cfg.orderPrefix : '乾多多' } }
+      // T63-7：附带订单号前缀（默认钱多多），设置页可改
+      return { code: 0, data: { ai: cfg.ai || {}, printer: cfg.printer || {}, orderPrefix: (typeof cfg.orderPrefix === 'string' && cfg.orderPrefix.trim()) ? cfg.orderPrefix : '钱多多' } }
     }
     case 'updateAiConfig': {
       if (!(await checkAdmin())) return { code: 2001, message: '无权限' }
@@ -106,8 +106,8 @@ exports.main = async (event, context) => {
       const cfg = await getConfig()
       if (aiConfig) cfg.ai = aiConfig
       if (printer) cfg.printer = printer
-      // T63-7：订单号前缀（空串=恢复默认乾多多，orders 云函数读不到有效值时回落 COMPANY_NAME）
-      if (orderPrefix !== undefined) cfg.orderPrefix = String(orderPrefix).trim() || '乾多多'
+      // T63-7：订单号前缀（空串=恢复默认钱多多，orders 云函数读不到有效值时回落 COMPANY_NAME）
+      if (orderPrefix !== undefined) cfg.orderPrefix = String(orderPrefix).trim() || '钱多多'
       cfg.updatedAt = db.serverDate()
       await setConfig(cfg)
       return { code: 0, data: {} }

@@ -1,5 +1,5 @@
 /**
- * 自动化测试套件 - 乾多多小程序
+ * 自动化测试套件 - 钱多多小程序
  * 测试所有功能和多角色权限
  */
 
@@ -69,7 +69,7 @@ describe('一、数据结构测试', () => {
 
   test('订单数据结构完整', () => {
     const order = {
-      orderNo: '乾多多-20260813-0001',
+      orderNo: '钱多多-20260813-0001',
       customerId: 'test_id',
       customerName: '测试客户',
       items: [{
@@ -84,7 +84,7 @@ describe('一、数据结构测试', () => {
       status: 'submitted',
       payment_status: 'unpaid'
     }
-    assert(order.orderNo.startsWith('乾多多-'), '订单号格式正确')
+    assert(order.orderNo.startsWith('钱多多-'), '订单号格式正确')
     assert(order.items.length > 0, '有商品明细')
     assert(order.totalAmount > 0, '总金额大于 0')
   })
@@ -168,8 +168,8 @@ describe('四、新建订单测试', () => {
     const dateStr = date.getFullYear().toString() + 
       (date.getMonth()+1).toString().padStart(2,'0') + 
       date.getDate().toString().padStart(2,'0')
-    const orderNo = `乾多多-${dateStr}-0001`
-    assert(orderNo.startsWith('乾多多-'), '订单号前缀正确')
+    const orderNo = `钱多多-${dateStr}-0001`
+    assert(orderNo.startsWith('钱多多-'), '订单号前缀正确')
     assert(orderNo.includes(dateStr), '订单号包含日期')
   })
 

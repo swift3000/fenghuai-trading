@@ -1,11 +1,16 @@
-# AGENTS.md — 乾多多小程序（fenghuai-trading）
+# AGENTS.md — 钱多多小程序（qian-duoduo）
 
 > 生效范围：所有 AI 助手（Codex/Trae/其他）。本文件只提供【项目技术细节】；
 > 全局流程规则（评审机制/交付循环/经验库/平台红线/测试方式/工程纪律）以 ~/.codex/AGENTS.md 为最高优先，冲突以全局为准。
-> **规范版本**：v1.4 | **全局规则依赖版本**：v4.28 | **业务分级**：重业务（资金流+RBAC权限，2026-09-02按出错代价判据） | **更新日期**：2026-09-02
+> **规范版本**：v1.5 | **全局规则依赖版本**：v4.28 | **业务分级**：重业务（资金流+RBAC权限，2026-09-02按出错代价判据） | **更新日期**：2026-09-04
+
+## 仓库独立性（2026-09-04 拆仓）
+- 本项目 = 钱多多公司专属，仓库 swift3000/qian-duoduo（由 fenghuai-trading 改名，独立，与丰淮商贸项目无任何关联）
+- 姊妹项目：丰淮商贸（swift3000/fenghuai-shangmao，本地目录 fenghuai-shangmao），代码同源但公司/环境/数据完全独立，两个仓库互不同步
+- 品牌常量 COMPANY_NAME = 钱多多（沿用现网名称；公司对外名=钱多多，程序内文案暂不动，如需改品牌另行立项）
 
 ## 一句话
-乾多多采购下单助手：微信小程序（4 角色 RBAC）+ 微信云开发 Serverless，覆盖 智能录入→录单→分拣→出库→赊销收款→蓝牙打印/转发销售单。MVP v1.0 为最终功能范围（无 Web 后台、无二期增强；催收/审计/趋势报表/微信支付为独立升级模块）。
+钱多多采购下单助手：微信小程序（4 角色 RBAC）+ 微信云开发 Serverless，覆盖 智能录入→录单→分拣→出库→赊销收款→蓝牙打印/转发销售单。MVP v1.0 为最终功能范围（无 Web 后台、无二期增强；催收/审计/趋势报表/微信支付为独立升级模块）。
 
 ## 技术栈
 - 前端：微信原生小程序 + TypeScript + Vant Weapp；页面 pages/{login,index,customers,orders,new-order,order-detail,outbound,products,receivable,reports,members,profile,settings,shipping}
@@ -27,7 +32,7 @@
 | `deploy/scripts/` | 云函数一键部署脚本 |
 | `PROJECT_STRUCTURE.md` | 保留，与 `tests/performance/` 并列维护 |
 ## 原型
-- 原型位置：docs/ui/（乾多多采购下单助手_原型.html，唯一 UI 基准）
+- 原型位置：docs/ui/（钱多多采购下单助手_原型.html，唯一 UI 基准）
 - 开发对齐：只对齐产品事实（字段/流程/状态/权限/文案）；演示辅助剥离（4 角色演示切换≠真实 RBAC，按登录+权限实现）——原则见全局 AGENTS.md"原型对齐原则"
 
 ## 设计token（落地全局 v4.27，重业务项目强制，2026-09-02 建立）

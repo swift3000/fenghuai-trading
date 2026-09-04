@@ -10,7 +10,7 @@ Page({
     // 用户角色
     userRole: '',
     // 订单号前缀（T63-7）
-    orderPrefix: '乾多多',
+    orderPrefix: '钱多多',
     // 腾讯云语音（ASR）配置
     tencentEnabled: '0',
     tencentSid: '',
@@ -121,7 +121,7 @@ Page({
         printerWidth: widths.includes(printer.width) ? printer.width : '58',
         printerWidthIndex: Math.max(0, widths.indexOf(printer.width || '58')),
       })
-      this.setData({ orderPrefix: cfg.orderPrefix || '乾多多' })
+      this.setData({ orderPrefix: cfg.orderPrefix || '钱多多' })
     } catch (e) {
       console.error('加载配置失败', e)
     }
@@ -172,7 +172,7 @@ Page({
   // 订单号前缀（T63-7）
   onOrderPrefix(e) { this.setData({ orderPrefix: e.detail.value }) },
   async saveOrderPrefix() {
-    const p = String(this.data.orderPrefix || '').trim() || '乾多多'
+    const p = String(this.data.orderPrefix || '').trim() || '钱多多'
     await callCloud('system', { action: 'updateAiConfig', orderPrefix: p })
     this.setData({ orderPrefix: p })
     wx.showToast({ title: '订单号前缀已保存', icon: 'success' })

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>乾多多采购下单助手</title>
+<title>钱多多采购下单助手</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -828,7 +828,7 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
     <div class="page active" id="page-login">
       <div id="login">
         <div class="logo">乾多</div>
-        <div class="brand">乾多多</div>
+        <div class="brand">钱多多</div>
         <div class="slogan">让采购更简单</div>
         <div class="first-admin-banner" id="firstAdminBanner" style="display:none">
           👑 首次启动：您将成为<b>首位管理员</b>，无需任何配置。登录后即可管理成员与权限。
@@ -1203,7 +1203,7 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
       <div class="profile-header">
         <div class="avatar" id="profileAvatar">丰</div>
         <div class="name" id="profileName">张经理</div>
-        <div style="font-size:calc(12px * var(--font-scale));opacity:0.9;margin-top:4px" id="profileRole">乾多多 · 采购部</div>
+        <div style="font-size:calc(12px * var(--font-scale));opacity:0.9;margin-top:4px" id="profileRole">钱多多 · 采购部</div>
       </div>
       <div class="profile-menu">
         <div class="menu-item" id="menuProducts" onclick="navigateTo('products')"><div class="left"><div class="icon m1">📦</div><span class="lbl">商品管理</span></div><span class="arrow">›</span></div>
@@ -1215,7 +1215,7 @@ body{display:flex;justify-content:center;align-items:center;min-height:100vh;pad
       <div class="profile-menu">
         <div class="menu-item" onclick="logout()"><div class="left"><div class="icon" style="background:#FF3B30">🚪</div><span class="lbl" style="color:#FF3B30">退出登录</span></div><span class="arrow">›</span></div>
       </div>
-    <div style="text-align:center;padding:20px;font-size:calc(12px * var(--font-scale));color:var(--text-3)">乾多多 v0.1.0</div>
+    <div style="text-align:center;padding:20px;font-size:calc(12px * var(--font-scale));color:var(--text-3)">钱多多 v0.1.0</div>
   </div>
 
     <!-- Members Page (成员管理，仅管理员可见) -->
@@ -2067,7 +2067,7 @@ const DEFAULT_CUSTOMERS = [
 
 
 const DEFAULT_ANNOUNCEMENTS = [
-  '欢迎使用乾多多采购下单助手',
+  '欢迎使用钱多多采购下单助手',
   '已录入全部客户（282家）及全部商品（料号1-180）',
   '商品单位统一为「包」（件为整箱，1件=N包）',
   '送货单按商品分行显示，单价×数量=金额',
@@ -2122,7 +2122,7 @@ function generateOrderNo(){
   const d = new Date();
   const datePart = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
   const seq = String(data.orders.filter(o => o.orderNo && o.orderNo.includes(datePart)).length + 1).padStart(4,'0');
-  return '乾多多-' + datePart + '-' + seq;
+  return '钱多多-' + datePart + '-' + seq;
 }
 function showToast(msg){
   const t = $('toast');
@@ -2767,7 +2767,7 @@ function updateUserInfo(){
   const pAvatar = $('profileAvatar');
   if(pAvatar) pAvatar.textContent = profile.name.charAt(0);
   const pRole = $('profileRole');
-  if(pRole) pRole.textContent = `乾多多 · ${profile.roleLabel}`;
+  if(pRole) pRole.textContent = `钱多多 · ${profile.roleLabel}`;
   // 成员管理入口：仅管理员可见（开放模型中为独占能力）
   const mm = $('menuMembers');
   if(mm) mm.style.display = getPerm('member:manage') ? '' : 'none';
@@ -5533,7 +5533,7 @@ function exportReport(){
       rows.push(['销售', it.material_code || '', it.name, it.spec, getUnitByMode(it, 'piece') + '/' + getUnitByMode(it, 'zero'), salePrice, pieceQty, pieceAmt, zeroQty, zeroAmt, total, it.remark || '', o.customer, o.region]);
     });
   });
-  downloadCSV('乾多多_报表_' + todayStr() + '.csv', rows);
+  downloadCSV('钱多多_报表_' + todayStr() + '.csv', rows);
   showToast('报表已导出');
 }
 
@@ -5577,7 +5577,7 @@ function exportDailySummary(){
 
   // 生成 CSV 行（外县台账格式：10列）
   const csvRows = [
-    ['乾多多 客户汇总表（' + rangeDesc + '）'],
+    ['钱多多 客户汇总表（' + rangeDesc + '）'],
     [],
     ['编号','时间','区域','客户','商品','单位','数量','单价','金额','备注'],
   ];
@@ -5595,7 +5595,7 @@ function exportDailySummary(){
     no++;
   });
   csvRows.push(['', '', '', '', '', '', '', '合计', fmtMoney(grandTotal), '']);
-  downloadCSV('乾多多_客户汇总表_' + rangeDesc.replace(/\//g,'') + '.csv', csvRows);
+  downloadCSV('钱多多_客户汇总表_' + rangeDesc.replace(/\//g,'') + '.csv', csvRows);
   showToast('客户汇总表已导出（外县台账格式）');
 }
 
@@ -5610,7 +5610,7 @@ function exportLedger(){
   if(state.reportMode === 'day') rangeDesc = $('rptDate').value;
   else if(state.reportMode === 'month') rangeDesc = $('rptMonth').value;
   else rangeDesc = $('rptStart').value + ' 至 ' + $('rptEnd').value;
-  const title = '乾多多' + rangeDesc + '外县收款台账';
+  const title = '钱多多' + rangeDesc + '外县收款台账';
 
   const header = ['编号','时间','区域','客户','正价货','损赠特','实际货值','赊销','实收金额','现余','微信','收款日期','件数'];
   const csvRows = [[title], [], header];
@@ -5620,7 +5620,7 @@ function exportLedger(){
   csvRows.push([]);
   csvRows.push(['合计','','','',totals.zheng, totals.sun, totals.actual, totals.debt, totals.confirmed, totals.cash, totals.wechat, '', totals.pkgs]);
   csvRows.push(['总件数', totals.pkgs]);
-  downloadCSV('乾多多_收款台账_' + rangeDesc.replace(/\//g,'') + '.csv', csvRows);
+  downloadCSV('钱多多_收款台账_' + rangeDesc.replace(/\//g,'') + '.csv', csvRows);
   showToast('收款台账已导出（外县格式）');
 }
 
@@ -5705,7 +5705,7 @@ function doExportReceivable(){
   else if(exportPeriod === 'custom') timeLabel = `${$('eppStartDate').value} ~ ${$('eppEndDate').value}`;
 
   const rows = [];
-  rows.push(['乾多多赊销报表']);
+  rows.push(['钱多多赊销报表']);
   rows.push([`导出时间：${new Date().toLocaleString()}`]);
   rows.push([`筛选周期：${timeLabel}${q2 ? ' · 搜索:'+recvSearchQuery : ''}`]);
   rows.push([]);
@@ -5738,7 +5738,7 @@ function doExportReceivable(){
   rows.push([]);
   rows.push(['合计', '', customers.length, grandTotal.toFixed(2), '', '', grandConfirmed.toFixed(2), (grandTotal - grandConfirmed).toFixed(2)]);
 
-  downloadCSV(`乾多多赊销报表_${todayStr()}.csv`, rows);
+  downloadCSV(`钱多多赊销报表_${todayStr()}.csv`, rows);
   closeExportPreview();
   showToast(`已导出 ${customers.length} 家客户赊销数据`);
 }
@@ -5748,7 +5748,7 @@ function exportSingleOrder(){
   if(!getPerm('order:export')){ showToast('当前角色无「导出订单」权限'); return; }
   const o = currentDetailOrder || currentShippingOrder;
   if(!o){ showToast('请先打开订单详情'); return; }
-  const rows = [['乾多多送货单'],[],['订单号', o.orderNo],['客户', o.customer],['区域', o.region],['联系人', o.contact||''],['电话', o.phone],['日期', todayStr()],[]];
+  const rows = [['钱多多送货单'],[],['订单号', o.orderNo],['客户', o.customer],['区域', o.region],['联系人', o.contact||''],['电话', o.phone],['日期', todayStr()],[]];
   const pkgText = (o.ship_large||o.ship_medium||o.ship_small) ? `大件${o.ship_large||0}/中件${o.ship_medium||0}/小件${o.ship_small||0}` : '未填写';
   rows.push(['物流件型', pkgText]);
   rows.push(['序号','商品名称','单价','数量','金额','备注']);

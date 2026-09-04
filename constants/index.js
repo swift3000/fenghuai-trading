@@ -4,7 +4,7 @@
 
 // ============ 系统配置 ============
 // 公司名称：用于打印/销售单模板标题、订单号前缀、报表标题
-const COMPANY_NAME = '乾多多'
+const COMPANY_NAME = '钱多多'
 
 const ORDER_STATUS = {
   DRAFT: 'draft',

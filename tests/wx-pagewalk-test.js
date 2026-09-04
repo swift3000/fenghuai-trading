@@ -82,7 +82,7 @@ async function resolveLatestOrderId() {
     const d = new Date();
     const dateStr = d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0');
     const order = {
-      orderNo: '乾多多-' + dateStr + '-TEST0',
+      orderNo: '钱多多-' + dateStr + '-TEST0',
       customerId: cust ? cust._id : undefined,
       customerName: TEST_PGWK_TAG + '客户',
       customerRegion: cust ? (cust.region || '') : '',
@@ -161,7 +161,7 @@ const PAGES = (ORDER_ID) => {
   try { await safeEval(async () => { try { if (!wx.cloud.config) { wx.cloud.init({ env: 'cloud1-d6g75loi673b1e039' }); } } catch (e) {} return 'ok'; }); await delay(1500); } catch (e) { }
   await safeEval(() => new Promise((r) => {
     try {
-      const u = { openid: 'qa_pagewalk_admin', name: '测试', role: 'admin', tenantName: '乾多多', permissions: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'product:view', 'product:edit', 'customer:view', 'customer:edit', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'] };
+      const u = { openid: 'qa_pagewalk_admin', name: '测试', role: 'admin', tenantName: '钱多多', permissions: ['order:view', 'order:create', 'order:edit', 'order:delete', 'order:print', 'order:export', 'product:view', 'product:edit', 'customer:view', 'customer:edit', 'sort:task', 'warehouse:confirm', 'receivable:view', 'receivable:collect', 'receivable:confirm', 'receivable:discount', 'report:view', 'report:export', 'report:ledger', 'member:manage'] };
       wx.setStorageSync('currentUser', u); wx.setStorageSync('userInfo', u); wx.setStorageSync('userRole', 'admin');
       try { const app = getApp(); if (app) { app.globalData.userInfo = u; app.globalData.userRole = 'admin'; } } catch (e) { }
       wx.reLaunch({ url: '/pages/index/index' }); r('ok');

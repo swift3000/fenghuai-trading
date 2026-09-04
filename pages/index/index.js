@@ -15,7 +15,7 @@ Page({
     currentDate: '',
     
     // 公告
-    announcement: '欢迎使用乾多多采购下单助手',
+    announcement: '欢迎使用钱多多采购下单助手',
     
     // 统计数据
     todayOrders: 0,

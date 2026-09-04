@@ -531,7 +531,7 @@ Page({
       }[this.data.viewTab] || this.data.viewTab
 
       const rows = []
-      rows.push(['乾多多赊销报表'])
+      rows.push(['钱多多赊销报表'])
       rows.push(['导出时间：' + new Date().toLocaleString()])
       rows.push(['筛选周期：' + timeLabel + ' · 视图：' + viewLabel])
       rows.push([])
@@ -596,7 +596,7 @@ Page({
       rows.push(['周期汇总  应收总额：¥' + grandTotal.toFixed(2) + ' | 已收：¥' + grandConfirmed.toFixed(2) + ' | 未结清：¥' + grandBalance.toFixed(2)])
 
       const csvContent = rows.map(r => r.map(esc).join(',')).join('\n')
-      const filename = '乾多多赊销报表_' + dateStr() + '.csv'
+      const filename = '钱多多赊销报表_' + dateStr() + '.csv'
       const filePath = wx.env.USER_DATA_PATH + '/' + filename
       const fs = wx.getFileSystemManager()
       fs.writeFileSync(filePath, csvContent, 'utf8')

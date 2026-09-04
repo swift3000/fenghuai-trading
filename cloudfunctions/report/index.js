@@ -86,7 +86,7 @@ async function checkPermission(permission) {
 
 
 // 公司名（用于导出标题；云函数无法 require 前端 constants）
-const COMPANY_NAME = '乾多多'
+const COMPANY_NAME = '钱多多'
 
 // 按时间+区域获取订单（供专用导出使用；同时返回 payments 用于收款台账）
 async function getFilteredOrdersFull(timeTab, region, customStart, customEnd) {

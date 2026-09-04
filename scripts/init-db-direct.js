@@ -134,7 +134,7 @@ async function initSystemConfig() {
 // 主函数
 async function main() {
   console.log('==========================================');
-  console.log('🚀 乾多多小程序 · 数据库初始化');
+  console.log('🚀 钱多多小程序 · 数据库初始化');
   console.log('==========================================');
   
   try {

@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 
 const projectRoot = '/Users/god/Desktop/项目/github/fenghuai-trading';
-const prototypePath = path.join(projectRoot, 'docs/ui/乾多多采购下单助手_原型.html');
+const prototypePath = path.join(projectRoot, 'docs/ui/钱多多采购下单助手_原型.html');
 
 console.log('🔍 开始对比原型设计与当前实现...\n');
 
@@ -59,7 +59,7 @@ console.log('\n📋 3. 关键组件检查');
 console.log('-'.repeat(40));
 
 const components = [
-  { name: '登录页 Hero', file: 'pages/login/login.wxml', pattern: /乾多多/ },
+  { name: '登录页 Hero', file: 'pages/login/login.wxml', pattern: /钱多多/ },
   { name: 'TabBar', file: 'app.json', pattern: /tabBar/ },
   { name: '智能录入', file: 'pages/index/index.wxml', pattern: /智能录入/ },
   { name: '客户搜索', file: 'pages/new-order/new-order.wxml', pattern: /search|搜索/ },
@@ -170,7 +170,7 @@ console.log('='.repeat(60));
 console.log('');
 console.log('1. 请在微信开发者工具中实际运行小程序');
 console.log('2. 逐个页面截图（登录、首页、新建订单等）');
-console.log('3. 对照原型 HTML 文件（docs/ui/乾多多采购下单助手_原型.html）');
+console.log('3. 对照原型 HTML 文件（docs/ui/钱多多采购下单助手_原型.html）');
 console.log('4. 找出具体差异点');
 console.log('5. 截图发给我，我会精准修复');
 console.log('');
@@ -181,5 +181,5 @@ console.log('  - 数据未加载（云函数问题）');
 console.log('  - WXML 结构错误');
 console.log('  - 样式覆盖冲突');
 console.log('');
-console.log('📄 原型文件位置：docs/ui/乾多多采购下单助手_原型.html');
+console.log('📄 原型文件位置：docs/ui/钱多多采购下单助手_原型.html');
 console.log('📄 可以浏览器打开查看完整设计');

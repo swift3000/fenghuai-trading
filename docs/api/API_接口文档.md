@@ -1,4 +1,4 @@
-# 乾多多采购下单助手 — 接口文档（API）
+# 钱多多采购下单助手 — 接口文档（API）
 
 > **文档版本**：MVP v1.0（2026-08-05 定稿，最终功能范围）
 > **编写日期**：2026-08-03  
@@ -464,7 +464,7 @@ Array<{ name: string; sort: number; status: 1 }>
   // 全量返回（T51-1 起分页拉全量，前端本地过滤/分页），camelCase：
   Array<{
     _id: string;
-    orderNo: string;                 // 乾多多-YYYYMMDD-NNNN
+    orderNo: string;                 // 钱多多-YYYYMMDD-NNNN
     status: 'submitted' | 'sorted' | 'confirmed' | 'completed' | 'cancelled';
     customerId: string;
     customerName: string;
@@ -556,11 +556,11 @@ Array<{ name: string; sort: number; status: 1 }>
 
 | 行为说明 | |
 |----------|---|
-| 订单号 | 服务端生成 `乾多多-YYYYMMDD-NNNN`（当日顺序号）；创建人姓名/角色服务端记录（createdByName/createdByRole） |
+| 订单号 | 服务端生成 `钱多多-YYYYMMDD-NNNN`（当日顺序号）；创建人姓名/角色服务端记录（createdByName/createdByRole） |
 
 #### 返回 data
 ```json
-{ "_id": "orders._id", "orderNo": "乾多多-20260730-0001" }
+{ "_id": "orders._id", "orderNo": "钱多多-20260730-0001" }
 ```
 
 ### 6.4 出库确认 + 分拣动作（update-status）
@@ -1110,8 +1110,8 @@ Array<{ name: string; sort: number; status: 1 }>
 
 | 字段 | 示例 |
 |------|------|
-| 订单号格式 | `乾多多-YYYYMMDD-NNNN` |
-| 示例 | `乾多多-20260730-0001` |
+| 订单号格式 | `钱多多-YYYYMMDD-NNNN` |
+| 示例 | `钱多多-20260730-0001` |
 | 唯一性 | 4 位 NNNN 按日从 0001 递增；最大日单量 9999；超量报错并告警 |
 | 时间戳用哪个？ | `network_time`（服务端写入 orders.network_time），不信任前端时间 |
 
@@ -1129,7 +1129,7 @@ Array<{ name: string; sort: number; status: 1 }>
 |------|------|----------|
 | v1.0 | 2026-07-28 | 初版发布（方案A：50+接口，30+云函数） |
 | **1.0** | **2026-07-30** | **方案B（极简版）：砍至 8 个云函数 + 20 个 action；Excel 导出改前端 SheetJS 不再设云函数接口；取消所有操作日志/价格变更/继承日志接口；角色权限矩阵精简** |
-| **1.0** | **2026-08-03** | **新增 3 个接口：6.5 配货暂存（pick-stash）、6.7 收款登记（collect）、6.8 修改备注（update-remark），共 23 个 action；订单号前缀改为"乾多多-"；订单状态 submitted→待发货、checked→已发货；"确认订单"升级为 6.4"配完"（submitted/checked 两态均可直接调用，无需等分拣确认，新增 ship_large/ship_medium/ship_small）；商品列表新增 usage 字段并支持按使用频率降序；订单列表/详情对库管价格脱敏、新增 collect 收款状态字段（列表/详情/送货单）；分拣员动作："确认已发货/驳回"，取消校对环节 |
+| **1.0** | **2026-08-03** | **新增 3 个接口：6.5 配货暂存（pick-stash）、6.7 收款登记（collect）、6.8 修改备注（update-remark），共 23 个 action；订单号前缀改为"钱多多-"；订单状态 submitted→待发货、checked→已发货；"确认订单"升级为 6.4"配完"（submitted/checked 两态均可直接调用，无需等分拣确认，新增 ship_large/ship_medium/ship_small）；商品列表新增 usage 字段并支持按使用频率降序；订单列表/详情对库管价格脱敏、新增 collect 收款状态字段（列表/详情/送货单）；分拣员动作："确认已发货/驳回"，取消校对环节 |
 | **1.0** | **2026-08-04** | **赊销收款管理版（对齐产品 1.0）：①新增 2 接口：6.10 赊销看板（receivable，客户维度每日欠款+累计总欠款）、6.8 确认收款（collect-confirm），共 25 个 action；②收款改两步：6.7 下单员/分拣员登记(→pending) → 6.8 库管确认(→paid)，登记可填折价/货损（collect_discount）；③下单/改单/删单全员权限：6.3 创建订单放开至 4 角色，订单列表/详情取消价格脱敏与精简视图（全员完整视图）；④6.3 所有商品可订单内自定义价格（tmp_ 价，仅当前订单有效），未传价时默认取客户上次成交价；⑤6.9 修改备注全员可用；⑥6.6 标记已打印全员可用；⑦订单列表/详情字段 collect → payment_status/received_amount；⑧sorter 角色补入登录/用户接口 role 枚举与状态矩阵；⑨取消商户收款码与259号文合规内容（转发收款卡片下线） |
 
 ---

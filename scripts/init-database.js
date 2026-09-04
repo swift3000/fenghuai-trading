@@ -107,7 +107,7 @@ function insertData(collectionName, data) {
  */
 async function main() {
   console.log('==========================================');
-  console.log('🚀 数据库初始化 - 乾多多小程序');
+  console.log('🚀 数据库初始化 - 钱多多小程序');
   console.log('==========================================');
   console.log('');
 
