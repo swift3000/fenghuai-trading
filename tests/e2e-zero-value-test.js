@@ -59,7 +59,8 @@ const check = (name, pass, detail) => { results.push({name,pass:!!pass}); consol
     check("B2 出库单导出 物流0值不留'0'(留空)", true, "返回excel格式(二进制),跳过csv文本校验");
   }
   // B3: 报表台账导出 custom 区间
-  const today = new Date().toISOString().slice(0,10);
+  // T75：北京时间口径（对齐云函数 TZ=Asia/Shanghai 的日期边界）
+  const today = new Date(Date.now()).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
   const ym = today.slice(0,8);
   const led = await invoke("report", { action:"exportLedger", timeTab:"custom", startDate:ym+"01", endDate:today, format:"csv" });
   check("B3 收款台账导出 custom 区间成功", led && led.code===0, "code="+(led&&led.code));

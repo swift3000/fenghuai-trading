@@ -9,7 +9,10 @@ const QA_OID = "oo0s93SW9A4V4iO1ANyA3eqzxVIA"; // QA impersonation: real admin (
 const invoke = (name, data) => app.callFunction({ name, data: Object.assign({}, data, { qaAsOpenid: QA_OID }) }).then(r => r.result);
 const results = [];
 const check = (name, pass, detail) => { results.push({name,pass:!!pass}); console.log((pass?"✅":"❌")+" "+name+(detail?(" — "+String(detail).slice(0,140)):"")); };
-const today = new Date().toISOString().slice(0,10);
+// T75 修复：today/ym 用北京时间（项目时区纪律 Asia/Shanghai）——原 toISOString 取 UTC 日期，
+// 凌晨 0-8 点 UTC 日期落后北京一天，报表按北京日期过滤 → 期望值把测试单算进本月、云函数正确排除，假 FAIL
+const bjDate = (ts) => new Date(ts).toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
+const today = bjDate(Date.now());
 const ym = today.slice(0,8);
 
 (async () => {
@@ -18,7 +21,12 @@ const ym = today.slice(0,8);
   const tc = await invoke("customers", { action:"create", name:"区间测试客户", region:"测试区" });
   const tcid = tc && tc.data && (tc.data.customerId||tc.data._id||tc.data.id);
   // ===== 报表自定义区间 =====
-  // 1. 本月区间(当月)应有数据
+  // T75 修复：先造今日测试单再断言报表——干净基线下本月可能本就无单，
+  // 原顺序"断言在造单前"依赖历史残留数据才碰巧通过（假 PASS/假 FAIL 双向）
+  const c = await invoke("orders", { action:"create", customerId:tcid, customerName:"区间测试客户", customerRegion:"测试区", totalAmount:100, items:[{material_code:"9",name:"测试品",pricing_mode:"case",piece_qty:2,zero_qty:0,price_piece:50}], orderDate:today });
+  const oid = c && c.data && (c.data.orderId||c.data._id);
+  check("创建出库测试订单", c && c.code===0, c.message);
+  // 1. 本月区间(当月)应含刚造的测试单
   const sumMonth = await invoke("report", { action:"summary", reportTab:"product", timeTab:"custom", startDate:ym+"01", endDate:today });
   check("报表summary custom 本月区间(有数据)", sumMonth && sumMonth.code===0 && (sumMonth.data.products||[]).length>0, "products="+(sumMonth.data&&sumMonth.data.products||[]).length);
   // 2. 空区间(2020)应0
@@ -26,7 +34,7 @@ const ym = today.slice(0,8);
   check("报表summary custom 空区间=0", sumEmpty && sumEmpty.code===0 && (sumEmpty.data.products||[]).length===0, "products="+(sumEmpty.data&&sumEmpty.data.products||[]).length);
   // 3. 算账一致(客户视图按 order.totalAmount 求和 == 本月订单总额)
   const allOrders = await invoke("orders", { action:"list", timeTab:"all" });
-  const orders = (allOrders.data||[]).filter(o=>{ const d=new Date(o.created_at); const iso=d.toISOString().slice(0,10); return iso>=ym+"01" && iso<=today; });
+  const orders = (allOrders.data||[]).filter(o=>{ const bj=bjDate(o.created_at); return bj>=ym+"01" && bj<=today; });
   const expectAmt = Math.round(orders.reduce((s,o)=>s+(o.totalAmount||0),0)*100)/100;
   const sumCust = await invoke("report", { action:"summary", reportTab:"customer", timeTab:"custom", startDate:ym+"01", endDate:today });
   const gotAmt = sumCust && sumCust.data && Math.round((sumCust.data.totalAmount||0)*100)/100;
@@ -40,10 +48,7 @@ const ym = today.slice(0,8);
   const csvAmt = Math.round(rows.reduce((s,r)=>s+parseFloat(r[4]||0),0)*100)/100;
   check("算账一致: 客户汇总表CSV金额和 == 本月订单金额和", expectAmt===csvAmt, "期望"+expectAmt+" 实得"+csvAmt);
   // ===== 出库库单导出时间范围 =====
-  // 创建一个订单并出库填件数, 验证 exportOutbound 三种范围
-  const c = await invoke("orders", { action:"create", customerId:tcid, customerName:"区间测试客户", customerRegion:"测试区", totalAmount:100, items:[{material_code:"9",name:"测试品",pricing_mode:"case",piece_qty:2,zero_qty:0,price_piece:50}], orderDate:today });
-  const oid = c && c.data && (c.data.orderId||c.data._id);
-  check("创建出库测试订单", c && c.code===0, c.message);
+  // 测试单出库填件数, 验证 exportOutbound 三种范围
   if (oid) {
     await invoke("orders", { action:"confirmSort", orderId:oid });
     await invoke("orders", { action:"confirmOut", orderId:oid, batchMode:false, ship_large:2, ship_medium:0, ship_small:3 });

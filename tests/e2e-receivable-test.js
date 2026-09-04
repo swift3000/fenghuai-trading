@@ -13,10 +13,29 @@ const QA_OID = "oo0s93SW9A4V4iO1ANyA3eqzxVIA"; // QA impersonation: real admin (
 const invoke = (n, d) => app.callFunction({ name: n, data: Object.assign({}, d, { qaAsOpenid: QA_OID }) }).then(r => r.result)
 let total = 0, passed = 0
 const check = (name, pass, detail) => { total++; if (pass) passed++; console.log((pass ? "✅" : "❌") + " " + name + (detail && !pass ? " — " + String(detail).slice(0, 120) : "")) }
-const mkOrder = async (name) => (await invoke("orders", { action: "create", customerName: name, totalAmount: 100, items: [{ name: "测试品", piece_qty: 1, zero_qty: 0, price_piece: 100, pricing_mode: "case", unit: "包", amount: 100 }] })).data._id
-const cleanup = async (oids) => { for (const o of oids) { await invoke("orders", { action: "delete", orderId: o }) } }
+let CID = null // 测试客户 id（模块级：mkOrder/cleanup 共享，IIFE 内赋值）
+const mkOrder = async (name) => (await invoke("orders", { action: "create", customerId: CID, customerName: name, totalAmount: 100, items: [{ name: "测试品", piece_qty: 1, zero_qty: 0, price_piece: 100, pricing_mode: "case", unit: "包", amount: 100 }] })).data._id
+// T75 修复：清理走"API 优先 + SDK 兜底"——
+// ① 有已确认收款的订单（回归-确认单）会被 T50-3 资金红线正确拦截 API delete，原实现静默失败留残留
+// ② payments 集合未清理 → 孤儿流水残留（历史已污染生产基线一次）
+// ③ 造单补 customerId（无 customerId 孤儿单不进报表客户聚合，防污染其他测试期望值）
+const cleanup = async (oids) => {
+  for (const o of oids) {
+    const r = await invoke("orders", { action: "delete", orderId: o })
+    if (r && r.code !== 0) {
+      // SDK 兜底：先删该单全部收款流水，再删单（测试数据允许物理删除，生产红线只拦业务入口）
+      const pays = await db.collection("payments").where({ orderId: o }).limit(20).get()
+      for (const p of pays.data) { try { await db.collection("payments").doc(p._id).remove() } catch (e) {} }
+      try { await db.collection("orders").doc(o).remove() } catch (e) {}
+    }
+  }
+  // 测试客户自清理（防孤儿客户残留）
+  if (CID) { try { await db.collection("customers").doc(CID).remove() } catch (e) {} }
+}
 ;(async () => {
   const oids = []
+  const cust = await invoke("customers", { action: "create", name: "TEST_收款回归客户", phone: "13800002222", region: "测试区" })
+  CID = cust.data && (cust.data._id || cust.data.customerId)
   try {
     // 场景1：一次性结清（80实收 + 20折价 = 100），之后任何收款都应被拦截
     const o1 = await mkOrder("回归-结清"); oids.push(o1)
